@@ -69,8 +69,11 @@ export const routingConfig = {
 };
 
 export const publicRoutes = [
-  '/auth/signup',
-  '/auth/login',
-  '/auth/password-reset/request',
-  '/auth/password-reset/confirm',
+	"/auth/signup",
+	"/auth/login",
+	"/auth/refresh",
+	"/auth/password-reset/request",
+	"/auth/password-reset/confirm",
+	"/health",
+	"/health/services",
 ];

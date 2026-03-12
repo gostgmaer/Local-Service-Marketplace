@@ -25,10 +25,10 @@ export class GatewayModule implements NestModule {
       .apply(LoggingMiddleware)
       .forRoutes('*');
 
-    // Apply JWT authentication middleware to all routes except /health
+    // Apply JWT authentication middleware to all routes
+    // Public routes are defined in publicRoutes (services.config.ts)
     consumer
       .apply(JwtAuthMiddleware)
-      .exclude('/health', '/health/services')
       .forRoutes('*');
 
     // Apply rate limiting middleware to all routes

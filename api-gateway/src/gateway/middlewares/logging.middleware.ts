@@ -10,7 +10,9 @@ export class LoggingMiddleware implements NestMiddleware {
   ) {}
 
   use(req: Request, res: Response, next: NextFunction) {
-    const { method, path, ip } = req;
+    const method = req.method;
+		const path = req.originalUrl;
+		const ip = req.ip;
     const userAgent = req.get('user-agent') || '';
     const userId = (req as any).user?.userId || 'anonymous';
 

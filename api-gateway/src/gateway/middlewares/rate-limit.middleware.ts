@@ -25,9 +25,9 @@ export class RateLimitMiddleware implements NestMiddleware {
       },
       handler: (req: Request, res: Response) => {
         this.logger.warn(
-          `Rate limit exceeded for ${(req as any).user?.userId || req.ip} on ${req.path}`,
-          'RateLimitMiddleware',
-        );
+					`Rate limit exceeded for ${(req as any).user?.userId || req.ip} on ${req.originalUrl}`,
+					"RateLimitMiddleware",
+				);
         res.status(429).json({
           statusCode: 429,
           message: 'Too many requests, please try again later.',
