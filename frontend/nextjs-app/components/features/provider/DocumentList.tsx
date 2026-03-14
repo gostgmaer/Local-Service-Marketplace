@@ -50,8 +50,10 @@ export function DocumentList({ providerId }: { providerId: string }) {
     try {
       const response = await fetch(`/api/providers/${providerId}/documents/verification-status`);
       if (response.ok) {
-        const data = await response.json();
-        setStatus(data.data);
+        const responseData = await response.json();
+        // Handle standardized response: { success, data } or direct data
+        const unwrappedData = responseData?.data || responseData;
+        setStatus(unwrappedData);
       }
     } catch (error) {
       console.error('Failed to load status:', error);

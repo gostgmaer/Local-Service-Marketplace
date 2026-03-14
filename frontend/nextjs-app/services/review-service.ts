@@ -46,7 +46,8 @@ export const createReview = async (data: CreateReviewData): Promise<Review> => {
  */
 export const getProviderReviews = async (providerId: string): Promise<ReviewWithDetails[]> => {
   const response = await apiClient.get<ReviewWithDetails[]>(`/providers/${providerId}/reviews`);
-  return response.data;
+  // API client unwraps standardized response
+  return response.data?.data || response.data || [];
 };
 
 /**

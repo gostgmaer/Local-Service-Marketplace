@@ -106,8 +106,12 @@ class ApiClient {
           if (this.isRefreshing) {
             // Wait for the token refresh to complete
             return new Promise((resolve) => {
-              this.refreshSubscribers.push(() => {
-                // Retry the original request (cookie will be updated)
+              this.refreshSubscribers.push((newToken: string) => {
+                // Update the Authorization header with the new token
+                if (originalRequest.headers) {
+                  originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                }
+                // Retry the original request with the new token
                 resolve(this.client(originalRequest));
               });
             });
@@ -121,14 +125,33 @@ class ApiClient {
             if (refreshToken) {
               const response = await this.client.post('/auth/refresh', { refreshToken });
               
-              // New access token is automatically set in cookie by backend
-              // No need to manually store it
+              // Extract new tokens from response (handle standardized format)
+              const responseData = response.data?.data || response.data;
+              const newAccessToken = responseData?.accessToken;
+              const newRefreshToken = responseData?.refreshToken;
               
-              // Notify all subscribers
-              this.refreshSubscribers.forEach((callback) => callback('refreshed'));
-              this.refreshSubscribers = [];
-              
-              return this.client(originalRequest);
+              if (newAccessToken) {
+                // Store new access token in localStorage
+                this.setToken(newAccessToken);
+                
+                // Store new refresh token if provided
+                if (newRefreshToken && typeof window !== 'undefined') {
+                  localStorage.setItem('refresh_token', newRefreshToken);
+                }
+                
+                // Update the Authorization header for the original request
+                if (originalRequest.headers) {
+                  originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                }
+                
+                // Notify all subscribers with the new token
+                this.refreshSubscribers.forEach((callback) => callback(newAccessToken));
+                this.refreshSubscribers = [];
+                
+                return this.client(originalRequest);
+              } else {
+                throw new Error('No access token in refresh response');
+              }
             }
           } catch (refreshError) {
             // Refresh failed, logout user
@@ -174,8 +197,9 @@ class ApiClient {
 
   private logout(): void {
     if (typeof window !== 'undefined') {
-      // Tokens are now in HTTP-only cookies, cleared by backend
-      // Just redirect to login
+      // Clear tokens from localStorage
+      this.removeToken();
+      // Redirect to login
       window.location.href = '/login';
     }
   }

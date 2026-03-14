@@ -45,8 +45,8 @@ class SearchService {
     const response = await apiClient.get<CategorySearchResult[]>(
       `/categories?search=${encodeURIComponent(query)}&limit=${limit}`,
     );
-
-    return response.data || [];
+    // API client unwraps standardized response
+    return response.data?.data || response.data || [];
   }
 
   /**

@@ -97,7 +97,9 @@ export default function LoginPage() {
         data
       );
       
-      const { accessToken, refreshToken } = response.data;
+      // Handle standardized response: { success, statusCode, message, data }
+      const responseData = response.data?.data || response.data;
+      const { accessToken, refreshToken } = responseData;
       setToken(accessToken);
       if (refreshToken) {
         localStorage.setItem('refreshToken', refreshToken);
@@ -147,7 +149,9 @@ export default function LoginPage() {
         data
       );
       
-      const { accessToken, refreshToken } = response.data;
+      // Handle standardized response: { success, statusCode, message, data }
+      const responseData = response.data?.data || response.data;
+      const { accessToken, refreshToken } = responseData;
       setToken(accessToken);
       if (refreshToken) {
         localStorage.setItem('refreshToken', refreshToken);

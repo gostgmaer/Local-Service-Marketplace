@@ -45,7 +45,8 @@ class ProposalService {
 
   async getProposalsByRequest(requestId: string): Promise<Proposal[]> {
     const response = await apiClient.get<Proposal[]>(`/requests/${requestId}/proposals`);
-    return response.data;
+    // API client unwraps standardized response
+    return response.data?.data || response.data || [];
   }
 
   async getProposalById(id: string): Promise<Proposal> {
@@ -85,7 +86,8 @@ class ProposalService {
       throw new Error('User not authenticated');
     }
     const response = await apiClient.get<Proposal[]>(`/proposals/my?user_id=${userId}`);
-    return response.data;
+    // API client unwraps standardized response
+    return response.data?.data || response.data || [];
   }
 }
 

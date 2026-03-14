@@ -56,13 +56,17 @@ class MessageService {
   }
 
   async getMessagesByJob(jobId: string): Promise<Message[]> {
-    const response = await apiClient.get<Message[]>(`/jobs/${jobId}/messages`);
-    return response.data;
+    const response = await apiClient.get(`/jobs/${jobId}/messages`);
+    // API client unwraps standardized response
+    const data: any = response.data;
+    return data?.data || data || [];
   }
 
   async getConversations(): Promise<any[]> {
-    const response = await apiClient.get<any[]>('/messages/conversations');
-    return response.data;
+    const response = await apiClient.get('/messages/conversations');
+    // API client unwraps standardized response
+    const data: any = response.data;
+    return data?.data || data || [];
   }
 
   async markAsRead(messageId: string): Promise<void> {

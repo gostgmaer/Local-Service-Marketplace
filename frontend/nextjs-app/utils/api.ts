@@ -45,14 +45,23 @@ export async function apiRequest<T = any>(
     }
 
     if (!response.ok) {
+      // Handle standardized error response: { success: false, error: { message, code } }
+      const errorMessage = responseData?.error?.message || 
+                          responseData?.message || 
+                          responseData?.error || 
+                          'Request failed';
       return {
-        error: responseData?.message || responseData?.error || 'Request failed',
+        error: errorMessage,
         status: response.status,
       };
     }
 
+    // Handle standardized success response: { success: true, data, total? }
+    // Unwrap data from standardized format
+    const unwrappedData = responseData?.data !== undefined ? responseData.data : responseData;
+    
     return {
-      data: responseData?.data || responseData,
+      data: unwrappedData,
       status: response.status,
     };
   } catch (error) {

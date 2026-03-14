@@ -17,7 +17,8 @@ export interface CreateFavoriteData {
 class FavoriteService {
   async getFavorites(userId: string): Promise<Favorite[]> {
     const response = await apiClient.get<Favorite[]>(`/favorites?user_id=${userId}`);
-    return response.data;
+    // API client unwraps standardized response
+    return response.data?.data || response.data || [];
   }
 
   async addFavorite(data: CreateFavoriteData): Promise<Favorite> {

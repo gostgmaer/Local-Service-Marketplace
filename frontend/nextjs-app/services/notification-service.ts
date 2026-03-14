@@ -30,9 +30,9 @@ class NotificationService {
     const response = await apiClient.get<{ notifications: Notification[]; unreadCount: number }>(
       `/notifications?${params.toString()}`,
     );
-    // Backend returns { notifications: [...], unreadCount: number }
-    // After interceptor unwraps, we get the object directly
-    return response.data.notifications || response.data;
+    // API client unwraps standardized response to { data, total } or just data
+    const unwrapped = response.data?.data || response.data;
+    return unwrapped.notifications || unwrapped || [];
   }
 
   async markAsRead(id: string): Promise<void> {
