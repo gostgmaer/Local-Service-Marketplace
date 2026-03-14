@@ -23,8 +23,7 @@ async function bootstrap() {
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter(logger));
 
-  // Enable CORS
-  app.enableCors();
+  // CORS is handled by API Gateway - not needed in internal services
 
   const port = process.env.PORT || 3007;
   await app.listen(port);

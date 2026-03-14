@@ -26,6 +26,9 @@ services:
     image: redis:7-alpine
     container_name: marketplace-redis
     restart: unless-stopped
+    profiles:
+      - scaling
+      - cache
     ports:
       - "6379:6379"
     volumes:
@@ -43,6 +46,9 @@ services:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: marketplace-zookeeper
     restart: unless-stopped
+    profiles:
+      - scaling
+      - events
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -56,6 +62,9 @@ services:
     image: confluentinc/cp-kafka:7.5.0
     container_name: marketplace-kafka
     restart: unless-stopped
+    profiles:
+      - scaling
+      - events
     depends_on:
       - zookeeper
     ports:
@@ -102,7 +111,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -136,7 +145,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -170,7 +179,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -204,7 +213,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -238,7 +247,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -270,9 +279,10 @@ services:
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
+      - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -289,6 +299,9 @@ services:
     image: lsmp-messaging-service:latest
     container_name: messaging-service
     restart: unless-stopped
+    profiles:
+      - messaging
+      - full
     ports:
       - "3007:3007"
     environment:
@@ -306,7 +319,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -338,9 +351,21 @@ services:
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
+      - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
+      # Notification Channels
+      - EMAIL_SERVICE_URL=http://email-service:3500
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
+      - SMS_SERVICE_URL=http://sms-service:3000
+      - SMS_ENABLED=${SMS_ENABLED:-false}
+      - SMS_API_KEY=${SMS_API_KEY:-change-me-to-a-strong-random-secret}
+      # Feature Flags - Disable for MVP
+      - IN_APP_NOTIFICATIONS_ENABLED=${IN_APP_NOTIFICATIONS_ENABLED:-false}
+      - PUSH_NOTIFICATIONS_ENABLED=${PUSH_NOTIFICATIONS_ENABLED:-false}
+      - NOTIFICATION_PREFERENCES_ENABLED=${NOTIFICATION_PREFERENCES_ENABLED:-false}
+      - DEVICE_TRACKING_ENABLED=${DEVICE_TRACKING_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -374,7 +399,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -408,7 +433,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -425,6 +450,9 @@ services:
     image: lsmp-analytics-service:latest
     container_name: analytics-service
     restart: unless-stopped
+    profiles:
+      - analytics
+      - full
     ports:
       - "3011:3011"
     environment:
@@ -440,9 +468,10 @@ services:
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
+      - ANALYTICS_ENABLED=${ANALYTICS_ENABLED:-true}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -459,6 +488,10 @@ services:
     image: lsmp-infrastructure-service:latest
     container_name: infrastructure-service
     restart: unless-stopped
+    profiles:
+      - infrastructure
+      - scaling
+      - full
     ports:
       - "3012:3012"
     environment:
@@ -476,9 +509,12 @@ services:
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
+      - BACKGROUND_JOBS_ENABLED=${BACKGROUND_JOBS_ENABLED:-false}
+      - RATE_LIMITING_ENABLED=${RATE_LIMITING_ENABLED:-true}
+      - FEATURE_FLAGS_ENABLED=${FEATURE_FLAGS_ENABLED:-true}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, redis]
+    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -488,6 +524,138 @@ services:
       # retries: 3
       # start_period: 40s
 
+  # MongoDB for Email Service
+  mongo-email:
+    image: mongo:7-jammy
+    container_name: mongo-email
+    restart: unless-stopped
+    profiles:
+      - email
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: emailadmin
+      MONGO_INITDB_ROOT_PASSWORD: emailpass123
+      MONGO_INITDB_DATABASE: email_service
+    volumes:
+      - mongo_email_data:/data/db
+    networks:
+      - marketplace-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB for SMS Service
+  mongo-sms:
+    image: mongo:7-jammy
+    container_name: mongo-sms
+    restart: unless-stopped
+    profiles:
+      - sms
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: smsadmin
+      MONGO_INITDB_ROOT_PASSWORD: smspass123
+      MONGO_INITDB_DATABASE: sms_service
+    volumes:
+      - mongo_sms_data:/data/db
+    networks:
+      - marketplace-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Email Microservice
+  email-service:
+    build:
+      context: ./services/email-service
+      dockerfile: Dockerfile
+    image: lsmp-email-service:latest
+    container_name: email-service
+    restart: unless-stopped
+    profiles:
+      - email
+    ports:
+      - "4000:3500"
+    environment:
+      - NODE_ENV=production
+      - PORT=3500
+      - LOG_LEVEL=info
+      - ENABLE_LOGGING=true
+      - ENABLE_FILE_LOGS=false
+      - CORS_ORIGIN=*
+      - MONGO_URL=mongodb://emailadmin:emailpass123@mongo-email:27017/email_service?authSource=admin
+      - MONGO_MAX_POOL_SIZE=50
+      - MONGO_MIN_POOL_SIZE=10
+      - ENABLE_KAFKA=${EVENT_BUS_ENABLED:-false}
+      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
+      - KAFKA_CLIENT_ID=email-service
+      - KAFKA_GROUP_ID=email-service-consumer-group
+      - KAFKA_TOPIC_SEND=email.notification.send
+      - KAFKA_TOPIC_SUCCESS=email.notification.delivered
+      - KAFKA_TOPIC_FAILED=email.notification.failed
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-noreply@marketplace.com}
+      - DEFAULT_FROM_NAME=${DEFAULT_FROM_NAME:-Local Service Marketplace}
+      - EMAIL_HOST=${EMAIL_HOST:-smtp.gmail.com}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_SECURE=${EMAIL_SECURE:-false}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+    depends_on:
+      - mongo-email
+    networks:
+      - marketplace-network
+
+  # SMS Microservice
+  sms-service:
+    build:
+      context: ./services/sms-service
+      dockerfile: Dockerfile
+    image: lsmp-sms-service:latest
+    container_name: sms-service
+    restart: unless-stopped
+    profiles:
+      - sms
+    ports:
+      - "5000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - API_PREFIX=/api/v1
+      - TENANCY_ENABLED=false
+      - DEFAULT_TENANT_ID=marketplace
+      - API_KEY=${SMS_API_KEY:-change-me-to-a-strong-random-secret}
+      - MONGODB_URI=mongodb://smsadmin:smspass123@mongo-sms:27017/sms_service?authSource=admin
+      - SMS_PROVIDER=${SMS_PROVIDER:-mock}
+      - SMS_FALLBACK_PROVIDER=${SMS_FALLBACK_PROVIDER:-}
+      - OTP_LENGTH=6
+      - OTP_EXPIRY_MINUTES=10
+      - OTP_MAX_ATTEMPTS=5
+      - SMS_MAX_RETRY_ATTEMPTS=3
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX=100
+      # Twilio (when SMS_PROVIDER=twilio)
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
+      # AWS SNS (when SMS_PROVIDER=awssns)
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      # Vonage (when SMS_PROVIDER=vonage)
+      - VONAGE_API_KEY=${VONAGE_API_KEY:-}
+      - VONAGE_API_SECRET=${VONAGE_API_SECRET:-}
+      - VONAGE_FROM_NUMBER=${VONAGE_FROM_NUMBER:-}
+    depends_on:
+      - mongo-sms
+    networks:
+      - marketplace-network
+
   # API Gateway
   api-gateway:
     build:
@@ -496,8 +664,11 @@ services:
     image: lsmp-api-gateway:latest
     container_name: api-gateway
     restart: unless-stopped
+    profiles:
+      - frontend
+      - gateway
     ports:
-      - "3000:3000"
+      - "3500:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -514,8 +685,13 @@ services:
       - ADMIN_SERVICE_URL=http://admin-service:3010
       - ANALYTICS_SERVICE_URL=http://analytics-service:3011
       - INFRASTRUCTURE_SERVICE_URL=http://infrastructure-service:3012
+      - EMAIL_SERVICE_URL=http://email-service:3500
+      - SMS_SERVICE_URL=http://sms-service:3000
       - RATE_LIMIT_WINDOW_MS=60000
       - RATE_LIMIT_MAX_REQUESTS=100
+      # Feature Flags for Optional Services
+      - ANALYTICS_ENABLED=${ANALYTICS_ENABLED:-false}
+      - INFRASTRUCTURE_ENABLED=${INFRASTRUCTURE_ENABLED:-false}
     depends_on:
       - auth-service
       - user-service
@@ -523,12 +699,9 @@ services:
       - proposal-service
       - job-service
       - payment-service
-      - messaging-service
       - notification-service
       - review-service
       - admin-service
-      - analytics-service
-      - infrastructure-service
     networks:
       - marketplace-network
     # healthcheck:
@@ -546,11 +719,13 @@ services:
     image: lsmp-frontend:latest
     container_name: marketplace-frontend
     restart: unless-stopped
+    profiles:
+      - frontend
     ports:
-      - "3100:3001"
+      - "3000:3001"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_URL=http://localhost:3500
     depends_on:
       - api-gateway
     networks:
@@ -566,6 +741,10 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  mongo_email_data:
+    driver: local
+  mongo_sms_data:
     driver: local
 
 networks:

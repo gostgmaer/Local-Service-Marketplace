@@ -15,11 +15,14 @@ export function useAuth() {
     signup,
     logout,
     checkAuth,
+    setToken,
   } = useAuthStore();
 
+  // Check auth only once on mount (not on every checkAuth function change)
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const requireAuth = () => {
     if (!isAuthenticated && !isLoading) {
@@ -49,5 +52,6 @@ export function useAuth() {
     logout,
     requireAuth,
     requireRole,
+    setToken,
   };
 }

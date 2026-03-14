@@ -12,5 +12,5 @@ export class CreateFeatureFlagDto {
   @IsInt()
   @Min(0)
   @Max(100)
-  rolloutPercentage: number = 100;
+  rollout_percentage: number = 100;
 }

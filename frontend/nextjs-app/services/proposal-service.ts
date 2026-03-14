@@ -2,71 +2,90 @@ import { apiClient } from './api-client';
 
 export interface Proposal {
   id: string;
-  requestId: string;
-  providerId: string;
+  request_id: string;
+  provider_id: string;
   price: number;
-  estimatedDuration: string;
-  description: string;
+  message: string;
   status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   provider?: {
     id: string;
     name: string;
     rating: number;
-    reviewCount: number;
+    review_count: number;
   };
+  estimated_hours?: number;
+  start_date?: string;
+  completion_date?: string;
+  rejected_reason?: string;
 }
 
 export interface CreateProposalData {
-  requestId: string;
+  request_id: string;
+  provider_id: string;
   price: number;
-  estimatedDuration: string;
-  description: string;
+  message: string;
+  estimated_hours?: number;
+  start_date?: string;
+  completion_date?: string;
 }
 
 export interface UpdateProposalData {
   price?: number;
-  estimatedDuration?: string;
-  description?: string;
+  estimated_hours?: number;
+  message?: string;
 }
 
 class ProposalService {
   async createProposal(data: CreateProposalData): Promise<Proposal> {
-    return apiClient.post<Proposal>('/proposals', data);
+    const response = await apiClient.post<Proposal>('/proposals', data);
+    return response.data;
   }
 
   async getProposalsByRequest(requestId: string): Promise<Proposal[]> {
-    return apiClient.get<Proposal[]>(`/requests/${requestId}/proposals`);
+    const response = await apiClient.get<Proposal[]>(`/requests/${requestId}/proposals`);
+    return response.data;
   }
 
   async getProposalById(id: string): Promise<Proposal> {
-    return apiClient.get<Proposal>(`/proposals/${id}`);
+    const response = await apiClient.get<Proposal>(`/proposals/${id}`);
+    return response.data;
   }
 
   async updateProposal(
     id: string,
     data: UpdateProposalData,
   ): Promise<Proposal> {
-    return apiClient.patch<Proposal>(`/proposals/${id}`, data);
+    const response = await apiClient.patch<Proposal>(`/proposals/${id}`, data);
+    return response.data;
   }
 
   async acceptProposal(id: string): Promise<Proposal> {
-    return apiClient.post<Proposal>(`/proposals/${id}/accept`, {});
+    const response = await apiClient.post<Proposal>(`/proposals/${id}/accept`, {});
+    return response.data;
   }
 
   async rejectProposal(id: string): Promise<Proposal> {
-    return apiClient.post<Proposal>(`/proposals/${id}/reject`, {});
+    const response = await apiClient.post<Proposal>(`/proposals/${id}/reject`, {});
+    return response.data;
   }
 
   async withdrawProposal(id: string): Promise<Proposal> {
-    return apiClient.patch<Proposal>(`/proposals/${id}`, {
+    const response = await apiClient.patch<Proposal>(`/proposals/${id}`, {
       status: 'withdrawn',
     });
+    return response.data;
   }
 
   async getMyProposals(): Promise<Proposal[]> {
-    return apiClient.get<Proposal[]>('/proposals/my');
+    const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const userId = authState?.state?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    const response = await apiClient.get<Proposal[]>(`/proposals/my?user_id=${userId}`);
+    return response.data;
   }
 }
 

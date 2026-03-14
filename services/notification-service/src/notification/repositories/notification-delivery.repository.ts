@@ -22,7 +22,7 @@ export class NotificationDeliveryRepository {
     const result = await this.pool.query(query, values);
     return new NotificationDelivery({
       id: result.rows[0].id,
-      notificationId: result.rows[0].notification_id,
+      notification_id: result.rows[0].notification_id,
       channel: result.rows[0].channel,
       status: result.rows[0].status,
     });
@@ -36,7 +36,7 @@ export class NotificationDeliveryRepository {
     }
     return new NotificationDelivery({
       id: result.rows[0].id,
-      notificationId: result.rows[0].notification_id,
+      notification_id: result.rows[0].notification_id,
       channel: result.rows[0].channel,
       status: result.rows[0].status,
     });
@@ -49,7 +49,7 @@ export class NotificationDeliveryRepository {
       (row) =>
         new NotificationDelivery({
           id: row.id,
-          notificationId: row.notification_id,
+          notification_id: row.notification_id,
           channel: row.channel,
           status: row.status,
         }),
@@ -66,7 +66,7 @@ export class NotificationDeliveryRepository {
     const result = await this.pool.query(query, [status, id]);
     return new NotificationDelivery({
       id: result.rows[0].id,
-      notificationId: result.rows[0].notification_id,
+      notification_id: result.rows[0].notification_id,
       channel: result.rows[0].channel,
       status: result.rows[0].status,
     });
@@ -79,7 +79,7 @@ export class NotificationDeliveryRepository {
       (row) =>
         new NotificationDelivery({
           id: row.id,
-          notificationId: row.notification_id,
+          notification_id: row.notification_id,
           channel: row.channel,
           status: row.status,
         }),

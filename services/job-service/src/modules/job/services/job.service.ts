@@ -7,6 +7,8 @@ import { JobResponseDto } from '../dto/job-response.dto';
 import { NotFoundException, BadRequestException, ConflictException } from '../../../common/exceptions/http.exceptions';
 import { KafkaService } from '../../../kafka/kafka.service';
 import { RedisService } from '../../../redis/redis.service';
+import { NotificationClient } from '../../../common/notification/notification.client';
+import { UserClient } from '../../../common/user/user.client';
 
 @Injectable()
 export class JobService {
@@ -16,6 +18,8 @@ export class JobService {
     private readonly jobRepository: JobRepository,
     private readonly kafkaService: KafkaService,
     private readonly redisService: RedisService,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
@@ -31,6 +35,25 @@ export class JobService {
     const job = await this.jobRepository.createJob(dto);
 
     this.logger.log(`Job created successfully: ${job.id}`, JobService.name);
+
+    // Send notification to provider (job assigned)
+    const providerEmail = await this.userClient.getProviderEmail(dto.provider_id);
+    const customerName = 'Customer'; // TODO: Fetch from request or user-service
+
+    if (providerEmail) {
+      this.notificationClient.sendEmail({
+        to: providerEmail,
+        template: 'jobAssigned',
+        variables: {
+          customerName,
+          serviceName: 'Service Request',
+          jobId: job.id,
+          jobUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobs/${job.id}`,
+        },
+      }).catch(err => {
+        this.logger.warn(`Failed to send job creation notification: ${err.message}`, JobService.name);
+      });
+    }
 
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent('job-events', {
@@ -177,6 +200,22 @@ export class JobService {
     this.logger.log(`Fetching jobs with status: ${status}`, JobService.name);
 
     const jobs = await this.jobRepository.getJobsByStatus(status);
+
+    return jobs.map(JobResponseDto.fromEntity);
+  }
+
+  async getJobsByCustomer(userId: string): Promise<JobResponseDto[]> {
+    this.logger.log(`Fetching jobs for customer: ${userId}`, JobService.name);
+
+    const jobs = await this.jobRepository.getJobsByCustomer(userId);
+
+    return jobs.map(JobResponseDto.fromEntity);
+  }
+
+  async getJobsByProviderUser(userId: string): Promise<JobResponseDto[]> {
+    this.logger.log(`Fetching jobs for provider user: ${userId}`, JobService.name);
+
+    const jobs = await this.jobRepository.getJobsByProviderUser(userId);
 
     return jobs.map(JobResponseDto.fromEntity);
   }

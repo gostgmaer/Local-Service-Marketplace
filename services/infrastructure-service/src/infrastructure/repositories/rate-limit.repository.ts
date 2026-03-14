@@ -8,7 +8,7 @@ export class RateLimitRepository {
 
   async getRateLimit(key: string): Promise<RateLimit | null> {
     const query = `
-      SELECT id, key, request_count as "requestCount", window_start as "windowStart"
+      SELECT id, key, request_count, window_start
       FROM rate_limits
       WHERE key = $1
     `;
@@ -25,7 +25,7 @@ export class RateLimitRepository {
     const query = `
       INSERT INTO rate_limits (key, request_count, window_start)
       VALUES ($1, $2, $3)
-      RETURNING id, key, request_count as "requestCount", window_start as "windowStart"
+      RETURNING id, key, request_count, window_start
     `;
 
     const result = await this.pool.query(query, [key, requestCount, windowStart]);
@@ -41,7 +41,7 @@ export class RateLimitRepository {
       UPDATE rate_limits
       SET request_count = $2, window_start = $3
       WHERE key = $1
-      RETURNING id, key, request_count as "requestCount", window_start as "windowStart"
+      RETURNING id, key, request_count, window_start
     `;
 
     const result = await this.pool.query(query, [key, requestCount, windowStart]);
@@ -53,7 +53,7 @@ export class RateLimitRepository {
       UPDATE rate_limits
       SET request_count = request_count + 1
       WHERE key = $1
-      RETURNING id, key, request_count as "requestCount", window_start as "windowStart"
+      RETURNING id, key, request_count, window_start
     `;
 
     const result = await this.pool.query(query, [key]);

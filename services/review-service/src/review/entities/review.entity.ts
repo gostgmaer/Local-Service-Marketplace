@@ -1,9 +1,13 @@
 export class Review {
   id: string;
-  jobId: string;
-  userId: string;
-  providerId: string;
+  job_id: string;
+  user_id: string;
+  provider_id: string;
   rating: number;
   comment: string;
-  createdAt: Date;
+  response?: string;                     // ✅ NEW
+  response_at?: Date;                    // ✅ NEW
+  helpful_count: number;                 // ✅ NEW
+  verified_purchase: boolean;            // ✅ NEW
+  created_at: Date;
 }

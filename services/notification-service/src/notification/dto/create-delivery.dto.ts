@@ -2,7 +2,7 @@ import { IsUUID, IsString, IsIn } from 'class-validator';
 
 export class CreateDeliveryDto {
   @IsUUID()
-  notificationId: string;
+  notification_id: string;
 
   @IsString()
   @IsIn(['email', 'push', 'sms'])

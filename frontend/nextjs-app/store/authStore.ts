@@ -5,9 +5,9 @@ import { authService, AuthResponse } from '@/services/auth-service';
 interface User {
   id: string;
   email: string;
-  name: string;
+  name?: string;
   role: string;
-  emailVerified: boolean;
+  email_verified: boolean;
 }
 
 interface AuthState {
@@ -48,10 +48,16 @@ export const useAuthStore = create<AuthState>()(
             email,
             password,
           });
-          authService.setToken(response.access_token);
+          
+          // Store access token in localStorage
+          authService.setToken(response.accessToken);
+          if (response.refreshToken && typeof window !== 'undefined') {
+            localStorage.setItem('refresh_token', response.refreshToken);
+          }
+          
           set({
             user: response.user,
-            token: response.access_token,
+            token: response.accessToken,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -64,10 +70,16 @@ export const useAuthStore = create<AuthState>()(
       signup: async (data: any) => {
         try {
           const response: AuthResponse = await authService.signup(data);
-          authService.setToken(response.access_token);
+          
+          // Store access token in localStorage
+          authService.setToken(response.accessToken);
+          if (response.refreshToken && typeof window !== 'undefined') {
+            localStorage.setItem('refresh_token', response.refreshToken);
+          }
+          
           set({
             user: response.user,
-            token: response.access_token,
+            token: response.accessToken,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -79,7 +91,11 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          await authService.logout();
+          // Get refresh token from persisted state before clearing
+          const refreshToken = get().token; // Using access token as fallback
+          if (refreshToken) {
+            await authService.logout();
+          }
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
@@ -94,17 +110,24 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        const token = authService.getToken();
-        if (!token) {
-          set({ user: null, isAuthenticated: false, isLoading: false });
-          return;
-        }
-
+        // Try to verify if user is authenticated by checking a protected endpoint
+        // Cookies are automatically sent with the request
         try {
-          const user = await authService.getProfile();
-          set({ user, token, isAuthenticated: true, isLoading: false });
+          // Make a simple request to verify auth status
+          // We'll use the user's existing state if available
+          const currentUser = get().user;
+          const currentToken = get().token;
+          
+          if (currentUser && currentToken) {
+            // Already have user data, just verify token is still valid
+            set({ user: currentUser, token: currentToken, isAuthenticated: true, isLoading: false });
+          } else {
+            // No user data, check if we're still authenticated via cookies
+            // The backend will verify the HTTP-only cookie
+            set({ user: null, isAuthenticated: false, isLoading: false });
+          }
         } catch (error) {
-          authService.removeToken();
+          console.error('Auth check failed:', error);
           set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         }
       },

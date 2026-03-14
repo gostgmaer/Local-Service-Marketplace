@@ -24,12 +24,12 @@ export class EmailWorkerService {
         try {
           // Get notification details
           const notification = await this.notificationRepository.getNotificationById(
-            delivery.notificationId,
+            delivery.notification_id,
           );
 
           if (!notification) {
             this.logger.warn(
-              `Notification ${delivery.notificationId} not found for delivery ${delivery.id}`,
+              `Notification ${delivery.notification_id} not found for delivery ${delivery.id}`,
               'EmailWorkerService',
             );
             await this.deliveryRepository.updateDeliveryStatus(delivery.id, 'failed');
@@ -37,7 +37,7 @@ export class EmailWorkerService {
           }
 
           // Simulate sending email (in production, integrate with email service like SendGrid, AWS SES)
-          await this.sendEmail(notification.userId, notification.type, notification.message);
+          await this.sendEmail(notification.user_id, notification.type, notification.message);
 
           // Mark delivery as sent
           await this.deliveryRepository.updateDeliveryStatus(delivery.id, 'sent');

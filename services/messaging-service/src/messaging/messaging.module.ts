@@ -4,6 +4,7 @@ import { MessageService } from './services/message.service';
 import { AttachmentService } from './services/attachment.service';
 import { MessageRepository } from './repositories/message.repository';
 import { AttachmentRepository } from './repositories/attachment.repository';
+import { MessagingGateway } from './gateways/messaging.gateway';
 
 @Module({
   controllers: [MessagingController],
@@ -12,7 +13,8 @@ import { AttachmentRepository } from './repositories/attachment.repository';
     AttachmentService,
     MessageRepository,
     AttachmentRepository,
+    MessagingGateway,
   ],
-  exports: [MessageService, AttachmentService],
+  exports: [MessageService, AttachmentService, MessagingGateway],
 })
 export class MessagingModule {}

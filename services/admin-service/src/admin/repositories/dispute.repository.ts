@@ -8,8 +8,8 @@ export class DisputeRepository {
 
   async getDisputeById(id: string): Promise<Dispute | null> {
     const query = `
-      SELECT id, job_id as "jobId", opened_by as "openedBy", reason, status, 
-             resolution, resolved_by as "resolvedBy", resolved_at as "resolvedAt", created_at as "createdAt"
+      SELECT id, job_id, opened_by, reason, status, 
+             resolution, resolved_by, resolved_at, created_at
       FROM disputes
       WHERE id = $1
     `;
@@ -23,8 +23,8 @@ export class DisputeRepository {
     offset: number = 0,
   ): Promise<Dispute[]> {
     const query = `
-      SELECT id, job_id as "jobId", opened_by as "openedBy", reason, status, 
-             resolution, resolved_by as "resolvedBy", resolved_at as "resolvedAt", created_at as "createdAt"
+      SELECT id, job_id, opened_by, reason, status, 
+             resolution, resolved_by, resolved_at, created_at
       FROM disputes
       ORDER BY created_at DESC
       LIMIT $1 OFFSET $2
@@ -36,8 +36,8 @@ export class DisputeRepository {
 
   async getDisputesByStatus(status: string): Promise<Dispute[]> {
     const query = `
-      SELECT id, job_id as "jobId", opened_by as "openedBy", reason, status, 
-             resolution, resolved_by as "resolvedBy", resolved_at as "resolvedAt", created_at as "createdAt"
+      SELECT id, job_id, opened_by, reason, status, 
+             resolution, resolved_by, resolved_at, created_at
       FROM disputes
       WHERE status = $1
       ORDER BY created_at DESC
@@ -57,8 +57,8 @@ export class DisputeRepository {
       UPDATE disputes
       SET status = $1, resolution = $2, resolved_by = $3, resolved_at = CURRENT_TIMESTAMP
       WHERE id = $4
-      RETURNING id, job_id as "jobId", opened_by as "openedBy", reason, status, 
-                resolution, resolved_by as "resolvedBy", resolved_at as "resolvedAt", created_at as "createdAt"
+      RETURNING id, job_id, opened_by, reason, status, 
+                resolution, resolved_by, resolved_at, created_at
     `;
 
     const values = [status, resolution, resolvedBy, id];

@@ -13,8 +13,11 @@ export class ProviderRepository {
     description?: string,
   ): Promise<Provider> {
     const query = `
-      INSERT INTO providers (user_id, business_name, description)
-      VALUES ($1, $2, $3)
+      INSERT INTO providers (
+        user_id, business_name, description, 
+        verification_status, total_jobs_completed
+      )
+      VALUES ($1, $2, $3, 'pending', 0)
       RETURNING *
     `;
     const result = await this.pool.query(query, [userId, businessName, description]);
@@ -22,13 +25,13 @@ export class ProviderRepository {
   }
 
   async findById(id: string): Promise<Provider | null> {
-    const query = 'SELECT * FROM providers WHERE id = $1';
+    const query = 'SELECT * FROM providers WHERE id = $1 AND deleted_at IS NULL';
     const result = await this.pool.query(query, [id]);
     return result.rows[0] || null;
   }
 
   async findByUserId(userId: string): Promise<Provider | null> {
-    const query = 'SELECT * FROM providers WHERE user_id = $1';
+    const query = 'SELECT * FROM providers WHERE user_id = $1 AND deleted_at IS NULL';
     const result = await this.pool.query(query, [userId]);
     return result.rows[0] || null;
   }
@@ -123,4 +126,148 @@ export class ProviderRepository {
     const query = 'DELETE FROM providers WHERE id = $1';
     await this.pool.query(query, [id]);
   }
+
+  // ✅ NEW METHODS for new fields
+  async updateVerificationStatus(
+    providerId: string,
+    status: 'pending' | 'verified' | 'rejected'
+  ): Promise<Provider> {
+    const query = `
+      UPDATE providers 
+      SET verification_status = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [status, providerId]);
+    return result.rows[0];
+  }
+
+  async updateProfilePicture(providerId: string, url: string): Promise<Provider> {
+    const query = `
+      UPDATE providers 
+      SET profile_picture_url = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [url, providerId]);
+    return result.rows[0];
+  }
+
+  async updateCertifications(providerId: string, certifications: any): Promise<Provider> {
+    const query = `
+      UPDATE providers 
+      SET certifications = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [JSON.stringify(certifications), providerId]);
+    return result.rows[0];
+  }
+
+  async getVerifiedProviders(limit: number = 20): Promise<Provider[]> {
+    const query = `
+      SELECT * FROM providers
+      WHERE verification_status = 'verified' 
+        AND deleted_at IS NULL
+      ORDER BY total_jobs_completed DESC, rating DESC
+      LIMIT $1
+    `;
+    const result = await this.pool.query(query, [limit]);
+    return result.rows;
+  }
+
+  async getProvidersByResponseTime(
+    maxResponseTime: number,
+    limit: number = 20
+  ): Promise<Provider[]> {
+    const query = `
+      SELECT * FROM providers
+      WHERE response_time_avg <= $1
+        AND verification_status = 'verified'
+        AND deleted_at IS NULL
+      ORDER BY response_time_avg ASC
+      LIMIT $2
+    `;
+    const result = await this.pool.query(query, [maxResponseTime, limit]);
+    return result.rows;
+  }
+
+  // ✅ NEW: Additional advanced query methods
+  async getProvidersByExperience(
+    minYears: number,
+    limit: number = 20
+  ): Promise<Provider[]> {
+    const query = `
+      SELECT * FROM providers
+      WHERE years_of_experience >= $1
+        AND verification_status = 'verified'
+        AND deleted_at IS NULL
+      ORDER BY years_of_experience DESC, rating DESC
+      LIMIT $2
+    `;
+    const result = await this.pool.query(query, [minYears, limit]);
+    return result.rows;
+  }
+
+  async getTopRatedProviders(
+    minRating: number = 4.5,
+    limit: number = 10
+  ): Promise<Provider[]> {
+    const query = `
+      SELECT * FROM providers
+      WHERE rating >= $1
+        AND verification_status = 'verified'
+        AND deleted_at IS NULL
+      ORDER BY rating DESC, total_jobs_completed DESC
+      LIMIT $2
+    `;
+    const result = await this.pool.query(query, [minRating, limit]);
+    return result.rows;
+  }
+
+  async getProvidersByServiceRadius(
+    minRadius: number,
+    maxRadius: number,
+    limit: number = 20
+  ): Promise<Provider[]> {
+    const query = `
+      SELECT * FROM providers
+      WHERE service_area_radius BETWEEN $1 AND $2
+        AND verification_status = 'verified'
+        AND deleted_at IS NULL
+      ORDER BY service_area_radius ASC
+      LIMIT $3
+    `;
+    const result = await this.pool.query(query, [minRadius, maxRadius, limit]);
+    return result.rows;
+  }
+
+  async updateYearsOfExperience(
+    providerId: string,
+    years: number
+  ): Promise<Provider> {
+    const query = `
+      UPDATE providers 
+      SET years_of_experience = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [years, providerId]);
+    return result.rows[0];
+  }
+
+  async updateServiceAreaRadius(
+    providerId: string,
+    radius: number
+  ): Promise<Provider> {
+    const query = `
+      UPDATE providers 
+      SET service_area_radius = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [radius, providerId]);
+    return result.rows[0];
+  }
 }
+

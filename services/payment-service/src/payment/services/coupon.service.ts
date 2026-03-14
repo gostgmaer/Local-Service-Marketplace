@@ -20,7 +20,7 @@ export class CouponService {
     }
 
     // Check if coupon is expired
-    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
       throw new BadRequestException('Coupon has expired');
     }
 
@@ -40,7 +40,7 @@ export class CouponService {
     await this.couponRepository.recordCouponUsage(coupon.id, userId);
 
     this.logger.log(`Coupon ${code} applied for user ${userId}`, 'CouponService');
-    return coupon.discountPercent;
+    return coupon.discount_percent;
   }
 
   async getCouponByCode(code: string): Promise<Coupon> {

@@ -1,8 +1,8 @@
 export class CouponUsage {
   id: string;
-  couponId: string;
-  userId: string;
-  usedAt: Date;
+  coupon_id: string;
+  user_id: string;
+  used_at: Date;
 
   constructor(partial: Partial<CouponUsage>) {
     Object.assign(this, partial);

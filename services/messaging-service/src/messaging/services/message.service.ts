@@ -32,6 +32,11 @@ export class MessageService {
     return this.messageRepository.getMessagesForJob(jobId, page, limit);
   }
 
+  async getUserConversations(userId: string): Promise<any[]> {
+    this.logger.log(`Fetching conversations for user ${userId}`, 'MessageService');
+    return this.messageRepository.getUserConversations(userId);
+  }
+
   async deleteMessage(id: string): Promise<void> {
     this.logger.log(`Deleting message ${id}`, 'MessageService');
     const message = await this.getMessageById(id);

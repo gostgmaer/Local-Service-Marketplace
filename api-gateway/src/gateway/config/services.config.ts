@@ -53,13 +53,20 @@ export const routingConfig = {
   '/auth': 'auth',
   '/users': 'user',
   '/providers': 'user',
+  '/provider-documents': 'user',
+  '/provider-portfolio': 'user',
   '/requests': 'request',
   '/proposals': 'proposal',
   '/jobs': 'job',
   '/payments': 'payment',
+  '/payment-methods': 'payment',
+  '/subscriptions': 'payment',
+  '/pricing-plans': 'payment',
   '/messages': 'messaging',
   '/notifications': 'notification',
+  '/notification-preferences': 'notification',
   '/reviews': 'review',
+  '/review-aggregates': 'review',
   '/admin': 'admin',
   '/analytics': 'analytics',
   '/events': 'infrastructure',
@@ -69,11 +76,15 @@ export const routingConfig = {
 };
 
 export const publicRoutes = [
-	"/auth/signup",
-	"/auth/login",
-	"/auth/refresh",
-	"/auth/password-reset/request",
-	"/auth/password-reset/confirm",
+	"/api/v1/auth/signup",
+	"/api/v1/auth/login",
+	"/api/v1/auth/refresh",
+	"/api/v1/auth/password-reset/request",
+	"/api/v1/auth/password-reset/confirm",
+	"/api/v1/admin/contact",  // Contact form submission - public access
+	"/api/v1/health",
+	"/api/v1/health/services",
+	// Health endpoints are excluded from global prefix, so they're accessible without /api/v1
 	"/health",
 	"/health/services",
 ];

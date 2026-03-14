@@ -4,6 +4,11 @@ export class Proposal {
   provider_id: string;
   price: number;
   message: string;
+  estimated_hours?: number;              // ✅ NEW
+  start_date?: Date;                     // ✅ NEW
+  completion_date?: Date;                // ✅ NEW
+  rejected_reason?: string;              // ✅ NEW
   status: string;
   created_at: Date;
+  updated_at?: Date;                     // ✅ NEW
 }

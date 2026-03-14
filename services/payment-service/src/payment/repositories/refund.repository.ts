@@ -21,10 +21,10 @@ export class RefundRepository {
     const result = await this.pool.query(query, values);
     return new Refund({
       id: result.rows[0].id,
-      paymentId: result.rows[0].payment_id,
+      payment_id: result.rows[0].payment_id,
       amount: parseFloat(result.rows[0].amount),
       status: result.rows[0].status,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -36,10 +36,10 @@ export class RefundRepository {
     }
     return new Refund({
       id: result.rows[0].id,
-      paymentId: result.rows[0].payment_id,
+      payment_id: result.rows[0].payment_id,
       amount: parseFloat(result.rows[0].amount),
       status: result.rows[0].status,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -56,10 +56,10 @@ export class RefundRepository {
     const result = await this.pool.query(query, [status, id]);
     return new Refund({
       id: result.rows[0].id,
-      paymentId: result.rows[0].payment_id,
+      payment_id: result.rows[0].payment_id,
       amount: parseFloat(result.rows[0].amount),
       status: result.rows[0].status,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -70,10 +70,10 @@ export class RefundRepository {
       (row) =>
         new Refund({
           id: row.id,
-          paymentId: row.payment_id,
+          payment_id: row.payment_id,
           amount: parseFloat(row.amount),
           status: row.status,
-          createdAt: row.created_at,
+          created_at: row.created_at,
         }),
     );
   }

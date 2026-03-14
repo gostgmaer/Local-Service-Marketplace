@@ -2,19 +2,17 @@ import { apiClient } from './api-client';
 
 export interface Notification {
   id: string;
-  userId: string;
+  user_id: string;
   type: string;
-  title: string;
   message: string;
-  data?: any;
   read: boolean;
-  createdAt: string;
+  created_at: string;
 }
 
 export interface NotificationFilters {
   read?: boolean;
   type?: string;
-  page?: number;
+  cursor?: string;
   limit?: number;
 }
 
@@ -26,32 +24,84 @@ class NotificationService {
     if (filters?.read !== undefined)
       params.append('read', filters.read.toString());
     if (filters?.type) params.append('type', filters.type);
-    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.cursor) params.append('cursor', filters.cursor);
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
-    return apiClient.get<Notification[]>(
+    const response = await apiClient.get<{ notifications: Notification[]; unreadCount: number }>(
       `/notifications?${params.toString()}`,
     );
+    // Backend returns { notifications: [...], unreadCount: number }
+    // After interceptor unwraps, we get the object directly
+    return response.data.notifications || response.data;
   }
 
   async markAsRead(id: string): Promise<void> {
-    return apiClient.patch<void>(`/notifications/${id}/read`, {});
+    const response = await apiClient.patch<void>(`/notifications/${id}/read`, {});
+    return response.data;
   }
 
   async markAllAsRead(): Promise<void> {
-    return apiClient.patch<void>('/notifications/read-all', {});
+    const response = await apiClient.patch<void>('/notifications/read-all', {});
+    return response.data;
   }
 
-  async getUnreadCount(): Promise<number> {
-    const data = await apiClient.get<{ count: number }>(
-      '/notifications/unread-count',
-    );
-    return data.count;
+  async getUnreadCount(): Promise<{ count: number }> {
+    const response = await apiClient.get<{ count: number }>('/notifications/unread-count');
+    return response.data;
   }
 
   async deleteNotification(id: string): Promise<void> {
-    return apiClient.delete<void>(`/notifications/${id}`);
+    const response = await apiClient.delete<void>(`/notifications/${id}`);
+    return response.data;
   }
+
+  // ------------------ Notification Preferences ------------------
+
+  async getNotificationPreferences(): Promise<NotificationPreferences> {
+    const response = await apiClient.get<NotificationPreferences>('/notification-preferences');
+    return response.data;
+  }
+
+  async updateNotificationPreferences(
+    preferences: Partial<NotificationPreferences>
+  ): Promise<NotificationPreferences> {
+    const response = await apiClient.put<NotificationPreferences>(
+      '/notification-preferences',
+      preferences
+    );
+    return response.data;
+  }
+
+  async enableAllNotifications(): Promise<NotificationPreferences> {
+    const response = await apiClient.put<NotificationPreferences>(
+      '/notification-preferences/enable-all'
+    );
+    return response.data;
+  }
+
+  async disableAllNotifications(): Promise<NotificationPreferences> {
+    const response = await apiClient.put<NotificationPreferences>(
+      '/notification-preferences/disable-all'
+    );
+    return response.data;
+  }
+}
+
+export interface NotificationPreferences {
+  id: string;
+  user_id: string;
+  email_notifications: boolean;
+  sms_notifications: boolean;
+  push_notifications: boolean;
+  marketing_emails: boolean;
+  new_request_alerts: boolean;
+  proposal_alerts: boolean;
+  job_updates: boolean;
+  payment_alerts: boolean;
+  review_alerts: boolean;
+  message_alerts: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export const notificationService = new NotificationService();

@@ -4,6 +4,8 @@ import { WebhookRepository } from '../repositories/webhook.repository';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentWebhook } from '../entities/payment-webhook.entity';
 import { NotFoundException } from '../../common/exceptions/http.exceptions';
+import { NotificationClient } from '../../common/notification/notification.client';
+import { UserClient } from '../../common/user/user.client';
 
 @Injectable()
 export class WebhookService {
@@ -11,6 +13,8 @@ export class WebhookService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
     private readonly webhookRepository: WebhookRepository,
     private readonly paymentRepository: PaymentRepository,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
   ) {}
 
   async handleWebhook(gateway: string, payload: Record<string, any>): Promise<PaymentWebhook> {
@@ -42,6 +46,29 @@ export class WebhookService {
             transactionId,
           );
           this.logger.log(`Updated payment ${paymentId} from webhook`, 'WebhookService');
+          
+          // Send notification if payment failed
+          if (status === 'failed') {
+            const userEmail = await this.userClient.getUserEmail(payment.user_id);
+            if (userEmail) {
+              this.notificationClient.sendEmail({
+                to: userEmail,
+                template: 'paymentReceived',
+                variables: {
+                  amount: payment.amount,
+                  currency: payment.currency || 'USD',
+                  transactionId: payment.transaction_id,
+                  serviceName: 'Payment Failed',
+                  message: 'Your payment could not be processed. Please check your payment method and try again.',
+                },
+              }).catch(err => {
+                this.logger.warn(
+                  `Failed to send payment failure notification: ${err.message}`,
+                  'WebhookService',
+                );
+              });
+            }
+          }
         }
       }
 

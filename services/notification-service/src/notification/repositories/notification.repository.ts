@@ -18,11 +18,11 @@ export class NotificationRepository {
     const result = await this.pool.query(query, values);
     return new Notification({
       id: result.rows[0].id,
-      userId: result.rows[0].user_id,
+      user_id: result.rows[0].user_id,
       type: result.rows[0].type,
       message: result.rows[0].message,
       read: result.rows[0].read,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -34,11 +34,11 @@ export class NotificationRepository {
     }
     return new Notification({
       id: result.rows[0].id,
-      userId: result.rows[0].user_id,
+      user_id: result.rows[0].user_id,
       type: result.rows[0].type,
       message: result.rows[0].message,
       read: result.rows[0].read,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -54,11 +54,11 @@ export class NotificationRepository {
       (row) =>
         new Notification({
           id: row.id,
-          userId: row.user_id,
+          user_id: row.user_id,
           type: row.type,
           message: row.message,
           read: row.read,
-          createdAt: row.created_at,
+          created_at: row.created_at,
         }),
     );
   }
@@ -73,11 +73,11 @@ export class NotificationRepository {
     const result = await this.pool.query(query, [id]);
     return new Notification({
       id: result.rows[0].id,
-      userId: result.rows[0].user_id,
+      user_id: result.rows[0].user_id,
       type: result.rows[0].type,
       message: result.rows[0].message,
       read: result.rows[0].read,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 

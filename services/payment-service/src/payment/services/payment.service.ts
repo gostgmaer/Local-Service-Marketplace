@@ -5,6 +5,8 @@ import { CouponService } from './coupon.service';
 import { Payment } from '../entities/payment.entity';
 import { NotFoundException, BadRequestException } from '../../common/exceptions/http.exceptions';
 import { KafkaService } from '../../kafka/kafka.service';
+import { NotificationClient } from '../../common/notification/notification.client';
+import { UserClient } from '../../common/user/user.client';
 
 @Injectable()
 export class PaymentService {
@@ -13,6 +15,8 @@ export class PaymentService {
     private readonly paymentRepository: PaymentRepository,
     private readonly couponService: CouponService,
     private readonly kafkaService: KafkaService,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
   ) {}
 
   async createPayment(
@@ -20,6 +24,7 @@ export class PaymentService {
     amount: number,
     currency: string,
     userId: string,
+    providerId: string,
     couponCode?: string,
   ): Promise<Payment> {
     this.logger.log(`Creating payment for job ${jobId}`, 'PaymentService');
@@ -42,8 +47,11 @@ export class PaymentService {
 
     const payment = await this.paymentRepository.createPayment(
       jobId,
+      userId,
+      providerId,
       finalAmount,
       currency,
+      'card',
       transactionId,
     );
 
@@ -53,6 +61,23 @@ export class PaymentService {
 
     this.logger.log(`Payment created successfully: ${payment.id}`, 'PaymentService');
     
+    // Send payment confirmation email
+    const userEmail = await this.userClient.getUserEmail(userId);
+    if (userEmail) {
+      this.notificationClient.sendEmail({
+        to: userEmail,
+        template: 'paymentReceived',
+        variables: {
+          amount: finalAmount,
+          currency: currency,
+          transactionId: transactionId,
+          serviceName: 'Service',
+        },
+      }).catch(err => {
+        this.logger.warn(`Failed to send payment confirmation: ${err.message}`, 'PaymentService');
+      });
+    }
+    
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent('payment-events', {
       eventType: 'payment_completed',
@@ -60,11 +85,11 @@ export class PaymentService {
       timestamp: new Date().toISOString(),
       data: {
         paymentId: payment.id,
-        jobId: payment.jobId,
+        jobId: payment.job_id,
         amount: payment.amount,
         currency: payment.currency,
         status: 'completed',
-        transactionId: payment.transactionId,
+        transactionId: payment.transaction_id,
       },
     });
     
@@ -98,5 +123,10 @@ export class PaymentService {
     }
 
     return this.paymentRepository.updatePaymentStatus(id, status, transactionId);
+  }
+
+  async getPaymentsByUser(userId: string): Promise<Payment[]> {
+    this.logger.log(`Fetching payments for user ${userId}`, 'PaymentService');
+    return this.paymentRepository.getPaymentsByUser(userId);
   }
 }

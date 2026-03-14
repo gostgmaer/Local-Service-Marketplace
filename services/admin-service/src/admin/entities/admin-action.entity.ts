@@ -1,9 +1,9 @@
 export class AdminAction {
   id: string;
-  adminId: string;
+  admin_id: string;
   action: string;
-  targetType: string;
-  targetId: string;
+  target_type: string;
+  target_id: string;
   reason: string;
-  createdAt: Date;
+  created_at: Date;
 }

@@ -58,7 +58,7 @@ export default function JobDetailPage() {
                   Job #{job.id.slice(0, 8)}
                 </h1>
                 <p className="text-sm text-gray-500 mt-2">
-                  Created {formatDate(job.createdAt)}
+                  Created {formatDate(job.created_at)}
                 </p>
               </div>
               <StatusBadge status={job.status} />
@@ -82,31 +82,21 @@ export default function JobDetailPage() {
                   {job.customer?.name || 'Customer'}
                 </p>
               </div>
-              {job.scheduledAt && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                    Scheduled For
-                  </h3>
-                  <p className="text-gray-900">
-                    {formatDateTime(job.scheduledAt)}
-                  </p>
-                </div>
-              )}
-              {job.startedAt && (
+              {job.started_at && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">
                     Started At
                   </h3>
-                  <p className="text-gray-900">{formatDateTime(job.startedAt)}</p>
+                  <p className="text-gray-900">{formatDateTime(job.started_at)}</p>
                 </div>
               )}
-              {job.completedAt && (
+              {job.completed_at && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">
                     Completed At
                   </h3>
                   <p className="text-gray-900">
-                    {formatDateTime(job.completedAt)}
+                    {formatDateTime(job.completed_at)}
                   </p>
                 </div>
               )}

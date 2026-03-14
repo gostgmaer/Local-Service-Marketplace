@@ -3,9 +3,11 @@ import { apiClient } from './api-client';
 export interface SignupData {
   email: string;
   password: string;
-  name: string;
-  role: 'customer' | 'provider';
+  name?: string;
+  role: 'customer' | 'provider' | 'admin';
   phone?: string;
+  timezone?: string;
+  language?: string;
 }
 
 export interface LoginData {
@@ -14,14 +16,19 @@ export interface LoginData {
 }
 
 export interface AuthResponse {
-  access_token: string;
-  refresh_token?: string;
+  accessToken: string;
+  refreshToken: string;
   user: {
     id: string;
     email: string;
-    name: string;
+    name?: string;
     role: string;
-    emailVerified: boolean;
+    email_verified: boolean;
+    profile_picture_url?: string;
+    timezone?: string;
+    language?: string;
+    phone_verified?: boolean;
+    last_login_at?: string;
   };
 }
 
@@ -36,35 +43,43 @@ export interface PasswordResetConfirm {
 
 class AuthService {
   async signup(data: SignupData): Promise<AuthResponse> {
-    return apiClient.post<AuthResponse>('/auth/signup', data);
+    const response = await apiClient.post<AuthResponse>('/auth/signup', data);
+    return response.data;
   }
 
   async login(data: LoginData): Promise<AuthResponse> {
-    return apiClient.post<AuthResponse>('/auth/login', data);
+    const response = await apiClient.post<AuthResponse>('/auth/login', data);
+    return response.data;
   }
 
   async logout(): Promise<void> {
-    return apiClient.post<void>('/auth/logout');
+    const response = await apiClient.post<void>('/auth/logout');
+    return response.data;
   }
 
   async getProfile(): Promise<AuthResponse['user']> {
-    return apiClient.get<AuthResponse['user']>('/auth/profile');
+    const response = await apiClient.get<AuthResponse['user']>('/auth/profile');
+    return response.data;
   }
 
   async requestPasswordReset(data: PasswordResetRequest): Promise<void> {
-    return apiClient.post<void>('/auth/password-reset/request', data);
+    const response = await apiClient.post<void>('/auth/password-reset/request', data);
+    return response.data;
   }
 
   async confirmPasswordReset(data: PasswordResetConfirm): Promise<void> {
-    return apiClient.post<void>('/auth/password-reset/confirm', data);
+    const response = await apiClient.post<void>('/auth/password-reset/confirm', data);
+    return response.data;
   }
 
   async verifyEmail(token: string): Promise<void> {
-    return apiClient.post<void>('/auth/verify-email', { token });
+    const response = await apiClient.post<void>('/auth/verify-email', { token });
+    return response.data;
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
-    return apiClient.post<AuthResponse>('/auth/refresh', { refreshToken });
+    const response = await apiClient.post<AuthResponse>('/auth/refresh', { refreshToken });
+    return response.data;
   }
 
   setToken(token: string): void {

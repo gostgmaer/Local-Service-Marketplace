@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { GatewayService } from '../services/gateway.service';
 
-@Controller()
+@Controller('api/v1')
 export class GatewayController {
   constructor(
     private readonly gatewayService: GatewayService,

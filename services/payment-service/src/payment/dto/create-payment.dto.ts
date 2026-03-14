@@ -1,17 +1,27 @@
-import { IsUUID, IsNumber, IsString, IsOptional, Min } from 'class-validator';
+import { IsUUID, IsNumber, IsString, IsOptional, Min, IsEnum } from 'class-validator';
 
 export class CreatePaymentDto {
   @IsUUID()
-  jobId: string;
+  job_id: string;
+
+  @IsUUID()
+  user_id: string;
+
+  @IsUUID()
+  provider_id: string;
 
   @IsNumber()
   @Min(0.01)
   amount: number;
 
-  @IsString()
+  @IsEnum(['USD', 'EUR', 'GBP', 'INR'])
   currency: string;
 
   @IsOptional()
+  @IsEnum(['card', 'bank_transfer', 'wallet', 'cash'])
+  payment_method?: 'card' | 'bank_transfer' | 'wallet' | 'cash';
+
+  @IsOptional()
   @IsString()
-  couponCode?: string;
+  coupon_code?: string;
 }

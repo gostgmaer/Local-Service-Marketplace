@@ -1,8 +1,8 @@
 export class UserActivityLog {
   id: string;
-  userId: string;
+  user_id: string;
   action: string;
   metadata: any;
-  ipAddress: string;
-  createdAt: Date;
+  ip_address: string;
+  created_at: Date;
 }

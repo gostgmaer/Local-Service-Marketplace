@@ -3,36 +3,46 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Configure npm for slower networks
-RUN npm config set fetch-timeout 600000 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000
+# Copy package files
+COPY package*.json pnpm-lock.yaml* ./
+
+# Configure pnpm for slow/unreliable networks
+RUN pnpm config set network-timeout 600000 && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000
 
 # Install dependencies
-RUN npm install
+RUN pnpm install
 
 # Copy source code
 COPY . .
 
 # Build application
-RUN npm run build
-
-# Remove dev dependencies (only keep production deps for final image)
-RUN npm prune --production
+RUN pnpm run build
 
 # Stage 2: Production
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files (for reference / npm scripts)
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Copy production node_modules from builder (avoids a second network fetch)
-COPY --from=builder /app/node_modules ./node_modules
+# Copy package files
+COPY package*.json pnpm-lock.yaml* ./
+
+# Configure pnpm for slow/unreliable networks
+RUN pnpm config set network-timeout 600000 && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000
+
+# Install production dependencies only
+RUN pnpm install --prod
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
@@ -53,4 +63,4 @@ USER nestjs
 EXPOSE 3000
 
 # Start application
-CMD ["node", "dist/src/main"]
+CMD ["node", "dist/src/main.js"]

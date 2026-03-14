@@ -3,4 +3,5 @@ export class EmailVerificationToken {
   user_id: string;
   token: string;
   expires_at: Date;
+  created_at: Date;
 }

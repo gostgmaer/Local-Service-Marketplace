@@ -1,10 +1,10 @@
 export class Notification {
   id: string;
-  userId: string;
+  user_id: string;
   type: string;
   message: string;
   read: boolean;
-  createdAt: Date;
+  created_at: Date;
 
   constructor(partial: Partial<Notification>) {
     Object.assign(this, partial);

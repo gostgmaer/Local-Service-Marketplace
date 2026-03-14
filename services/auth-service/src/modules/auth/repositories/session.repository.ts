@@ -13,10 +13,15 @@ export class SessionRepository {
     expiresAt: Date,
     ipAddress?: string,
     userAgent?: string,
+    deviceType?: string,        // ✅ NEW
+    location?: string,          // ✅ NEW
   ): Promise<Session> {
     const query = `
-      INSERT INTO sessions (user_id, refresh_token, expires_at, ip_address, user_agent)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO sessions (
+        user_id, refresh_token, expires_at, ip_address, 
+        user_agent, device_type, location
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
     const result = await this.pool.query(query, [
@@ -25,6 +30,8 @@ export class SessionRepository {
       expiresAt,
       ipAddress,
       userAgent,
+      deviceType,               // ✅ NEW
+      location,                 // ✅ NEW
     ]);
     return result.rows[0];
   }
@@ -54,5 +61,47 @@ export class SessionRepository {
   async deleteExpired(): Promise<void> {
     const query = 'DELETE FROM sessions WHERE expires_at < NOW()';
     await this.pool.query(query);
+  }
+
+  // ✅ NEW: Advanced query methods
+  async getSessionsByDeviceType(
+    userId: string, 
+    deviceType: string
+  ): Promise<Session[]> {
+    const query = `
+      SELECT * FROM sessions
+      WHERE user_id = $1 
+        AND device_type = $2
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+    `;
+    const result = await this.pool.query(query, [userId, deviceType]);
+    return result.rows;
+  }
+
+  async getSessionsByLocation(
+    userId: string, 
+    location: string
+  ): Promise<Session[]> {
+    const query = `
+      SELECT * FROM sessions
+      WHERE user_id = $1 
+        AND location = $2
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+    `;
+    const result = await this.pool.query(query, [userId, location]);
+    return result.rows;
+  }
+
+  async getActiveSessions(userId: string): Promise<Session[]> {
+    const query = `
+      SELECT * FROM sessions
+      WHERE user_id = $1 
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+    `;
+    const result = await this.pool.query(query, [userId]);
+    return result.rows;
   }
 }

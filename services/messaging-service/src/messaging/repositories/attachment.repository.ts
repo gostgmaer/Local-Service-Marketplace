@@ -8,23 +8,28 @@ export class AttachmentRepository {
   constructor(@Inject('DATABASE_POOL') private pool: Pool) {}
 
   async createAttachment(
-    entityType: string,
-    entityId: string,
+    messageId: string,
     fileUrl: string,
+    fileName?: string,
+    fileSize?: number,
+    mimeType?: string,
   ): Promise<Attachment> {
     const id = uuidv4();
     const query = `
-      INSERT INTO attachments (id, entity_type, entity_id, file_url)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO attachments (id, message_id, file_url, file_name, file_size, mime_type, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
       RETURNING *
     `;
-    const values = [id, entityType, entityId, fileUrl];
+    const values = [id, messageId, fileUrl, fileName, fileSize, mimeType];
     const result = await this.pool.query(query, values);
     return new Attachment({
       id: result.rows[0].id,
-      entityType: result.rows[0].entity_type,
-      entityId: result.rows[0].entity_id,
-      fileUrl: result.rows[0].file_url,
+      message_id: result.rows[0].message_id,
+      file_url: result.rows[0].file_url,
+      file_name: result.rows[0].file_name,
+      file_size: result.rows[0].file_size,
+      mime_type: result.rows[0].mime_type,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -36,22 +41,28 @@ export class AttachmentRepository {
     }
     return new Attachment({
       id: result.rows[0].id,
-      entityType: result.rows[0].entity_type,
-      entityId: result.rows[0].entity_id,
-      fileUrl: result.rows[0].file_url,
+      message_id: result.rows[0].message_id,
+      file_url: result.rows[0].file_url,
+      file_name: result.rows[0].file_name,
+      file_size: result.rows[0].file_size,
+      mime_type: result.rows[0].mime_type,
+      created_at: result.rows[0].created_at,
     });
   }
 
-  async getAttachmentsByEntity(entityType: string, entityId: string): Promise<Attachment[]> {
-    const query = 'SELECT * FROM attachments WHERE entity_type = $1 AND entity_id = $2';
-    const result = await this.pool.query(query, [entityType, entityId]);
+  async getAttachmentsByMessageId(messageId: string): Promise<Attachment[]> {
+    const query = 'SELECT * FROM attachments WHERE message_id = $1';
+    const result = await this.pool.query(query, [messageId]);
     return result.rows.map(
       (row) =>
         new Attachment({
           id: row.id,
-          entityType: row.entity_type,
-          entityId: row.entity_id,
-          fileUrl: row.file_url,
+          message_id: row.message_id,
+          file_url: row.file_url,
+          file_name: row.file_name,
+          file_size: row.file_size,
+          mime_type: row.mime_type,
+          created_at: row.created_at,
         }),
     );
   }

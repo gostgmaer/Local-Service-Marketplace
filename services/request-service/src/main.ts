@@ -31,8 +31,7 @@ async function bootstrap() {
   const logger = app.get('winston');
   app.useGlobalFilters(new HttpExceptionFilter(logger));
 
-  // Enable CORS
-  app.enableCors();
+  // CORS is handled by API Gateway - not needed in internal services
 
   await app.listen(port);
   console.log(`🚀 ${serviceName} running on port ${port}`);

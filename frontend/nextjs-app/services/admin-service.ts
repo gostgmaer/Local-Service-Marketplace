@@ -6,97 +6,107 @@ export interface User {
   name: string;
   role: string;
   status: 'active' | 'suspended' | 'deleted';
-  createdAt: string;
+  created_at: string;
 }
 
 export interface Dispute {
   id: string;
-  jobId: string;
-  reporterId: string;
+  job_id: string;
+  opened_by: string;
   reason: string;
   status: 'open' | 'investigating' | 'resolved' | 'closed';
   resolution?: string;
-  createdAt: string;
-  updatedAt: string;
+  resolved_by?: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface AuditLog {
   id: string;
-  userId: string;
+  user_id?: string;
   action: string;
-  entityType: string;
-  entityId: string;
+  entity: string;
+  entity_id: string;
   metadata?: any;
-  createdAt: string;
+  created_at: string;
 }
 
 class AdminService {
   async getUsers(params?: {
-    page?: number;
+    cursor?: string;
     limit?: number;
     status?: string;
   }): Promise<User[]> {
     const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.cursor) searchParams.append('cursor', params.cursor);
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.status) searchParams.append('status', params.status);
 
-    return apiClient.get<User[]>(`/admin/users?${searchParams.toString()}`);
+    const response = await apiClient.get<User[]>(`/admin/users?${searchParams.toString()}`);
+    return response.data;
   }
 
   async getUserById(id: string): Promise<User> {
-    return apiClient.get<User>(`/admin/users/${id}`);
+    const response = await apiClient.get<User>(`/admin/users/${id}`);
+    return response.data;
   }
 
   async suspendUser(id: string, reason: string): Promise<User> {
-    return apiClient.patch<User>(`/admin/users/${id}/suspend`, { reason });
+    const response = await apiClient.patch<User>(`/admin/users/${id}/suspend`, { reason });
+    return response.data;
   }
 
   async activateUser(id: string): Promise<User> {
-    return apiClient.patch<User>(`/admin/users/${id}/activate`, {});
+    const response = await apiClient.patch<User>(`/admin/users/${id}/activate`, {});
+    return response.data;
   }
 
   async getDisputes(params?: {
     status?: string;
-    page?: number;
+    cursor?: string;
     limit?: number;
   }): Promise<Dispute[]> {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
-    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.cursor) searchParams.append('cursor', params.cursor);
     if (params?.limit) searchParams.append('limit', params.limit.toString());
 
-    return apiClient.get<Dispute[]>(
+    const response = await apiClient.get<Dispute[]>(
       `/admin/disputes?${searchParams.toString()}`,
     );
+    return response.data;
   }
 
   async updateDispute(
     id: string,
     data: { status: string; resolution?: string },
   ): Promise<Dispute> {
-    return apiClient.patch<Dispute>(`/admin/disputes/${id}`, data);
+    const response = await apiClient.patch<Dispute>(`/admin/disputes/${id}`, data);
+    return response.data;
   }
 
   async getAuditLogs(params?: {
-    userId?: string;
+    user_id?: string;
     action?: string;
-    page?: number;
+    cursor?: string;
     limit?: number;
   }): Promise<AuditLog[]> {
     const searchParams = new URLSearchParams();
-    if (params?.userId) searchParams.append('userId', params.userId);
+    if (params?.user_id) searchParams.append('user_id', params.user_id);
     if (params?.action) searchParams.append('action', params.action);
-    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.cursor) searchParams.append('cursor', params.cursor);
     if (params?.limit) searchParams.append('limit', params.limit.toString());
 
-    return apiClient.get<AuditLog[]>(
+    const response = await apiClient.get<AuditLog[]>(
       `/admin/audit-logs?${searchParams.toString()}`,
     );
+    return response.data;
   }
 
   async getSystemStats(): Promise<any> {
-    return apiClient.get<any>('/admin/stats');
+    const response = await apiClient.get<any>('/admin/stats');
+    return response.data;
   }
 }
 

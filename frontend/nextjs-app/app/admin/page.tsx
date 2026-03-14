@@ -64,7 +64,7 @@ export default function AdminPage() {
                         <p className="font-medium text-gray-900">{user.name}</p>
                         <p className="text-sm text-gray-600">{user.email}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Joined {formatDate(user.createdAt)}
+                          Joined {formatDate(user.created_at)}
                         </p>
                       </div>
                       <StatusBadge status={user.status} />
@@ -94,13 +94,13 @@ export default function AdminPage() {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <p className="text-sm font-medium text-gray-900">
-                          Job #{dispute.jobId.slice(0, 8)}
+                          Job #{dispute.job_id.slice(0, 8)}
                         </p>
                         <StatusBadge status={dispute.status} />
                       </div>
                       <p className="text-sm text-gray-600">{dispute.reason}</p>
                       <p className="text-xs text-gray-500 mt-2">
-                        {formatDate(dispute.createdAt)}
+                        {formatDate(dispute.created_at)}
                       </p>
                     </div>
                   ))}

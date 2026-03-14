@@ -1,9 +1,10 @@
 export class Refund {
   id: string;
-  paymentId: string;
+  payment_id: string;
   amount: number;
   status: 'pending' | 'completed' | 'failed';
-  createdAt: Date;
+  reason?: string;
+  created_at: Date;
 
   constructor(partial: Partial<Refund>) {
     Object.assign(this, partial);

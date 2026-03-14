@@ -4,6 +4,8 @@ import { ReviewRepository } from '../repositories/review.repository';
 import { CreateReviewDto } from '../dto/create-review.dto';
 import { Review } from '../entities/review.entity';
 import { NotFoundException } from '../../common/exceptions/http.exceptions';
+import { NotificationClient } from '../../common/notification/notification.client';
+import { UserClient } from '../../common/user/user.client';
 
 @Injectable()
 export class ReviewService {
@@ -11,11 +13,13 @@ export class ReviewService {
     private readonly reviewRepository: ReviewRepository,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
   ) {}
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
     this.logger.log(
-      `Creating review for provider ${createReviewDto.providerId}`,
+      `Creating review for provider ${createReviewDto.provider_id}`,
       'ReviewService',
     );
 
@@ -25,6 +29,26 @@ export class ReviewService {
       `Review created successfully with ID ${review.id}`,
       'ReviewService',
     );
+
+    // Notify provider about new review
+    const providerEmail = await this.userClient.getProviderEmail(createReviewDto.provider_id);
+    if (providerEmail) {
+      this.notificationClient.sendEmail({
+        to: providerEmail,
+        template: 'newRequest',
+        variables: {
+          serviceName: 'New Review Received',
+          message: `You received a ${review.rating}-star review: ${review.comment || 'No comment provided'}`,
+          reviewUrl: `${process.env.FRONTEND_URL}/reviews/${review.id}`,
+        },
+      }).catch(err => {
+        this.logger.error(
+          `Failed to send review notification: ${err.message}`,
+          err.stack,
+          'ReviewService',
+        );
+      });
+    }
 
     return review;
   }

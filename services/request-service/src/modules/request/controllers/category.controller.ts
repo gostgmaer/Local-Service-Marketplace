@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { CategoryService } from '../services/category.service';
 import { ServiceCategory } from '../entities/service-category.entity';
 
@@ -8,7 +8,14 @@ export class CategoryController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getAllCategories(): Promise<ServiceCategory[]> {
+  async getAllCategories(
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+  ): Promise<ServiceCategory[]> {
+    if (search) {
+      const limitNum = limit ? parseInt(limit, 10) : 10;
+      return this.categoryService.searchCategories(search, limitNum);
+    }
     return this.categoryService.getAllCategories();
   }
 

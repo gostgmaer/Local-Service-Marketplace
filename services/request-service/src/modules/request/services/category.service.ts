@@ -79,4 +79,17 @@ export class CategoryService {
 
     return category;
   }
+
+  async categoryExists(id: string): Promise<boolean> {
+    return this.categoryRepository.categoryExists(id);
+  }
+
+  async searchCategories(searchTerm: string, limit: number = 10): Promise<ServiceCategory[]> {
+    this.logger.log(`Searching categories: ${searchTerm}`, CategoryService.name);
+
+    // Skip cache for search - always get fresh results
+    const categories = await this.categoryRepository.searchCategories(searchTerm, limit);
+
+    return categories;
+  }
 }

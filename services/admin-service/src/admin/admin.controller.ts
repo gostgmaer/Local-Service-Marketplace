@@ -2,20 +2,28 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
+  Delete,
   Body,
   Param,
   Query,
   Headers,
   ParseIntPipe,
   DefaultValuePipe,
+  Ip,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { UserModerationService } from './services/user-moderation.service';
 import { DisputeService } from './services/dispute.service';
 import { AuditLogService } from './services/audit-log.service';
 import { SystemSettingService } from './services/system-setting.service';
+import { ContactMessageService } from './services/contact-message.service';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { UpdateDisputeDto } from './dto/update-dispute.dto';
 import { UpdateSystemSettingDto } from './dto/update-system-setting.dto';
+import { CreateContactMessageDto } from './dto/create-contact-message.dto';
+import { UpdateContactMessageDto } from './dto/update-contact-message.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -24,6 +32,7 @@ export class AdminController {
     private readonly disputeService: DisputeService,
     private readonly auditLogService: AuditLogService,
     private readonly systemSettingService: SystemSettingService,
+    private readonly contactMessageService: ContactMessageService,
   ) {}
 
   // User Moderation Endpoints
@@ -135,5 +144,70 @@ export class AdminController {
       updateSettingDto.value,
       adminId,
     );
+  }
+
+  // Contact Message Endpoints
+  @Post('contact')
+  async createContactMessage(
+    @Body() createContactMessageDto: CreateContactMessageDto,
+    @Ip() ip: string,
+    @Req() req: Request,
+  ) {
+    // Add IP address and user agent to the DTO
+    createContactMessageDto.ip_address = ip;
+    createContactMessageDto.user_agent = req.get('user-agent');
+    
+    return this.contactMessageService.createContactMessage(
+      createContactMessageDto,
+    );
+  }
+
+  @Get('contact')
+  async getContactMessages(
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+    @Query('status') status?: string,
+  ) {
+    return this.contactMessageService.getAllContactMessages(
+      limit,
+      offset,
+      status,
+    );
+  }
+
+  @Get('contact/:id')
+  async getContactMessageById(@Param('id') id: string) {
+    return this.contactMessageService.getContactMessageById(id);
+  }
+
+  @Get('contact/email/:email')
+  async getContactMessagesByEmail(@Param('email') email: string) {
+    return this.contactMessageService.getContactMessagesByEmail(email);
+  }
+
+  @Get('contact/user/:userId')
+  async getContactMessagesByUserId(@Param('userId') userId: string) {
+    return this.contactMessageService.getContactMessagesByUserId(userId);
+  }
+
+  @Patch('contact/:id')
+  async updateContactMessage(
+    @Param('id') id: string,
+    @Body() updateContactMessageDto: UpdateContactMessageDto,
+    @Headers('x-admin-id') adminId: string,
+  ) {
+    return this.contactMessageService.updateContactMessage(
+      id,
+      updateContactMessageDto,
+      adminId,
+    );
+  }
+
+  @Delete('contact/:id')
+  async deleteContactMessage(
+    @Param('id') id: string,
+    @Headers('x-admin-id') adminId: string,
+  ) {
+    return this.contactMessageService.deleteContactMessage(id, adminId);
   }
 }

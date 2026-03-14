@@ -11,9 +11,21 @@ export class AttachmentService {
     private readonly attachmentRepository: AttachmentRepository,
   ) {}
 
-  async createAttachment(entityType: string, entityId: string, fileUrl: string): Promise<Attachment> {
-    this.logger.log(`Creating attachment for ${entityType} ${entityId}`, 'AttachmentService');
-    const attachment = await this.attachmentRepository.createAttachment(entityType, entityId, fileUrl);
+  async createAttachment(
+    messageId: string,
+    fileUrl: string,
+    fileName?: string,
+    fileSize?: number,
+    mimeType?: string,
+  ): Promise<Attachment> {
+    this.logger.log(`Creating attachment for message ${messageId}`, 'AttachmentService');
+    const attachment = await this.attachmentRepository.createAttachment(
+      messageId,
+      fileUrl,
+      fileName,
+      fileSize,
+      mimeType,
+    );
     this.logger.log(`Attachment created successfully: ${attachment.id}`, 'AttachmentService');
     return attachment;
   }
@@ -27,9 +39,9 @@ export class AttachmentService {
     return attachment;
   }
 
-  async getAttachmentsByEntity(entityType: string, entityId: string): Promise<Attachment[]> {
-    this.logger.log(`Fetching attachments for ${entityType} ${entityId}`, 'AttachmentService');
-    return this.attachmentRepository.getAttachmentsByEntity(entityType, entityId);
+  async getAttachmentsByMessageId(messageId: string): Promise<Attachment[]> {
+    this.logger.log(`Fetching attachments for message ${messageId}`, 'AttachmentService');
+    return this.attachmentRepository.getAttachmentsByMessageId(messageId);
   }
 
   async deleteAttachment(id: string): Promise<void> {

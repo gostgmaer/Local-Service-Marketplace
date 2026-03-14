@@ -2,6 +2,7 @@ import { Injectable, Inject, LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { RequestRepository } from '../repositories/request.repository';
 import { CategoryRepository } from '../repositories/category.repository';
+import { LocationRepository } from '../repositories/location.repository';
 import { CreateRequestDto } from '../dto/create-request.dto';
 import { UpdateRequestDto } from '../dto/update-request.dto';
 import { RequestQueryDto } from '../dto/request-query.dto';
@@ -9,6 +10,8 @@ import { RequestResponseDto, PaginatedRequestResponseDto } from '../dto/request-
 import { NotFoundException, BadRequestException } from '../../../common/exceptions/http.exceptions';
 import { KafkaService } from '../../../kafka/kafka.service';
 import { RedisService } from '../../../redis/redis.service';
+import { NotificationClient } from '../../../common/notification/notification.client';
+import { UserClient } from '../../../common/user/user.client';
 
 @Injectable()
 export class RequestService {
@@ -17,8 +20,11 @@ export class RequestService {
   constructor(
     private readonly requestRepository: RequestRepository,
     private readonly categoryRepository: CategoryRepository,
+    private readonly locationRepository: LocationRepository,
     private readonly kafkaService: KafkaService,
     private readonly redisService: RedisService,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
@@ -36,9 +42,46 @@ export class RequestService {
       throw new BadRequestException('Budget must be a positive number');
     }
 
-    const request = await this.requestRepository.createRequest(dto);
+    // Create location if provided
+    let location_id: string | undefined;
+    if (dto.location) {
+      this.logger.log('Creating location for request', RequestService.name);
+      const location = await this.locationRepository.createLocation({
+        user_id: dto.user_id,
+        latitude: dto.location.lat,
+        longitude: dto.location.lng,
+        address: dto.location.address,
+        city: dto.location.city,
+        state: dto.location.state,
+        zip_code: dto.location.zipCode,
+        country: dto.location.country,
+      });
+      location_id = location.id;
+    }
+
+    const request = await this.requestRepository.createRequest({
+      ...dto,
+      location_id,
+    } as any);
 
     this.logger.log(`Request created successfully: ${request.id}`, RequestService.name);
+
+    // Send notification to user
+    const userEmail = await this.userClient.getUserEmail(request.user_id);
+    if (userEmail) {
+      this.notificationClient.sendEmail({
+        to: userEmail,
+        template: 'newRequest',
+        variables: {
+          serviceName: dto.description?.substring(0, 50) || 'Service Request',
+          requestId: request.id,
+          budget: request.budget,
+          requestUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${request.id}`,
+        },
+      }).catch(err => {
+        this.logger.warn(`Failed to send request creation notification: ${err.message}`, RequestService.name);
+      });
+    }
 
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent('request-events', {
@@ -128,6 +171,22 @@ export class RequestService {
     const updatedRequest = await this.requestRepository.updateRequest(id, dto);
 
     this.logger.log(`Request updated successfully: ${id}`, RequestService.name);
+
+    // Send notification to user about update
+    const userEmail = await this.userClient.getUserEmail(updatedRequest.user_id);
+    if (userEmail && dto.status) {
+      this.notificationClient.sendEmail({
+        to: userEmail,
+        template: 'newRequest',
+        variables: {
+          serviceName: 'Request Update',
+          message: `Your request has been updated. Status: ${dto.status}`,
+          requestUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${id}`,
+        },
+      }).catch(err => {
+        this.logger.warn(`Failed to send request update notification: ${err.message}`, RequestService.name);
+      });
+    }
 
     // Invalidate cache
     if (this.redisService.isCacheEnabled()) {

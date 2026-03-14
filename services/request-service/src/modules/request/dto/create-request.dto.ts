@@ -1,4 +1,33 @@
-import { IsString, IsNumber, IsUUID, IsOptional, MinLength, Min } from 'class-validator';
+import { IsString, IsNumber, IsUUID, IsOptional, MinLength, Min, IsObject, ValidateNested, IsArray, IsEnum, IsDateString, ArrayMaxSize, IsUrl } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class LocationDto {
+  @IsNumber()
+  lat: number;
+
+  @IsNumber()
+  lng: number;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  zipCode?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+}
 
 export class CreateRequestDto {
   @IsUUID()
@@ -8,8 +37,10 @@ export class CreateRequestDto {
   category_id: string;
 
   @IsOptional()
-  @IsUUID()
-  location_id?: string;
+  @IsObject()
+  @ValidateNested()
+  @Type(() => LocationDto)
+  location?: LocationDto;
 
   @IsString()
   @MinLength(10)
@@ -18,4 +49,22 @@ export class CreateRequestDto {
   @IsNumber()
   @Min(0)
   budget: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsUrl({}, { each: true })
+  images?: string[];
+
+  @IsOptional()
+  @IsDateString()
+  preferred_date?: string;
+
+  @IsOptional()
+  @IsEnum(['low', 'medium', 'high', 'urgent'])
+  urgency?: 'low' | 'medium' | 'high' | 'urgent';
+
+  @IsOptional()
+  @IsDateString()
+  expiry_date?: string;
 }

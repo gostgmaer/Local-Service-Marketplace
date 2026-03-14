@@ -92,7 +92,7 @@ export default function NotificationsPage() {
                           {notification.message}
                         </p>
                         <p className="text-xs text-gray-500 mt-2">
-                          {formatRelativeTime(notification.createdAt)}
+                          {formatRelativeTime(notification.created_at)}
                         </p>
                       </div>
                       {!notification.read && (

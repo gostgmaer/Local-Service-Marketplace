@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Query, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
 import { JobService } from '../services/job.service';
 import { CreateJobDto } from '../dto/create-job.dto';
 import { UpdateJobStatusDto } from '../dto/update-job-status.dto';
@@ -12,6 +12,18 @@ export class JobController {
   @HttpCode(HttpStatus.CREATED)
   async createJob(@Body() createJobDto: CreateJobDto): Promise<JobResponseDto> {
     return this.jobService.createJob(createJobDto);
+  }
+
+  @Get('my')
+  @HttpCode(HttpStatus.OK)
+  async getMyJobs(@Query('user_id', ParseUUIDPipe) userId: string): Promise<JobResponseDto[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    // Get jobs where user is either customer or provider
+    const customerJobs = await this.jobService.getJobsByCustomer(userId);
+    const providerJobs = await this.jobService.getJobsByProviderUser(userId);
+    return [...customerJobs, ...providerJobs];
   }
 
   @Get(':id')
@@ -37,7 +49,7 @@ export class JobController {
 
   @Get('provider/:providerId')
   @HttpCode(HttpStatus.OK)
-  async getJobsByProvider(@Param('providerId') providerId: string): Promise<JobResponseDto[]> {
+  async getJobsByProvider(@Param('providerId', ParseUUIDPipe) providerId: string): Promise<JobResponseDto[]> {
     return this.jobService.getJobsByProvider(providerId);
   }
 

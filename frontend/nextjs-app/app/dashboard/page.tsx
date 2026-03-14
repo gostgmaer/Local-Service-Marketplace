@@ -13,6 +13,7 @@ import { requestService } from '@/services/request-service';
 import { jobService } from '@/services/job-service';
 import { notificationService } from '@/services/notification-service';
 import { formatDate, formatCurrency } from '@/utils/helpers';
+import { analytics } from '@/utils/analytics';
 import Link from 'next/link';
 import { Plus, Briefcase, FileText, Bell } from 'lucide-react';
 
@@ -48,25 +49,34 @@ export default function DashboardPage() {
     return <Loading />;
   }
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      analytics.pageview({
+        path: '/dashboard',
+        title: 'Dashboard',
+      });
+    }
+  }, [isAuthenticated]);
+
   if (!isAuthenticated) {
     return null;
   }
 
   return (
     <Layout>
-      <div className="container-custom py-8">
+      <div className="container-custom py-12">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.name}!
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-3">
+            Welcome back, {user?.email}!
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
             Here's what's happening with your services
           </p>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <Card hover>
             <CardContent className="flex items-center justify-between">
               <div>
@@ -113,7 +123,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Recent Requests
                 </h2>
                 <Link href="/requests/create">
@@ -133,20 +143,20 @@ export default function DashboardPage() {
                     <Link
                       key={request.id}
                       href={`/requests/${request.id}`}
-                      className="block p-4 border rounded-md hover:bg-gray-50"
+                      className="block p-4 border dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
-                            {request.title}
+                          <h3 className="font-medium text-gray-900 dark:text-white">
+                            Request #{request.id.substring(0, 8)}
                           </h3>
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                             {request.description}
                           </p>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                             <span>{formatCurrency(request.budget)}</span>
                             <span>•</span>
-                            <span>{formatDate(request.createdAt)}</span>
+                            <span>{formatDate(request.created_at)}</span>
                           </div>
                         </div>
                         <StatusBadge status={request.status} />
@@ -155,7 +165,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <p>No requests yet</p>
                   <Link href="/requests/create">
                     <Button variant="outline" size="sm" className="mt-4">
@@ -171,7 +181,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Active Jobs
                 </h2>
                 <Link href="/jobs">
@@ -190,18 +200,18 @@ export default function DashboardPage() {
                     <Link
                       key={job.id}
                       href={`/jobs/${job.id}`}
-                      className="block p-4 border rounded-md hover:bg-gray-50"
+                      className="block p-4 border dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
+                          <h3 className="font-medium text-gray-900 dark:text-white">
                             Job #{job.id.slice(0, 8)}
                           </h3>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {job.provider?.name || 'Provider'}
                           </p>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                            <span>{formatDate(job.createdAt)}</span>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span>{formatDate(job.created_at)}</span>
                           </div>
                         </div>
                         <StatusBadge status={job.status} />
@@ -210,7 +220,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <p>No active jobs</p>
                 </div>
               )}
@@ -222,7 +232,7 @@ export default function DashboardPage() {
         <Card className="mt-8">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Recent Notifications
               </h2>
               <Link href="/notifications">
@@ -241,17 +251,17 @@ export default function DashboardPage() {
                   <div
                     key={notification.id}
                     className={`p-3 rounded-md ${
-                      notification.read ? 'bg-gray-50' : 'bg-blue-50'
+                      notification.read ? 'bg-gray-50 dark:bg-gray-700' : 'bg-blue-50 dark:bg-blue-900/20'
                     }`}
                   >
-                    <h4 className="font-medium text-gray-900">
+                    <h4 className="font-medium text-gray-900 dark:text-white">
                       {notification.title}
                     </h4>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {formatDate(notification.createdAt)}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {formatDate(notification.created_at)}
                     </p>
                   </div>
                 ))}

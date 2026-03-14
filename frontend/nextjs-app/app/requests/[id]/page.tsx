@@ -7,12 +7,13 @@ import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { StatusBadge } from '@/components/ui/Badge';
+import LocationMap from '@/components/ui/LocationMap';
 import { requestService } from '@/services/request-service';
 import { proposalService } from '@/services/proposal-service';
 import { formatDate, formatCurrency, formatRelativeTime } from '@/utils/helpers';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RequestDetailPage() {
@@ -76,7 +77,7 @@ export default function RequestDetailPage() {
     );
   }
 
-  const isOwner = user?.id === request.customerId;
+  const isOwner = user?.id === request.customer_id;
 
   return (
     <Layout>
@@ -96,10 +97,10 @@ export default function RequestDetailPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">
-                      {request.title}
+                      Service Request #{request.id.slice(0, 8)}
                     </h1>
                     <p className="text-sm text-gray-500 mt-2">
-                      Posted {formatRelativeTime(request.createdAt)}
+                      Posted {formatRelativeTime(request.created_at)}
                     </p>
                   </div>
                   <StatusBadge status={request.status} />
@@ -115,6 +116,37 @@ export default function RequestDetailPage() {
                       {request.description}
                     </p>
                   </div>
+
+                  {/* Service Location */}
+                  {request.location && request.location.latitude && request.location.longitude && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-primary-600" />
+                        Service Location
+                      </h3>
+                      {request.location.address && (
+                        <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-900">
+                            {request.location.address}
+                          </p>
+                          {(request.location.city || request.location.state || request.location.zip_code) && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              {[request.location.city, request.location.state, request.location.zip_code]
+                                .filter(Boolean)
+                                .join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      <LocationMap
+                        latitude={request.location.latitude}
+                        longitude={request.location.longitude}
+                        address={request.location.address}
+                        height="300px"
+                        zoom={15}
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div>
@@ -164,24 +196,28 @@ export default function RequestDetailPage() {
                               {proposal.provider?.name || 'Provider'}
                             </h4>
                             <p className="text-sm text-gray-500">
-                              {formatRelativeTime(proposal.createdAt)}
+                              {formatRelativeTime(proposal.created_at)}
                             </p>
                           </div>
                           <StatusBadge status={proposal.status} />
                         </div>
 
                         <p className="text-gray-700 mb-3">
-                          {proposal.description}
+                          {proposal.message}
                         </p>
 
                         <div className="flex items-center gap-4 mb-3 text-sm">
                           <span className="font-medium text-gray-900">
                             Price: {formatCurrency(proposal.price)}
                           </span>
-                          <span>•</span>
-                          <span className="text-gray-600">
-                            Duration: {proposal.estimatedDuration}
-                          </span>
+                          {proposal.estimated_hours && (
+                            <>
+                              <span>•</span>
+                              <span className="text-gray-600">
+                                Duration: {proposal.estimated_hours} hours
+                              </span>
+                            </>
+                          )}
                         </div>
 
                         {isOwner && proposal.status === 'pending' && (
@@ -234,13 +270,13 @@ export default function RequestDetailPage() {
                   <div>
                     <p className="text-gray-500">Created</p>
                     <p className="font-medium text-gray-900">
-                      {formatDate(request.createdAt)}
+                      {formatDate(request.created_at)}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500">Last Updated</p>
                     <p className="font-medium text-gray-900">
-                      {formatDate(request.updatedAt)}
+                      {formatDate(request.updated_at)}
                     </p>
                   </div>
                 </div>

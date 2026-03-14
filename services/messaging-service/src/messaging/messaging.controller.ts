@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Query, Inject, LoggerService, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, Inject, LoggerService, ParseIntPipe, ParseUUIDPipe } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { MessageService } from './services/message.service';
 import { AttachmentService } from './services/attachment.service';
@@ -17,8 +17,8 @@ export class MessagingController {
   async createMessage(@Body() createMessageDto: CreateMessageDto) {
     this.logger.log('POST /messages - Create message', 'MessagingController');
     const message = await this.messageService.createMessage(
-      createMessageDto.jobId,
-      createMessageDto.senderId,
+      createMessageDto.job_id,
+      createMessageDto.sender_id,
       createMessageDto.message,
     );
     return { message };
@@ -33,7 +33,7 @@ export class MessagingController {
 
   @Get('jobs/:jobId/messages')
   async getMessagesForJob(
-    @Param('jobId') jobId: string,
+    @Param('jobId', ParseUUIDPipe) jobId: string,
     @Query('page', new ParseIntPipe({ optional: true })) page: number = 1,
     @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 20,
   ) {
@@ -42,13 +42,24 @@ export class MessagingController {
     return result;
   }
 
+  @Get('conversations')
+  async getConversations(
+    @Query('user_id', ParseUUIDPipe) userId: string,
+  ) {
+    this.logger.log(`GET /messages/conversations - Get user conversations`, 'MessagingController');
+    const conversations = await this.messageService.getUserConversations(userId);
+    return { conversations };
+  }
+
   @Post('attachments')
   async createAttachment(@Body() createAttachmentDto: CreateAttachmentDto) {
     this.logger.log('POST /messages/attachments - Create attachment', 'MessagingController');
     const attachment = await this.attachmentService.createAttachment(
-      createAttachmentDto.entityType,
-      createAttachmentDto.entityId,
-      createAttachmentDto.fileUrl,
+      createAttachmentDto.message_id,
+      createAttachmentDto.file_url,
+      createAttachmentDto.file_name,
+      createAttachmentDto.file_size,
+      createAttachmentDto.mime_type,
     );
     return { attachment };
   }
@@ -60,13 +71,12 @@ export class MessagingController {
     return { attachment };
   }
 
-  @Get('attachments/:entityType/:entityId')
-  async getAttachmentsByEntity(
-    @Param('entityType') entityType: string,
-    @Param('entityId') entityId: string,
+  @Get('attachments/message/:messageId')
+  async getAttachmentsByMessage(
+    @Param('messageId') messageId: string,
   ) {
-    this.logger.log(`GET /messages/attachments/${entityType}/${entityId} - Get attachments`, 'MessagingController');
-    const attachments = await this.attachmentService.getAttachmentsByEntity(entityType, entityId);
+    this.logger.log(`GET /messages/attachments/message/${messageId} - Get attachments`, 'MessagingController');
+    const attachments = await this.attachmentService.getAttachmentsByMessageId(messageId);
     return { attachments };
   }
 }

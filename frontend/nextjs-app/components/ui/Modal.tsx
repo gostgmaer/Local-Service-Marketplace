@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { cn } from '@/utils/helpers';
 import { X } from 'lucide-react';
+import { FocusTrap } from '@/utils/accessibility';
 
 interface ModalProps {
   isOpen: boolean;
@@ -21,6 +22,9 @@ export function Modal({
   size = 'md',
   showCloseButton = true,
 }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const focusTrapRef = useRef<FocusTrap | null>(null);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -35,11 +39,24 @@ export function Modal({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Activate focus trap
+      if (modalRef.current) {
+        focusTrapRef.current = new FocusTrap(modalRef.current);
+        focusTrapRef.current.activate();
+      }
     } else {
       document.body.style.overflow = 'unset';
+      // Deactivate focus trap
+      if (focusTrapRef.current) {
+        focusTrapRef.current.deactivate();
+        focusTrapRef.current = null;
+      }
     }
     return () => {
       document.body.style.overflow = 'unset';
+      if (focusTrapRef.current) {
+        focusTrapRef.current.deactivate();
+      }
     };
   }, [isOpen]);
 
@@ -63,17 +80,21 @@ export function Modal({
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
+          ref={modalRef}
           className={cn(
-            'relative w-full bg-white rounded-lg shadow-xl',
+            'relative w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl',
             sizes[size],
           )}
           onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? 'modal-title' : undefined}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
               {title && (
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   {title}
                 </h3>
               )}

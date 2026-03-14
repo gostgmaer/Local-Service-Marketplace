@@ -7,38 +7,56 @@ import * as Bull from 'bull';
 export class RedisService implements OnModuleDestroy {
   private redisClient: Redis;
   private jobQueues: Map<string, Bull.Queue> = new Map();
+  private cacheEnabled: boolean;
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {
-    this.redisClient = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT) || 6379,
-      password: process.env.REDIS_PASSWORD || undefined,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-    });
+    this.cacheEnabled = process.env.CACHE_ENABLED === 'true';
 
-    this.redisClient.on('connect', () => {
-      this.logger.log('Redis connected successfully', 'RedisService');
-    });
+    if (this.cacheEnabled) {
+      this.redisClient = new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD || undefined,
+        retryStrategy: (times) => {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+      });
 
-    this.redisClient.on('error', (err) => {
-      this.logger.error(`Redis connection error: ${err.message}`, err.stack, 'RedisService');
-    });
+      this.redisClient.on('connect', () => {
+        this.logger.log('Redis connected successfully', 'RedisService');
+      });
+
+      this.redisClient.on('error', (err) => {
+        this.logger.error(`Redis connection error: ${err.message}`, err.stack, 'RedisService');
+        this.cacheEnabled = false; // Disable cache on error
+      });
+    } else {
+      this.logger.log('Redis cache is disabled', 'RedisService');
+    }
   }
 
   async onModuleDestroy() {
-    await this.redisClient.quit();
+    if (this.redisClient) {
+      await this.redisClient.quit();
+    }
     for (const queue of this.jobQueues.values()) {
       await queue.close();
     }
   }
 
+  isCacheEnabled(): boolean {
+    return this.cacheEnabled;
+  }
+
   getClient(): Redis {
+    if (!this.cacheEnabled) {
+      this.logger.warn('Attempted to get Redis client but cache is disabled', 'RedisService');
+      return null;
+    }
     return this.redisClient;
   }
 
@@ -46,6 +64,11 @@ export class RedisService implements OnModuleDestroy {
    * Get or create a Bull queue for job processing
    */
   getQueue(queueName: string): Bull.Queue {
+    if (!this.cacheEnabled) {
+      this.logger.warn(`Attempted to get queue ${queueName} but cache is disabled`, 'RedisService');
+      return null;
+    }
+
     if (!this.jobQueues.has(queueName)) {
       const queue = new Bull(queueName, {
         redis: {
@@ -66,7 +89,16 @@ export class RedisService implements OnModuleDestroy {
    * Add a job to a queue
    */
   async addJob(queueName: string, jobType: string, data: any, options?: Bull.JobOptions): Promise<Bull.Job> {
+    if (!this.cacheEnabled) {
+      this.logger.warn(`Attempted to add job to queue ${queueName} but cache is disabled. Job will be skipped.`, 'RedisService');
+      return null;
+    }
+
     const queue = this.getQueue(queueName);
+    if (!queue) {
+      return null;
+    }
+
     const job = await queue.add(jobType, data, options);
 
     this.logger.log(
@@ -84,7 +116,16 @@ export class RedisService implements OnModuleDestroy {
     queueName: string,
     processor: Bull.ProcessCallbackFunction<any>,
   ): void {
+    if (!this.cacheEnabled) {
+      this.logger.warn(`Attempted to process queue ${queueName} but cache is disabled`, 'RedisService');
+      return;
+    }
+
     const queue = this.getQueue(queueName);
+    if (!queue) {
+      return;
+    }
+
     queue.process(processor);
 
     this.logger.log(`Processing jobs for queue: ${queueName}`, 'RedisService');
@@ -94,7 +135,15 @@ export class RedisService implements OnModuleDestroy {
    * Get job by ID
    */
   async getJob(queueName: string, jobId: string): Promise<Bull.Job | null> {
+    if (!this.cacheEnabled) {
+      this.logger.warn(`Attempted to get job from queue ${queueName} but cache is disabled`, 'RedisService');
+      return null;
+    }
+
     const queue = this.getQueue(queueName);
+    if (!queue) {
+      return null;
+    }
     return queue.getJob(jobId);
   }
 
@@ -102,7 +151,15 @@ export class RedisService implements OnModuleDestroy {
    * Get job counts from queue
    */
   async getJobCounts(queueName: string): Promise<Bull.JobCounts> {
+    if (!this.cacheEnabled) {
+      this.logger.warn(`Attempted to get job counts from queue ${queueName} but cache is disabled`, 'RedisService');
+      return null;
+    }
+
     const queue = this.getQueue(queueName);
+    if (!queue) {
+      return null;
+    }
     return queue.getJobCounts();
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
 import { RequestService } from '../services/request.service';
 import { CreateRequestDto } from '../dto/create-request.dto';
 import { UpdateRequestDto } from '../dto/update-request.dto';
@@ -19,6 +19,15 @@ export class RequestController {
   @HttpCode(HttpStatus.OK)
   async getRequests(@Query() queryDto: RequestQueryDto): Promise<PaginatedRequestResponseDto> {
     return this.requestService.getRequests(queryDto);
+  }
+
+  @Get('my')
+  @HttpCode(HttpStatus.OK)
+  async getMyRequests(@Query('user_id', ParseUUIDPipe) userId: string): Promise<RequestResponseDto[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    return this.requestService.getRequestsByUser(userId);
   }
 
   @Get(':id')
@@ -44,7 +53,7 @@ export class RequestController {
 
   @Get('user/:userId')
   @HttpCode(HttpStatus.OK)
-  async getRequestsByUser(@Param('userId') userId: string): Promise<RequestResponseDto[]> {
+  async getRequestsByUser(@Param('userId', ParseUUIDPipe) userId: string): Promise<RequestResponseDto[]> {
     return this.requestService.getRequestsByUser(userId);
   }
 }

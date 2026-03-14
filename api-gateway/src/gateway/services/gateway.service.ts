@@ -40,7 +40,12 @@ export class GatewayService {
         throw new ServiceUnavailableException('Service not available');
       }
 
-      const targetUrl = `${serviceConfig.url}${path}`;
+      // Strip /api/v1 prefix if present (microservices don't have this prefix)
+      const cleanPath = path.startsWith('/api/v1') 
+        ? path.replace('/api/v1', '') 
+        : path;
+
+      const targetUrl = `${serviceConfig.url}${cleanPath}`;
 
       this.logger.log(
         `Forwarding ${method} ${path} to ${serviceConfig.name} (${targetUrl})`,
@@ -106,14 +111,19 @@ export class GatewayService {
    * Determine service name based on request path
    */
   private getServiceName(path: string): string {
+    // Strip /api/v1 prefix if present (added by global prefix in main.ts)
+    const cleanPath = path.startsWith('/api/v1') 
+      ? path.replace('/api/v1', '') 
+      : path;
+
     for (const [route, service] of Object.entries(routingConfig)) {
-      if (path.startsWith(route)) {
+      if (cleanPath.startsWith(route)) {
         return service;
       }
     }
 
     this.logger.warn(
-      `No route mapping found for path: ${path}`,
+      `No route mapping found for path: ${path} (cleaned: ${cleanPath})`,
       'GatewayService',
     );
     throw new ServiceUnavailableException('Route not configured');

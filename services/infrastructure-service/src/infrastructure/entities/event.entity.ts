@@ -1,6 +1,6 @@
 export class Event {
   id: string;
-  eventType: string;
+  event_type: string;
   payload: any;
-  createdAt: Date;
+  created_at: Date;
 }

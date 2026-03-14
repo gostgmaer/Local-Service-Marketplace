@@ -10,8 +10,7 @@ async function bootstrap() {
   // Use Winston logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
-  // Enable CORS
-  app.enableCors();
+  // CORS is handled by API Gateway - not needed in internal services
 
   // Global validation pipe
   app.useGlobalPipes(

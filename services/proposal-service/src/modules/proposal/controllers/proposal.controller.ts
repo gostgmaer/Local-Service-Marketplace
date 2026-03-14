@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
 import { ProposalService } from '../services/proposal.service';
 import { CreateProposalDto } from '../dto/create-proposal.dto';
 import { ProposalResponseDto, PaginatedProposalResponseDto } from '../dto/proposal-response.dto';
@@ -13,9 +13,18 @@ export class ProposalController {
     return this.proposalService.createProposal(createProposalDto);
   }
 
+  @Get('proposals/my')
+  @HttpCode(HttpStatus.OK)
+  async getMyProposals(@Query('user_id', ParseUUIDPipe) userId: string): Promise<ProposalResponseDto[]> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    return this.proposalService.getMyProposals(userId);
+  }
+
   @Get('requests/:requestId/proposals')
   @HttpCode(HttpStatus.OK)
-  async getProposalsForRequest(@Param('requestId') requestId: string): Promise<PaginatedProposalResponseDto> {
+  async getProposalsForRequest(@Param('requestId', ParseUUIDPipe) requestId: string): Promise<PaginatedProposalResponseDto> {
     return this.proposalService.getProposalsForRequest(requestId);
   }
 

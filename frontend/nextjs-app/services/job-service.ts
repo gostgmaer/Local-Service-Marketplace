@@ -2,31 +2,35 @@ import { apiClient } from './api-client';
 
 export interface Job {
   id: string;
-  requestId: string;
-  proposalId: string;
-  customerId: string;
-  providerId: string;
+  request_id: string;
+  proposal_id?: string;
+  customer_id: string;
+  provider_id: string;
   status:
     | 'scheduled'
     | 'in_progress'
     | 'completed'
     | 'cancelled'
     | 'disputed';
-  scheduledAt?: string;
-  startedAt?: string;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  started_at?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
   request?: any;
   proposal?: any;
   provider?: any;
   customer?: any;
+  actual_amount?: number;
+  cancelled_by?: string;
+  cancellation_reason?: string;
 }
 
 export interface CreateJobData {
-  requestId: string;
-  proposalId: string;
-  scheduledAt?: string;
+  request_id: string;
+  proposal_id: string;
+  provider_id: string;
+  customer_id: string;
+  actual_amount?: number;
 }
 
 export interface UpdateJobStatusData {
@@ -36,45 +40,61 @@ export interface UpdateJobStatusData {
 
 class JobService {
   async createJob(data: CreateJobData): Promise<Job> {
-    return apiClient.post<Job>('/jobs', data);
+    const response = await apiClient.post<Job>('/jobs', data);
+    return response.data;
   }
 
   async getJobById(id: string): Promise<Job> {
-    return apiClient.get<Job>(`/jobs/${id}`);
+    const response = await apiClient.get<Job>(`/jobs/${id}`);
+    return response.data;
   }
 
   async updateJobStatus(
     id: string,
     data: UpdateJobStatusData,
   ): Promise<Job> {
-    return apiClient.patch<Job>(`/jobs/${id}/status`, data);
+    const response = await apiClient.patch<Job>(`/jobs/${id}/status`, data);
+    return response.data;
   }
 
   async startJob(id: string): Promise<Job> {
-    return apiClient.patch<Job>(`/jobs/${id}/status`, {
+    const response = await apiClient.patch<Job>(`/jobs/${id}/status`, {
       status: 'in_progress',
     });
+    return response.data;
   }
 
   async completeJob(id: string): Promise<Job> {
-    return apiClient.patch<Job>(`/jobs/${id}/status`, {
+    const response = await apiClient.patch<Job>(`/jobs/${id}/status`, {
       status: 'completed',
     });
+    return response.data;
   }
 
   async cancelJob(id: string, reason?: string): Promise<Job> {
-    return apiClient.patch<Job>(`/jobs/${id}/status`, {
+    const response = await apiClient.patch<Job>(`/jobs/${id}/status`, {
       status: 'cancelled',
       notes: reason,
     });
+    return response.data;
   }
 
   async getMyJobs(): Promise<Job[]> {
-    return apiClient.get<Job[]>('/jobs/my');
+    // Get current user from auth state
+    const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const userId = authState?.state?.user?.id;
+    
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    
+    const response = await apiClient.get<Job[]>(`/jobs/my?user_id=${userId}`);
+    return response.data;
   }
 
   async getJobsByStatus(status: Job['status']): Promise<Job[]> {
-    return apiClient.get<Job[]>(`/jobs?status=${status}`);
+    const response = await apiClient.get<Job[]>(`/jobs?status=${status}`);
+    return response.data;
   }
 }
 

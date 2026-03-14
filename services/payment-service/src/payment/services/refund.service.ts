@@ -6,6 +6,8 @@ import { RefundRepository } from '../repositories/refund.repository';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { Refund } from '../entities/refund.entity';
 import { NotFoundException, BadRequestException } from '../../common/exceptions/http.exceptions';
+import { NotificationClient } from '../../common/notification/notification.client';
+import { UserClient } from '../../common/user/user.client';
 
 @Injectable()
 export class RefundService {
@@ -14,6 +16,8 @@ export class RefundService {
     @InjectQueue('refund-queue') private readonly refundQueue: Queue,
     private readonly refundRepository: RefundRepository,
     private readonly paymentRepository: PaymentRepository,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
   ) {}
 
   async createRefund(paymentId: string, amount?: number): Promise<Refund> {
@@ -73,6 +77,28 @@ export class RefundService {
       `Refund created and queued for processing: ${refund.id}`,
       'RefundService',
     );
+
+    // Send refund notification to user
+    const userEmail = await this.userClient.getUserEmail(payment.user_id);
+    if (userEmail) {
+      this.notificationClient.sendEmail({
+        to: userEmail,
+        template: 'paymentReceived',
+        variables: {
+          amount: refundAmount,
+          currency: payment.currency || 'USD',
+          transactionId: payment.transaction_id,
+          serviceName: 'Refund Initiated',
+          message: 'Your refund is being processed and should appear in your account within 5-10 business days.',
+        },
+      }).catch(err => {
+        this.logger.warn(
+          `Failed to send refund notification: ${err.message}`,
+          'RefundService',
+        );
+      });
+    }
+
     return refund;
   }
 

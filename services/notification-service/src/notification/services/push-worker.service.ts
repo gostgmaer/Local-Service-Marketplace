@@ -24,12 +24,12 @@ export class PushWorkerService {
         try {
           // Get notification details
           const notification = await this.notificationRepository.getNotificationById(
-            delivery.notificationId,
+            delivery.notification_id,
           );
 
           if (!notification) {
             this.logger.warn(
-              `Notification ${delivery.notificationId} not found for delivery ${delivery.id}`,
+              `Notification ${delivery.notification_id} not found for delivery ${delivery.id}`,
               'PushWorkerService',
             );
             await this.deliveryRepository.updateDeliveryStatus(delivery.id, 'failed');
@@ -37,7 +37,7 @@ export class PushWorkerService {
           }
 
           // Simulate sending push notification (in production, integrate with FCM, APNs)
-          await this.sendPushNotification(notification.userId, notification.type, notification.message);
+          await this.sendPushNotification(notification.user_id, notification.type, notification.message);
 
           // Mark delivery as sent
           await this.deliveryRepository.updateDeliveryStatus(delivery.id, 'sent');

@@ -12,8 +12,8 @@ export class MetricsRepository {
     limit: number = 30,
   ): Promise<DailyMetric[]> {
     let query = `
-      SELECT date, total_users as "totalUsers", total_requests as "totalRequests", 
-             total_jobs as "totalJobs", total_payments as "totalPayments"
+      SELECT date, total_users, total_requests, 
+             total_jobs, total_payments
       FROM daily_metrics
     `;
 
@@ -43,8 +43,8 @@ export class MetricsRepository {
 
   async getMetricByDate(date: string): Promise<DailyMetric | null> {
     const query = `
-      SELECT date, total_users as "totalUsers", total_requests as "totalRequests", 
-             total_jobs as "totalJobs", total_payments as "totalPayments"
+      SELECT date, total_users, total_requests, 
+             total_jobs, total_payments
       FROM daily_metrics
       WHERE date = $1
     `;
@@ -55,10 +55,10 @@ export class MetricsRepository {
 
   async upsertDailyMetric(
     date: string,
-    totalUsers: number,
-    totalRequests: number,
-    totalJobs: number,
-    totalPayments: number,
+    total_users: number,
+    total_requests: number,
+    total_jobs: number,
+    total_payments: number,
   ): Promise<DailyMetric> {
     const query = `
       INSERT INTO daily_metrics (date, total_users, total_requests, total_jobs, total_payments)
@@ -69,11 +69,11 @@ export class MetricsRepository {
         total_requests = EXCLUDED.total_requests,
         total_jobs = EXCLUDED.total_jobs,
         total_payments = EXCLUDED.total_payments
-      RETURNING date, total_users as "totalUsers", total_requests as "totalRequests", 
-                total_jobs as "totalJobs", total_payments as "totalPayments"
+      RETURNING date, total_users, total_requests, 
+                total_jobs, total_payments
     `;
 
-    const values = [date, totalUsers, totalRequests, totalJobs, totalPayments];
+    const values = [date, total_users, total_requests, total_jobs, total_payments];
     const result = await this.pool.query(query, values);
     return result.rows[0];
   }
@@ -93,17 +93,17 @@ export class MetricsRepository {
         this.pool.query(paymentsQuery, [date]),
       ]);
 
-    const totalUsers = parseInt(usersResult.rows[0].count) || 0;
-    const totalRequests = parseInt(requestsResult.rows[0].count) || 0;
-    const totalJobs = parseInt(jobsResult.rows[0].count) || 0;
-    const totalPayments = parseInt(paymentsResult.rows[0].count) || 0;
+    const total_users = parseInt(usersResult.rows[0].count) || 0;
+    const total_requests = parseInt(requestsResult.rows[0].count) || 0;
+    const total_jobs = parseInt(jobsResult.rows[0].count) || 0;
+    const total_payments = parseInt(paymentsResult.rows[0].count) || 0;
 
     return this.upsertDailyMetric(
       date,
-      totalUsers,
-      totalRequests,
-      totalJobs,
-      totalPayments,
+      total_users,
+      total_requests,
+      total_jobs,
+      total_payments,
     );
   }
 

@@ -1,9 +1,9 @@
 export class AuditLog {
   id: string;
-  userId: string;
+  user_id: string;
   action: string;
   entity: string;
-  entityId: string;
+  entity_id: string;
   metadata: any;
-  createdAt: Date;
+  created_at: Date;
 }

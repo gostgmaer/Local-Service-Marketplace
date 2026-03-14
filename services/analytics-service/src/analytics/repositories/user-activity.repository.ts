@@ -11,14 +11,14 @@ export class UserActivityRepository {
     const query = `
       INSERT INTO user_activity_logs (user_id, action, metadata, ip_address)
       VALUES ($1, $2, $3, $4)
-      RETURNING id, user_id as "userId", action, metadata, ip_address as "ipAddress", created_at as "createdAt"
+      RETURNING id, user_id, action, metadata, ip_address, created_at
     `;
 
     const values = [
-      trackActivityDto.userId,
+      trackActivityDto.user_id,
       trackActivityDto.action,
       trackActivityDto.metadata || null,
-      trackActivityDto.ipAddress || null,
+      trackActivityDto.ip_address || null,
     ];
 
     const result = await this.pool.query(query, values);
@@ -31,7 +31,7 @@ export class UserActivityRepository {
     offset: number = 0,
   ): Promise<UserActivityLog[]> {
     const query = `
-      SELECT id, user_id as "userId", action, metadata, ip_address as "ipAddress", created_at as "createdAt"
+      SELECT id, user_id, action, metadata, ip_address, created_at
       FROM user_activity_logs
       WHERE user_id = $1
       ORDER BY created_at DESC
@@ -47,7 +47,7 @@ export class UserActivityRepository {
     offset: number = 0,
   ): Promise<UserActivityLog[]> {
     const query = `
-      SELECT id, user_id as "userId", action, metadata, ip_address as "ipAddress", created_at as "createdAt"
+      SELECT id, user_id, action, metadata, ip_address, created_at
       FROM user_activity_logs
       ORDER BY created_at DESC
       LIMIT $1 OFFSET $2
@@ -62,7 +62,7 @@ export class UserActivityRepository {
     limit: number = 100,
   ): Promise<UserActivityLog[]> {
     const query = `
-      SELECT id, user_id as "userId", action, metadata, ip_address as "ipAddress", created_at as "createdAt"
+      SELECT id, user_id, action, metadata, ip_address, created_at
       FROM user_activity_logs
       WHERE action = $1
       ORDER BY created_at DESC

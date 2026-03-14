@@ -16,7 +16,7 @@ export class AuditLogRepository {
     const query = `
       INSERT INTO audit_logs (user_id, action, entity, entity_id, metadata)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, user_id as "userId", action, entity, entity_id as "entityId", metadata, created_at as "createdAt"
+      RETURNING id, user_id, action, entity, entity_id, metadata, created_at
     `;
 
     const values = [userId, action, entity, entityId, metadata || null];
@@ -29,7 +29,7 @@ export class AuditLogRepository {
     offset: number = 0,
   ): Promise<AuditLog[]> {
     const query = `
-      SELECT id, user_id as "userId", action, entity, entity_id as "entityId", metadata, created_at as "createdAt"
+      SELECT id, user_id, action, entity, entity_id, metadata, created_at
       FROM audit_logs
       ORDER BY created_at DESC
       LIMIT $1 OFFSET $2
@@ -41,7 +41,7 @@ export class AuditLogRepository {
 
   async getAuditLogsByUserId(userId: string): Promise<AuditLog[]> {
     const query = `
-      SELECT id, user_id as "userId", action, entity, entity_id as "entityId", metadata, created_at as "createdAt"
+      SELECT id, user_id, action, entity, entity_id, metadata, created_at
       FROM audit_logs
       WHERE user_id = $1
       ORDER BY created_at DESC
@@ -56,7 +56,7 @@ export class AuditLogRepository {
     entityId: string,
   ): Promise<AuditLog[]> {
     const query = `
-      SELECT id, user_id as "userId", action, entity, entity_id as "entityId", metadata, created_at as "createdAt"
+      SELECT id, user_id, action, entity, entity_id, metadata, created_at
       FROM audit_logs
       WHERE entity = $1 AND entity_id = $2
       ORDER BY created_at DESC

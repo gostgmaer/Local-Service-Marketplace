@@ -62,12 +62,12 @@ export default function JobsPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span>Created {formatDate(job.createdAt)}</span>
-                          {job.scheduledAt && (
+                          <span>Created {formatDate(job.created_at)}</span>
+                          {job.started_at && (
                             <>
                               <span>•</span>
                               <span>
-                                Scheduled for {formatDate(job.scheduledAt)}
+                                Started {formatDate(job.started_at)}
                               </span>
                             </>
                           )}

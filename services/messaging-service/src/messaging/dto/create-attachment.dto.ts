@@ -1,12 +1,21 @@
-import { IsString, IsUUID, IsUrl } from 'class-validator';
+import { IsString, IsUUID, IsUrl, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateAttachmentDto {
-  @IsString()
-  entityType: string;
-
   @IsUUID()
-  entityId: string;
+  message_id: string;
 
   @IsUrl()
-  fileUrl: string;
+  file_url: string;
+
+  @IsString()
+  @IsOptional()
+  file_name?: string;
+
+  @IsNumber()
+  @IsOptional()
+  file_size?: number;
+
+  @IsString()
+  @IsOptional()
+  mime_type?: string;
 }

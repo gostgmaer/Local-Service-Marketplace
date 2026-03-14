@@ -34,7 +34,7 @@ export default function MessagesPage() {
 
     try {
       await messageService.sendMessage({
-        jobId: selectedJobId,
+        job_id: selectedJobId,
         content: messageText,
       });
       setMessageText('');
@@ -61,16 +61,16 @@ export default function MessagesPage() {
                 <div className="space-y-2">
                   {conversations.map((conv: any) => (
                     <button
-                      key={conv.jobId}
-                      onClick={() => setSelectedJobId(conv.jobId)}
+                      key={conv.job_id}
+                      onClick={() => setSelectedJobId(conv.job_id)}
                       className={`w-full text-left p-3 rounded-md transition-colors ${
-                        selectedJobId === conv.jobId
+                        selectedJobId === conv.job_id
                           ? 'bg-primary-50 border-primary-200'
                           : 'hover:bg-gray-50'
                       }`}
                     >
                       <p className="font-medium text-gray-900">
-                        Job #{conv.jobId.slice(0, 8)}
+                        Job #{conv.job_id.slice(0, 8)}
                       </p>
                       <p className="text-sm text-gray-600 truncate">
                         {conv.lastMessage}
@@ -105,27 +105,27 @@ export default function MessagesPage() {
                         <div
                           key={message.id}
                           className={`flex ${
-                            message.senderId === user?.id
+                            message.sender_id === user?.id
                               ? 'justify-end'
                               : 'justify-start'
                           }`}
                         >
                           <div
                             className={`max-w-[70%] rounded-lg p-3 ${
-                              message.senderId === user?.id
+                              message.sender_id === user?.id
                                 ? 'bg-primary-600 text-white'
                                 : 'bg-gray-100 text-gray-900'
                             }`}
                           >
-                            <p className="text-sm">{message.content}</p>
+                            <p className="text-sm">{message.message}</p>
                             <p
                               className={`text-xs mt-1 ${
-                                message.senderId === user?.id
+                                message.sender_id === user?.id
                                   ? 'text-primary-100'
                                   : 'text-gray-500'
                               }`}
                             >
-                              {formatDateTime(message.createdAt)}
+                              {formatDateTime(message.created_at)}
                             </p>
                           </div>
                         </div>

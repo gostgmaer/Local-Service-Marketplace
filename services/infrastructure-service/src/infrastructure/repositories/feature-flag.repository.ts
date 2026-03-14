@@ -12,7 +12,7 @@ export class FeatureFlagRepository {
     const query = `
       INSERT INTO feature_flags (key, enabled, rollout_percentage)
       VALUES ($1, $2, $3)
-      RETURNING key, enabled, rollout_percentage as "rolloutPercentage"
+      RETURNING key, enabled, rollout_percentage
     `;
 
     const values = [
@@ -27,7 +27,7 @@ export class FeatureFlagRepository {
 
   async getFeatureFlagByKey(key: string): Promise<FeatureFlag | null> {
     const query = `
-      SELECT key, enabled, rollout_percentage as "rolloutPercentage"
+      SELECT key, enabled, rollout_percentage
       FROM feature_flags
       WHERE key = $1
     `;
@@ -38,7 +38,7 @@ export class FeatureFlagRepository {
 
   async getAllFeatureFlags(): Promise<FeatureFlag[]> {
     const query = `
-      SELECT key, enabled, rollout_percentage as "rolloutPercentage"
+      SELECT key, enabled, rollout_percentage
       FROM feature_flags
       ORDER BY key ASC
     `;

@@ -24,7 +24,7 @@ export class WebhookRepository {
       gateway: result.rows[0].gateway,
       payload: result.rows[0].payload,
       processed: result.rows[0].processed,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -39,7 +39,7 @@ export class WebhookRepository {
       gateway: result.rows[0].gateway,
       payload: result.rows[0].payload,
       processed: result.rows[0].processed,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -56,7 +56,7 @@ export class WebhookRepository {
       gateway: result.rows[0].gateway,
       payload: result.rows[0].payload,
       processed: result.rows[0].processed,
-      createdAt: result.rows[0].created_at,
+      created_at: result.rows[0].created_at,
     });
   }
 
@@ -70,7 +70,7 @@ export class WebhookRepository {
           gateway: row.gateway,
           payload: row.payload,
           processed: row.processed,
-          createdAt: row.created_at,
+          created_at: row.created_at,
         }),
     );
   }

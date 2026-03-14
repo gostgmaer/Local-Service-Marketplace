@@ -1,7 +1,7 @@
 export class DailyMetric {
   date: Date;
-  totalUsers: number;
-  totalRequests: number;
-  totalJobs: number;
-  totalPayments: number;
+  total_users: number;
+  total_requests: number;
+  total_jobs: number;
+  total_payments: number;
 }

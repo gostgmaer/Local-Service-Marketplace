@@ -44,4 +44,17 @@ export class CategoryRepository {
     const result = await this.pool.query(query, [id]);
     return result.rows.length > 0;
   }
+
+  async searchCategories(searchTerm: string, limit: number = 10): Promise<ServiceCategory[]> {
+    const query = `
+      SELECT id, name, created_at
+      FROM service_categories
+      WHERE name ILIKE $1
+      ORDER BY name ASC
+      LIMIT $2
+    `;
+
+    const result = await this.pool.query(query, [`%${searchTerm}%`, limit]);
+    return result.rows;
+  }
 }

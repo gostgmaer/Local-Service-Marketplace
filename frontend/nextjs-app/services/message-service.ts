@@ -2,36 +2,44 @@ import { apiClient } from './api-client';
 
 export interface Message {
   id: string;
-  jobId: string;
-  senderId: string;
-  content: string;
+  job_id: string;
+  sender_id: string;
+  message: string;
   attachments?: Attachment[];
-  createdAt: string;
+  created_at: string;
   sender?: {
     id: string;
     name: string;
   };
+  read?: boolean;
+  read_at?: string;
+  edited?: boolean;
+  edited_at?: string;
 }
 
 export interface Attachment {
   id: string;
-  filename: string;
-  url: string;
-  size: number;
-  mimeType: string;
+  message_id: string;
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string;
 }
 
 export interface SendMessageData {
-  jobId: string;
-  content: string;
+  job_id: string;
+  sender_id: string;
+  message: string;
   attachments?: File[];
 }
 
 class MessageService {
   async sendMessage(data: SendMessageData): Promise<Message> {
     const formData = new FormData();
-    formData.append('jobId', data.jobId);
-    formData.append('content', data.content);
+    formData.append('job_id', data.job_id);
+    formData.append('sender_id', data.sender_id);
+    formData.append('message', data.message);
 
     if (data.attachments) {
       data.attachments.forEach((file) => {
@@ -39,23 +47,27 @@ class MessageService {
       });
     }
 
-    return apiClient.post<Message>('/messages', formData, {
+    const response = await apiClient.post<Message>('/messages', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
   }
 
   async getMessagesByJob(jobId: string): Promise<Message[]> {
-    return apiClient.get<Message[]>(`/jobs/${jobId}/messages`);
+    const response = await apiClient.get<Message[]>(`/jobs/${jobId}/messages`);
+    return response.data;
   }
 
   async getConversations(): Promise<any[]> {
-    return apiClient.get<any[]>('/messages/conversations');
+    const response = await apiClient.get<any[]>('/messages/conversations');
+    return response.data;
   }
 
   async markAsRead(messageId: string): Promise<void> {
-    return apiClient.patch<void>(`/messages/${messageId}/read`, {});
+    const response = await apiClient.patch<void>(`/messages/${messageId}/read`, {});
+    return response.data;
   }
 }
 

@@ -16,6 +16,7 @@ import {
   BadRequestException,
 } from '@/common/exceptions/http.exceptions';
 import { RedisService } from '../../../redis/redis.service';
+import { NotificationClient } from '../../../common/notification/notification.client';
 
 @Injectable()
 export class ProviderService {
@@ -29,6 +30,7 @@ export class ProviderService {
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly notificationClient: NotificationClient,
   ) {
     this.defaultLimit = parseInt(
       this.configService.get<string>('DEFAULT_PAGE_LIMIT', '20'),
@@ -77,6 +79,25 @@ export class ProviderService {
     this.logger.info('Provider created successfully', {
       context: 'ProviderService',
       provider_id: provider.id,
+    });
+
+    // Send welcome notification to provider
+    // Note: Email would come from getUserById via auth-service in production
+    // For now, we'll use a placeholder until user management is integrated
+    this.notificationClient.sendEmail({
+      to: `provider-${user_id}@marketplace.local`,
+      template: 'welcome',
+      variables: {
+        name: business_name,
+        message: 'Your provider profile has been created successfully!',
+        dashboardUrl: `${process.env.FRONTEND_URL}/provider/dashboard`,
+      },
+    }).catch(err => {
+      this.logger.error('Failed to send provider welcome notification', {
+        context: 'ProviderService',
+        error: err.message,
+        provider_id: provider.id,
+      });
     });
 
     // Invalidate cache

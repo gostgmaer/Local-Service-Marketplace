@@ -25,7 +25,7 @@ export class MetricsAggregationService {
       const metric = await this.metricsRepository.aggregateDailyMetrics(date);
 
       this.logger.log(
-        `Completed metrics aggregation for ${date}: Users=${metric.totalUsers}, Requests=${metric.totalRequests}, Jobs=${metric.totalJobs}, Payments=${metric.totalPayments}`,
+        `Completed metrics aggregation for ${date}: Users=${metric.total_users}, Requests=${metric.total_requests}, Jobs=${metric.total_jobs}, Payments=${metric.total_payments}`,
         'MetricsAggregationService',
       );
 

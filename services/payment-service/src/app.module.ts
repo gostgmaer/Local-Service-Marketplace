@@ -4,7 +4,10 @@ import { LoggerModule } from './common/logger/logger.module';
 import { DatabaseModule } from './common/database/database.module';
 import { QueueModule } from './queue/queue.module';
 import { KafkaModule } from './kafka/kafka.module';
+import { NotificationModule } from './common/notification/notification.module';
+import { UserModule } from './common/user/user.module';
 import { PaymentModule } from './payment/payment.module';
+import { HealthController } from './common/health/health.controller';
 
 @Module({
   imports: [
@@ -15,7 +18,10 @@ import { PaymentModule } from './payment/payment.module';
     DatabaseModule,
     QueueModule,
     KafkaModule,
+    NotificationModule,
+    UserModule,
     PaymentModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

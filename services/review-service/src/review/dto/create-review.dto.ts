@@ -3,15 +3,15 @@ import { IsNotEmpty, IsString, IsInt, Min, Max, IsUUID } from 'class-validator';
 export class CreateReviewDto {
   @IsNotEmpty()
   @IsUUID()
-  jobId: string;
+  job_id: string;
 
   @IsNotEmpty()
   @IsUUID()
-  userId: string;
+  user_id: string;
 
   @IsNotEmpty()
   @IsUUID()
-  providerId: string;
+  provider_id: string;
 
   @IsNotEmpty()
   @IsInt()

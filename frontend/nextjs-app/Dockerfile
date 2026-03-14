@@ -5,18 +5,25 @@ FROM node:18-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Configure npm for slower networks
-RUN npm config set fetch-timeout 600000 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000
+COPY package.json pnpm-lock.yaml* ./
 
-RUN npm install
+# Configure pnpm for slow/unreliable networks
+RUN pnpm config set network-timeout 600000 && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000
+
+RUN pnpm install
 
 # Stage 2: Builder
 FROM node:18-alpine AS builder
 WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -26,7 +33,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
 # Build the application
-RUN npm run build
+RUN pnpm run build
 
 # Stage 3: Runner
 FROM node:18-alpine AS runner
@@ -48,6 +55,6 @@ USER nextjs
 EXPOSE 3001
 
 ENV PORT 3001
-ENV HOSTNAME "0.0.0.0"
+ENV HOSTNAME \"0.0.0.0\"
 
-CMD ["node", "server.js"]
+CMD [\"node\", \"server.js\"]

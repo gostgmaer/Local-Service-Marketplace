@@ -11,13 +11,13 @@ export class ReviewRepository {
     const query = `
       INSERT INTO reviews (job_id, user_id, provider_id, rating, comment)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, job_id as "jobId", user_id as "userId", provider_id as "providerId", rating, comment, created_at as "createdAt"
+      RETURNING id, job_id, user_id, provider_id, rating, comment, created_at
     `;
 
     const values = [
-      createReviewDto.jobId,
-      createReviewDto.userId,
-      createReviewDto.providerId,
+      createReviewDto.job_id,
+      createReviewDto.user_id,
+      createReviewDto.provider_id,
       createReviewDto.rating,
       createReviewDto.comment,
     ];
@@ -28,7 +28,7 @@ export class ReviewRepository {
 
   async getReviewById(id: string): Promise<Review | null> {
     const query = `
-      SELECT id, job_id as "jobId", user_id as "userId", provider_id as "providerId", rating, comment, created_at as "createdAt"
+      SELECT id, job_id, user_id, provider_id, rating, comment, created_at
       FROM reviews
       WHERE id = $1
     `;
@@ -43,7 +43,7 @@ export class ReviewRepository {
     offset: number = 0,
   ): Promise<Review[]> {
     const query = `
-      SELECT id, job_id as "jobId", user_id as "userId", provider_id as "providerId", rating, comment, created_at as "createdAt"
+      SELECT id, job_id, user_id, provider_id, rating, comment, created_at
       FROM reviews
       WHERE provider_id = $1
       ORDER BY created_at DESC
@@ -82,5 +82,92 @@ export class ReviewRepository {
 
     const result = await this.pool.query(query, [providerId]);
     return parseInt(result.rows[0].count) || 0;
+  }
+
+  // ✅ NEW: Advanced query methods
+  async addProviderResponse(
+    reviewId: string,
+    response: string
+  ): Promise<Review> {
+    const query = `
+      UPDATE reviews 
+      SET response = $1, response_at = NOW()
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [response, reviewId]);
+    return result.rows[0];
+  }
+
+  async incrementHelpfulCount(reviewId: string): Promise<Review> {
+    const query = `
+      UPDATE reviews 
+      SET helpful_count = helpful_count + 1
+      WHERE id = $1
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [reviewId]);
+    return result.rows[0];
+  }
+
+  async getVerifiedPurchaseReviews(
+    providerId: string,
+    limit: number = 20
+  ): Promise<Review[]> {
+    const query = `
+      SELECT * FROM reviews
+      WHERE provider_id = $1
+        AND verified_purchase = true
+      ORDER BY created_at DESC
+      LIMIT $2
+    `;
+    const result = await this.pool.query(query, [providerId, limit]);
+    return result.rows;
+  }
+
+  async getReviewsWithResponses(
+    providerId: string,
+    limit: number = 20
+  ): Promise<Review[]> {
+    const query = `
+      SELECT * FROM reviews
+      WHERE provider_id = $1
+        AND response IS NOT NULL
+      ORDER BY response_at DESC
+      LIMIT $2
+    `;
+    const result = await this.pool.query(query, [providerId, limit]);
+    return result.rows;
+  }
+
+  async getMostHelpfulReviews(
+    providerId: string,
+    limit: number = 10
+  ): Promise<Review[]> {
+    const query = `
+      SELECT * FROM reviews
+      WHERE provider_id = $1
+        AND helpful_count > 0
+      ORDER BY helpful_count DESC
+      LIMIT $2
+    `;
+    const result = await this.pool.query(query, [providerId, limit]);
+    return result.rows;
+  }
+
+  async getReviewsByRating(
+    providerId: string,
+    rating: number,
+    limit: number = 20
+  ): Promise<Review[]> {
+    const query = `
+      SELECT * FROM reviews
+      WHERE provider_id = $1
+        AND rating = $2
+      ORDER BY created_at DESC
+      LIMIT $3
+    `;
+    const result = await this.pool.query(query, [providerId, rating, limit]);
+    return result.rows;
   }
 }

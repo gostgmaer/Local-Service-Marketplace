@@ -16,6 +16,8 @@ import { Logger } from 'winston';
 import { ProviderService } from '../services/provider.service';
 import { CreateProviderDto } from '../dto/create-provider.dto';
 import { UpdateProviderDto } from '../dto/update-provider.dto';
+import { UpdateProviderServicesDto } from '../dto/update-provider-services.dto';
+import { UpdateProviderAvailabilityDto } from '../dto/update-provider-availability.dto';
 import { ProviderQueryDto } from '../dto/provider-query.dto';
 import { ProviderResponseDto } from '../dto/provider-response.dto';
 import { PaginatedResponseDto } from '../dto/paginated-response.dto';
@@ -82,5 +84,49 @@ export class ProviderController {
       provider_id: id,
     });
     return this.providerService.deleteProvider(id);
+  }
+
+  /**
+   * Update provider service categories
+   * PATCH /providers/:id/services
+   */
+  @Patch(':id/services')
+  @HttpCode(HttpStatus.OK)
+  async updateProviderServices(
+    @Param('id') id: string,
+    @Body() dto: UpdateProviderServicesDto,
+  ): Promise<ProviderResponseDto> {
+    this.logger.info('PATCH /providers/:id/services', {
+      context: 'ProviderController',
+      provider_id: id,
+      service_count: dto.service_categories.length,
+    });
+
+    // Use the existing updateProvider method with only service_categories
+    return this.providerService.updateProvider(id, {
+      service_categories: dto.service_categories,
+    });
+  }
+
+  /**
+   * Update provider availability schedule
+   * PATCH /providers/:id/availability
+   */
+  @Patch(':id/availability')
+  @HttpCode(HttpStatus.OK)
+  async updateProviderAvailability(
+    @Param('id') id: string,
+    @Body() dto: UpdateProviderAvailabilityDto,
+  ): Promise<ProviderResponseDto> {
+    this.logger.info('PATCH /providers/:id/availability', {
+      context: 'ProviderController',
+      provider_id: id,
+      slot_count: dto.availability.length,
+    });
+
+    // Use the existing updateProvider method with only availability
+    return this.providerService.updateProvider(id, {
+      availability: dto.availability,
+    });
   }
 }

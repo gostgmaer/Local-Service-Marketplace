@@ -3,31 +3,39 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Configure npm for slower networks
-RUN npm config set fetch-timeout 600000 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000
+COPY package*.json pnpm-lock.yaml* ./
 
-RUN npm install
+# Configure pnpm for slow/unreliable networks
+RUN pnpm config set network-timeout 600000 && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000
+
+RUN pnpm install
 
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
 # Production stage
 FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Configure npm for slower networks
-RUN npm config set fetch-timeout 600000 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000
+COPY package*.json pnpm-lock.yaml* ./
 
-RUN npm install --omit=dev
+# Configure pnpm for slow/unreliable networks
+RUN pnpm config set network-timeout 600000 && \
+    pnpm config set fetch-retries 5 && \
+    pnpm config set fetch-retry-mintimeout 20000 && \
+    pnpm config set fetch-retry-maxtimeout 120000
+
+RUN pnpm install --prod
 
 COPY --from=builder /app/dist ./dist
 

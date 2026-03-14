@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsUUID, MinLength, Min } from 'class-validator';
+import { IsString, IsNumber, IsUUID, MinLength, Min, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateProposalDto {
   @IsUUID()
@@ -14,4 +14,17 @@ export class CreateProposalDto {
   @IsString()
   @MinLength(10)
   message: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  estimated_hours?: number;
+
+  @IsOptional()
+  @IsDateString()
+  start_date?: string;
+
+  @IsOptional()
+  @IsDateString()
+  completion_date?: string;
 }

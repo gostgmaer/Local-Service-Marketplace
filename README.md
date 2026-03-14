@@ -2,6 +2,11 @@
 
 A production-ready microservices-based marketplace platform connecting service providers with customers.
 
+**📚 ALL DOCUMENTATION:** See **[docs/00_DOCUMENTATION_INDEX.md](docs/00_DOCUMENTATION_INDEX.md)** for complete documentation index  
+**⚡ Quick Reference:** See **[DOCS_QUICK_REFERENCE.md](DOCS_QUICK_REFERENCE.md)** for quick links
+
+---
+
 ## 🚀 Quick Start
 
 ### One-Line Startup (Recommended)
@@ -18,8 +23,8 @@ That's it! The entire platform will start automatically:
 - ✅ Next.js Frontend
 
 **Access the application**:
-- Frontend: http://localhost:3100
-- API Gateway: http://localhost:3000
+- Frontend: http://localhost:3000
+- API Gateway: http://localhost:3500
 
 ---
 
@@ -191,7 +196,7 @@ docker-compose down -v
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    API Gateway (NestJS)                     │
-│                     localhost:3000                          │
+│                     localhost:3500                          │
 │  - Request Routing  - Rate Limiting  - Authentication      │
 └───────────────────────┬─────────────────────────────────────┘
                         │
@@ -280,7 +285,7 @@ Local Service Marketplace/
 ## 🧪 Testing
 
 ### 1. Access Frontend
-Open http://localhost:3100
+Open http://localhost:3000
 
 ### 2. Create Account
 - Click "Sign Up"
@@ -348,7 +353,7 @@ netstat -ano | findstr :3100
 taskkill /PID <PID> /F
 ```
 
-### Can't access frontend at localhost:3100?
+### Can't access frontend at localhost:3000?
 
 1. Wait 1-2 minutes for all services to start
 2. Check service status:
@@ -561,6 +566,33 @@ docker-compose up -d --build
 
 ## ⚡ Performance & Scaling
 
+### Service Configuration
+
+Control which services start with environment variables in `.env`:
+
+**Frontend & API Gateway**
+```env
+FRONTEND_ENABLED=true      # Default: enabled - Next.js frontend
+API_GATEWAY_ENABLED=true   # Default: enabled - API Gateway
+```
+
+**Common Configurations:**
+- **Full Stack** (default): Both enabled - Complete user experience
+- **Backend + API Gateway**: Frontend disabled - API development/testing
+- **Backend Only**: Both disabled - Pure microservices for integration
+
+**Example Usage:**
+```powershell
+# Backend only mode (no frontend, no gateway)
+# Edit .env:
+FRONTEND_ENABLED=false
+API_GATEWAY_ENABLED=false
+
+# Then restart
+.\start.ps1
+# Services will be on ports 3001-3012
+```
+
 ### Feature Flags
 
 The platform includes optional performance optimizations controlled by environment variables:
@@ -628,8 +660,8 @@ This project is part of the Local Service Marketplace platform.
 - [ ] Docker Desktop installed and running
 - [ ] Ran `.\start.ps1` or `docker-compose up -d`
 - [ ] All services showing as healthy: `docker-compose ps`
-- [ ] Can access frontend: http://localhost:3100
-- [ ] Can access API Gateway: http://localhost:3000/health
+- [ ] Can access frontend: http://localhost:3000
+- [ ] Can access API Gateway: http://localhost:3500/health
 - [ ] All services showing as "Up": `docker-compose ps`
 - [ ] Created test account and logged in
 

@@ -2,56 +2,81 @@ import { apiClient } from './api-client';
 
 export interface ServiceRequest {
   id: string;
-  customerId: string;
-  categoryId: string;
-  title: string;
+  customer_id: string;
+  category_id: string;
   description: string;
   budget: number;
-  locationId?: string;
   status: 'open' | 'assigned' | 'completed' | 'cancelled';
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   category?: {
     id: string;
     name: string;
   };
+  location?: {
+    id: string;
+    latitude: number;
+    longitude: number;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+    country?: string;
+  };
+  images?: any;
+  preferred_date?: string;
+  urgency?: 'low' | 'medium' | 'high' | 'urgent';
+  expiry_date?: string;
+  view_count?: number;
+  deleted_at?: string;
 }
 
 export interface CreateRequestData {
-  categoryId: string;
-  title: string;
+  category_id: string;
   description: string;
   budget: number;
-  locationId?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+    country?: string;
+  };
+  images?: string[];
+  preferred_date?: string;
+  urgency?: 'low' | 'medium' | 'high' | 'urgent';
+  expiry_date?: string;
 }
 
 export interface UpdateRequestData {
-  title?: string;
   description?: string;
   budget?: number;
   status?: ServiceRequest['status'];
 }
 
+// Cursor-based pagination response
 export interface PaginatedResponse<T> {
   data: T[];
-  total: number;
-  page: number;
-  limit: number;
+  cursor: string | null;
   hasMore: boolean;
 }
 
 export interface RequestFilters {
   status?: string;
-  categoryId?: string;
-  minBudget?: number;
-  maxBudget?: number;
-  page?: number;
+  category_id?: string;
+  min_budget?: number;
+  max_budget?: number;
+  cursor?: string;
   limit?: number;
+  page?: number;
 }
 
 class RequestService {
   async createRequest(data: CreateRequestData): Promise<ServiceRequest> {
-    return apiClient.post<ServiceRequest>('/requests', data);
+    const response = await apiClient.post<ServiceRequest>('/requests', data);
+    return response.data;
   }
 
   async getRequests(
@@ -59,42 +84,56 @@ class RequestService {
   ): Promise<PaginatedResponse<ServiceRequest>> {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
-    if (filters?.categoryId) params.append('categoryId', filters.categoryId);
-    if (filters?.minBudget)
-      params.append('minBudget', filters.minBudget.toString());
-    if (filters?.maxBudget)
-      params.append('maxBudget', filters.maxBudget.toString());
-    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.category_id) params.append('category_id', filters.category_id);
+    if (filters?.min_budget)
+      params.append('min_budget', filters.min_budget.toString());
+    if (filters?.max_budget)
+      params.append('max_budget', filters.max_budget.toString());
+    if (filters?.cursor) params.append('cursor', filters.cursor);
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
-    return apiClient.get<PaginatedResponse<ServiceRequest>>(
+    const response = await apiClient.get<PaginatedResponse<ServiceRequest>>(
       `/requests?${params.toString()}`,
     );
+    return response.data;
   }
 
   async getRequestById(id: string): Promise<ServiceRequest> {
-    return apiClient.get<ServiceRequest>(`/requests/${id}`);
+    const response = await apiClient.get<ServiceRequest>(`/requests/${id}`);
+    return response.data;
   }
 
   async updateRequest(
     id: string,
     data: UpdateRequestData,
   ): Promise<ServiceRequest> {
-    return apiClient.patch<ServiceRequest>(`/requests/${id}`, data);
+    const response = await apiClient.patch<ServiceRequest>(`/requests/${id}`, data);
+    return response.data;
   }
 
   async cancelRequest(id: string): Promise<ServiceRequest> {
-    return apiClient.patch<ServiceRequest>(`/requests/${id}`, {
+    const response = await apiClient.patch<ServiceRequest>(`/requests/${id}`, {
       status: 'cancelled',
     });
+    return response.data;
   }
 
   async getMyRequests(): Promise<ServiceRequest[]> {
-    return apiClient.get<ServiceRequest[]>('/requests/my');
+    // Get current user from auth state
+    const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const userId = authState?.state?.user?.id;
+    
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    
+    const response = await apiClient.get<ServiceRequest[]>(`/requests/my?user_id=${userId}`);
+    return response.data;
   }
 
   async getCategories(): Promise<any[]> {
-    return apiClient.get<any[]>('/requests/categories');
+    const response = await apiClient.get<any[]>('/categories');
+    return response.data;
   }
 }
 

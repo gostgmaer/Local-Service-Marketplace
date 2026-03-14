@@ -4,6 +4,8 @@ import { UserModule } from './modules/user/user.module';
 import { DatabaseModule } from './common/database/database.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { RedisModule } from './redis/redis.module';
+import { NotificationModule } from './common/notification/notification.module';
+import { HealthController } from './common/health/health.controller';
 
 @Module({
   imports: [
@@ -14,7 +16,9 @@ import { RedisModule } from './redis/redis.module';
     LoggerModule,
     DatabaseModule,
     RedisModule,
+    NotificationModule,
     UserModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

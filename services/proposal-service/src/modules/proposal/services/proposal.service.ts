@@ -6,12 +6,16 @@ import { ProposalQueryDto } from '../dto/proposal-query.dto';
 import { ProposalResponseDto, PaginatedProposalResponseDto } from '../dto/proposal-response.dto';
 import { NotFoundException, BadRequestException, ConflictException } from '../../../common/exceptions/http.exceptions';
 import { KafkaService } from '../../../kafka/kafka.service';
+import { NotificationClient } from '../../../common/notification/notification.client';
+import { UserClient } from '../../../common/user/user.client';
 
 @Injectable()
 export class ProposalService {
   constructor(
     private readonly proposalRepository: ProposalRepository,
     private readonly kafkaService: KafkaService,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
@@ -32,6 +36,32 @@ export class ProposalService {
     const proposal = await this.proposalRepository.createProposal(dto);
 
     this.logger.log(`Proposal created successfully: ${proposal.id}`, ProposalService.name);
+
+    // Send notification to customer (proposal received)
+    // Fetch customer email from request owner and provider name
+    const providerEmail = await this.userClient.getProviderEmail(proposal.provider_id);
+    const provider = await this.userClient.getProviderById(proposal.provider_id);
+    const providerName = provider?.business_name || 'Service Provider';
+
+    // Note: We need request owner info - for now using placeholder
+    // In production, fetch from request-service or pass customer_id in DTO
+    const customerEmail = 'customer@example.com'; // TODO: Get from request-service
+
+    if (customerEmail) {
+      this.notificationClient.sendEmail({
+        to: customerEmail,
+        template: 'newRequest',
+        variables: {
+          providerName,
+          serviceName: 'Service Request',
+          price: proposal.price,
+          message: proposal.message,
+          proposalUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/proposals/${proposal.id}`,
+        },
+      }).catch(err => {
+        this.logger.warn(`Failed to send proposal notification: ${err.message}`, ProposalService.name);
+      });
+    }
 
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent('proposal-events', {
@@ -93,6 +123,25 @@ export class ProposalService {
     const proposal = await this.proposalRepository.acceptProposal(id);
 
     this.logger.log(`Proposal accepted successfully: ${id}`, ProposalService.name);
+
+    // Send notification to provider (proposal accepted)
+    const providerEmail = await this.userClient.getProviderEmail(proposal.provider_id);
+    const customerName = 'Customer'; // TODO: Get from request-service or pass in DTO
+
+    if (providerEmail) {
+      this.notificationClient.sendEmail({
+        to: providerEmail,
+        template: 'jobAssigned',
+        variables: {
+          customerName,
+          serviceName: 'Service Request',
+          price: proposal.price,
+          jobUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobs/${proposal.id}`,
+        },
+      }).catch(err => {
+        this.logger.warn(`Failed to send acceptance notification: ${err.message}`, ProposalService.name);
+      });
+    }
 
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent('proposal-events', {
@@ -157,5 +206,19 @@ export class ProposalService {
     const response = data.map(ProposalResponseDto.fromEntity);
 
     return new PaginatedProposalResponseDto(response, nextCursor, hasMore);
+  }
+
+  async getMyProposals(userId: string): Promise<ProposalResponseDto[]> {
+    this.logger.log(`Fetching all proposals for user: ${userId}`, ProposalService.name);
+
+    // Get proposals where user is either customer (request owner) or provider
+    const customerProposals = await this.proposalRepository.getProposalsByCustomer(userId);
+    const providerProposals = await this.proposalRepository.getProposalsByProviderUser(userId);
+
+    // Combine and sort by created_at
+    const allProposals = [...customerProposals, ...providerProposals];
+    allProposals.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return allProposals.map(ProposalResponseDto.fromEntity);
   }
 }

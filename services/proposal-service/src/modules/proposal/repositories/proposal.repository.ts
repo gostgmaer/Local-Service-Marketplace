@@ -10,12 +10,23 @@ export class ProposalRepository {
 
   async createProposal(dto: CreateProposalDto): Promise<Proposal> {
     const query = `
-      INSERT INTO proposals (request_id, provider_id, price, message, status)
-      VALUES ($1, $2, $3, $4, 'pending')
-      RETURNING id, request_id, provider_id, price, message, status, created_at
+      INSERT INTO proposals (
+        request_id, provider_id, price, message, 
+        estimated_hours, start_date, completion_date, status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+      RETURNING *
     `;
 
-    const values = [dto.request_id, dto.provider_id, dto.price, dto.message];
+    const values = [
+      dto.request_id, 
+      dto.provider_id, 
+      dto.price, 
+      dto.message,
+      dto.estimated_hours || null,       // ✅ NEW
+      dto.start_date || null,            // ✅ NEW
+      dto.completion_date || null        // ✅ NEW
+    ];
 
     const result = await this.pool.query(query, values);
     return result.rows[0];
@@ -57,15 +68,15 @@ export class ProposalRepository {
     return result.rows[0] || null;
   }
 
-  async rejectProposal(id: string): Promise<Proposal | null> {
+  async rejectProposal(id: string, reason?: string): Promise<Proposal | null> {
     const query = `
       UPDATE proposals
-      SET status = 'rejected'
-      WHERE id = $1
-      RETURNING id, request_id, provider_id, price, message, status, created_at
+      SET status = 'rejected', rejected_reason = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING *
     `;
 
-    const result = await this.pool.query(query, [id]);
+    const result = await this.pool.query(query, [reason || null, id]);
     return result.rows[0] || null;
   }
 
@@ -128,5 +139,88 @@ export class ProposalRepository {
 
     const result = await this.pool.query(query, [requestId, providerId]);
     return result.rows.length > 0;
+  }
+
+  async getProposalsByCustomer(userId: string): Promise<Proposal[]> {
+    const query = `
+      SELECT p.id, p.request_id, p.provider_id, p.price, p.message, p.status, p.created_at
+      FROM proposals p
+      INNER JOIN service_requests sr ON p.request_id = sr.id
+      WHERE sr.user_id = $1
+      ORDER BY p.created_at DESC
+    `;
+
+    const result = await this.pool.query(query, [userId]);
+    return result.rows;
+  }
+
+  async getProposalsByProviderUser(userId: string): Promise<Proposal[]> {
+    const query = `
+      SELECT p.id, p.request_id, p.provider_id, p.price, p.message, p.status, p.created_at
+      FROM proposals p
+      INNER JOIN providers prov ON p.provider_id = prov.id
+      WHERE prov.user_id = $1
+      ORDER BY p.created_at DESC
+    `;
+
+    const result = await this.pool.query(query, [userId]);
+    return result.rows;
+  }
+
+  // ✅ NEW: Advanced query methods
+  async getProposalsByDateRange(
+    startDate: Date,
+    endDate: Date,
+    limit: number = 50
+  ): Promise<Proposal[]> {
+    const query = `
+      SELECT * FROM proposals
+      WHERE start_date BETWEEN $1 AND $2
+      ORDER BY start_date ASC
+      LIMIT $3
+    `;
+    const result = await this.pool.query(query, [startDate, endDate, limit]);
+    return result.rows;
+  }
+
+  async getProposalsByEstimatedHours(
+    minHours: number,
+    maxHours: number,
+    limit: number = 20
+  ): Promise<Proposal[]> {
+    const query = `
+      SELECT * FROM proposals
+      WHERE estimated_hours BETWEEN $1 AND $2
+        AND status = 'pending'
+      ORDER BY estimated_hours ASC
+      LIMIT $3
+    `;
+    const result = await this.pool.query(query, [minHours, maxHours, limit]);
+    return result.rows;
+  }
+
+  async getRejectedProposalsWithReasons(limit: number = 20): Promise<Proposal[]> {
+    const query = `
+      SELECT * FROM proposals
+      WHERE status = 'rejected'
+        AND rejected_reason IS NOT NULL
+      ORDER BY updated_at DESC
+      LIMIT $1
+    `;
+    const result = await this.pool.query(query, [limit]);
+    return result.rows;
+  }
+
+  async getProposalResponseStats(): Promise<any> {
+    const query = `
+      SELECT 
+        status,
+        COUNT(*) as count,
+        AVG(price) as avg_price
+      FROM proposals
+      GROUP BY status
+    `;
+    const result = await this.pool.query(query);
+    return result.rows;
   }
 }

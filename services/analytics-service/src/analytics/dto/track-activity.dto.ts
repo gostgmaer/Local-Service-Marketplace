@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString, IsUUID, IsOptional, IsObject } from 'class-valida
 export class TrackActivityDto {
   @IsNotEmpty()
   @IsUUID()
-  userId: string;
+  user_id: string;
 
   @IsNotEmpty()
   @IsString()
@@ -15,5 +15,5 @@ export class TrackActivityDto {
 
   @IsOptional()
   @IsString()
-  ipAddress?: string;
+  ip_address?: string;
 }
