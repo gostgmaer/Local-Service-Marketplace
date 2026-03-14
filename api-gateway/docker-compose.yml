@@ -7,10 +7,10 @@ services:
       dockerfile: Dockerfile
     container_name: api-gateway
     ports:
-      - "3000:3000"
+      - "3500:3500"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3500
       - JWT_SECRET=${JWT_SECRET}
       - AUTH_SERVICE_URL=http://auth-service:3001
       - USER_SERVICE_URL=http://user-service:3002

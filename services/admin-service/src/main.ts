@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 async function bootstrap() {
@@ -20,6 +21,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Global response transform interceptor
+  app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());

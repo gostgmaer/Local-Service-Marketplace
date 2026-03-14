@@ -49,23 +49,27 @@ $API_GATEWAY_ENABLED = $true
 
 if (Test-Path .env) {
     Get-Content .env | ForEach-Object {
-        if ($_ -match "^CACHE_ENABLED=(.+)") {
-            $CACHE_ENABLED = $matches[1] -eq "true"
+        # Strip comments and whitespace
+        $line = $_ -replace '#.*$', ''
+        $line = $line.Trim()
+        
+        if ($line -match "^CACHE_ENABLED=(.+)") {
+            $CACHE_ENABLED = $matches[1].Trim() -eq "true"
         }
-        if ($_ -match "^EVENT_BUS_ENABLED=(.+)") {
-            $EVENT_BUS_ENABLED = $matches[1] -eq "true"
+        if ($line -match "^EVENT_BUS_ENABLED=(.+)") {
+            $EVENT_BUS_ENABLED = $matches[1].Trim() -eq "true"
         }
-        if ($_ -match "^EMAIL_ENABLED=(.+)") {
-            $EMAIL_ENABLED = $matches[1] -eq "true"
+        if ($line -match "^EMAIL_ENABLED=(.+)") {
+            $EMAIL_ENABLED = $matches[1].Trim() -eq "true"
         }
-        if ($_ -match "^SMS_ENABLED=(.+)") {
-            $SMS_ENABLED = $matches[1] -eq "true"
+        if ($line -match "^SMS_ENABLED=(.+)") {
+            $SMS_ENABLED = $matches[1].Trim() -eq "true"
         }
-        if ($_ -match "^FRONTEND_ENABLED=(.+)") {
-            $FRONTEND_ENABLED = $matches[1] -eq "true"
+        if ($line -match "^FRONTEND_ENABLED=(.+)") {
+            $FRONTEND_ENABLED = $matches[1].Trim() -eq "true"
         }
-        if ($_ -match "^API_GATEWAY_ENABLED=(.+)") {
-            $API_GATEWAY_ENABLED = $matches[1] -eq "true"
+        if ($line -match "^API_GATEWAY_ENABLED=(.+)") {
+            $API_GATEWAY_ENABLED = $matches[1].Trim() -eq "true"
         }
     }
 }

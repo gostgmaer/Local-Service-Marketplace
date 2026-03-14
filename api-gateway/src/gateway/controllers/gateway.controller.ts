@@ -62,7 +62,7 @@ export class GatewayController {
         });
       }
 
-      // Send response from microservice
+      // Microservices now return standardized responses, pass them through as-is
       res.status(response.status).json(response.data);
     } catch (error) {
       this.logger.error(
@@ -71,17 +71,48 @@ export class GatewayController {
         'GatewayController',
       );
 
-      // Handle error responses
+      // Handle error responses in standardized format
       const status = error.status || 500;
       const message =
         error.response?.message || error.message || 'Internal server error';
 
+      // Send standardized error response
       res.status(status).json({
+        success: false,
         statusCode: status,
-        message,
-        timestamp: new Date().toISOString(),
-        path: req.path,
+        message: message,
+        error: {
+          code: this.getErrorCode(status),
+          message: message,
+        },
       });
+    }
+  }
+
+  private getErrorCode(status: number): string {
+    switch (status) {
+      case 400:
+        return 'BAD_REQUEST';
+      case 401:
+        return 'UNAUTHORIZED';
+      case 403:
+        return 'FORBIDDEN';
+      case 404:
+        return 'NOT_FOUND';
+      case 409:
+        return 'CONFLICT';
+      case 422:
+        return 'VALIDATION_ERROR';
+      case 429:
+        return 'RATE_LIMIT_EXCEEDED';
+      case 500:
+        return 'INTERNAL_ERROR';
+      case 503:
+        return 'SERVICE_UNAVAILABLE';
+      case 504:
+        return 'GATEWAY_TIMEOUT';
+      default:
+        return 'UNKNOWN_ERROR';
     }
   }
 }

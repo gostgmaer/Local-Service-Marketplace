@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './common/config/winston.config';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -26,6 +27,9 @@ async function bootstrap() {
       },
     }),
   );
+
+  // Global response transform interceptor
+  app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
   // Global exception filter with logger from DI container
   const logger = app.get('winston');

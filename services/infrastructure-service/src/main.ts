@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +19,9 @@ async function bootstrap() {
 
   // Winston logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+
+  // Global response transform interceptor
+  app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
