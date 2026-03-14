@@ -664,9 +664,10 @@ services:
     image: lsmp-api-gateway:latest
     container_name: api-gateway
     restart: unless-stopped
-    profiles:
-      - frontend
-      - gateway
+    # API Gateway should always be available for backend services
+    # profiles:
+    #   - frontend
+    #   - gateway
     ports:
       - "3500:3000"
     environment:
@@ -702,6 +703,8 @@ services:
       - notification-service
       - review-service
       - admin-service
+      # Optional services (messaging, analytics, infrastructure) removed from depends_on
+      # They will start independently if their profiles are enabled
     networks:
       - marketplace-network
     # healthcheck:
@@ -722,9 +725,10 @@ services:
     profiles:
       - frontend
     ports:
-      - "3000:3001"
+      - "3000:3000"
     environment:
       - NODE_ENV=production
+      - PORT=3000
       - NEXT_PUBLIC_API_URL=http://localhost:3500
     depends_on:
       - api-gateway

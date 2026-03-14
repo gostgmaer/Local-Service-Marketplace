@@ -14,7 +14,8 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { unreadCount } = useNotifications(); // Real-time updates!
+  // Only fetch notifications when user is authenticated
+  const { unreadCount } = useNotifications({ enabled: isAuthenticated });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);

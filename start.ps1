@@ -129,10 +129,10 @@ Write-Host ""
 if ($profiles.Count -gt 0) {
     $profileArgs = $profiles | ForEach-Object { "--profile", $_ }
     Write-Host "Starting with profiles: $($profiles -join ', ')" -ForegroundColor Cyan
-    docker-compose $profileArgs up -d
+    docker-compose $profileArgs up -d --build
 } else {
     Write-Host "Starting core services only (no scaling infrastructure)" -ForegroundColor Cyan
-    docker-compose up -d
+    docker-compose up -d --build
 }
 
 if ($LASTEXITCODE -eq 0) {
