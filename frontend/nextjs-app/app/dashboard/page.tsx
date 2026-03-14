@@ -46,10 +46,7 @@ export default function DashboardPage() {
     enabled: isAuthenticated && isNotificationsEnabled(),
   });
 
-  if (authLoading) {
-    return <Loading />;
-  }
-
+  // All hooks must be called before any conditional returns
   useEffect(() => {
     if (isAuthenticated) {
       analytics.pageview({
@@ -58,6 +55,10 @@ export default function DashboardPage() {
       });
     }
   }, [isAuthenticated]);
+
+  if (authLoading) {
+    return <Loading />;
+  }
 
   if (!isAuthenticated) {
     return null;
@@ -257,9 +258,14 @@ export default function DashboardPage() {
                       notification.read ? 'bg-gray-50 dark:bg-gray-700' : 'bg-blue-50 dark:bg-blue-900/20'
                     }`}
                   >
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      {notification.title}
-                    </h4>
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-medium text-gray-900 dark:text-white capitalize">
+                        {notification.type.replace(/_/g, ' ')}
+                      </h4>
+                      {!notification.read && (
+                        <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {notification.message}
                     </p>

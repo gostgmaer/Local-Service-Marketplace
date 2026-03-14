@@ -1,52 +1,39 @@
 'use client';
 
-import { Tabs } from '@/components/ui';
+import { ProviderDashboardLayout } from '@/components/layout/ProviderDashboardLayout';
 import { DocumentUpload } from '@/components/features/provider/DocumentUpload';
 import { DocumentList } from '@/components/features/provider/DocumentList';
 import { PortfolioUpload } from '@/components/features/provider/PortfolioUpload';
 import { PortfolioGallery } from '@/components/features/provider/PortfolioGallery';
-import { ReviewAggregates } from '@/components/features/review/ReviewAggregates';
-import { FileText, ImageIcon, Star } from 'lucide-react';
 
 export default function ProviderDashboard({ params }: { params: { id: string } }) {
-  const tabs = [
-    {
-      id: 'documents',
-      label: 'Documents',
-      content: (
-        <div className="grid lg:grid-cols-2 gap-8">
-          <DocumentUpload 
-            providerId={params.id}
-            onUploadSuccess={() => window.location.reload()}
-          />
-          <DocumentList providerId={params.id} />
-        </div>
-      )
-    },
-    {
-      id: 'portfolio',
-      label: 'Portfolio',
-      content: (
-        <div className="space-y-8">
-          <PortfolioUpload 
-            providerId={params.id}
-            onUploadSuccess={() => window.location.reload()}
-          />
-          <PortfolioGallery providerId={params.id} />
-        </div>
-      )
-    },
-    {
-      id: 'reviews',
-      label: 'Reviews',
-      content: <ReviewAggregates providerId={params.id} />
-    }
-  ];
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Provider Dashboard</h1>
-      <Tabs tabs={tabs} defaultTab="documents" />
-    </div>
+    <ProviderDashboardLayout providerId={params.id}>
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Quick Overview
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                Portfolio Items
+              </h3>
+              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                View in Portfolio tab
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                Customer Reviews
+              </h3>
+              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                View in Reviews tab
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ProviderDashboardLayout>
   );
 }

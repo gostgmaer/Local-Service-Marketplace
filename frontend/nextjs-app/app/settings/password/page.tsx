@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layout } from '@/components/layout/Layout';
+import { SettingsLayout } from '@/components/layout/SettingsLayout';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -96,47 +96,9 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <Layout>
-      <div className="bg-white dark:bg-gray-900 min-h-screen">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <Link
-              href="/settings"
-              className="inline-flex items-center text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Settings
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Change Password
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Update your password to keep your account secure
-            </p>
-          </div>
-
-          {/* Security Info */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-4 mb-8">
-            <div className="flex">
-              <Shield className="w-5 h-5 text-blue-400 mr-3 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                  Password Security Tips
-                </h3>
-                <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                  <li>• Use a strong, unique password</li>
-                  <li>• Don't reuse passwords from other sites</li>
-                  <li>• Consider using a password manager</li>
-                  <li>• Change your password regularly</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Change Password Form */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <SettingsLayout>
+      <div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Current Password */}
               <div>
                 <label
@@ -344,8 +306,8 @@ export default function ChangePasswordPage() {
               Forgot your password?
             </Link>
           </div>
-        </div>
+        </form>
       </div>
-    </Layout>
+    </SettingsLayout>
   );
 }

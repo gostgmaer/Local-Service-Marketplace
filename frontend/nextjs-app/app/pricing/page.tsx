@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { Layout } from '@/components/layout/Layout';
 import { PricingPlans } from '@/components/features/subscription/PricingPlans';
 
 export default function PricingPage() {
@@ -12,10 +13,12 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto px-4">
-        <PricingPlans onSelectPlan={handleSelectPlan} />
+    <Layout>
+      <div className="bg-gray-50 dark:bg-gray-900 py-12">
+        <div className="container mx-auto px-4">
+          <PricingPlans onSelectPlan={handleSelectPlan} />
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
