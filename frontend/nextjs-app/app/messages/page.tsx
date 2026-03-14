@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { isMessagingEnabled } from '@/config/features';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -13,19 +15,28 @@ import { Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function MessagesPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
 
+  // Redirect if messaging is disabled
+  useEffect(() => {
+    if (!isMessagingEnabled()) {
+      router.push('/dashboard');
+    }
+  }, [router]);
+
   const { data: conversations, isLoading } = useQuery({
     queryKey: ['conversations'],
     queryFn: () => messageService.getConversations(),
+    enabled: isMessagingEnabled(),
   });
 
   const { data: messages } = useQuery({
     queryKey: ['messages', selectedJobId],
     queryFn: () => messageService.getMessagesByJob(selectedJobId!),
-    enabled: !!selectedJobId,
+    enabled: !!selectedJobId && isMessagingEnabled(),
   });
 
   const handleSendMessage = async (e: React.FormEvent) => {

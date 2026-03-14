@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { isNotificationsEnabled } from '@/config/features';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
@@ -42,7 +43,7 @@ export default function DashboardPage() {
   const { data: notifications, isLoading: notificationsLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationService.getNotifications({ limit: 5 }),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && isNotificationsEnabled(),
   });
 
   if (authLoading) {
@@ -76,7 +77,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className={`grid grid-cols-1 ${isNotificationsEnabled() ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6 mb-12`}>
           <Card hover>
             <CardContent className="flex items-center justify-between">
               <div>
@@ -103,19 +104,21 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card hover>
-            <CardContent className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Notifications
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {notifications?.filter((n) => !n.read).length || 0}
-                </p>
-              </div>
-              <Bell className="h-8 w-8 text-yellow-600" />
-            </CardContent>
-          </Card>
+          {isNotificationsEnabled() && (
+            <Card hover>
+              <CardContent className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Notifications
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {notifications?.filter((n) => !n.read).length || 0}
+                  </p>
+                </div>
+                <Bell className="h-8 w-8 text-yellow-600" />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

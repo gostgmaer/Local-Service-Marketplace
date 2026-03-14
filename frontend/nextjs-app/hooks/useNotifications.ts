@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { notificationService } from '@/services/notification-service';
+import { isNotificationsEnabled } from '@/config/features';
 
 interface NotificationCount {
   unreadCount: number;
@@ -22,8 +23,12 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Check if notifications are enabled via feature flag
+  const notificationsEnabled = isNotificationsEnabled();
+
   const fetchUnreadCount = async () => {
-    if (!enabled) {
+    // Don't fetch if feature is disabled or not enabled via options
+    if (!enabled || !notificationsEnabled) {
       setIsLoading(false);
       return;
     }
@@ -40,8 +45,8 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   };
 
   useEffect(() => {
-    // Only fetch if enabled
-    if (!enabled) {
+    // Only fetch if enabled and notifications feature is enabled
+    if (!enabled || !notificationsEnabled) {
       setUnreadCount(0);
       setIsLoading(false);
       return;
@@ -54,7 +59,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     const interval = setInterval(fetchUnreadCount, 30000);
 
     return () => clearInterval(interval);
-  }, [enabled]); // Re-run when enabled state changes
+  }, [enabled, notificationsEnabled]); // Re-run when enabled state changes
 
   return {
     unreadCount,

@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { isNotificationsEnabled } from '@/config/features';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,12 +14,21 @@ import { formatRelativeTime } from '@/utils/helpers';
 import { Check, Bell } from 'lucide-react';
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { setUnreadCount } = useNotificationStore();
+
+  // Redirect if notifications are disabled
+  useEffect(() => {
+    if (!isNotificationsEnabled()) {
+      router.push('/dashboard');
+    }
+  }, [router]);
 
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationService.getNotifications({ limit: 50 }),
+    enabled: isNotificationsEnabled(),
   });
 
   const markAsReadMutation = useMutation({

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useNotifications } from '@/hooks/useNotifications';
+import { isNotificationsEnabled, isMessagingEnabled } from '@/config/features';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { SearchAutocomplete } from '@/components/ui/SearchAutocomplete';
 import { Bell, LogOut, User, Menu, X, ChevronDown, Settings } from 'lucide-react';
@@ -106,29 +107,33 @@ export function Navbar() {
                 >
                   Jobs
                 </Link>
-                <Link
-                  href="/messages"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === '/messages'
-                      ? 'text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
-                  }`}
-                >
-                  Messages
-                </Link>
+                {isMessagingEnabled() && (
+                  <Link
+                    href="/messages"
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      pathname === '/messages'
+                        ? 'text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                    }`}
+                  >
+                    Messages
+                  </Link>
+                )}
 
                 {/* Notifications with Badge */}
-                <Link
-                  href="/notifications"
-                  className="relative p-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 w-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Link>
+                {isNotificationsEnabled() && (
+                  <Link
+                    href="/notifications"
+                    className="relative p-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 w-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
 
                 {/* Theme Toggle */}
                 <ThemeToggle />
@@ -262,18 +267,22 @@ export function Navbar() {
                 >
                   Jobs
                 </Link>
-                <Link
-                  href="/messages"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Messages
-                </Link>
-                <Link
-                  href="/notifications"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Notifications {unreadCount > 0 && `(${unreadCount})`}
-                </Link>
+                {isMessagingEnabled() && (
+                  <Link
+                    href="/messages"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Messages
+                  </Link>
+                )}
+                {isNotificationsEnabled() && (
+                  <Link
+                    href="/notifications"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Notifications {unreadCount > 0 && `(${unreadCount})`}
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
