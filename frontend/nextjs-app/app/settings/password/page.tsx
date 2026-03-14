@@ -261,8 +261,7 @@ export default function ChangePasswordPage() {
                   Cancel
                 </Button>
               </div>
-            </form>
-          </div>
+           
 
           {/* Additional Security Options */}
           <div className="mt-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">

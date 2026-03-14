@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Ip, Inject, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, Ip, Inject, Get, UseGuards, Req, Res, Headers, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -14,6 +14,7 @@ import { PhoneOtpRequestDto } from '../dto/phone-otp-request.dto';
 import { PhoneOtpVerifyDto } from '../dto/phone-otp-verify.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { OAuthUserDto } from '../dto/oauth-user.dto';
+import { VerifyTokenDto, VerifyTokenResponseDto } from '../dto/verify-token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -244,6 +245,32 @@ export class AuthController {
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
     
     return result;
+  }
+
+  // ==========================================
+  // Token Verification (Gateway Internal API)
+  // ==========================================
+
+  @Post('verify')
+  async verifyToken(
+    @Body() verifyTokenDto: VerifyTokenDto,
+    @Headers('x-gateway-secret') gatewaySecret: string,
+  ): Promise<VerifyTokenResponseDto> {
+    // Verify this request is from the API Gateway (internal only)
+    const expectedSecret = process.env.GATEWAY_INTERNAL_SECRET || 'gateway-internal-secret-change-in-production';
+    
+    if (gatewaySecret !== expectedSecret) {
+      this.logger.warn('Unauthorized token verification attempt', {
+        context: 'AuthController',
+      });
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    this.logger.debug('POST /auth/verify - Gateway token verification', {
+      context: 'AuthController',
+    });
+    
+    return this.authService.verifyTokenAndGetUserInfo(verifyTokenDto.token);
   }
 
   // ==========================================

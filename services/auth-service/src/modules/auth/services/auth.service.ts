@@ -690,4 +690,53 @@ export class AuthService {
       throw new BadRequestException('OTP verification failed. Please try again.');
     }
   }
+
+  /**
+   * Verify JWT token and return user information (for API Gateway)
+   */
+  async verifyTokenAndGetUserInfo(token: string): Promise<{
+    userId: string;
+    email: string;
+    role: string;
+    name?: string;
+    phone?: string;
+  }> {
+    try {
+      // Verify the JWT token
+      const payload = this.jwtService.verifyAccessToken(token);
+
+      this.logger.debug('Token verified successfully', {
+        context: 'AuthService',
+        userId: payload.sub,
+      });
+
+      // Fetch additional user info from database
+      const user = await this.userRepo.findById(payload.sub);
+      
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Check if account is active
+      if (user.status !== 'active') {
+        throw new UnauthorizedException('Account is not active');
+      }
+
+      // Return user information
+      return {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        phone: user.phone,
+      };
+    } catch (error) {
+      this.logger.error('Token verification failed', {
+        context: 'AuthService',
+        error: error.message,
+      });
+      
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
 }

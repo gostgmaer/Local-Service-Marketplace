@@ -36,13 +36,14 @@ export class GatewayController {
         'GatewayController',
       );
 
-      // Forward request to microservice
+      // Forward request to microservice with user context
       const response = await this.gatewayService.forwardRequest(
         path,
         method,
         body,
         headers,
         query,
+        (req as any).user, // Pass decoded JWT user info
       );
 
       // Forward response headers from microservice

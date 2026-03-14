@@ -26,6 +26,7 @@ export class GatewayService {
     body?: any,
     headers?: any,
     queryParams?: any,
+    user?: any,
   ): Promise<AxiosResponse> {
     try {
       // Determine which service to route to
@@ -56,7 +57,7 @@ export class GatewayService {
       const config: AxiosRequestConfig = {
         method: method as any,
         url: targetUrl,
-        headers: this.sanitizeHeaders(headers),
+        headers: this.prepareHeaders(headers, user),
         timeout: 30000, // 30 seconds timeout
       };
 
@@ -130,12 +131,12 @@ export class GatewayService {
   }
 
   /**
-   * Sanitize headers before forwarding
-   * Remove gateway-specific headers
+   * Prepare headers before forwarding
+   * Remove gateway-specific headers and add user context
    */
-  private sanitizeHeaders(headers: any): any {
+  private prepareHeaders(headers: any, user?: any): any {
     if (!headers) {
-      return {};
+      headers = {};
     }
 
     const sanitized = { ...headers };
@@ -145,6 +146,30 @@ export class GatewayService {
     delete sanitized.connection;
     delete sanitized['content-length'];
     delete sanitized['accept-encoding'];
+
+    // Add user context headers from decoded JWT
+    if (user) {
+      // Extract user information from JWT payload
+      sanitized['x-user-id'] = user.userId || user.sub || user.id || '';
+      sanitized['x-user-email'] = user.email || '';
+      sanitized['x-user-role'] = user.role || 'user';
+      
+      // Optional: Add other user fields if present
+      if (user.name) {
+        sanitized['x-user-name'] = user.name;
+      }
+      if (user.phone) {
+        sanitized['x-user-phone'] = user.phone;
+      }
+      if (user.providerId) {
+        sanitized['x-provider-id'] = user.providerId;
+      }
+
+      this.logger.log(
+        `Added user context headers: userId=${sanitized['x-user-id']}, role=${sanitized['x-user-role']}`,
+        'GatewayService',
+      );
+    }
 
     return sanitized;
   }
