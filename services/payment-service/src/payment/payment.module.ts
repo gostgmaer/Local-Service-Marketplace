@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
-import { PaymentController } from './payment.controller';
+import { PaymentController } from './controllers/payment.controller';
 import { SavedPaymentMethodController } from './controllers/saved-payment-method.controller';
 import { PricingPlanController } from './controllers/pricing-plan.controller';
 import { SubscriptionController } from './controllers/subscription.controller';

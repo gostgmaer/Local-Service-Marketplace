@@ -68,6 +68,9 @@ export const ROUTES = {
   // Dashboard - Notifications
   DASHBOARD_NOTIFICATIONS: '/dashboard/notifications',
   
+  // Dashboard - Favorites
+  DASHBOARD_FAVORITES: '/dashboard/favorites',
+  
   // Dashboard - Payments
   DASHBOARD_PAYMENT_HISTORY: '/dashboard/payments/history',
   

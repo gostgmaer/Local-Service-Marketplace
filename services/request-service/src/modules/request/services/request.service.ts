@@ -54,8 +54,8 @@ export class RequestService {
       this.logger.log('Creating location for request', RequestService.name);
       const location = await this.locationRepository.createLocation({
         user_id: dto.user_id, // Will be null for anonymous users
-        latitude: dto.location.lat,
-        longitude: dto.location.lng,
+        latitude: dto.location.latitude,
+        longitude: dto.location.longitude,
         address: dto.location.address,
         city: dto.location.city,
         state: dto.location.state,

@@ -3,10 +3,10 @@ import { Type } from 'class-transformer';
 
 export class LocationDto {
   @IsNumber()
-  lat: number;
+  latitude: number;
 
   @IsNumber()
-  lng: number;
+  longitude: number;
 
   @IsOptional()
   @IsString()

@@ -2,17 +2,22 @@ import { apiClient } from './api-client';
 
 export interface ServiceRequest {
   id: string;
-  customer_id: string;
+  user_id?: string | null;
   category_id: string;
   description: string;
   budget: number;
   status: 'open' | 'assigned' | 'completed' | 'cancelled';
+  // Guest information for anonymous requests
+  guest_name?: string | null;
+  guest_email?: string | null;
+  guest_phone?: string | null;
   created_at: string;
   updated_at: string;
   category?: {
     id: string;
     name: string;
   };
+  location_id?: string;
   location?: {
     id: string;
     latitude: number;

@@ -5,6 +5,7 @@ import { apiClient } from './api-client';
 export interface UserProfile {
   id: string;
   email: string;
+  name?: string;
   phone?: string;
   role: 'customer' | 'provider' | 'admin';
   email_verified: boolean;

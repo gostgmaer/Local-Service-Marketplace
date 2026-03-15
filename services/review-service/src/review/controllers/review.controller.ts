@@ -2,23 +2,22 @@ import {
   Controller,
   Get,
   Post,
-  Body,
   Param,
+  Body,
   Query,
   Request,
-  ParseIntPipe,
-  DefaultValuePipe,
+  ParseUUIDPipe,
   UseGuards,
   HttpCode,
-  HttpStatus,
+  HttpStatus
 } from '@nestjs/common';
-import { ReviewService } from './services/review.service';
-import { ReviewRepository } from './repositories/review.repository';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { RespondReviewDto } from './dto/respond-review.dto';
+import { ReviewService } from '../services/review.service';
+import { CreateReviewDto } from '../dto/create-review.dto';
+import { RespondReviewDto } from '../dto/respond-review.dto';
+import { MarkHelpfulDto } from '../dto/mark-helpful.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { ReviewRepository } from '../repositories/review.repository';
 
-@UseGuards(JwtAuthGuard)
 @Controller('reviews')
 export class ReviewController {
   constructor(
@@ -26,9 +25,18 @@ export class ReviewController {
     private readonly reviewRepository: ReviewRepository,
   ) {}
 
+  /**
+   * Create a review after job completion
+   * POST /reviews
+   */
   @Post()
-  async createReview(@Body() createReviewDto: CreateReviewDto) {
+  @UseGuards(JwtAuthGuard)
+  async createReview(
+    @Body() createReviewDto: CreateReviewDto,
+    @Request() req: any
+  ) {
     const review = await this.reviewService.createReview(createReviewDto);
+
     return {
       success: true,
       data: review,
@@ -36,12 +44,42 @@ export class ReviewController {
     };
   }
 
+  /**
+   * Get review by ID
+   * GET /reviews/:id
+   */
   @Get(':id')
-  async getReviewById(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard)
+  async getReviewById(@Param('id', ParseUUIDPipe) id: string) {
     const review = await this.reviewService.getReviewById(id);
+    
     return {
       success: true,
       data: review
+    };
+  }
+
+  /**
+   * Get reviews for a provider
+   * GET /providers/:providerId/reviews
+   */
+  @Get('providers/:providerId/reviews')
+  async getProviderReviews(
+    @Param('providerId', ParseUUIDPipe) providerId: string,
+    @Query('limit') limit: number = 20,
+    @Query('offset') offset: number = 0
+  ) {
+    const result = await this.reviewService.getProviderReviews(
+      providerId,
+      Number(limit),
+      Number(offset)
+    );
+
+    return {
+      success: true,
+      data: result.reviews,
+      total: result.total,
+      averageRating: result.averageRating
     };
   }
 
@@ -50,7 +88,8 @@ export class ReviewController {
    * GET /jobs/:jobId/review
    */
   @Get('jobs/:jobId/review')
-  async getJobReview(@Param('jobId') jobId: string) {
+  @UseGuards(JwtAuthGuard)
+  async getJobReview(@Param('jobId', ParseUUIDPipe) jobId: string) {
     const review = await this.reviewRepository.getReviewByJobId(jobId);
     
     if (!review) {
@@ -72,9 +111,10 @@ export class ReviewController {
    * POST /reviews/:id/respond
    */
   @Post(':id/respond')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async respondToReview(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() respondReviewDto: RespondReviewDto,
     @Request() req: any
   ) {
@@ -96,9 +136,10 @@ export class ReviewController {
    * POST /reviews/:id/helpful
    */
   @Post(':id/helpful')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async markHelpful(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Request() req: any
   ) {
     const review = await this.reviewRepository.incrementHelpfulCount(id);
@@ -108,24 +149,5 @@ export class ReviewController {
       data: review,
       message: 'Marked as helpful'
     };
-  }
-}
-
-@Controller('providers')
-export class ProviderReviewController {
-  constructor(private readonly reviewService: ReviewService) {}
-
-  @Get(':providerId/reviews')
-  async getProviderReviews(
-    @Param('providerId') providerId: string,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
-  ) {
-    return this.reviewService.getProviderReviews(providerId, limit, offset);
-  }
-
-  @Get(':providerId/rating')
-  async getProviderRating(@Param('providerId') providerId: string) {
-    return this.reviewService.getProviderRating(providerId);
   }
 }
