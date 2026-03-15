@@ -9,6 +9,7 @@ import { analytics } from '@/utils/analytics';
 // Role-based dashboard components
 import CustomerDashboard from '@/components/dashboard/CustomerDashboard';
 import ProviderDashboard from '@/components/dashboard/ProviderDashboard';
+import AdminDashboard from '@/components/dashboard/AdminDashboard';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function DashboardPage() {
     if (isAuthenticated) {
       analytics.pageview({
         path: '/dashboard',
-        title: `${user?.role === 'provider' ? 'Provider' : 'Customer'} Dashboard`,
+        title: `${user?.role === 'admin' ? 'Admin' : user?.role === 'provider' ? 'Provider' : 'Customer'} Dashboard`,
       });
     }
   }, [isAuthenticated, user?.role]);
@@ -38,7 +39,11 @@ export default function DashboardPage() {
   }
 
   // Role-based dashboard rendering
-  const isProvider = user?.role === 'provider';
-
-  return isProvider ? <ProviderDashboard /> : <CustomerDashboard />;
+  if (user?.role === 'admin') {
+    return <AdminDashboard />;
+  } else if (user?.role === 'provider') {
+    return <ProviderDashboard />;
+  } else {
+    return <CustomerDashboard />;
+  }
 }

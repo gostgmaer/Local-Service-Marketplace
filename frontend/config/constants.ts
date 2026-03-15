@@ -84,6 +84,12 @@ export const ROUTES = {
   DASHBOARD_PROVIDER_REVIEWS: '/dashboard/provider/reviews',
   DASHBOARD_PROVIDER_DOCUMENTS: '/dashboard/provider/documents',
   
+  // Dashboard - Admin
+  DASHBOARD_ADMIN: '/dashboard/admin',
+  DASHBOARD_ADMIN_USERS: '/dashboard/admin/users',
+  DASHBOARD_ADMIN_DISPUTES: '/dashboard/admin/disputes',
+  DASHBOARD_ADMIN_SETTINGS: '/dashboard/admin/settings',
+  
   // Public Requests (only create is public - viewing requires authentication)
   CREATE_REQUEST: '/requests/create',
   REQUEST_DETAIL: (id: string) => `/dashboard/requests/${id}`, // Requires authentication
@@ -92,11 +98,11 @@ export const ROUTES = {
   PROVIDERS: '/providers',
   PROVIDER_DETAIL: (id: string) => `/providers/${id}`,
   
-  // Admin
-  ADMIN: '/admin',
-  ADMIN_USERS: '/admin/users',
-  ADMIN_DISPUTES: '/admin/disputes',
-  ADMIN_SETTINGS: '/admin/settings',
+  // Admin (Legacy - redirects to dashboard/admin)
+  ADMIN: '/dashboard/admin',
+  ADMIN_USERS: '/dashboard/admin/users',
+  ADMIN_DISPUTES: '/dashboard/admin/disputes',
+  ADMIN_SETTINGS: '/dashboard/admin/settings',
   
   // Legal
   PRIVACY: '/privacy',

@@ -108,6 +108,18 @@ export function Navbar() {
                 >
                   Jobs
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link
+                    href={ROUTES.DASHBOARD_ADMIN}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      pathname?.startsWith(ROUTES.DASHBOARD_ADMIN)
+                        ? 'text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                    }`}
+                  >
+                    Admin
+                  </Link>
+                )}
                 {isMessagingEnabled() && (
                   <Link
                     href={ROUTES.DASHBOARD_MESSAGES}

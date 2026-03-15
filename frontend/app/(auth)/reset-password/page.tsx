@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ROUTES } from '@/config/constants';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
