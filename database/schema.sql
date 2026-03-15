@@ -319,7 +319,8 @@ CREATE TABLE payments (
   status TEXT NOT NULL CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
   transaction_id TEXT,
   failed_reason TEXT,
-  created_at TIMESTAMP DEFAULT now() NOT NULL
+  created_at TIMESTAMP DEFAULT now() NOT NULL,
+  paid_at TIMESTAMP
 );
 
 CREATE INDEX idx_payments_job_id ON payments(job_id);
@@ -328,6 +329,8 @@ CREATE INDEX idx_payments_provider_id ON payments(provider_id);
 CREATE INDEX idx_payments_status ON payments(status);
 CREATE INDEX idx_payments_created_at ON payments(created_at DESC);
 CREATE INDEX idx_payments_transaction_id ON payments(transaction_id);
+CREATE INDEX idx_payments_provider_created ON payments(provider_id, created_at DESC);
+CREATE INDEX idx_payments_provider_status ON payments(provider_id, status);
 
 CREATE TABLE payment_webhooks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

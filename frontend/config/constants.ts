@@ -72,6 +72,12 @@ export const ROUTES = {
   // Dashboard - Reviews
   DASHBOARD_REVIEW_SUBMIT: '/dashboard/reviews/submit',
   
+  // Dashboard - Provider Specific
+  DASHBOARD_BROWSE_REQUESTS: '/dashboard/browse-requests',
+  DASHBOARD_MY_PROPOSALS: '/dashboard/my-proposals',
+  DASHBOARD_EARNINGS: '/dashboard/earnings',
+  DASHBOARD_AVAILABILITY: '/dashboard/availability',
+  
   // Public Requests (accessible to everyone, including anonymous users)
   CREATE_REQUEST: '/requests/create',
   REQUEST_DETAIL: (id: string) => `/requests/${id}`,

@@ -113,6 +113,64 @@ class PaymentService {
     // API client unwraps standardized response
     return response.data || [];
   }
+
+  // ------------------ Provider Earnings ------------------
+
+  async getProviderEarnings(
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<ProviderEarnings> {
+    const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const userId = authState?.state?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const params: any = {};
+    if (startDate) params.start_date = startDate.toISOString();
+    if (endDate) params.end_date = endDate.toISOString();
+
+    const response = await apiClient.get<ProviderEarnings>(
+      `/payments/provider/${userId}/earnings`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async getProviderTransactions(
+    limit: number = 20,
+    cursor?: string,
+    status?: string
+  ): Promise<PaginatedTransactions> {
+    const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const userId = authState?.state?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const params: any = { limit };
+    if (cursor) params.cursor = cursor;
+    if (status) params.status = status;
+
+    const response = await apiClient.get<PaginatedTransactions>(
+      `/payments/provider/${userId}/transactions`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async getProviderPayouts(): Promise<Payout[]> {
+    const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const userId = authState?.state?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const response = await apiClient.get<Payout[]>(
+      `/payments/provider/${userId}/payouts`
+    );
+    return response.data || [];
+  }
 }
 
 export interface SavedPaymentMethod {
@@ -153,6 +211,52 @@ export interface PricingPlan {
   features?: Record<string, any>;
   active: boolean;
   created_at: string;
+}
+
+export interface ProviderEarnings {
+  summary: {
+    total_earnings: number;
+    total_paid: number;
+    pending_payout: number;
+    completed_count: number;
+    currency: string;
+  };
+  monthly: Array<{
+    month: string;
+    earnings: number;
+    job_count: number;
+  }>;
+  average_per_job: number;
+}
+
+export interface Transaction {
+  id: string;
+  job_id: string;
+  customer_id: string;
+  provider_amount: number;
+  platform_fee: number;
+  total_amount: number;
+  status: string;
+  payment_method: string;
+  transaction_id: string;
+  created_at: string;
+  paid_at?: string;
+  customer_name: string;
+}
+
+export interface PaginatedTransactions {
+  data: Transaction[];
+  total: number;
+  cursor?: string;
+}
+
+export interface Payout {
+  id: string;
+  amount: number;
+  status: string;
+  payout_method: string;
+  payout_date: string;
+  transaction_count: number;
 }
 
 export const paymentService = new PaymentService();
