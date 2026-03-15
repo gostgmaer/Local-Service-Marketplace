@@ -151,7 +151,7 @@ export class PaymentController {
   @Get('provider/:providerId/payouts')
   @HttpCode(HttpStatus.OK)
   async getProviderPayouts(
-    @Param('providerId', ParseUUUIDPipe) providerId: string,
+    @Param('providerId', ParseUUIDPipe) providerId: string,
   ): Promise<PayoutResponseDto> {
     this.logger.log(`GET /payments/provider/${providerId}/payouts - Get provider payouts`, 'PaymentController');
     
