@@ -1,34 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getProviderDocuments, getDocumentVerificationStatus, deleteProviderDocument } from '@/services/user-service';
+import { 
+  getProviderDocuments, 
+  getDocumentVerificationStatus, 
+  deleteProviderDocument,
+  type ProviderDocument,
+  type VerificationStatus
+} from '@/services/user-service';
 import { FileText, Check, X, Clock, AlertTriangle, Calendar, Eye } from 'lucide-react';
 
-interface Document {
-  id: string;
-  document_type: string;
-  document_url: string;
-  document_number?: string;
-  expiry_date?: string;
-  verified: boolean;
-  verified_at?: string;
-  verified_by?: string;
-  rejection_reason?: string;
-  created_at: string;
-}
-
-interface VerificationStatus {
-  fully_verified: boolean;
-  pending_documents: number;
-  verified_documents: number;
-  missing_required_documents: string[];
-}
-
 export function DocumentList({ providerId }: { providerId: string }) {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<ProviderDocument[]>([]);
   const [status, setStatus] = useState<VerificationStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<ProviderDocument | null>(null);
 
   useEffect(() => {
     loadDocuments();
@@ -48,13 +34,8 @@ export function DocumentList({ providerId }: { providerId: string }) {
 
   const loadVerificationStatus = async () => {
     try {
-      const response = await fetch(`/api/providers/${providerId}/documents/verification-status`);
-      if (response.ok) {
-        const responseData = await response.json();
-        // Handle standardized response: { success, data } or direct data
-        const unwrappedData = responseData?.data || responseData;
-        setStatus(unwrappedData);
-      }
+      const data = await getDocumentVerificationStatus(providerId);
+      setStatus(data);
     } catch (error) {
       console.error('Failed to load status:', error);
     }
@@ -73,7 +54,7 @@ export function DocumentList({ providerId }: { providerId: string }) {
     }
   };
 
-  const getStatusBadge = (doc: Document) => {
+  const getStatusBadge = (doc: ProviderDocument) => {
     if (doc.verified) {
       return (
         <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 text-sm font-medium rounded-full">
@@ -83,7 +64,7 @@ export function DocumentList({ providerId }: { providerId: string }) {
       );
     }
 
-    if (doc.rejection_reason) {
+    if (doc.rejected && doc.rejection_reason) {
       return (
         <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 text-sm font-medium rounded-full">
           <X className="w-4 h-4" />
@@ -149,26 +130,26 @@ export function DocumentList({ providerId }: { providerId: string }) {
               <div className="grid sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-gray-600">Verified Documents</p>
-                  <p className="text-2xl font-bold text-green-600">{status.verified_documents}</p>
+                  <p className="text-2xl font-bold text-green-600">{status.verified_count}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Pending Review</p>
-                  <p className="text-2xl font-bold text-yellow-600">{status.pending_documents}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{status.pending_count}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Missing Required</p>
                   <p className="text-2xl font-bold text-red-600">
-                    {status.missing_required_documents.length}
+                    {status.missing_required_count}
                   </p>
                 </div>
               </div>
               
-              {status.missing_required_documents.length > 0 && (
+              {status.missing_required_types.length > 0 && (
                 <div className="mt-4 p-3 bg-white rounded border border-yellow-300">
                   <p className="font-medium text-sm mb-2">Missing Required Documents:</p>
                   <ul className="list-disc list-inside text-sm text-gray-700">
-                    {status.missing_required_documents.map(doc => (
-                      <li key={doc}>{formatDocumentType(doc)}</li>
+                    {status.missing_required_types.map((docType: string) => (
+                      <li key={docType}>{formatDocumentType(docType)}</li>
                     ))}
                   </ul>
                 </div>

@@ -8,12 +8,15 @@ import {
   Inject,
   LoggerService,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AnalyticsService } from '../services/analytics.service';
 import { MetricsAggregationService } from '../services/metrics-aggregation.service';
 import { TrackActivityDto } from '../dto/track-activity.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(

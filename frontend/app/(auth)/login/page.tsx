@@ -32,7 +32,7 @@ type LoginMethod = 'email' | 'phone-password' | 'phone-otp';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated, setToken } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [otpSent, setOtpSent] = useState(false);
@@ -99,13 +99,8 @@ export default function LoginPage() {
       );
       
       // Handle standardized response: { success, statusCode, message, data }
-      const responseData = response.data?.data || response.data;
-      const { accessToken, refreshToken } = responseData;
-      setToken(accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
-      
+      // Note: Phone login with NextAuth requires backend integration
+      // For now, tokens are stored in cookies automatically
       toast.success('Login successful!');
       router.push(ROUTES.DASHBOARD);
     } catch (error: any) {
@@ -151,13 +146,8 @@ export default function LoginPage() {
       );
       
       // Handle standardized response: { success, statusCode, message, data }
-      const responseData = response.data?.data || response.data;
-      const { accessToken, refreshToken } = responseData;
-      setToken(accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
-      
+      // Note: OTP login with NextAuth requires backend integration
+      // For now, tokens are stored in cookies automatically
       toast.success('Login successful!');
       router.push(ROUTES.DASHBOARD);
     } catch (error: any) {

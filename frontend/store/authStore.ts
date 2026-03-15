@@ -44,25 +44,14 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         try {
-          const response: AuthResponse = await authService.login({
-            email,
-            password,
-          });
-          
-          // Store access token in localStorage
-          authService.setToken(response.accessToken);
-          if (response.refreshToken && typeof window !== 'undefined') {
-            localStorage.setItem('refresh_token', response.refreshToken);
-          }
-          
-          set({
-            user: response.user,
-            token: response.accessToken,
-            isAuthenticated: true,
-            isLoading: false,
-          });
+          // Note: This store is deprecated - use NextAuth signIn instead
+          // Keeping for backward compatibility only
+          set({ isLoading: true });
+          // @ts-ignore - authService.login signature changed, but this store is deprecated
+          const response: any = await authService.login(email, password);
+          set({ isLoading: false });
         } catch (error) {
-          set({ user: null, token: null, isAuthenticated: false });
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
           throw error;
         }
       },

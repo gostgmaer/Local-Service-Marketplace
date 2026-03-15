@@ -1,36 +1,45 @@
+import { auth } from "@/auth.config";
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-// Define public routes that don't require authentication
-const publicRoutes = ['/', '/login', '/signup', '/auth/callback'];
+// Define routes that don't require authentication
+const publicRoutes = ['/', '/login', '/signup', '/auth/callback', '/verify-email'];
 
 // Define routes that should redirect to dashboard if already authenticated
 const authRoutes = ['/login', '/signup'];
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  
-  // Note: Token-based auth check removed because tokens are in localStorage
-  // which is not accessible in middleware (server-side)
-  // Auth checks are handled client-side in useAuth hook and page components
-  
-  // For now, middleware only handles route matching, not authentication
-  // In production, implement cookie-based tokens for SSR auth
-  
+export default auth((req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+
+  const isPublicRoute = publicRoutes.some(route => 
+    nextUrl.pathname === route || nextUrl.pathname.startsWith(route)
+  );
+  const isAuthRoute = authRoutes.includes(nextUrl.pathname);
+
+  // Redirect logged-in users away from auth pages
+  if (isAuthRoute && isLoggedIn) {
+    return NextResponse.redirect(new URL('/dashboard', nextUrl));
+  }
+
+  // Redirect non-logged-in users to login for protected routes
+  if (!isPublicRoute && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', nextUrl));
+  }
+
   return NextResponse.next();
-}
+});
 
 // Configure which routes to run middleware on
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * - api/auth (NextAuth API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
   ],
 };

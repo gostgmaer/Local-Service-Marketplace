@@ -85,6 +85,16 @@ class NotificationService {
     );
     return response.data;
   }
+
+  // ------------------ Unsubscribe ------------------
+
+  async unsubscribe(email: string, reason?: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      '/notifications/unsubscribe',
+      { email, reason }
+    );
+    return response.data;
+  }
 }
 
 export interface NotificationPreferences {

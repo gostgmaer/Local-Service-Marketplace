@@ -1,29 +1,82 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useEffect } from 'react';
 import { ROUTES } from '@/config/constants';
+import { authService, SignupData } from '@/services/auth-service';
+import toast from 'react-hot-toast';
 
 export function useAuth() {
   const router = useRouter();
-  const {
-    user,
-    token,
-    isAuthenticated,
-    isLoading,
-    login,
-    signup,
-    logout,
-    checkAuth,
-    setToken,
-  } = useAuthStore();
+  const { data: session, status, update } = useSession();
 
-  // Check auth only once on mount (not on every checkAuth function change)
+  const isLoading = status === 'loading';
+  const isAuthenticated = status === 'authenticated';
+  const user = session?.user;
+
+  // Handle token refresh errors
   useEffect(() => {
-    checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (session?.error === "RefreshAccessTokenError") {
+      // Token refresh failed - force logout
+      toast.error('Session expired. Please log in again.');
+      signOut({ redirect: false }).then(() => {
+        router.push(ROUTES.LOGIN);
+      });
+    }
+  }, [session?.error, router]);
+
+  const login = async (email: string, password: string) => {
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      toast.error(result.error);
+      throw new Error(result.error);
+    }
+
+    if (result?.ok) {
+      toast.success('Login successful!');
+      router.push(ROUTES.DASHBOARD);
+    }
+  };
+
+  const signup = async (data: SignupData) => {
+    try {
+      // Call backend signup endpoint
+      const response = await authService.signup(data);
+      
+      // After successful signup, automatically sign in
+      await signIn('credentials', {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      toast.success('Account created successfully!');
+      router.push(ROUTES.DASHBOARD);
+    } catch (error: any) {
+      toast.error(error?.message || 'Signup failed');
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      // Call backend logout to invalidate session
+      await authService.logout();
+    } catch (error) {
+      console.error('Backend logout error:', error);
+    } finally {
+      // NextAuth signOut handles client-side session cleanup
+      await signOut({ redirect: false });
+      toast.success('Logged out successfully');
+      router.push(ROUTES.LOGIN);
+    }
+  };
 
   const requireAuth = () => {
     if (!isAuthenticated && !isLoading) {
@@ -45,7 +98,7 @@ export function useAuth() {
 
   return {
     user,
-    token,
+    session,
     isAuthenticated,
     isLoading,
     login,
@@ -53,6 +106,9 @@ export function useAuth() {
     logout,
     requireAuth,
     requireRole,
-    setToken,
+    updateSession: update,
+    // Expose token expiration for debugging
+    tokenExpires: session?.accessTokenExpires,
+    hasTokenError: session?.error === "RefreshAccessTokenError",
   };
 }
