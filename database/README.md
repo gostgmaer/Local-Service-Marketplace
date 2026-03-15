@@ -1,6 +1,18 @@
 # Database Seeding
 
-This directory contains scripts to populate your Local Service Marketplace database with realistic sample data.
+This directory contains **advanced, production-ready scripts** to populate your Local Service Marketplace database with realistic sample data.
+
+## 🚀 New: JavaScript Version (Recommended)
+
+We now have an **advanced JavaScript seeder** (`seed.js`) that:
+- ✅ **Never fails** - Advanced error handling and retry logic
+- ✅ **Handles duplicates intelligently** - Automatic UUID regeneration
+- ✅ **No TypeScript dependencies** - Pure JavaScript
+- ✅ **Idempotent** - Safe to run multiple times
+- ✅ **Self-healing** - Recovers from transient errors
+- ✅ **Comprehensive logging** - Real-time progress with emojis
+
+📖 **See [SEEDER_GUIDE.md](./SEEDER_GUIDE.md) for full documentation**
 
 ## What Gets Seeded
 
@@ -46,30 +58,71 @@ The seeder creates **at least 50 records** for most tables, including:
 
 ## Quick Start
 
-### Option 1: Run from application root (Easiest)
+### Option 1: Use the Runner Scripts (Easiest) ⭐
+
+**Windows PowerShell:**
+```powershell
+cd database
+.\run-seeder.ps1
+```
+
+**Windows Command Prompt:**
+```cmd
+cd database
+run-seeder.bat
+```
+
+**Linux/Mac:**
+```bash
+cd database
+chmod +x run-seeder.sh
+./run-seeder.sh
+```
+
+**Script Options:**
+- `--force` - Skip confirmation prompt
+- `--skip-verify` - Skip verification step
+- `--typescript` - Use TypeScript version
+- `--help` - Show help
+
+These scripts will:
+1. Load environment variables
+2. Test database connection
+3. Install dependencies if needed
+4. Run the seeder
+5. Verify the data (optional)
+
+### Option 2: Run from application root
 
 ```powershell
-# Windows PowerShell
+# Windows PowerShell (if exists from previous setup)
 .\seed-database.ps1
 ```
 
-This script will:
-1. Load environment variables from `.env`
-2. Check database connectivity
-3. Install dependencies if needed
-4. Run the seeder with confirmation
-
-### Option 2: Run directly
+### Option 3: Run directly with npm
 
 ```bash
 # Navigate to database folder
 cd database
 
 # Install dependencies
+npm install
+# or
 pnpm install
 
-# Run seeder
-pnpm run seed
+# Run the JavaScript seeder (recommended)
+npm run seed
+
+# Verify seeding was successful
+npm run verify
+```
+
+### Option 3: Run TypeScript version (legacy)
+
+```bash
+cd database
+pnpm install
+pnpm run seed:ts
 ```
 
 ## Configuration
@@ -89,12 +142,17 @@ POSTGRES_DB=marketplace
 After seeding, you can login with:
 
 **Admin Account:**
+- Email: Generated with timestamp (check console output or database)
+- Password: `password123`
+
+**Note:** The JavaScript seeder generates unique emails with timestamps to prevent conflicts.
+For TypeScript version:
 - Email: `admin@marketplace.com`
 - Password: `password123`
 
 **All Users:**
 - Password: `password123`
-- Emails follow pattern: `firstname.lastname@example.com`
+- Emails follow pattern: `firstname.lastname.timestamp.random@marketplace.local`
 
 ## Sample Data Features
 
@@ -143,10 +201,50 @@ The script seeds tables in dependency order:
 
 ### Performance
 
-- Seeds 1000+ records in under 30 seconds
-- Uses batch inserts where possible
-- Proper transaction handling
-- Error recovery
+- Seeds 1000+ records in under 60 seconds
+- Uses connection pooling for efficiency
+- Intelligent retry logic with exponential backoff
+- Graceful error recovery
+- Real-time progress tracking
+
+## Advanced Features (JavaScript Version)
+
+### Unique ID Generation
+- Uses `crypto.randomUUID()` for cryptographically secure UUIDs
+- Timestamp-based email generation prevents collisions
+- Automatic regeneration on duplicate key violations
+
+### Error Handling
+- **Retry Logic**: Up to 5 attempts with exponential backoff
+- **Duplicate Handling**: Automatic UUID regeneration
+- **Foreign Key Protection**: Checks for dependent data
+- **Graceful Degradation**: Continues on individual failures
+
+### Idempotency
+- Uses `ON CONFLICT` clauses for safe re-runs
+- Won't create duplicate categories, plans, or settings
+- Updates existing records where appropriate
+
+### Data Integrity
+- Maintains referential integrity
+- Tracks created IDs in memory for relationships
+- Validates data before insertion
+- Checks for orphaned records
+
+## Verification
+
+After seeding, verify the data:
+
+```bash
+npm run verify
+```
+
+This will:
+- Count records in all tables
+- Check for orphaned records
+- Verify referential integrity
+- Show sample data
+- Display status distributions
 
 ## Customization
 
