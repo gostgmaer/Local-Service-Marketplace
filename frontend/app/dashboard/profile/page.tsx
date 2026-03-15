@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
+import { ROUTES } from '@/config/constants';
 import { 
   User, 
   Mail, 
@@ -36,7 +37,7 @@ export default function ProfilePage() {
               Please log in to view your profile
             </h2>
             <Link
-              href="/login"
+              href={ROUTES.LOGIN}
               className="inline-block bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition"
             >
               Log In
@@ -115,7 +116,7 @@ export default function ProfilePage() {
 
                 {/* Edit Button */}
                 <Link
-                  href="/profile/edit"
+                  href={ROUTES.DASHBOARD_PROFILE_EDIT}
                   className="mt-4 sm:mt-0"
                 >
                   <Button>
@@ -210,20 +211,20 @@ export default function ProfilePage() {
                 </h2>
                 <div className="space-y-2">
                   <Link
-                    href="/settings"
+                    href={ROUTES.DASHBOARD_SETTINGS}
                     className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                   >
                     Settings
                   </Link>
                   <Link
-                    href="/settings/password"
+                    href={ROUTES.DASHBOARD_SETTINGS_PASSWORD}
                     className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                   >
                     Change Password
                   </Link>
                   {isProvider && (
                     <Link
-                      href="/dashboard"
+                      href={ROUTES.DASHBOARD}
                       className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
                     >
                       My Dashboard

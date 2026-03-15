@@ -23,16 +23,11 @@ import toast from 'react-hot-toast';
 
 export default function CreateRequestPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [categories, setCategories] = useState<Array<{ value: string; label: string }>>([]);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [location, setLocation] = useState<any>(null);
-
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push(ROUTES.LOGIN);
-    }
-  }, [isAuthenticated, authLoading, router]);
+  const [guestInfo, setGuestInfo] = useState({ name: '', email: '', phone: '' });
 
   const form = useForm({
     resolver: zodResolver(createRequestSchema),
@@ -91,8 +86,16 @@ export default function CreateRequestPage() {
       return;
     }
 
+    // For anonymous users, validate guest info
+    if (!isAuthenticated) {
+      if (!guestInfo.name || !guestInfo.email || !guestInfo.phone) {
+        toast.error('Please provide your contact information');
+        return;
+      }
+    }
+
     // Prepare request data with location
-    const requestData = {
+    const requestData: any = {
       ...data,
       location: {
         latitude: location.lat,
@@ -105,16 +108,16 @@ export default function CreateRequestPage() {
       },
     };
 
+    // Include user_id only if authenticated
+    if (isAuthenticated && user?.id) {
+      requestData.user_id = user.id;
+    } else {
+      // Include guest contact info for anonymous requests
+      requestData.guest_info = guestInfo;
+    }
+
     createMutation.mutate(requestData as CreateRequestFormData);
   };
-
-  if (authLoading) {
-    return <Loading />;
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <Layout>
@@ -141,6 +144,41 @@ export default function CreateRequestPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Guest Contact Information (for anonymous users) */}
+                {!isAuthenticated && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
+                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-3">
+                      Your Contact Information
+                    </h3>
+                    <Input
+                      label="Name"
+                      value={guestInfo.name}
+                      onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
+                      placeholder="Your full name"
+                      required
+                    />
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={guestInfo.email}
+                      onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
+                      placeholder="your.email@example.com"
+                      required
+                    />
+                    <Input
+                      label="Phone"
+                      type="tel"
+                      value={guestInfo.phone}
+                      onChange={(e) => setGuestInfo({ ...guestInfo, phone: e.target.value })}
+                      placeholder="+1 (555) 123-4567"
+                      required
+                    />
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Providers will use this information to contact you about your request.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <Select
                     label="Category"

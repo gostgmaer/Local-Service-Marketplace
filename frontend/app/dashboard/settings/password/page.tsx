@@ -317,7 +317,7 @@ export default function ChangePasswordPage() {
           {/* Forgot Password Link */}
           <div className="mt-6 text-center">
             <Link
-              href="/forgot-password"
+              href={ROUTES.FORGOT_PASSWORD}
               className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
             >
               Forgot your password?

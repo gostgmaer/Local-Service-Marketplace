@@ -38,44 +38,47 @@ export const ROUTES = {
   VERIFY_EMAIL: '/auth/verify-email',
   CALLBACK: '/auth/callback',
   
-  // Dashboard
+  // Dashboard - Main
   DASHBOARD: '/dashboard',
   
-  // Profile
-  PROFILE: '/profile',
-  PROFILE_EDIT: '/profile/edit',
+  // Dashboard - Profile
+  DASHBOARD_PROFILE: '/dashboard/profile',
+  DASHBOARD_PROFILE_EDIT: '/dashboard/profile/edit',
   
-  // Settings
-  SETTINGS: '/settings',
-  SETTINGS_NOTIFICATIONS: '/settings/notifications',
-  SETTINGS_PASSWORD: '/settings/password',
-  SETTINGS_PAYMENT_METHODS: '/settings/payment-methods',
-  SETTINGS_SUBSCRIPTION: '/settings/subscription',
+  // Dashboard - Settings
+  DASHBOARD_SETTINGS: '/dashboard/settings',
+  DASHBOARD_SETTINGS_NOTIFICATIONS: '/dashboard/settings/notifications',
+  DASHBOARD_SETTINGS_PASSWORD: '/dashboard/settings/password',
+  DASHBOARD_SETTINGS_PAYMENT_METHODS: '/dashboard/settings/payment-methods',
+  DASHBOARD_SETTINGS_SUBSCRIPTION: '/dashboard/settings/subscription',
   
-  // Providers
+  // Dashboard - Requests
+  DASHBOARD_REQUESTS: '/dashboard/requests',
+  DASHBOARD_REQUEST_DETAIL: (id: string) => `/dashboard/requests/${id}`,
+  
+  // Dashboard - Jobs
+  DASHBOARD_JOBS: '/dashboard/jobs',
+  DASHBOARD_JOB_DETAIL: (id: string) => `/dashboard/jobs/${id}`,
+  
+  // Dashboard - Messages
+  DASHBOARD_MESSAGES: '/dashboard/messages',
+  
+  // Dashboard - Notifications
+  DASHBOARD_NOTIFICATIONS: '/dashboard/notifications',
+  
+  // Dashboard - Payments
+  DASHBOARD_PAYMENT_HISTORY: '/dashboard/payments/history',
+  
+  // Dashboard - Reviews
+  DASHBOARD_REVIEW_SUBMIT: '/dashboard/reviews/submit',
+  
+  // Public Requests (accessible to everyone, including anonymous users)
+  CREATE_REQUEST: '/requests/create',
+  REQUEST_DETAIL: (id: string) => `/requests/${id}`,
+  
+  // Providers (Public - accessible before login)
   PROVIDERS: '/providers',
   PROVIDER_DETAIL: (id: string) => `/providers/${id}`,
-  
-  // Requests
-  REQUESTS: '/requests',
-  REQUEST_DETAIL: (id: string) => `/requests/${id}`,
-  CREATE_REQUEST: '/requests/create',
-  
-  // Jobs
-  JOBS: '/jobs',
-  JOB_DETAIL: (id: string) => `/jobs/${id}`,
-  
-  // Messages
-  MESSAGES: '/messages',
-  
-  // Notifications
-  NOTIFICATIONS: '/notifications',
-  
-  // Payments
-  PAYMENT_HISTORY: '/payments/history',
-  
-  // Reviews
-  REVIEW_SUBMIT: '/reviews/submit',
   
   // Admin
   ADMIN: '/admin',
@@ -87,6 +90,19 @@ export const ROUTES = {
   PRIVACY: '/privacy',
   TERMS: '/terms',
   COOKIES: '/cookies',
+  
+  // Legacy routes (for backward compatibility - redirects)
+  PROFILE: '/dashboard/profile',
+  PROFILE_EDIT: '/dashboard/profile/edit',
+  SETTINGS: '/dashboard/settings',
+  REQUESTS: '/dashboard/requests',
+  JOBS: '/dashboard/jobs',
+  JOB_DETAIL: (id: string) => `/dashboard/jobs/${id}`,
+  MESSAGES: '/dashboard/messages',
+  NOTIFICATIONS: '/dashboard/notifications',
+  PAYMENT_HISTORY: '/dashboard/payments/history',
+  REVIEW_SUBMIT: '/dashboard/reviews/submit',
+  DASHBOARD_CREATE_REQUEST: '/requests/create', // Redirect to public route
 } as const;
 
 export const API_ENDPOINTS = {

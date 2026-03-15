@@ -74,7 +74,7 @@ export default function RequestsPage() {
               Browse and manage service requests
             </p>
           </div>
-          <Link href="/requests/create">
+          <Link href={ROUTES.CREATE_REQUEST}>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               New Request
@@ -154,7 +154,7 @@ export default function RequestsPage() {
             <CardContent>
               <div className="text-center py-12">
                 <p className="text-gray-500 dark:text-gray-400 mb-4">No requests found</p>
-                <Link href="/requests/create">
+                <Link href={ROUTES.CREATE_REQUEST}>
                   <Button>Create Your First Request</Button>
                 </Link>
               </div>

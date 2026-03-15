@@ -89,9 +89,9 @@ export function Navbar() {
                   Providers
                 </Link>
                 <Link
-                  href={ROUTES.REQUESTS}
+                  href={ROUTES.DASHBOARD_REQUESTS}
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname?.startsWith(ROUTES.REQUESTS)
+                    pathname?.startsWith(ROUTES.DASHBOARD_REQUESTS)
                       ? 'text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
                       : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
                   }`}
@@ -99,9 +99,9 @@ export function Navbar() {
                   Requests
                 </Link>
                 <Link
-                  href={ROUTES.JOBS}
+                  href={ROUTES.DASHBOARD_JOBS}
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname?.startsWith(ROUTES.JOBS)
+                    pathname?.startsWith(ROUTES.DASHBOARD_JOBS)
                       ? 'text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
                       : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
                   }`}
@@ -110,9 +110,9 @@ export function Navbar() {
                 </Link>
                 {isMessagingEnabled() && (
                   <Link
-                    href={ROUTES.MESSAGES}
+                    href={ROUTES.DASHBOARD_MESSAGES}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      pathname === ROUTES.MESSAGES
+                      pathname === ROUTES.DASHBOARD_MESSAGES
                         ? 'text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20'
                         : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
                     }`}
@@ -124,7 +124,7 @@ export function Navbar() {
                 {/* Notifications with Badge */}
                 {isNotificationsEnabled() && (
                   <Link
-                    href={ROUTES.NOTIFICATIONS}
+                    href={ROUTES.DASHBOARD_NOTIFICATIONS}
                     className="relative p-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
                   >
                     <Bell className="h-5 w-5" />
@@ -155,7 +155,7 @@ export function Navbar() {
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
                       <Link
-                        href={ROUTES.PROFILE}
+                        href={ROUTES.DASHBOARD_PROFILE}
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
@@ -163,7 +163,7 @@ export function Navbar() {
                         View Profile
                       </Link>
                       <Link
-                        href={ROUTES.SETTINGS}
+                        href={ROUTES.DASHBOARD_SETTINGS}
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
@@ -257,20 +257,20 @@ export function Navbar() {
                   Providers
                 </Link>
                 <Link
-                  href={ROUTES.REQUESTS}
+                  href={ROUTES.DASHBOARD_REQUESTS}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Requests
                 </Link>
                 <Link
-                  href={ROUTES.JOBS}
+                  href={ROUTES.DASHBOARD_JOBS}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Jobs
                 </Link>
                 {isMessagingEnabled() && (
                   <Link
-                    href={ROUTES.MESSAGES}
+                    href={ROUTES.DASHBOARD_MESSAGES}
                     className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     Messages
@@ -278,20 +278,20 @@ export function Navbar() {
                 )}
                 {isNotificationsEnabled() && (
                   <Link
-                    href={ROUTES.NOTIFICATIONS}
+                    href={ROUTES.DASHBOARD_NOTIFICATIONS}
                     className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     Notifications {unreadCount > 0 && `(${unreadCount})`}
                   </Link>
                 )}
                 <Link
-                  href={ROUTES.PROFILE}
+                  href={ROUTES.DASHBOARD_PROFILE}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Profile
                 </Link>
                 <Link
-                  href={ROUTES.SETTINGS}
+                  href={ROUTES.DASHBOARD_SETTINGS}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Settings

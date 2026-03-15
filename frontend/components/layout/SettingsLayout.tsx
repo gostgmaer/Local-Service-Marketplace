@@ -17,31 +17,31 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
 
   const menuItems = [
     {
-      href: ROUTES.SETTINGS,
+      href: ROUTES.DASHBOARD_SETTINGS,
       label: 'General',
       icon: SettingsIcon,
       enabled: true,
     },
     {
-      href: ROUTES.SETTINGS_NOTIFICATIONS,
+      href: ROUTES.DASHBOARD_SETTINGS_NOTIFICATIONS,
       label: 'Notifications',
       icon: Bell,
       enabled: isNotificationsEnabled(),
     },
     {
-      href: ROUTES.SETTINGS_PASSWORD,
+      href: ROUTES.DASHBOARD_SETTINGS_PASSWORD,
       label: 'Password',
       icon: Lock,
       enabled: true,
     },
     {
-      href: ROUTES.SETTINGS_PAYMENT_METHODS,
+      href: ROUTES.DASHBOARD_SETTINGS_PAYMENT_METHODS,
       label: 'Payment Methods',
       icon: CreditCard,
       enabled: true,
     },
     {
-      href: ROUTES.SETTINGS_SUBSCRIPTION,
+      href: ROUTES.DASHBOARD_SETTINGS_SUBSCRIPTION,
       label: 'Subscription',
       icon: Crown,
       enabled: true,

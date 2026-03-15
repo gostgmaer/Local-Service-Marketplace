@@ -131,7 +131,7 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Recent Requests
                 </h2>
-                <Link href="/requests/create">
+                <Link href={ROUTES.CREATE_REQUEST}>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-1" />
                     New Request
@@ -172,7 +172,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <p>No requests yet</p>
-                  <Link href="/requests/create">
+                  <Link href={ROUTES.CREATE_REQUEST}>
                     <Button variant="outline" size="sm" className="mt-4">
                       Create Your First Request
                     </Button>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Active Jobs
                 </h2>
-                <Link href="/jobs">
+                <Link href={ROUTES.DASHBOARD_JOBS}>
                   <Button variant="outline" size="sm">
                     View All
                   </Button>
@@ -240,7 +240,7 @@ export default function DashboardPage() {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Recent Notifications
               </h2>
-              <Link href="/notifications">
+              <Link href={ROUTES.DASHBOARD_NOTIFICATIONS}>
                 <Button variant="outline" size="sm">
                   View All
                 </Button>
