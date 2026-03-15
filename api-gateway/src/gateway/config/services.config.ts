@@ -75,16 +75,96 @@ export const routingConfig = {
   '/feature-flags': 'infrastructure',
 };
 
+/**
+ * API Gateway Route Configuration
+ * 
+ * PUBLIC ROUTES: No authentication required (all HTTP methods)
+ * PUBLIC GET ROUTES: Only GET requests allowed without auth (POST/PATCH/DELETE require JWT)
+ * PROTECTED ROUTES: All other routes require JWT authentication
+ */
+
+// ============================================
+// PUBLIC ROUTES (All HTTP Methods Allowed)
+// ============================================
 export const publicRoutes = [
-	"/api/v1/auth/signup",
-	"/api/v1/auth/login",
-	"/api/v1/auth/refresh",
-	"/api/v1/auth/password-reset/request",
-	"/api/v1/auth/password-reset/confirm",
-	"/api/v1/admin/contact",  // Contact form submission - public access
-	"/api/v1/health",
-	"/api/v1/health/services",
-	// Health endpoints are excluded from global prefix, so they're accessible without /api/v1
-	"/health",
-	"/health/services",
+	// ============================================
+	// Authentication Endpoints
+	// ============================================
+	"/api/v1/auth/signup",                    // Create account
+	"/api/v1/auth/login",                     // Email + password login
+	"/api/v1/auth/refresh",                   // Refresh JWT token
+	"/api/v1/auth/password-reset/request",    // Request password reset
+	"/api/v1/auth/password-reset/confirm",    // Confirm password reset
+	"/api/v1/auth/email/verify",              // Verify email address
+	"/api/v1/auth/check-identifier",          // Check if email/phone exists
+	
+	// ============================================
+	// OAuth Endpoints
+	// ============================================
+	"/api/v1/auth/google",                    // Google OAuth initiate
+	"/api/v1/auth/google/callback",           // Google OAuth callback
+	"/api/v1/auth/facebook",                  // Facebook OAuth initiate
+	"/api/v1/auth/facebook/callback",         // Facebook OAuth callback
+	
+	// ============================================
+	// Phone Authentication Endpoints
+	// ============================================
+	"/api/v1/auth/phone/login",               // Phone + password login
+	"/api/v1/auth/phone/otp/request",         // Request OTP via SMS
+	"/api/v1/auth/phone/otp/verify",          // Verify OTP code
+	
+	// ============================================
+	// Email OTP Endpoints (if implemented)
+	// ============================================
+	"/api/v1/auth/email/otp/request",         // Request OTP via email
+	"/api/v1/auth/email/otp/verify",          // Verify email OTP
+	
+	// ============================================
+	// Payment Webhooks (external services)
+	// ============================================
+	"/api/v1/payments/webhook",               // Stripe/payment provider webhooks
+	
+	// ============================================
+	// Public Information Endpoints
+	// ============================================
+	"/api/v1/admin/contact",                  // Contact form submission
+	"/api/v1/service-categories",             // List service categories (public browsing)
+	
+	// ============================================
+	// Health & Monitoring
+	// ============================================
+	"/api/v1/health",                         // API Gateway health check
+	"/api/v1/health/services",                // All services health status
+	"/health",                                // Health (without /api/v1 prefix)
+	"/health/services",                       // Services health (without /api/v1 prefix)
+];
+
+// ============================================
+// PUBLIC GET-ONLY ROUTES
+// ============================================
+// These routes allow GET requests without authentication
+// POST/PATCH/PUT/DELETE require JWT token
+export const publicGetRoutes = [
+	// ============================================
+	// Service Requests (Public Marketplace Browsing)
+	// ============================================
+	"/api/v1/requests",                       // Browse all service requests (GET only)
+	"/api/v1/requests/",                      // View individual request details (GET /requests/:id)
+	
+	// ============================================
+	// Provider Directory (Public Browsing)
+	// ============================================
+	"/api/v1/providers",                      // Browse provider directory (GET only)
+	"/api/v1/providers/",                     // View individual provider profiles (GET /providers/:id)
+	
+	// ============================================
+	// Provider Reviews (Public Viewing)
+	// ============================================
+	"/api/v1/reviews",                        // Browse reviews (GET only)
+	"/api/v1/providers/",                     // Includes /providers/:id/reviews
+	
+	// ============================================
+	// Pricing Plans (Public Information)
+	// ============================================
+	"/api/v1/pricing-plans",                  // View pricing tiers (GET only)
 ];

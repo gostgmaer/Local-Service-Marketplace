@@ -33,10 +33,12 @@ export const ROUTES = {
   // Auth
   LOGIN: '/login',
   SIGNUP: '/signup',
+  PHONE_LOGIN: '/phone-login',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
   VERIFY_EMAIL: '/auth/verify-email',
   CALLBACK: '/auth/callback',
+  ERROR: '/error', // Auth error page
   
   // Dashboard - Main
   DASHBOARD: '/dashboard',
@@ -65,6 +67,9 @@ export const ROUTES = {
   
   // Dashboard - Notifications
   DASHBOARD_NOTIFICATIONS: '/dashboard/notifications',
+  
+  // Dashboard - Favorites
+  DASHBOARD_FAVORITES: '/dashboard/favorites',
   
   // Dashboard - Payments
   DASHBOARD_PAYMENT_HISTORY: '/dashboard/payments/history',

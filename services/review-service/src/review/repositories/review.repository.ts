@@ -84,6 +84,37 @@ export class ReviewRepository {
     return parseInt(result.rows[0].count) || 0;
   }
 
+  /**
+   * Get review by job ID
+   */
+  async getReviewByJobId(jobId: string): Promise<Review | null> {
+    const query = `
+      SELECT id, job_id, user_id, provider_id, rating, comment, response, response_at, helpful_count, verified_purchase, created_at
+      FROM reviews
+      WHERE job_id = $1
+      LIMIT 1
+    `;
+    const result = await this.pool.query(query, [jobId]);
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Provider responds to a review
+   */
+  async respondToReview(reviewId: string, response: string, providerId: string): Promise<Review> {
+    const query = `
+      UPDATE reviews 
+      SET response = $1, response_at = NOW()
+      WHERE id = $2 AND provider_id = $3
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [response, reviewId, providerId]);
+    if (result.rows.length === 0) {
+      throw new Error('Review not found or unauthorized');
+    }
+    return result.rows[0];
+  }
+
   // ✅ NEW: Advanced query methods
   async addProviderResponse(
     reviewId: string,

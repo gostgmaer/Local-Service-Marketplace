@@ -5,27 +5,109 @@ import {
   Body,
   Param,
   Query,
+  Request,
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ReviewService } from './services/review.service';
+import { ReviewRepository } from './repositories/review.repository';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { RespondReviewDto } from './dto/respond-review.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('reviews')
 export class ReviewController {
-  constructor(private readonly reviewService: ReviewService) {}
+  constructor(
+    private readonly reviewService: ReviewService,
+    private readonly reviewRepository: ReviewRepository,
+  ) {}
 
   @Post()
   async createReview(@Body() createReviewDto: CreateReviewDto) {
-    return this.reviewService.createReview(createReviewDto);
+    const review = await this.reviewService.createReview(createReviewDto);
+    return {
+      success: true,
+      data: review,
+      message: 'Review submitted successfully'
+    };
   }
 
   @Get(':id')
   async getReviewById(@Param('id') id: string) {
-    return this.reviewService.getReviewById(id);
+    const review = await this.reviewService.getReviewById(id);
+    return {
+      success: true,
+      data: review
+    };
+  }
+
+  /**
+   * Get review for a specific job
+   * GET /jobs/:jobId/review
+   */
+  @Get('jobs/:jobId/review')
+  async getJobReview(@Param('jobId') jobId: string) {
+    const review = await this.reviewRepository.getReviewByJobId(jobId);
+    
+    if (!review) {
+      return {
+        success: true,
+        data: null,
+        message: 'No review found for this job'
+      };
+    }
+
+    return {
+      success: true,
+      data: review
+    };
+  }
+
+  /**
+   * Provider responds to a review
+   * POST /reviews/:id/respond
+   */
+  @Post(':id/respond')
+  @HttpCode(HttpStatus.OK)
+  async respondToReview(
+    @Param('id') id: string,
+    @Body() respondReviewDto: RespondReviewDto,
+    @Request() req: any
+  ) {
+    const review = await this.reviewRepository.respondToReview(
+      id,
+      respondReviewDto.response,
+      req.user.id
+    );
+
+    return {
+      success: true,
+      data: review,
+      message: 'Response added successfully'
+    };
+  }
+
+  /**
+   * Mark review as helpful
+   * POST /reviews/:id/helpful
+   */
+  @Post(':id/helpful')
+  @HttpCode(HttpStatus.OK)
+  async markHelpful(
+    @Param('id') id: string,
+    @Request() req: any
+  ) {
+    const review = await this.reviewRepository.incrementHelpfulCount(id);
+
+    return {
+      success: true,
+      data: review,
+      message: 'Marked as helpful'
+    };
   }
 }
 

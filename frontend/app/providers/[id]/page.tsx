@@ -1,7 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,21 +12,89 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { AvailabilitySchedule } from '@/components/features/providers/AvailabilitySchedule';
 import { getProviderProfile } from '@/services/user-service';
+import { favoriteService } from '@/services/favorite-service';
+import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/utils/helpers';
-import { ArrowLeft, Star, MapPin, Calendar, Briefcase } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Calendar, Briefcase, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/config/constants';
+import { toast } from 'react-hot-toast';
 
 export default function ProviderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const providerId = params.id as string;
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [checkingFavorite, setCheckingFavorite] = useState(true);
 
   const { data: provider, isLoading, error, refetch } = useQuery({
     queryKey: ['provider', providerId],
     queryFn: () => getProviderProfile(providerId),
     enabled: !!providerId,
   });
+
+  // Check if provider is favorited
+  useEffect(() => {
+    const checkFavorite = async () => {
+      if (user?.id && providerId) {
+        try {
+          const favorited = await favoriteService.isFavorite(user.id, providerId);
+          setIsFavorited(favorited);
+        } catch (error) {
+          console.error('Error checking favorite:', error);
+        } finally {
+          setCheckingFavorite(false);
+        }
+      } else {
+        setCheckingFavorite(false);
+      }
+    };
+    checkFavorite();
+  }, [user?.id, providerId]);
+
+  // Toggle favorite mutation
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) {
+        throw new Error('Please login to save favorites');
+      }
+      if (isFavorited) {
+        await favoriteService.removeFavorite(user.id, providerId);
+      } else {
+        await favoriteService.addFavorite({
+          user_id: user.id,
+          provider_id: providerId,
+        });
+      }
+    },
+    onMutate: async () => {
+      // Optimistically update UI
+      setIsFavorited(!isFavorited);
+    },
+    onSuccess: () => {
+      toast.success(
+        isFavorited ? 'Removed from favorites' : 'Added to favorites'
+      );
+      // Invalidate favorites query if on favorites page
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    },
+    onError: (error: any) => {
+      // Revert optimistic update on error
+      setIsFavorited(!isFavorited);
+      toast.error(error.message || 'Failed to update favorite');
+    },
+  });
+
+  const handleToggleFavorite = () => {
+    if (!user) {
+      toast.error('Please login to save favorites');
+      router.push(ROUTES.LOGIN);
+      return;
+    }
+    toggleFavoriteMutation.mutate();
+  };
 
   if (isLoading) {
     return (
@@ -154,6 +223,21 @@ export default function ProviderDetailPage() {
                   </Link>
                   <Button variant="outline" className="w-full">
                     Send Message
+                  </Button>
+                  <Button
+                    variant={isFavorited ? 'default' : 'outline'}
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleToggleFavorite}
+                    disabled={toggleFavoriteMutation.isPending || checkingFavorite}
+                  >
+                    <Heart
+                      className={`h-4 w-4 ${isFavorited ? 'fill-current' : ''}`}
+                    />
+                    {checkingFavorite
+                      ? 'Loading...'
+                      : isFavorited
+                      ? 'Remove from Favorites'
+                      : 'Save to Favorites'}
                   </Button>
                 </div>
               </CardContent>

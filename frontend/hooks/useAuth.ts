@@ -34,34 +34,137 @@ export function useAuth() {
     });
 
     if (result?.error) {
-      toast.error(result.error);
+      // Return error for component to handle
       throw new Error(result.error);
     }
 
-    if (result?.ok) {
-      toast.success('Login successful!');
-      router.push(ROUTES.DASHBOARD);
+    if (!result?.ok) {
+      throw new Error('Login failed. Please check your credentials.');
     }
+
+    // Let the component handle success message and redirect
+    return result;
+  };
+
+  const loginWithPhone = async (phone: string, password: string) => {
+    const result = await signIn('phone-password', {
+      phone,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      throw new Error(result.error);
+    }
+
+    if (!result?.ok) {
+      throw new Error('Phone login failed. Please check your credentials.');
+    }
+
+    return result;
+  };
+
+  const loginWithOTP = async (phone: string, otp: string) => {
+    const result = await signIn('phone-otp', {
+      phone,
+      otp,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      throw new Error(result.error);
+    }
+
+    if (!result?.ok) {
+      throw new Error('OTP verification failed. Please check your code.');
+    }
+
+    return result;
+  };
+
+  const requestOTP = async (phone: string) => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
+    const response = await fetch(`${API_URL}/api/v1/auth/phone/otp/request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send OTP. Please try again.');
+    }
+
+    const data = await response.json();
+    return data;
+  };
+
+  const requestEmailOTP = async (email: string) => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
+    const response = await fetch(`${API_URL}/api/v1/auth/email/otp/request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send OTP. Please try again.');
+    }
+
+    const data = await response.json();
+    return data;
+  };
+
+  const loginWithEmailOTP = async (email: string, otp: string) => {
+    const result = await signIn('email-otp', {
+      email,
+      otp,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      throw new Error(result.error);
+    }
+
+    if (!result?.ok) {
+      throw new Error('OTP verification failed. Please check your code.');
+    }
+
+    return result;
+  };
+
+  const loginWithGoogle = () => {
+    // Redirect to backend OAuth endpoint
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
+    window.location.href = `${API_URL}/api/v1/auth/google`;
+  };
+
+  const loginWithFacebook = () => {
+    // Redirect to backend OAuth endpoint
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
+    window.location.href = `${API_URL}/api/v1/auth/facebook`;
   };
 
   const signup = async (data: SignupData) => {
-    try {
-      // Call backend signup endpoint
-      const response = await authService.signup(data);
-      
-      // After successful signup, automatically sign in
-      await signIn('credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+    // Call backend signup endpoint
+    const response = await authService.signup(data);
+    
+    // After successful signup, automatically sign in
+    const signInResult = await signIn('credentials', {
+      email: data.email,
+      password: data.password,
+      redirect: false,
+    });
 
-      toast.success('Account created successfully!');
-      router.push(ROUTES.DASHBOARD);
-    } catch (error: any) {
-      toast.error(error?.message || 'Signup failed');
-      throw error;
+    if (!signInResult?.ok) {
+      throw new Error('Account created but auto-login failed. Please log in manually.');
     }
+
+    // Let component handle success and redirect
+    return response;
   };
 
   const logout = async () => {
@@ -97,17 +200,36 @@ export function useAuth() {
   };
 
   return {
+    // Session state
     user,
     session,
-    isAuthenticated,
     isLoading,
+    isAuthenticated,
+    
+    // Email/Password auth
     login,
     signup,
     logout,
+    
+    // Phone auth
+    loginWithPhone,
+    loginWithOTP,
+    requestOTP,
+    
+    // Email OTP auth
+    loginWithEmailOTP,
+    requestEmailOTP,
+    
+    // OAuth
+    loginWithGoogle,
+    loginWithFacebook,
+    
+    // Utilities
     requireAuth,
     requireRole,
     updateSession: update,
-    // Expose token expiration for debugging
+    
+    // Debugging
     tokenExpires: session?.accessTokenExpires,
     hasTokenError: session?.error === "RefreshAccessTokenError",
   };

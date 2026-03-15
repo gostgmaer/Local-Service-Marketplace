@@ -21,8 +21,8 @@ export class RequestRepository {
       `;
       const locationResult = await this.pool.query(locationQuery, [
         dto.user_id || null, // Allow null for anonymous requests
-        dto.location.lat,
-        dto.location.lng,
+        dto.location.latitude,
+        dto.location.longitude,
         dto.location.address,
         dto.location.city,
         dto.location.state,
