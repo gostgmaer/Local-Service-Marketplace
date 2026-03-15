@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { isMessagingEnabled } from '@/config/features';
+import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -23,9 +24,9 @@ export default function MessagesPage() {
   // Redirect if not authenticated or messaging is disabled
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push(ROUTES.LOGIN);
     } else if (!authLoading && isAuthenticated && !isMessagingEnabled()) {
-      router.push('/dashboard');
+      router.push(ROUTES.DASHBOARD);
     }
   }, [isAuthenticated, authLoading, router]);
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/config/constants';
 import { Loading } from '@/components/ui/Loading';
 import { SettingsLayout } from '@/components/layout/SettingsLayout';
 import { SubscriptionManagement } from '@/components/features/subscription/SubscriptionManagement';
@@ -14,7 +15,7 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
 

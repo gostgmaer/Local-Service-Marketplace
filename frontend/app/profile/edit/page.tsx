@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -24,7 +25,7 @@ export default function ProfileEditPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -56,7 +57,7 @@ export default function ProfileEditPage() {
         label: 'Profile Edit',
       });
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
-      router.push('/dashboard');
+      router.push(ROUTES.DASHBOARD);
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.message || 'Failed to update profile';

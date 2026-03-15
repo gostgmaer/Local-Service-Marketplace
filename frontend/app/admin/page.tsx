@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
@@ -17,7 +18,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (isAuthenticated && !requireRole(['admin'])) {
-      router.push('/dashboard');
+      router.push(ROUTES.DASHBOARD);
     }
   }, [isAuthenticated, requireRole, router]);
 

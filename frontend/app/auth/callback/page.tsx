@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { ROUTES } from '@/config/constants';
 import { Loading } from '@/components/ui/Loading';
 import toast from 'react-hot-toast';
 
@@ -22,7 +23,7 @@ function CallbackContent() {
         if (!token) {
           setError('No authentication token received');
           toast.error('Authentication failed. Please try again.');
-          setTimeout(() => router.push('/login'), 2000);
+          setTimeout(() => router.push(ROUTES.LOGIN), 2000);
           return;
         }
 
@@ -40,12 +41,12 @@ function CallbackContent() {
         toast.success('Login successful!');
         
         // Redirect to dashboard
-        router.push('/dashboard');
+        router.push(ROUTES.DASHBOARD);
       } catch (error: any) {
         console.error('OAuth callback error:', error);
         setError(error.message || 'Authentication failed');
         toast.error('Authentication failed. Please try again.');
-        setTimeout(() => router.push('/login'), 2000);
+        setTimeout(() => router.push(ROUTES.LOGIN), 2000);
       }
     };
 

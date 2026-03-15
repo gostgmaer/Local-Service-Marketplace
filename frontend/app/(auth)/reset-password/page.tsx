@@ -89,7 +89,7 @@ export default function ResetPasswordPage() {
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        router.push('/login');
+        router.push(ROUTES.LOGIN);
       }, 3000);
     } catch (error: any) {
       console.error('Reset password error:', error);

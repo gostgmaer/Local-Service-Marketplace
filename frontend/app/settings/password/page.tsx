@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { SettingsLayout } from '@/components/layout/SettingsLayout';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/config/constants';
 import { Loading } from '@/components/ui/Loading';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,7 +42,7 @@ export default function ChangePasswordPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -68,7 +69,7 @@ export default function ChangePasswordPage() {
 
       if (!token) {
         toast.error('Please log in to change your password');
-        router.push('/login');
+        router.push(ROUTES.LOGIN);
         return;
       }
 
@@ -90,7 +91,7 @@ export default function ChangePasswordPage() {
       
       // Optionally redirect after a delay
       setTimeout(() => {
-        router.push('/profile');
+        router.push(ROUTES.PROFILE);
       }, 2000);
     } catch (error: any) {
       console.error('Change password error:', error);

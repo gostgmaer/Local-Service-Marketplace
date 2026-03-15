@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/config/constants';
 import { z } from 'zod';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
@@ -36,7 +37,7 @@ function SubmitReviewContent() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -56,7 +57,7 @@ function SubmitReviewContent() {
 
     if (!jobId || !providerId) {
       toast.error('Missing job or provider information');
-      router.push('/jobs');
+      router.push(ROUTES.JOBS);
     }
   }, [jobId, providerId, router]);
 

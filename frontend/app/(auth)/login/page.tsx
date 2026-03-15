@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/config/constants';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
@@ -67,7 +68,7 @@ export default function LoginPage() {
   // Redirect to dashboard if already authenticated (must be in useEffect)
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard');
+      router.push(ROUTES.DASHBOARD);
     }
   }, [isAuthenticated, router]);
 
@@ -77,7 +78,7 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       toast.success('Login successful!');
-      router.push('/dashboard');
+      router.push(ROUTES.DASHBOARD);
     } catch (error: any) {
       const errorMessage = error.response?.data?.error?.message || 
                           error.response?.data?.message || 
@@ -106,7 +107,7 @@ export default function LoginPage() {
       }
       
       toast.success('Login successful!');
-      router.push('/dashboard');
+      router.push(ROUTES.DASHBOARD);
     } catch (error: any) {
       const errorMessage = error.response?.data?.error?.message || 
                           error.response?.data?.message || 
@@ -158,7 +159,7 @@ export default function LoginPage() {
       }
       
       toast.success('Login successful!');
-      router.push('/dashboard');
+      router.push(ROUTES.DASHBOARD);
     } catch (error: any) {
       const errorMessage = error.response?.data?.error?.message || 
                           error.response?.data?.message || 
