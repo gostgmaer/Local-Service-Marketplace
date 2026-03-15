@@ -5,38 +5,88 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/config/constants';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { loginSchema, type LoginFormData } from '@/schemas/auth.schema';
 import toast from 'react-hot-toast';
+
+// Unified login schema - accepts email OR phone
+const loginSchema = z.object({
+  identifier: z.string().min(1, 'Email or phone number is required'),
+  password: z.string().min(6, 'Password or OTP must be at least 6 characters'),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
+// Helper to detect if input is email or phone
+const detectInputType = (input: string): 'email' | 'phone' | 'unknown' => {
+  // Email pattern: contains @ symbol
+  if (input.includes('@')) {
+    return 'email';
+  }
+  // Phone pattern: starts with + or contains only digits
+  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+  if (phoneRegex.test(input)) {
+    return 'phone';
+  }
+  return 'unknown';
+};
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated } = useAuth();
+  const { 
+    login, 
+    loginWithPhone,
+    loginWithEmailOTP,
+    loginWithOTP,
+    requestEmailOTP,
+    requestOTP,
+    loginWithGoogle, 
+    loginWithFacebook, 
+    isAuthenticated 
+  } = useAuth();
+  
   const [isLoading, setIsLoading] = useState(false);
-  const emailInputRef = useRef<HTMLInputElement>(null);
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password'); // Password or OTP
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [detectedType, setDetectedType] = useState<'email' | 'phone' | 'unknown'>('unknown');
 
+  // Unified form - one field for email OR phone
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isValid, isDirty },
     setFocus,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: 'onChange', // Enable real-time validation
+    mode: 'onChange',
     defaultValues: {
-      email: '',
+      identifier: '',
       password: '',
     },
   });
 
-  // Auto-focus email field on mount
+  const identifier = watch('identifier');
+
+  // Auto-detect input type as user types
   useEffect(() => {
-    setFocus('email');
+    if (identifier && identifier.length > 0) {
+      const type = detectInputType(identifier);
+      setDetectedType(type);
+    } else {
+      setDetectedType('unknown');
+    }
+  }, [identifier]);
+
+  // Auto-focus identifier field on mount
+  useEffect(() => {
+    setFocus('identifier');
   }, [setFocus]);
 
   // Redirect to dashboard if already authenticated
@@ -49,45 +99,128 @@ export default function LoginPage() {
   // Show message if redirected from signup
   useEffect(() => {
     const message = searchParams.get('message');
+    const error = searchParams.get('error');
+    
     if (message === 'signup_success') {
       toast.success('Account created successfully! Please log in.');
     }
+    
+    // Show error messages from URL (e.g., from NextAuth or error page)
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        'CredentialsSignin': 'Invalid email or password.',
+        'SessionRequired': 'Please sign in to continue.',
+        'TokenExpired': 'Your session has expired. Please sign in again.',
+        'EmailNotVerified': 'Please verify your email before signing in.',
+        'Default': 'An authentication error occurred. Please try again.',
+      };
+      toast.error(errorMessages[error] || errorMessages['Default']);
+    }
   }, [searchParams]);
 
+  // OTP timer countdown
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const timer = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpTimer]);
+
+  // Unified submit handler - routes to correct backend based on detected type
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
+    const type = detectInputType(data.identifier);
     
+    // Validate input type is detected
+    if (type === 'unknown') {
+      toast.error('Please enter a valid email address or phone number');
+      setFocus('identifier');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      await login(data.email, data.password);
+      if (loginMethod === 'password') {
+        // Password authentication
+        if (type === 'email') {
+          await login(data.identifier, data.password);
+        } else {
+          await loginWithPhone(data.identifier, data.password);
+        }
+      } else {
+        // OTP authentication
+        if (!otpSent) {
+          toast.error('Please request OTP first');
+          return;
+        }
+        
+        if (type === 'email') {
+          await loginWithEmailOTP(data.identifier, data.password);
+        } else {
+          await loginWithOTP(data.identifier, data.password);
+        }
+      }
+      
       toast.success('Welcome back!');
       router.push(ROUTES.DASHBOARD);
     } catch (error: any) {
-      // Handle different error types
-      let errorMessage = 'Login failed. Please try again.';
-      
-      if (error.message.includes('credentials')) {
-        errorMessage = 'Invalid email or password.';
-      } else if (error.message.includes('verified')) {
-        errorMessage = 'Please verify your email before logging in.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-      
-      // Set focus back to password field on error
+      toast.error(error.message || 'Login failed. Please try again.');
       setFocus('password');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: 'google' | 'facebook') => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/${provider}`;
+  // Unified OTP request - detects email or phone and calls correct backend
+  const handleRequestOTP = async () => {
+    if (!identifier) {
+      toast.error('Please enter your email or phone number');
+      return;
+    }
+
+    const type = detectInputType(identifier);
+    
+    if (type === 'unknown') {
+      toast.error('Please enter a valid email address or phone number');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (type === 'email') {
+        await requestEmailOTP(identifier);
+        toast.success('OTP sent to your email!');
+      } else {
+        await requestOTP(identifier);
+        toast.success('OTP sent to your phone!');
+      }
+      
+      setOtpSent(true);
+      setOtpTimer(60);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send OTP');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Determine if submit button should be disabled
-  const isSubmitDisabled = isLoading || !isValid || !isDirty;
+  const isSubmitDisabled = isLoading || !isValid || !isDirty || (loginMethod === 'otp' && !otpSent);
+
+  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
+    try {
+      // Use backend OAuth endpoints
+      if (provider === 'google') {
+        loginWithGoogle();
+      } else {
+        loginWithFacebook();
+      }
+    } catch (error) {
+      console.error(`${provider} login error:`, error);
+      toast.error(`Failed to sign in with ${provider}. Please try again.`);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -108,59 +241,129 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Input Type Indicator (Auto-detected) */}
+        {detectedType !== 'unknown' && identifier && (
+          <div className="text-center">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+              {detectedType === 'email' ? '📧 Email detected' : '📱 Phone detected'}
+            </span>
+          </div>
+        )}
+
+        {/* Login Method Toggle (Password/OTP) */}
+        <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => {
+              setLoginMethod('password');
+              setOtpSent(false);
+            }}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              loginMethod === 'password'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            🔐 Password
+          </button>
+          <button
+            type="button"
+            onClick={() => setLoginMethod('otp')}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              loginMethod === 'otp'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            📲 OTP
+          </button>
+        </div>
+
         {/* Login Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="space-y-4">
-            {/* Email Field */}
+            {/* Unified Email/Phone Field */}
             <div>
               <Input
-                label="Email address"
-                type="email"
-                {...register('email')}
-                autoComplete="email"
+                label="Email or Phone Number"
+                type="text"
+                {...register('identifier')}
+                placeholder="email@example.com or +1234567890"
+                autoComplete="username"
                 autoFocus
-                aria-invalid={errors.email ? 'true' : 'false'}
-                aria-describedby={errors.email ? 'email-error' : undefined}
+                aria-invalid={errors.identifier ? 'true' : 'false'}
                 disabled={isLoading}
-                className={errors.email ? 'border-red-500 focus:ring-red-500' : ''}
+                className={errors.identifier ? 'border-red-500 focus:ring-red-500' : ''}
               />
-              {errors.email && (
-                <p id="email-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
-                  {errors.email.message}
+              {errors.identifier && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                  {errors.identifier.message}
                 </p>
               )}
             </div>
 
-            {/* Password Field */}
-            <div>
-              <PasswordInput
-                label="Password"
-                {...register('password')}
-                autoComplete="current-password"
-                aria-invalid={errors.password ? 'true' : 'false'}
-                aria-describedby={errors.password ? 'password-error' : undefined}
-                disabled={isLoading}
-              />
-              {errors.password && (
-                <p id="password-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
+            {/* Password/OTP Field */}
+            {loginMethod === 'password' ? (
+              <div>
+                <PasswordInput
+                  label="Password"
+                  {...register('password')}
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <PasswordInput
+                      label="6-Digit OTP"
+                      {...register('password')}
+                      placeholder="000000"
+                      autoComplete="one-time-code"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="pt-6">
+                    <Button
+                      type="button"
+                      onClick={handleRequestOTP}
+                      variant="outline"
+                      disabled={isLoading || otpTimer > 0 || detectedType === 'unknown'}
+                      className="whitespace-nowrap"
+                    >
+                      {otpTimer > 0 ? `${otpTimer}s` : otpSent ? 'Resend' : 'Send OTP'}
+                    </Button>
+                  </div>
+                </div>
+                {otpSent && (
+                  <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+                    OTP sent! Check your {detectedType === 'email' ? 'email' : 'phone'}.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Forgot Password Link */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link
-                href="/forgot-password"
-                className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus:outline-none focus:underline"
-                tabIndex={isLoading ? -1 : 0}
-              >
-                Forgot your password?
-              </Link>
+          {loginMethod === 'password' && (detectedType === 'email' || detectedType === 'unknown') && (
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
+                <Link
+                  href="/forgot-password"
+                  className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus:outline-none focus:underline"
+                  tabIndex={isLoading ? -1 : 0}
+                >
+                  Forgot your password?
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Submit Button */}
           <Button
@@ -170,7 +373,7 @@ export default function LoginPage() {
             disabled={isSubmitDisabled}
             aria-label={isLoading ? 'Signing in...' : 'Sign in'}
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? 'Signing in...' : loginMethod === 'otp' ? 'Verify & Sign in' : 'Sign in'}
           </Button>
         </form>
 

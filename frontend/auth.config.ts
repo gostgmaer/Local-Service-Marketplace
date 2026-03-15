@@ -58,8 +58,10 @@ async function refreshAccessToken(token: any) {
 
 export const authConfig: NextAuthConfig = {
   providers: [
+    // Email + Password Login
     Credentials({
-      name: "Credentials",
+      id: "credentials",
+      name: "Email & Password",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
@@ -120,6 +122,192 @@ export const authConfig: NextAuthConfig = {
           return null;
         }
       }
+    }),
+
+    // Phone + Password Login
+    Credentials({
+      id: "phone-password",
+      name: "Phone & Password",
+      credentials: {
+        phone: { label: "Phone", type: "tel" },
+        password: { label: "Password", type: "password" }
+      },
+      authorize: async (credentials) => {
+        try {
+          if (!credentials?.phone || !credentials?.password) {
+            return null;
+          }
+
+          // Call backend phone login endpoint
+          const response = await fetch(`${API_URL}/api/v1/auth/phone/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              phone: credentials.phone,
+              password: credentials.password,
+            }),
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            console.error('Phone login failed:', response.status);
+            return null;
+          }
+
+          const data: unknown = await response.json();
+
+          if (!isValidBackendAuthResponse(data)) {
+            console.error('Invalid backend auth response format');
+            return null;
+          }
+
+          const authResponse: BackendAuthResponse = data;
+
+          if (authResponse.user) {
+            return {
+              id: authResponse.user.id,
+              email: authResponse.user.email,
+              name: authResponse.user.name || 'User',
+              role: authResponse.user.role,
+              emailVerified: authResponse.user.email_verified,
+              image: authResponse.user.profile_picture_url || null,
+              accessToken: authResponse.accessToken,
+              refreshToken: authResponse.refreshToken,
+            };
+          }
+
+          return null;
+        } catch (error) {
+          console.error('Phone authentication error:', error);
+          return null;
+        }
+      }
+    }),
+
+    // Phone + OTP Login
+    Credentials({
+      id: "phone-otp",
+      name: "Phone & OTP",
+      credentials: {
+        phone: { label: "Phone", type: "tel" },
+        otp: { label: "OTP", type: "text" }
+      },
+      authorize: async (credentials) => {
+        try {
+          if (!credentials?.phone || !credentials?.otp) {
+            return null;
+          }
+
+          // Call backend OTP verification endpoint
+          const response = await fetch(`${API_URL}/api/v1/auth/phone/otp/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              phone: credentials.phone,
+              code: credentials.otp,
+            }),
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            console.error('OTP verification failed:', response.status);
+            return null;
+          }
+
+          const data: unknown = await response.json();
+
+          if (!isValidBackendAuthResponse(data)) {
+            console.error('Invalid backend auth response format');
+            return null;
+          }
+
+          const authResponse: BackendAuthResponse = data;
+
+          if (authResponse.user) {
+            return {
+              id: authResponse.user.id,
+              email: authResponse.user.email,
+              name: authResponse.user.name || 'User',
+              role: authResponse.user.role,
+              emailVerified: authResponse.user.email_verified,
+              image: authResponse.user.profile_picture_url || null,
+              accessToken: authResponse.accessToken,
+              refreshToken: authResponse.refreshToken,
+            };
+          }
+
+          return null;
+        } catch (error) {
+          console.error('OTP authentication error:', error);
+          return null;
+        }
+      }
+    }),
+
+    // Email + OTP Login
+    Credentials({
+      id: "email-otp",
+      name: "Email & OTP",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        otp: { label: "OTP", type: "text" }
+      },
+      authorize: async (credentials) => {
+        try {
+          if (!credentials?.email || !credentials?.otp) {
+            return null;
+          }
+
+          // Call backend email OTP verification endpoint
+          const response = await fetch(`${API_URL}/api/v1/auth/email/otp/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              code: credentials.otp,
+            }),
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            console.error('Email OTP verification failed:', response.status);
+            return null;
+          }
+
+          const data: unknown = await response.json();
+
+          if (!isValidBackendAuthResponse(data)) {
+            console.error('Invalid backend auth response format');
+            return null;
+          }
+
+          const authResponse: BackendAuthResponse = data;
+
+          if (authResponse.user) {
+            return {
+              id: authResponse.user.id,
+              email: authResponse.user.email,
+              name: authResponse.user.name || authResponse.user.email.split('@')[0],
+              role: authResponse.user.role,
+              emailVerified: authResponse.user.email_verified,
+              image: authResponse.user.profile_picture_url || null,
+              accessToken: authResponse.accessToken,
+              refreshToken: authResponse.refreshToken,
+            };
+          }
+
+          return null;
+        } catch (error) {
+          console.error('Email OTP authentication error:', error);
+          return null;
+        }
+      }
     })
   ],
   session: {
@@ -171,7 +359,7 @@ export const authConfig: NextAuthConfig = {
   },
   pages: {
     signIn: "/login",
-    error: "/login",
+    error: "/error", // Custom error page for auth errors
   },
   trustHost: true, // For development
 };

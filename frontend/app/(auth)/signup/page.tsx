@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup, isAuthenticated } = useAuth();
+  const { signup, loginWithGoogle, loginWithFacebook, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -81,8 +81,18 @@ export default function SignupPage() {
     }
   };
 
-  const handleSocialSignup = (provider: 'google' | 'facebook') => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/${provider}`;
+  const handleSocialSignup = async (provider: 'google' | 'facebook') => {
+    try {
+      // Use backend OAuth endpoints
+      if (provider === 'google') {
+        loginWithGoogle();
+      } else {
+        loginWithFacebook();
+      }
+    } catch (error) {
+      console.error(`${provider} signup error:`, error);
+      toast.error(`Failed to sign up with ${provider}. Please try again.`);
+    }
   };
 
   // Determine if submit button should be disabled
