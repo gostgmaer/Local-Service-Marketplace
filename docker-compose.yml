@@ -92,6 +92,8 @@ services:
     image: lsmp-auth-service:latest
     container_name: auth-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3001:3001"
     environment:
@@ -128,16 +130,18 @@ services:
     image: lsmp-user-service:latest
     container_name: user-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3002:3002"
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -162,16 +166,18 @@ services:
     image: lsmp-request-service:latest
     container_name: request-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3003:3003"
     environment:
       - NODE_ENV=production
       - PORT=3003
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -196,16 +202,18 @@ services:
     image: lsmp-proposal-service:latest
     container_name: proposal-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3004:3004"
     environment:
       - NODE_ENV=production
       - PORT=3004
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -230,16 +238,18 @@ services:
     image: lsmp-job-service:latest
     container_name: job-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3005:3005"
     environment:
       - NODE_ENV=production
       - PORT=3005
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -264,16 +274,18 @@ services:
     image: lsmp-payment-service:latest
     container_name: payment-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3006:3006"
     environment:
       - NODE_ENV=production
       - PORT=3006
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -299,6 +311,8 @@ services:
     image: lsmp-messaging-service:latest
     container_name: messaging-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     profiles:
       - messaging
       - full
@@ -307,11 +321,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3007
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -336,16 +350,18 @@ services:
     image: lsmp-notification-service:latest
     container_name: notification-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3008:3008"
     environment:
       - NODE_ENV=production
       - PORT=3008
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -382,16 +398,18 @@ services:
     image: lsmp-review-service:latest
     container_name: review-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3009:3009"
     environment:
       - NODE_ENV=production
       - PORT=3009
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -416,16 +434,18 @@ services:
     image: lsmp-admin-service:latest
     container_name: admin-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     ports:
       - "3010:3010"
     environment:
       - NODE_ENV=production
       - PORT=3010
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -450,6 +470,8 @@ services:
     image: lsmp-analytics-service:latest
     container_name: analytics-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     profiles:
       - analytics
       - full
@@ -458,11 +480,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3011
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -488,6 +510,8 @@ services:
     image: lsmp-infrastructure-service:latest
     container_name: infrastructure-service
     restart: unless-stopped
+    env_file:
+      - docker.env
     profiles:
       - infrastructure
       - scaling
@@ -497,11 +521,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3012
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
