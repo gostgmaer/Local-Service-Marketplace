@@ -194,7 +194,7 @@ CREATE INDEX idx_service_categories_name ON service_categories(name);
 
 CREATE TABLE locations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE, -- Nullable for anonymous requests
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
   address TEXT,
@@ -206,7 +206,7 @@ CREATE TABLE locations (
 );
 
 CREATE INDEX idx_locations_coordinates ON locations(latitude, longitude);
-CREATE INDEX idx_locations_user_id ON locations(user_id);
+CREATE INDEX idx_locations_user_id ON locations(user_id) WHERE user_id IS NOT NULL;
 
 -- =====================================================
 -- SERVICE REQUESTS
@@ -214,7 +214,7 @@ CREATE INDEX idx_locations_user_id ON locations(user_id);
 
 CREATE TABLE service_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE, -- Nullable to allow anonymous requests
   category_id UUID NOT NULL REFERENCES service_categories(id),
   location_id UUID REFERENCES locations(id),
   description TEXT NOT NULL,
@@ -225,19 +225,29 @@ CREATE TABLE service_requests (
   expiry_date TIMESTAMP,
   view_count INT DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'assigned', 'completed', 'cancelled')),
+  -- Guest information for anonymous requests (when user_id is NULL)
+  guest_name VARCHAR(255),
+  guest_email VARCHAR(255) CHECK (guest_email IS NULL OR guest_email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+  guest_phone VARCHAR(20) CHECK (guest_phone IS NULL OR guest_phone ~ '^\+?[0-9]{10,15}$'),
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   updated_at TIMESTAMP,
-  deleted_at TIMESTAMP
+  deleted_at TIMESTAMP,
+  -- Ensure either user_id OR guest contact info is provided
+  CONSTRAINT check_user_or_guest CHECK (
+    (user_id IS NOT NULL) OR 
+    (guest_name IS NOT NULL AND guest_email IS NOT NULL AND guest_phone IS NOT NULL)
+  )
 );
 
-CREATE INDEX idx_service_requests_user_id ON service_requests(user_id);
+CREATE INDEX idx_service_requests_user_id ON service_requests(user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_service_requests_category_id ON service_requests(category_id);
 CREATE INDEX idx_service_requests_status ON service_requests(status);
 CREATE INDEX idx_service_requests_created_at ON service_requests(created_at DESC);
-CREATE INDEX idx_service_requests_user_status ON service_requests(user_id, status);
+CREATE INDEX idx_service_requests_user_status ON service_requests(user_id, status) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_service_requests_deleted_at ON service_requests(deleted_at) WHERE deleted_at IS NULL;
 CREATE INDEX idx_service_requests_urgency ON service_requests(urgency);
 CREATE INDEX idx_service_requests_expiry ON service_requests(expiry_date) WHERE expiry_date IS NOT NULL;
+CREATE INDEX idx_service_requests_guest_email ON service_requests(guest_email) WHERE guest_email IS NOT NULL;
 
 -- =====================================================
 -- PROPOSALS
