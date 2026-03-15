@@ -107,9 +107,12 @@ services:
       - DATABASE_NAME=marketplace
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRATION=7d
+      - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
-      - JWT_EXPIRES_IN=7d
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
@@ -698,6 +701,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - JWT_SECRET=${JWT_SECRET}
+      - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
+      - TOKEN_VALIDATION_STRATEGY=${TOKEN_VALIDATION_STRATEGY:-local}
       - AUTH_SERVICE_URL=http://auth-service:3001
       - USER_SERVICE_URL=http://user-service:3002
       - REQUEST_SERVICE_URL=http://request-service:3003
