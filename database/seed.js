@@ -4,19 +4,20 @@ const { faker } = require('@faker-js/faker');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
 
-// Load environment variables
-dotenv.config({ path: '../.env' });
+// Load environment variables — local .env first, then parent directory
+dotenv.config({ path: require('path').join(__dirname, '.env') });
+dotenv.config({ path: require('path').join(__dirname, '../.env') });
 
 // Database connection with retry logic
 const pool = new Pool({
-  host: process.env.POSTGRES_HOST || 'localhost',
-  port: parseInt(process.env.POSTGRES_PORT || '5432'),
-  user: process.env.POSTGRES_USER || 'postgres',
-  password: process.env.POSTGRES_PASSWORD || 'postgres',
-  database: process.env.POSTGRES_DB || 'marketplace',
-  max: 20,
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000,
+	host: process.env.POSTGRES_HOST || "localhost",
+	port: parseInt(process.env.POSTGRES_PORT || "5432"),
+	user: process.env.POSTGRES_USER || "postgres",
+	password: process.env.POSTGRES_PASSWORD || "postgres_dev_only",
+	database: process.env.POSTGRES_DB || "marketplace",
+	max: 20,
+	connectionTimeoutMillis: 5000,
+	idleTimeoutMillis: 30000,
 });
 
 // ===== ADVANCED HELPER FUNCTIONS =====
@@ -310,18 +311,28 @@ class DatabaseSeeder {
 
     // Create 1 admin
     const adminId = uuid();
+    const adminEmail = "admin@marketplace.com";
     const adminSuccess = await safeInsert(
-      `INSERT INTO users (id, email, name, phone, password_hash, role, email_verified, status) 
+			`INSERT INTO users (id, email, name, phone, password_hash, role, email_verified, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (email) DO NOTHING`,
-      [adminId, uniqueEmail('admin', 'user'), 'Admin User', `+1${randomInt(1000000000, 9999999999)}`, hashedPassword, 'admin', true, 'active']
-    );
+			[adminId, adminEmail, "Admin User", "+12345678900", hashedPassword, "admin", true, "active"],
+		);
 
     if (adminSuccess) {
-      this.adminIds.push(adminId);
-      this.userIds.push(adminId);
-      created++;
-    }
+			this.adminIds.push(adminId);
+			this.userIds.push(adminId);
+			this.userEmailMap.set(adminId, adminEmail);
+			created++;
+		} else {
+			// Admin already exists — load their ID
+			const existing = await safeQuery("SELECT id FROM users WHERE email = $1", [adminEmail]);
+			if (existing.rows.length > 0) {
+				this.adminIds.push(existing.rows[0].id);
+				this.userIds.push(existing.rows[0].id);
+				this.userEmailMap.set(existing.rows[0].id, adminEmail);
+			}
+		}
 
     // Create 100 customers
     for (let i = 0; i < 100; i++) {
@@ -1079,17 +1090,17 @@ class DatabaseSeeder {
 
     for (const job of disputedJobs.rows) {
       const success = await safeInsert(
-        `INSERT INTO disputes (id, job_id, opened_by, reason, status, created_at) 
+				`INSERT INTO disputes (id, job_id, opened_by, reason, status, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          uuid(),
-          job.id,
-          randomPick([job.customer_id, job.provider_id]),
-          faker.lorem.paragraph(),
-          randomPick(['open', 'investigating', 'resolved', 'closed']),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					job.id,
+					job.customer_id, // provider_id in jobs is providers.id not users.id — must use customer_id
+					faker.lorem.paragraph(),
+					randomPick(["open", "investigating", "resolved", "closed"]),
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
       if (success) count++;
     }
@@ -1105,18 +1116,18 @@ class DatabaseSeeder {
 
     for (let i = 0; i < 200; i++) {
       const success = await safeInsert(
-        `INSERT INTO audit_logs (id, user_id, action, entity, entity_id, metadata, created_at) 
+				`INSERT INTO audit_logs (id, user_id, action, entity, entity_id, metadata, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          uuid(),
-          this.adminIds.length > 0 ? randomPick([...this.adminIds, null]) : null,
-          randomPick(actions),
-          randomPick(entities),
-          uuid(),
-          JSON.stringify({ ip: faker.internet.ip(), changes: ['field1', 'field2'] }),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					this.adminIds.length > 0 ? randomPick(this.adminIds) : randomPick(this.userIds),
+					randomPick(actions),
+					randomPick(entities),
+					uuid(),
+					JSON.stringify({ ip: faker.internet.ip(), changes: ["field1", "field2"] }),
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
       if (success) count++;
     }
