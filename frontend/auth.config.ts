@@ -1,58 +1,22 @@
 import NextAuth, { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import {
-  BackendAuthResponse,
-  BackendRefreshResponse,
-  isValidBackendAuthResponse,
-  isValidBackendRefreshResponse,
-  TOKEN_CONFIG,
-  AUTH_ENDPOINTS,
-} from "@/types/auth-alignment";
+import { TOKEN_CONFIG } from "@/types/auth-alignment";
+import { serverAuthService } from "@/services/server-auth-service";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
-
-/**
- * Refresh the access token using the refresh token
- * Calls backend: POST /api/v1/auth/refresh
- */
 async function refreshAccessToken(token: any) {
   try {
-    const response = await fetch(`${API_URL}${AUTH_ENDPOINTS.REFRESH}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        refreshToken: token.refreshToken,
-      }),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Refresh failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Validate response format
-    if (!isValidBackendRefreshResponse(data)) {
-      throw new Error('Invalid refresh response format from backend');
-    }
+    const data = await serverAuthService.refreshToken(token.refreshToken);
+		if (!data) throw new Error("Token refresh failed");
 
     return {
-      ...token,
-      accessToken: data.accessToken,
-      accessTokenExpires: Date.now() + TOKEN_CONFIG.ACCESS_TOKEN_EXPIRATION,
-      // Use new refresh token if provided (token rotation), otherwise keep existing
-      refreshToken: data.refreshToken ?? token.refreshToken,
-    };
+			...token,
+			accessToken: data.accessToken,
+			accessTokenExpires: Date.now() + TOKEN_CONFIG.ACCESS_TOKEN_EXPIRATION,
+			refreshToken: data.refreshToken ?? token.refreshToken,
+		};
   } catch (error) {
     console.error('Error refreshing access token:', error);
-
-    return {
-      ...token,
-      error: "RefreshAccessTokenError" as const,
-    };
+    return { ...token, error: "RefreshAccessTokenError" as const };
   }
 }
 
@@ -68,55 +32,24 @@ export const authConfig: NextAuthConfig = {
       },
       authorize: async (credentials) => {
         try {
-          // Validate credentials
-          if (!credentials?.email || !credentials?.password) {
-            return null;
-          }
+          if (!credentials?.email || !credentials?.password) return null;
 
-          // Call backend auth service
-          const response = await fetch(`${API_URL}${AUTH_ENDPOINTS.LOGIN}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-            credentials: 'include', // Important: include cookies
-          });
+          const auth = await serverAuthService.loginWithEmail(
+						credentials.email as string,
+						credentials.password as string,
+					);
+					if (!auth?.user) return null;
 
-          if (!response.ok) {
-            console.error('Login failed:', response.status, response.statusText);
-            return null;
-          }
-
-          const data: unknown = await response.json();
-
-          // Runtime validation of backend response
-          if (!isValidBackendAuthResponse(data)) {
-            console.error('Invalid backend auth response format');
-            return null;
-          }
-
-          // Type-safe after validation
-          const authResponse: BackendAuthResponse = data;
-
-          // Transform backend response to NextAuth user format
-          if (authResponse.user) {
-            return {
-              id: authResponse.user.id,
-              email: authResponse.user.email,
-              name: authResponse.user.name || authResponse.user.email.split('@')[0],
-              role: authResponse.user.role,
-              emailVerified: authResponse.user.email_verified,
-              image: authResponse.user.profile_picture_url || null,
-              accessToken: authResponse.accessToken,
-              refreshToken: authResponse.refreshToken,
-            };
-          }
-
-          return null;
+          return {
+						id: auth.user.id,
+						email: auth.user.email,
+						name: auth.user.name || auth.user.email.split("@")[0],
+						role: auth.user.role,
+						emailVerified: auth.user.email_verified,
+						image: auth.user.profile_picture_url || null,
+						accessToken: auth.accessToken,
+						refreshToken: auth.refreshToken,
+					};
         } catch (error) {
           console.error('Authentication error:', error);
           return null;
@@ -134,51 +67,24 @@ export const authConfig: NextAuthConfig = {
       },
       authorize: async (credentials) => {
         try {
-          if (!credentials?.phone || !credentials?.password) {
-            return null;
-          }
+          if (!credentials?.phone || !credentials?.password) return null;
 
-          // Call backend phone login endpoint
-          const response = await fetch(`${API_URL}/api/v1/auth/phone/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              phone: credentials.phone,
-              password: credentials.password,
-            }),
-            credentials: 'include',
-          });
+          const auth = await serverAuthService.loginWithPhone(
+						credentials.phone as string,
+						credentials.password as string,
+					);
+					if (!auth?.user) return null;
 
-          if (!response.ok) {
-            console.error('Phone login failed:', response.status);
-            return null;
-          }
-
-          const data: unknown = await response.json();
-
-          if (!isValidBackendAuthResponse(data)) {
-            console.error('Invalid backend auth response format');
-            return null;
-          }
-
-          const authResponse: BackendAuthResponse = data;
-
-          if (authResponse.user) {
-            return {
-              id: authResponse.user.id,
-              email: authResponse.user.email,
-              name: authResponse.user.name || 'User',
-              role: authResponse.user.role,
-              emailVerified: authResponse.user.email_verified,
-              image: authResponse.user.profile_picture_url || null,
-              accessToken: authResponse.accessToken,
-              refreshToken: authResponse.refreshToken,
-            };
-          }
-
-          return null;
+          return {
+						id: auth.user.id,
+						email: auth.user.email,
+						name: auth.user.name || "User",
+						role: auth.user.role,
+						emailVerified: auth.user.email_verified,
+						image: auth.user.profile_picture_url || null,
+						accessToken: auth.accessToken,
+						refreshToken: auth.refreshToken,
+					};
         } catch (error) {
           console.error('Phone authentication error:', error);
           return null;
@@ -196,51 +102,21 @@ export const authConfig: NextAuthConfig = {
       },
       authorize: async (credentials) => {
         try {
-          if (!credentials?.phone || !credentials?.otp) {
-            return null;
-          }
+          if (!credentials?.phone || !credentials?.otp) return null;
 
-          // Call backend OTP verification endpoint
-          const response = await fetch(`${API_URL}/api/v1/auth/phone/otp/verify`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              phone: credentials.phone,
-              code: credentials.otp,
-            }),
-            credentials: 'include',
-          });
+          const auth = await serverAuthService.verifyPhoneOtp(credentials.phone as string, credentials.otp as string);
+					if (!auth?.user) return null;
 
-          if (!response.ok) {
-            console.error('OTP verification failed:', response.status);
-            return null;
-          }
-
-          const data: unknown = await response.json();
-
-          if (!isValidBackendAuthResponse(data)) {
-            console.error('Invalid backend auth response format');
-            return null;
-          }
-
-          const authResponse: BackendAuthResponse = data;
-
-          if (authResponse.user) {
-            return {
-              id: authResponse.user.id,
-              email: authResponse.user.email,
-              name: authResponse.user.name || 'User',
-              role: authResponse.user.role,
-              emailVerified: authResponse.user.email_verified,
-              image: authResponse.user.profile_picture_url || null,
-              accessToken: authResponse.accessToken,
-              refreshToken: authResponse.refreshToken,
-            };
-          }
-
-          return null;
+          return {
+						id: auth.user.id,
+						email: auth.user.email,
+						name: auth.user.name || "User",
+						role: auth.user.role,
+						emailVerified: auth.user.email_verified,
+						image: auth.user.profile_picture_url || null,
+						accessToken: auth.accessToken,
+						refreshToken: auth.refreshToken,
+					};
         } catch (error) {
           console.error('OTP authentication error:', error);
           return null;
@@ -258,51 +134,21 @@ export const authConfig: NextAuthConfig = {
       },
       authorize: async (credentials) => {
         try {
-          if (!credentials?.email || !credentials?.otp) {
-            return null;
-          }
+          if (!credentials?.email || !credentials?.otp) return null;
 
-          // Call backend email OTP verification endpoint
-          const response = await fetch(`${API_URL}/api/v1/auth/email/otp/verify`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              code: credentials.otp,
-            }),
-            credentials: 'include',
-          });
+          const auth = await serverAuthService.verifyEmailOtp(credentials.email as string, credentials.otp as string);
+					if (!auth?.user) return null;
 
-          if (!response.ok) {
-            console.error('Email OTP verification failed:', response.status);
-            return null;
-          }
-
-          const data: unknown = await response.json();
-
-          if (!isValidBackendAuthResponse(data)) {
-            console.error('Invalid backend auth response format');
-            return null;
-          }
-
-          const authResponse: BackendAuthResponse = data;
-
-          if (authResponse.user) {
-            return {
-              id: authResponse.user.id,
-              email: authResponse.user.email,
-              name: authResponse.user.name || authResponse.user.email.split('@')[0],
-              role: authResponse.user.role,
-              emailVerified: authResponse.user.email_verified,
-              image: authResponse.user.profile_picture_url || null,
-              accessToken: authResponse.accessToken,
-              refreshToken: authResponse.refreshToken,
-            };
-          }
-
-          return null;
+          return {
+						id: auth.user.id,
+						email: auth.user.email,
+						name: auth.user.name || auth.user.email.split("@")[0],
+						role: auth.user.role,
+						emailVerified: auth.user.email_verified,
+						image: auth.user.profile_picture_url || null,
+						accessToken: auth.accessToken,
+						refreshToken: auth.refreshToken,
+					};
         } catch (error) {
           console.error('Email OTP authentication error:', error);
           return null;

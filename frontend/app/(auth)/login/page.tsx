@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
+import { authService } from "@/services/auth-service";
 import { ROUTES } from '@/config/constants';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -184,25 +185,14 @@ export default function LoginPage() {
         ? identifierValue.replace(/\D/g, '') 
         : identifierValue;
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3500'}/api/v1/auth/check-identifier`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          identifier: cleanIdentifier,
-          type 
-        }),
-      });
+      const payload = await authService.checkIdentifier(cleanIdentifier, type);
+			setIdentifierExists(payload.exists === true);
+			setOtpAvailable(payload.otpAvailable === true);
+			setAvailableMethods(payload.availableMethods || ["password"]);
       
-      const data = await response.json();
-      setIdentifierExists(data.exists === true);
-      setOtpAvailable(data.otpAvailable === true);
-      setAvailableMethods(data.availableMethods || ['password']);
-      
-      if (data.exists) {
-        setStep('method');
-      }
+      if (payload.exists) {
+				setStep("method");
+			}
     } catch (error) {
       console.error('Error checking identifier:', error);
       // On error, assume identifier exists to not block user (fail open)
