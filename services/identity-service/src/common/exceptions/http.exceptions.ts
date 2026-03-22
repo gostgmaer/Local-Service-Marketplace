@@ -29,3 +29,9 @@ export class ForbiddenException extends HttpException {
     super(message, HttpStatus.FORBIDDEN);
   }
 }
+
+export class TooManyRequestsException extends HttpException {
+	constructor(message = "Too Many Requests") {
+		super(message, HttpStatus.TOO_MANY_REQUESTS);
+	}
+}
