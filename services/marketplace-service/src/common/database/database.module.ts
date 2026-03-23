@@ -7,20 +7,26 @@ export const DATABASE_POOL = 'DATABASE_POOL';
 const databasePoolFactory = {
   provide: DATABASE_POOL,
   useFactory: async (configService: ConfigService) => {
+    const connectionString = configService.get<string>("DATABASE_URL");
+		const sslEnabled = configService.get<string>("DATABASE_SSL") === "true";
     const pool = new Pool({
-      host: configService.get<string>('DATABASE_HOST'),
-      port: configService.get<number>('DATABASE_PORT'),
-      user: configService.get<string>('DATABASE_USER'),
-      password: configService.get<string>('DATABASE_PASSWORD'),
-      database: configService.get<string>('DATABASE_NAME'),
-      // Optimized connection pool settings
-      max: parseInt(configService.get<string>('DB_POOL_MAX', '30')), // Max connections (increased for high load)
-      min: parseInt(configService.get<string>('DB_POOL_MIN', '5')), // Minimum idle connections
-      idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-      connectionTimeoutMillis: 3000, // Wait max 3 seconds for connection
-      maxUses: 7500, // Close and reopen connection after 7500 queries (prevents memory leaks)
-      allowExitOnIdle: false, // Keep pool alive
-    });
+			...(connectionString ?
+				{ connectionString }
+			:	{
+					host: configService.get<string>("DATABASE_HOST"),
+					port: configService.get<number>("DATABASE_PORT"),
+					user: configService.get<string>("DATABASE_USER"),
+					password: configService.get<string>("DATABASE_PASSWORD"),
+					database: configService.get<string>("DATABASE_NAME"),
+				}),
+			ssl: sslEnabled || connectionString?.includes("sslmode=require") ? { rejectUnauthorized: false } : false,
+			max: parseInt(configService.get<string>("DB_POOL_MAX", "30")),
+			min: parseInt(configService.get<string>("DB_POOL_MIN", "5")),
+			idleTimeoutMillis: 30000,
+			connectionTimeoutMillis: 3000,
+			maxUses: 7500,
+			allowExitOnIdle: false,
+		});
 
     // Test connection
     try {
