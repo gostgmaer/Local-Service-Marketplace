@@ -2,14 +2,32 @@ import { Module, Global } from '@nestjs/common';
 import { Pool } from 'pg';
 
 const databasePoolFactory = async () => {
+  const connectionString = process.env.DATABASE_URL;
+	const sslEnabled = process.env.DATABASE_SSL === "true";
   const pool = new Pool({
-    host: process.env.DATABASE_HOST || 'localhost',
-    port: parseInt(process.env.DATABASE_PORT) || 5443,
-    user: process.env.DATABASE_USER || 'infrastructure_user',
-    password: process.env.DATABASE_PASSWORD || 'infrastructure_password',
-    database: process.env.DATABASE_NAME || 'infrastructure_service_db',
-    max: 20,
-  });
+		...(connectionString ?
+			{ connectionString }
+		:	{
+				host: process.env.DATABASE_HOST || "localhost",
+				port: parseInt(process.env.DATABASE_PORT, 10) || 5432,
+				user: process.env.DATABASE_USER || "postgres",
+				password: process.env.DATABASE_PASSWORD,
+				database: process.env.DATABASE_NAME || "marketplace",
+			}),
+		ssl: sslEnabled || connectionString?.includes("sslmode=require") ? { rejectUnauthorized: false } : false,
+		max: 20,
+		idleTimeoutMillis: 30000,
+		connectionTimeoutMillis: 2000,
+	});
+
+  try {
+		const client = await pool.connect();
+		console.log("✅ Database connected successfully");
+		client.release();
+	} catch (error) {
+		console.error("❌ Database connection failed:", error);
+		throw error;
+	}
 
   return pool;
 };

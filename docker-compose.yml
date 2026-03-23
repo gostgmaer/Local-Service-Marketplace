@@ -101,12 +101,13 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - SERVICE_NAME=identity-service
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
-      - DATABASE_NAME=marketplace
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_SSL=${DATABASE_SSL:-true}
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
@@ -126,7 +127,6 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres]
     networks:
       - marketplace-network
 
@@ -146,12 +146,13 @@ services:
       - NODE_ENV=production
       - PORT=3003
       - SERVICE_NAME=marketplace-service
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
-      - DATABASE_NAME=marketplace
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_SSL=${DATABASE_SSL:-true}
       - REDIS_URL=redis://redis:6379
       - USER_SERVICE_URL=http://identity-service:3001
       - AUTH_SERVICE_URL=http://identity-service:3001
@@ -161,7 +162,7 @@ services:
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres, identity-service]
+    depends_on: [identity-service]
     networks:
       - marketplace-network
 
@@ -179,12 +180,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3006
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
-      - DATABASE_NAME=marketplace
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_SSL=${DATABASE_SSL:-true}
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
@@ -192,7 +194,6 @@ services:
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
@@ -218,12 +219,13 @@ services:
       - NODE_ENV=production
       - PORT=3007
       - SERVICE_NAME=comms-service
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
-      - DATABASE_NAME=marketplace
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_SSL=${DATABASE_SSL:-true}
       - REDIS_URL=redis://redis:6379
       - EMAIL_SERVICE_URL=http://email-service:3500
       - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
@@ -240,7 +242,6 @@ services:
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres]
     networks:
       - marketplace-network
 
@@ -260,12 +261,13 @@ services:
       - NODE_ENV=production
       - PORT=3010
       - SERVICE_NAME=oversight-service
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
-      - DATABASE_NAME=marketplace
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_SSL=${DATABASE_SSL:-true}
       - AUTH_SERVICE_URL=http://identity-service:3001
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -274,7 +276,6 @@ services:
       - ANALYTICS_ENABLED=${ANALYTICS_ENABLED:-true}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres]
     networks:
       - marketplace-network
 
@@ -296,12 +297,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3012
-      - DATABASE_URL=postgresql://postgres:${DATABASE_PASSWORD:-postgres_dev_only}@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres_dev_only}
-      - DATABASE_NAME=marketplace
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_SSL=${DATABASE_SSL:-true}
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -313,7 +315,6 @@ services:
       - FEATURE_FLAGS_ENABLED=${FEATURE_FLAGS_ENABLED:-true}
       - DB_POOL_MAX=${DB_POOL_MAX:-30}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [postgres]
     networks:
       - marketplace-network
     # healthcheck:
