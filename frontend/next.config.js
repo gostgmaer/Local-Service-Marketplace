@@ -5,7 +5,7 @@ const nextConfig = {
 	reactStrictMode: true,
 
 	// Environment variables
-	env: { NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3500" },
+	env: { NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700" },
 
 	// Image optimization
 	images: {
