@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import { verifySync } from 'otplib';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { UserRepository } from '../repositories/user.repository';
@@ -1187,9 +1188,13 @@ export class AuthService {
 	}
 
 	private verifyTOTP(secret: string, code: string): boolean {
-		// Use otplib in production
-		// This is a placeholder — actual implementation requires otplib
-		return code.length === 6 && /^\d{6}$/.test(code);
+		// Use otplib for TOTP verification
+		const result = verifySync({
+			secret,
+			token: code,
+			period: 30, // 30-second time step
+		});
+		return result.valid;
 	}
 
 	private _generateRandomBackupCodes(count: number): string[] {
@@ -1225,14 +1230,12 @@ export class AuthService {
 	}
 
 	private async verifyAppleIdentityToken(identityToken: string): Promise<string | null> {
-		// Verify JWT signature using Apple's public keys
-		// Use `jwt.verify` with Apple's JWKS endpoint
-		// Placeholder — implement with `apple-signin-auth` or `jwt` library
+		// Verify JWT signature using Apple's public keys via apple-signin-auth
 		try {
-			// const { verify } = require('apple-signin-auth');
-			// const payload = await verify(identityToken, { clientId: APPLE_CLIENT_ID });
-			// return payload.sub; // Apple user ID
-			return "apple-user-id-placeholder";
+			const { verify } = require('apple-signin-auth');
+			const appleClientId = this.configService.get<string>('APPLE_CLIENT_ID');
+			const payload = await verify(identityToken, { clientId: appleClientId });
+			return payload.sub; // Apple user ID
 		} catch (error) {
 			this.logger.error("Apple token verification failed", { error: error.message });
 			return null;
@@ -1244,14 +1247,7 @@ export class AuthService {
 		try {
 			const base64Url = identityToken.split(".")[1];
 			const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-			const jsonPayload = decodeURIComponent(
-				atob(base64)
-					.split("")
-					.map(function (c) {
-						return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-					})
-					.join(""),
-			);
+			const jsonPayload = Buffer.from(base64, "base64").toString("utf-8");
 			const payload = JSON.parse(jsonPayload);
 			return payload.email;
 		} catch {
