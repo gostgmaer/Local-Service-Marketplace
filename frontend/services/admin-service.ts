@@ -41,7 +41,7 @@ class AdminService {
 
 		const response = await apiClient.get<User[]>(`/admin/users?${searchParams.toString()}`);
 		// API client unwraps standardized response
-		return response.data || [];
+		return response.data.data || [];
 	}
 
 	async getUserById(id: string): Promise<User> {
@@ -67,7 +67,7 @@ class AdminService {
 
 		const response = await apiClient.get<Dispute[]>(`/admin/disputes?${searchParams.toString()}`);
 		// API client unwraps standardized response
-		return response.data || [];
+		return response.data.disputes || [];
 	}
 
 	async getDisputeById(id: string): Promise<Dispute> {

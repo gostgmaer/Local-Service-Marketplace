@@ -11,7 +11,8 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { formatDate } from '@/utils/helpers';
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import Link from "next/link";
-import Link from "next/link";
+import { Loading } from "@/components/ui";
+
 
 export default function AdminDisputesPage() {
   const { user } = useAuth();
