@@ -219,6 +219,11 @@ export function Navbar() {
 									How It Works
 								</Link>
 								<Link
+									href={ROUTES.PROVIDERS}
+									className='px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'>
+									Find Providers
+								</Link>
+								<Link
 									href={ROUTES.HELP}
 									className='px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'>
 									Help

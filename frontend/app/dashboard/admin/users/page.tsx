@@ -13,6 +13,8 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+import Link from "next/link";
+import Link from "next/link";
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
@@ -94,11 +96,13 @@ export default function AdminUsersPage() {
 											</div>
 											<div className='flex items-center gap-3'>
 												<StatusBadge status={user.status || "active"} />
-												<Button
-													variant='outline'
-													size='sm'>
-													View Details
-												</Button>
+												<Link href={`/dashboard/admin/users/${user.id}`}>
+													<Button
+														variant='outline'
+														size='sm'>
+														View Details
+													</Button>
+												</Link>
 											</div>
 										</div>
 									))}

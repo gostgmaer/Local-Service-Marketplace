@@ -114,217 +114,177 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <SettingsLayout>
-      <div>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Current Password */}
-              <div>
-                <label
-                  htmlFor="currentPassword"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Current Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    id="currentPassword"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    {...register('currentPassword')}
-                    error={errors.currentPassword?.message}
-                    placeholder="Enter current password"
-                    className="pl-10 pr-10"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
+		<SettingsLayout>
+			<div>
+				<form
+					onSubmit={handleSubmit(onSubmit)}
+					className='space-y-6'>
+					{/* Current Password */}
+					<div>
+						<label
+							htmlFor='currentPassword'
+							className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+							Current Password
+						</label>
+						<div className='relative'>
+							<Lock className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
+							<Input
+								id='currentPassword'
+								type={showCurrentPassword ? "text" : "password"}
+								{...register("currentPassword")}
+								error={errors.currentPassword?.message}
+								placeholder='Enter current password'
+								className='pl-10 pr-10'
+								autoComplete='current-password'
+							/>
+							<button
+								type='button'
+								onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+								className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'>
+								{showCurrentPassword ?
+									<EyeOff className='w-5 h-5' />
+								:	<Eye className='w-5 h-5' />}
+							</button>
+						</div>
+					</div>
 
-              {/* New Password */}
-              <div>
-                <label
-                  htmlFor="newPassword"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  New Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    id="newPassword"
-                    type={showNewPassword ? 'text' : 'password'}
-                    {...register('newPassword')}
-                    error={errors.newPassword?.message}
-                    placeholder="Enter new password"
-                    className="pl-10 pr-10"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showNewPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-                {newPassword && (
-                  <div className="mt-3 space-y-1">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Password must contain:
-                    </p>
-                    <ul className="text-xs space-y-1">
-                      <li
-                        className={
-                          newPassword.length >= 8
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-gray-500'
-                        }
-                      >
-                        ✓ At least 8 characters
-                      </li>
-                      <li
-                        className={
-                          /[A-Z]/.test(newPassword)
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-gray-500'
-                        }
-                      >
-                        ✓ One uppercase letter
-                      </li>
-                      <li
-                        className={
-                          /[a-z]/.test(newPassword)
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-gray-500'
-                        }
-                      >
-                        ✓ One lowercase letter
-                      </li>
-                      <li
-                        className={
-                          /[0-9]/.test(newPassword)
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-gray-500'
-                        }
-                      >
-                        ✓ One number
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
+					{/* New Password */}
+					<div>
+						<label
+							htmlFor='newPassword'
+							className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+							New Password
+						</label>
+						<div className='relative'>
+							<Lock className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
+							<Input
+								id='newPassword'
+								type={showNewPassword ? "text" : "password"}
+								{...register("newPassword")}
+								error={errors.newPassword?.message}
+								placeholder='Enter new password'
+								className='pl-10 pr-10'
+								autoComplete='new-password'
+							/>
+							<button
+								type='button'
+								onClick={() => setShowNewPassword(!showNewPassword)}
+								className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'>
+								{showNewPassword ?
+									<EyeOff className='w-5 h-5' />
+								:	<Eye className='w-5 h-5' />}
+							</button>
+						</div>
+						{newPassword && (
+							<div className='mt-3 space-y-1'>
+								<p className='text-xs text-gray-600 dark:text-gray-400'>Password must contain:</p>
+								<ul className='text-xs space-y-1'>
+									<li className={newPassword.length >= 8 ? "text-green-600 dark:text-green-400" : "text-gray-500"}>
+										✓ At least 8 characters
+									</li>
+									<li className={/[A-Z]/.test(newPassword) ? "text-green-600 dark:text-green-400" : "text-gray-500"}>
+										✓ One uppercase letter
+									</li>
+									<li className={/[a-z]/.test(newPassword) ? "text-green-600 dark:text-green-400" : "text-gray-500"}>
+										✓ One lowercase letter
+									</li>
+									<li className={/[0-9]/.test(newPassword) ? "text-green-600 dark:text-green-400" : "text-gray-500"}>
+										✓ One number
+									</li>
+								</ul>
+							</div>
+						)}
+					</div>
 
-              {/* Confirm New Password */}
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    {...register('confirmPassword')}
-                    error={errors.confirmPassword?.message}
-                    placeholder="Confirm new password"
-                    className="pl-10 pr-10"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
+					{/* Confirm New Password */}
+					<div>
+						<label
+							htmlFor='confirmPassword'
+							className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+							Confirm New Password
+						</label>
+						<div className='relative'>
+							<Lock className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
+							<Input
+								id='confirmPassword'
+								type={showConfirmPassword ? "text" : "password"}
+								{...register("confirmPassword")}
+								error={errors.confirmPassword?.message}
+								placeholder='Confirm new password'
+								className='pl-10 pr-10'
+								autoComplete='new-password'
+							/>
+							<button
+								type='button'
+								onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+								className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'>
+								{showConfirmPassword ?
+									<EyeOff className='w-5 h-5' />
+								:	<Eye className='w-5 h-5' />}
+							</button>
+						</div>
+					</div>
 
-              {/* Actions */}
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1"
-                >
-                  {isSubmitting ? 'Changing Password...' : 'Change Password'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-              </div>
-           
+					{/* Actions */}
+					<div className='flex gap-4 pt-4'>
+						<Button
+							type='submit'
+							disabled={isSubmitting}
+							className='flex-1'>
+							{isSubmitting ? "Changing Password..." : "Change Password"}
+						</Button>
+						<Button
+							type='button'
+							variant='outline'
+							onClick={() => router.back()}
+							disabled={isSubmitting}>
+							Cancel
+						</Button>
+					</div>
 
-          {/* Additional Security Options */}
-          <div className="mt-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Additional Security
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Two-Factor Authentication
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Add an extra layer of security to your account
-                  </p>
-                </div>
-                <Button variant="outline" size="sm">
-                  Enable
-                </Button>
-              </div>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200the dark:border-gray-700">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Active Sessions</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Manage devices where you're logged in
-                  </p>
-                </div>
-                <Button variant="outline" size="sm">
-                  View
-                </Button>
-              </div>
-            </div>
-          </div>
+					{/* Additional Security Options */}
+					<div className='mt-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6'>
+						<h2 className='text-lg font-semibold text-gray-900 dark:text-white mb-4'>Additional Security</h2>
+						<div className='space-y-4'>
+							<div className='flex items-center justify-between'>
+								<div>
+									<p className='font-medium text-gray-900 dark:text-white'>Two-Factor Authentication</p>
+									<p className='text-sm text-gray-600 dark:text-gray-400'>
+										Add an extra layer of security to your account
+									</p>
+								</div>
+								<Button
+									variant='outline'
+									size='sm'
+									onClick={() => toast("Two-factor authentication coming soon", { icon: "🔐" })}>
+									Enable
+								</Button>
+							</div>
+							<div className='flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700'>
+								<div>
+									<p className='font-medium text-gray-900 dark:text-white'>Active Sessions</p>
+									<p className='text-sm text-gray-600 dark:text-gray-400'>Manage devices where you're logged in</p>
+								</div>
+								<Button
+									variant='outline'
+									size='sm'
+									onClick={() => toast("Session management coming soon", { icon: "🖥️" })}>
+									View
+								</Button>
+							</div>
+						</div>
+					</div>
 
-          {/* Forgot Password Link */}
-          <div className="mt-6 text-center">
-            <Link
-              href={ROUTES.FORGOT_PASSWORD}
-              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
-            >
-              Forgot your password?
-            </Link>
-          </div>
-        </form>
-      </div>
-    </SettingsLayout>
-  );
+					{/* Forgot Password Link */}
+					<div className='mt-6 text-center'>
+						<Link
+							href={ROUTES.FORGOT_PASSWORD}
+							className='text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300'>
+							Forgot your password?
+						</Link>
+					</div>
+				</form>
+			</div>
+		</SettingsLayout>
+	);
 }

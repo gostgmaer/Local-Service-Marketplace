@@ -10,6 +10,8 @@ import { adminService } from '@/services/admin-service';
 import { ErrorState } from "@/components/ui/ErrorState";
 import { formatDate } from '@/utils/helpers';
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+import Link from "next/link";
+import Link from "next/link";
 
 export default function AdminDisputesPage() {
   const { user } = useAuth();
@@ -73,11 +75,13 @@ export default function AdminDisputesPage() {
 												<p className='text-xs text-gray-500 dark:text-gray-400'>
 													Filed {formatDate(dispute.created_at)}
 												</p>
-												<Button
-													variant='outline'
-													size='sm'>
-													Review Dispute
-												</Button>
+												<Link href={`/dashboard/admin/disputes/${dispute.id}`}>
+													<Button
+														variant='outline'
+														size='sm'>
+														Review Dispute
+													</Button>
+												</Link>
 											</div>
 										</div>
 									))}
