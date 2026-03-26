@@ -46,6 +46,7 @@ export class SubscriptionController {
   }
 
   @Post(':subscriptionId/activate')
+  @HttpCode(HttpStatus.OK)
   async activateSubscription(
     @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,
     @Request() req: any
@@ -112,6 +113,7 @@ export class SubscriptionController {
   }
 
   @Post('provider/:providerId/upgrade')
+  @HttpCode(HttpStatus.OK)
   async upgradeSubscription(
     @Param('providerId', ParseUUIDPipe) providerId: string,
     @Body() upgradeData: UpgradeSubscriptionDto,

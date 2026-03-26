@@ -63,6 +63,7 @@ export class ProviderDocumentController {
   @Roles('admin')
   @UseGuards(RolesGuard)
   @Post('verify/:documentId')
+  @HttpCode(HttpStatus.OK)
   async verifyDocument(
     @Param('documentId', ParseUUIDPipe) documentId: string,
     @Body() dto: VerifyDocumentDto,
