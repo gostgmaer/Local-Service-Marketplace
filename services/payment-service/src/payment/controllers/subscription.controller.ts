@@ -8,7 +8,9 @@ import {
   Request,
   ParseUUIDPipe,
   Query,
-  UseGuards
+  UseGuards,
+  HttpCode,
+  HttpStatus
 } from '@nestjs/common';
 import { SubscriptionService } from '../services/subscription.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
@@ -25,6 +27,7 @@ export class SubscriptionController {
   ) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async createSubscription(
     @Body() data: CreateSubscriptionDto,
     @Request() req: any

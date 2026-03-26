@@ -44,9 +44,13 @@ const nextConfig = {
 	},
 
 	// Webpack optimization
-	webpack: (config, { isServer }) => {
+	webpack: (config, { isServer, dev }) => {
 		if (!isServer) {
 			config.resolve.fallback = { ...config.resolve.fallback, fs: false, net: false, tls: false };
+		}
+		// Enable polling for file watching on Windows (fixes HMR not reflecting changes)
+		if (dev) {
+			config.watchOptions = { poll: 1000, aggregateTimeout: 300 };
 		}
 		return config;
 	},

@@ -13,6 +13,8 @@ import {
 	Ip,
 	Req,
 	UseGuards,
+	HttpCode,
+	HttpStatus
 } from "@nestjs/common";
 import { Request } from "express";
 import { UserModerationService } from "./services/user-moderation.service";
@@ -170,6 +172,7 @@ export class AdminController {
 
 	// Contact Message Endpoints
 	@Post("contact")
+	@HttpCode(HttpStatus.CREATED)
 	async createContactMessage(
 		@Body() createContactMessageDto: CreateContactMessageDto,
 		@Ip() ip: string,

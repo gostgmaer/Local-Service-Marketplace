@@ -30,6 +30,7 @@ export class PaymentController {
 	 */
 	@Post()
 	@UseGuards(JwtAuthGuard)
+	@HttpCode(HttpStatus.CREATED)
 	async createPayment(@Body() createPaymentDto: CreatePaymentDto, @Request() req: any) {
 		const payment = await this.paymentService.createPayment(
 			createPaymentDto.job_id,
@@ -120,7 +121,7 @@ export class PaymentController {
 	 */
 	@Post(":id/refund")
 	@UseGuards(JwtAuthGuard)
-	@HttpCode(HttpStatus.OK)
+	@HttpCode(HttpStatus.CREATED)
 	async requestRefund(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() requestRefundDto: RequestRefundDto,

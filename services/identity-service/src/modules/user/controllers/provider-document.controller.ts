@@ -10,7 +10,9 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
-  ParseUUIDPipe
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProviderDocumentService } from '../services/provider-document.service';
@@ -29,6 +31,7 @@ export class ProviderDocumentController {
 
   @Post('upload/:providerId')
   @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.CREATED)
   async uploadDocument(
     @Param('providerId', ParseUUIDPipe) providerId: string,
     @Body() dto: UploadDocumentDto,

@@ -8,7 +8,9 @@ import {
   Request,
   ParseUUIDPipe,
   Query,
-  UseGuards
+  UseGuards,
+  HttpCode,
+  HttpStatus
 } from '@nestjs/common';
 import { PricingPlanService } from '../services/pricing-plan.service';
 import { CreatePricingPlanDto } from '../dto/create-pricing-plan.dto';
@@ -27,6 +29,7 @@ export class PricingPlanController {
   @Roles('admin')
   @UseGuards(RolesGuard)
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async createPlan(
     @Body() planData: CreatePricingPlanDto,
     @Request() req: any
