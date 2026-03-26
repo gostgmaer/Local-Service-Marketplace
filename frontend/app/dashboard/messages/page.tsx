@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
 import { ErrorState } from "@/components/ui/ErrorState";
-import { messageService } from '@/services/message-service';
+import { messageService, Conversation } from "@/services/message-service";
 import { formatDateTime } from '@/utils/helpers';
 import { Send } from 'lucide-react';
 
@@ -90,7 +90,7 @@ export default function MessagesPage() {
 									<Loading size='sm' />
 								: conversations && conversations.length > 0 ?
 									<div className='space-y-2'>
-										{conversations.map((conv: any) => (
+										{conversations.map((conv: Conversation) => (
 											<button
 												key={conv.job_id}
 												onClick={() => setSelectedJobId(conv.job_id)}

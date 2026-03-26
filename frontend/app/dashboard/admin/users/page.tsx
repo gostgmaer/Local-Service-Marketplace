@@ -14,7 +14,6 @@ import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import Link from "next/link";
-import Link from "next/link";
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
