@@ -247,6 +247,22 @@ export class AuthController {
 	}
 
 	// ==========================================
+	// Email Verification
+	// ==========================================
+
+	@Get("email/verify")
+	async verifyEmail(
+		@Query("token") token: string,
+		@Res({ passthrough: true }) res: Response,
+	): Promise<{ message: string }> {
+		this.logger.info("GET /auth/email/verify", { context: "AuthController" });
+		await this.authService.verifyEmail(token);
+		// Optionally, could redirect to frontend with success message
+		// For now, return JSON response
+		return { message: "Email verified successfully" };
+	}
+
+	// ==========================================
 	// Token Verification (Gateway Internal API)
 	// ==========================================
 

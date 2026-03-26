@@ -14,6 +14,8 @@ import { SubscriptionService } from '../services/subscription.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { UpgradeSubscriptionDto } from '../dto/upgrade-subscription.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('subscriptions')
@@ -125,12 +127,13 @@ export class SubscriptionController {
     };
   }
 
+  @Roles('admin')
+  @UseGuards(RolesGuard)
   @Get('expiring')
   async getExpiringSubscriptions(
     @Request() req: any,
     @Query('days') days?: string
   ) {
-    // Admin only
     const daysAhead = days ? parseInt(days) : 7;
     const subscriptions = await this.subscriptionService.getExpiringSubscriptions(
       daysAhead

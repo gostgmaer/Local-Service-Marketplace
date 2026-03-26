@@ -28,8 +28,6 @@ import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Roles } from "@/common/decorators/roles.decorator";
 
-@Roles("admin")
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("admin")
 export class AdminController {
 	constructor(
@@ -41,11 +39,15 @@ export class AdminController {
 	) {}
 
 	// User Moderation Endpoints
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("stats")
 	async getStats() {
 		return this.userModerationService.getStats();
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("users")
 	async getUsers(
 		@Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
@@ -58,11 +60,15 @@ export class AdminController {
 		return this.userModerationService.getAllUsers(limit, offset);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("users/:id")
 	async getUserById(@Param("id") id: string) {
 		return this.userModerationService.getUserById(id);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Patch("users/:id/suspend")
 	async suspendUser(
 		@Param("id") id: string,
@@ -72,12 +78,16 @@ export class AdminController {
 		return this.userModerationService.suspendUser(id, adminId, true, body.reason);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Patch("users/:id/activate")
 	async activateUser(@Param("id") id: string, @Headers("x-admin-id") adminId: string) {
 		return this.userModerationService.activateUser(id, adminId);
 	}
 
 	// Dispute Management Endpoints
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("disputes")
 	async getDisputes(
 		@Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
@@ -91,11 +101,15 @@ export class AdminController {
 		return this.disputeService.getAllDisputes(limit, offset);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("disputes/:id")
 	async getDisputeById(@Param("id") id: string) {
 		return this.disputeService.getDisputeById(id);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Patch("disputes/:id")
 	async updateDispute(
 		@Param("id") id: string,
@@ -106,6 +120,8 @@ export class AdminController {
 	}
 
 	// Audit Log Endpoints
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("audit-logs")
 	async getAuditLogs(
 		@Query("limit", new DefaultValuePipe(100), ParseIntPipe) limit: number,
@@ -119,22 +135,30 @@ export class AdminController {
 		return this.auditLogService.getAuditLogs(limit, offset);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("audit-logs/entity/:entity/:entityId")
 	async getAuditLogsByEntity(@Param("entity") entity: string, @Param("entityId") entityId: string) {
 		return this.auditLogService.getAuditLogsByEntity(entity, entityId);
 	}
 
 	// System Settings Endpoints
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("settings")
 	async getSettings() {
 		return this.systemSettingService.getAllSettings();
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("settings/:key")
 	async getSettingByKey(@Param("key") key: string) {
 		return this.systemSettingService.getSettingByKey(key);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Patch("settings/:key")
 	async updateSetting(
 		@Param("key") key: string,
@@ -158,6 +182,8 @@ export class AdminController {
 		return this.contactMessageService.createContactMessage(createContactMessageDto);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("contact")
 	async getContactMessages(
 		@Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
@@ -167,21 +193,29 @@ export class AdminController {
 		return this.contactMessageService.getAllContactMessages(limit, offset, status);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("contact/:id")
 	async getContactMessageById(@Param("id") id: string) {
 		return this.contactMessageService.getContactMessageById(id);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("contact/email/:email")
 	async getContactMessagesByEmail(@Param("email") email: string) {
 		return this.contactMessageService.getContactMessagesByEmail(email);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("contact/user/:userId")
 	async getContactMessagesByUserId(@Param("userId") userId: string) {
 		return this.contactMessageService.getContactMessagesByUserId(userId);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Patch("contact/:id")
 	async updateContactMessage(
 		@Param("id") id: string,
@@ -191,6 +225,8 @@ export class AdminController {
 		return this.contactMessageService.updateContactMessage(id, updateContactMessageDto, adminId);
 	}
 
+	@Roles("admin")
+	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Delete("contact/:id")
 	async deleteContactMessage(@Param("id") id: string, @Headers("x-admin-id") adminId: string) {
 		return this.contactMessageService.deleteContactMessage(id, adminId);

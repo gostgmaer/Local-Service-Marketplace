@@ -35,7 +35,7 @@ export default function ContactPage() {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
       await axios.post(`${API_URL}/api/v1/admin/contact`, data);
       toast.success('Message sent successfully! We\'ll get back to you soon.');
       reset();
