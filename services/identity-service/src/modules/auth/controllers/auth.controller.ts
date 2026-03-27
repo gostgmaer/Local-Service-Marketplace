@@ -84,7 +84,7 @@ export class AuthController {
 	async logout(
 		@Body() refreshTokenDto: RefreshTokenDto,
 		@Res({ passthrough: true }) res: Response,
-	): Promise<{ message: string }> {
+	): Promise<{ result: string }> {
 		this.logger.info("POST /auth/logout", { context: "AuthController" });
 		await this.authService.logout(refreshTokenDto.refreshToken);
 
@@ -114,7 +114,7 @@ export class AuthController {
 	}
 
 	@Post("password-reset/request")
-	async requestPasswordReset(@Body() passwordResetRequestDto: PasswordResetRequestDto): Promise<{ message: string }> {
+	async requestPasswordReset(@Body() passwordResetRequestDto: PasswordResetRequestDto): Promise<{ result: string }> {
 		this.logger.info("POST /auth/password-reset/request", {
 			context: "AuthController",
 			email: passwordResetRequestDto.email,
@@ -124,7 +124,7 @@ export class AuthController {
 	}
 
 	@Post("password-reset/confirm")
-	async confirmPasswordReset(@Body() passwordResetConfirmDto: PasswordResetConfirmDto): Promise<{ message: string }> {
+	async confirmPasswordReset(@Body() passwordResetConfirmDto: PasswordResetConfirmDto): Promise<{ result: string }> {
 		this.logger.info("POST /auth/password-reset/confirm", { context: "AuthController" });
 		await this.authService.confirmPasswordReset(passwordResetConfirmDto.token, passwordResetConfirmDto.newPassword);
 		return { result: "Password reset successful" };
@@ -255,7 +255,7 @@ export class AuthController {
 	async verifyEmail(
 		@Query("token") token: string,
 		@Res({ passthrough: true }) res: Response,
-	): Promise<{ message: string }> {
+	): Promise<{ result: string }> {
 		this.logger.info("GET /auth/email/verify", { context: "AuthController" });
 		await this.authService.verifyEmail(token);
 		// Optionally, could redirect to frontend with success message
@@ -305,7 +305,7 @@ export class AuthController {
 
 	@Post("2fa/verify")
 	@UseGuards(JwtAuthGuard)
-	async verify2FA(@Body() dto: { code: string }, @Req() req: Request): Promise<{ message: string }> {
+	async verify2FA(@Body() dto: { code: string }, @Req() req: Request): Promise<{ result: string }> {
 		await this.authService.verify2FA(req.user["sub"], dto.code);
 		return { result: "2FA enabled successfully" };
 	}
@@ -315,7 +315,7 @@ export class AuthController {
 	async disable2FA(
 		@Body() dto: { password: string; code?: string },
 		@Req() req: Request,
-	): Promise<{ message: string }> {
+	): Promise<{ result: string }> {
 		await this.authService.disable2FA(req.user["sub"], dto.password, dto.code);
 		return { result: "2FA disabled successfully" };
 	}
@@ -343,14 +343,14 @@ export class AuthController {
 
 	@Delete("sessions/:sessionId")
 	@UseGuards(JwtAuthGuard)
-	async revokeSession(@Req() req: Request, @Param("sessionId") sessionId: string): Promise<{ message: string }> {
+	async revokeSession(@Req() req: Request, @Param("sessionId") sessionId: string): Promise<{ result: string }> {
 		await this.authService.revokeSession(req.user["sub"], sessionId);
 		return { result: "Session revoked" };
 	}
 
 	@Delete("sessions/all")
 	@UseGuards(JwtAuthGuard)
-	async revokeAllSessions(@Req() req: Request): Promise<{ message: string }> {
+	async revokeAllSessions(@Req() req: Request): Promise<{ result: string }> {
 		await this.authService.revokeAllSessions(req.user["sub"]);
 		return { result: "All sessions revoked" };
 	}
@@ -363,7 +363,7 @@ export class AuthController {
 
 	@Delete("devices/:deviceId")
 	@UseGuards(JwtAuthGuard)
-	async removeDevice(@Req() req: Request, @Param("deviceId") deviceId: string): Promise<{ message: string }> {
+	async removeDevice(@Req() req: Request, @Param("deviceId") deviceId: string): Promise<{ result: string }> {
 		await this.authService.removeDevice(req.user["sub"], deviceId);
 		return { result: "Device removed" };
 	}
@@ -374,13 +374,13 @@ export class AuthController {
 	async changePassword(
 		@Body() dto: { currentPassword: string; newPassword: string },
 		@Req() req: Request,
-	): Promise<{ message: string }> {
+	): Promise<{ result: string }> {
 		await this.authService.changePassword(req.user["sub"], dto.currentPassword, dto.newPassword);
 		return { result: "Password changed successfully" };
 	}
 
 	@Post("email/resend-verification")
-	async resendVerificationEmail(@Body() dto: { email: string }): Promise<{ message: string }> {
+	async resendVerificationEmail(@Body() dto: { email: string }): Promise<{ result: string }> {
 		await this.authService.resendVerificationEmail(dto.email);
 		return { result: "Verification email sent if email is registered and not verified" };
 	}
@@ -390,7 +390,7 @@ export class AuthController {
 	async deactivateAccount(
 		@Body() dto: { password: string; reason?: string },
 		@Req() req: Request,
-	): Promise<{ message: string }> {
+	): Promise<{ result: string }> {
 		await this.authService.deactivateAccount(req.user["sub"], dto.password, dto.reason);
 		return { result: "Account deactivated" };
 	}
@@ -400,14 +400,14 @@ export class AuthController {
 	async requestAccountDeletion(
 		@Body() dto: { password: string; reason?: string },
 		@Req() req: Request,
-	): Promise<{ message: string }> {
+	): Promise<{ result: string }> {
 		await this.authService.requestAccountDeletion(req.user["sub"], dto.password, dto.reason);
 		return { result: "Account deletion requested. You have 30 days to cancel." };
 	}
 
 	@Post("account/cancel-deletion")
 	@UseGuards(JwtAuthGuard)
-	async cancelAccountDeletion(@Body() dto: { password: string }, @Req() req: Request): Promise<{ message: string }> {
+	async cancelAccountDeletion(@Body() dto: { password: string }, @Req() req: Request): Promise<{ result: string }> {
 		await this.authService.cancelAccountDeletion(req.user["sub"], dto.password);
 		return { result: "Account deletion cancelled" };
 	}
@@ -439,7 +439,7 @@ export class AuthController {
 		@Req() req: Request,
 		@Param("provider") provider: string,
 		@Body() dto: { idToken?: string; accessToken?: string },
-	): Promise<{ message: string }> {
+	): Promise<{ result: string }> {
 		if (!dto.idToken && !dto.accessToken) {
 			throw new BadRequestException("Either idToken or accessToken is required");
 		}
@@ -455,7 +455,7 @@ export class AuthController {
 
 	@Delete("social/unlink/:provider")
 	@UseGuards(JwtAuthGuard)
-	async unlinkSocialAccount(@Req() req: Request, @Param("provider") provider: string): Promise<{ message: string }> {
+	async unlinkSocialAccount(@Req() req: Request, @Param("provider") provider: string): Promise<{ result: string }> {
 		await this.authService.unlinkSocialAccount(req.user["sub"], provider);
 		return { result: `${provider} account unlinked` };
 	}
