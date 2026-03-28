@@ -1,115 +1,90 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Inject, LoggerService, HttpCode, HttpStatus } from "@nestjs/common";
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { BackgroundJobService } from '../services/background-job.service';
-import { CreateBackgroundJobDto } from '../dto/create-background-job.dto';
-import { UpdateJobStatusDto } from '../dto/update-job-status.dto';
+import {
+	Controller,
+	Get,
+	Post,
+	Patch,
+	Delete,
+	Body,
+	Param,
+	Query,
+	Inject,
+	LoggerService,
+	HttpCode,
+	HttpStatus,
+	ParseUUIDPipe,
+} from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { BackgroundJobService } from "../services/background-job.service";
+import { CreateBackgroundJobDto } from "../dto/create-background-job.dto";
+import { UpdateJobStatusDto } from "../dto/update-job-status.dto";
+import { BackgroundJobQueryDto } from "../dto/background-job-query.dto";
 
-@Controller('background-jobs')
+@Controller("background-jobs")
 export class BackgroundJobController {
-  constructor(
-    @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly logger: LoggerService,
-    private readonly backgroundJobService: BackgroundJobService,
-  ) {}
+	constructor(
+		@Inject(WINSTON_MODULE_NEST_PROVIDER)
+		private readonly logger: LoggerService,
+		private readonly backgroundJobService: BackgroundJobService,
+	) {}
 
-  @Post()
-  async createJob(@Body() createJobDto: CreateBackgroundJobDto) {
-    this.logger.log(
-      `POST /background-jobs - Create job: ${createJobDto.jobType}`,
-      'BackgroundJobController',
-    );
+	@Post()
+	async createJob(@Body() createJobDto: CreateBackgroundJobDto) {
+		this.logger.log(`POST /background-jobs - Create job: ${createJobDto.jobType}`, "BackgroundJobController");
 
-    const job = await this.backgroundJobService.createJob(createJobDto);
+		const job = await this.backgroundJobService.createJob(createJobDto);
 
-    return job;
-  }
+		return job;
+	}
 
-  @Get()
-  async getAllJobs(
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ) {
-    this.logger.log(
-      'GET /background-jobs - Retrieve all jobs',
-      'BackgroundJobController',
-    );
+	@Get()
+	async getAllJobs(@Query() queryDto: BackgroundJobQueryDto) {
+		this.logger.log("GET /background-jobs - Retrieve all jobs", "BackgroundJobController");
 
-    const parsedLimit = limit ? parseInt(limit) : 100;
-    const parsedOffset = offset ? parseInt(offset) : 0;
+		return this.backgroundJobService.getAllJobs(queryDto);
+	}
 
-    const result = await this.backgroundJobService.getAllJobs(
-      parsedLimit,
-      parsedOffset,
-    );
+	@Get("status/:status")
+	async getJobsByStatus(@Param("status") status: string) {
+		this.logger.log(`GET /background-jobs/status/${status} - Retrieve jobs by status`, "BackgroundJobController");
 
-    return { data: result.data, total: result.total };
-  }
+		return this.backgroundJobService.getJobsByStatus(status);
+	}
 
-  @Get('status/:status')
-  async getJobsByStatus(@Param('status') status: string) {
-    this.logger.log(
-      `GET /background-jobs/status/${status} - Retrieve jobs by status`,
-      'BackgroundJobController',
-    );
+	@Get("stats")
+	async getQueueStats() {
+		this.logger.log("GET /background-jobs/stats - Retrieve queue statistics", "BackgroundJobController");
 
-    const data = await this.backgroundJobService.getJobsByStatus(status);
+		const stats = await this.backgroundJobService.getQueueStats();
 
-    return { data, total: data.length };
-  }
+		return stats;
+	}
 
-  @Get('stats')
-  async getQueueStats() {
-    this.logger.log(
-      'GET /background-jobs/stats - Retrieve queue statistics',
-      'BackgroundJobController',
-    );
+	@Get(":id")
+	async getJobById(@Param("id", ParseUUIDPipe) id: string) {
+		this.logger.log(`GET /background-jobs/${id} - Retrieve job by ID`, "BackgroundJobController");
 
-    const stats = await this.backgroundJobService.getQueueStats();
+		const job = await this.backgroundJobService.getJobById(id);
 
-    return stats;
-  }
+		return job;
+	}
 
-  @Get(':id')
-  async getJobById(@Param('id') id: string) {
-    this.logger.log(
-      `GET /background-jobs/${id} - Retrieve job by ID`,
-      'BackgroundJobController',
-    );
+	@Patch(":id/status")
+	@HttpCode(HttpStatus.OK)
+	async updateJobStatus(@Param("id", ParseUUIDPipe) id: string, @Body() updateJobStatusDto: UpdateJobStatusDto) {
+		this.logger.log(`PATCH /background-jobs/${id}/status - Update job status`, "BackgroundJobController");
 
-    const job = await this.backgroundJobService.getJobById(id);
+		const job = await this.backgroundJobService.updateJobStatus(id, updateJobStatusDto.status);
 
-    return job;
-  }
+		return job;
+	}
 
-  @Patch(':id/status')
-  @HttpCode(HttpStatus.OK)
-  async updateJobStatus(
-    @Param('id') id: string,
-    @Body() updateJobStatusDto: UpdateJobStatusDto,
-  ) {
-    this.logger.log(
-      `PATCH /background-jobs/${id}/status - Update job status`,
-      'BackgroundJobController',
-    );
+	@Delete(":id")
+	@HttpCode(HttpStatus.OK)
+	async deleteJob(@Param("id", ParseUUIDPipe) id: string) {
+		this.logger.log(`DELETE /background-jobs/${id} - Delete job`, "BackgroundJobController");
 
-    const job = await this.backgroundJobService.updateJobStatus(
-      id,
-      updateJobStatusDto.status,
-    );
+		await this.backgroundJobService.deleteJob(id);
 
-    return job;
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  async deleteJob(@Param('id') id: string) {
-    this.logger.log(
-      `DELETE /background-jobs/${id} - Delete job`,
-      'BackgroundJobController',
-    );
-
-    await this.backgroundJobService.deleteJob(id);
-
-    return { message: "Background job deleted successfully" };
-  }
+		return { message: "Background job deleted successfully" };
+	}
 }

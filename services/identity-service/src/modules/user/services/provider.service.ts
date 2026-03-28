@@ -294,7 +294,7 @@ export class ProviderService {
 
     const providerResponses = await this.buildProviderResponses(providers);
 
-    return { data: providerResponses, total };
+    return { data: providerResponses, total, page, limit };
   }
 
   private async buildProviderResponses(providers: any[]): Promise<ProviderResponseDto[]> {
