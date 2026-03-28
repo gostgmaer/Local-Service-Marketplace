@@ -48,11 +48,13 @@ module.exports = {
 					"100%": { opacity: "1", transform: "scale(1)" },
 				},
 				shimmer: { "0%": { backgroundPosition: "-1000px 0" }, "100%": { backgroundPosition: "1000px 0" } },
+				progress: { "0%": { width: "0%" }, "100%": { width: "100%" } },
 			},
 			animation: {
 				"fade-in": "fade-in 0.4s ease-out both",
 				"slide-up": "slide-up 0.5s ease-out both",
 				"scale-in": "scale-in 0.3s ease-out both",
+				"[progress_1.2s_ease-in-out_forwards]": "progress 1.2s ease-in-out forwards",
 			},
 		},
 	},
