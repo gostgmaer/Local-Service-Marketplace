@@ -21,6 +21,8 @@ export default function JobsPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
+		console.log(isAuthenticated);
+		
       router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
