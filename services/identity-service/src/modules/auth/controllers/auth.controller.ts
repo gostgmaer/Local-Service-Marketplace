@@ -23,6 +23,7 @@ import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 import { AuthService } from "../services/auth.service";
 import { SignupDto } from "../dto/signup.dto";
+import { RegisterDto, RegisterResponseDto } from "../dto/register.dto";
 import { LoginDto } from "../dto/login.dto";
 import { PasswordResetRequestDto } from "../dto/password-reset-request.dto";
 import { PasswordResetConfirmDto } from "../dto/password-reset-confirm.dto";
@@ -51,6 +52,15 @@ export class AuthController {
 		private readonly authService: AuthService,
 		@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
 	) {}
+
+	@Post("register")
+	@HttpCode(HttpStatus.CREATED)
+	async register(
+		@Body() registerDto: RegisterDto,
+	): Promise<RegisterResponseDto> {
+		this.logger.info("POST /auth/register", { context: "AuthController", email: registerDto.email, phone: registerDto.phone });
+		return this.authService.register(registerDto);
+	}
 
 	@Post("signup")
 	async signup(

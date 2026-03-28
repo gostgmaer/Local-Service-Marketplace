@@ -18,9 +18,9 @@ export class SignupDto {
 	@IsString()
 	name?: string;
 
-	@IsEnum(UserRole, { message: "Role must be either customer, provider, or admin" })
+	@IsEnum(UserRole, { message: "User type must be customer, provider, or admin" })
 	@IsOptional()
-	role?: UserRole = UserRole.CUSTOMER;
+	userType?: UserRole = UserRole.CUSTOMER;
 
 	@IsOptional()
 	@IsString()
