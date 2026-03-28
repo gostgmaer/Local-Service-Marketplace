@@ -12,102 +12,79 @@ import { ProviderReviewAggregateService } from '../services/provider-review-aggr
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
-@Controller('review-aggregates')
+@Controller("review-aggregates")
 export class ProviderReviewAggregateController {
-  constructor(
-    private readonly aggregateService: ProviderReviewAggregateService
-  ) {}
+	constructor(private readonly aggregateService: ProviderReviewAggregateService) {}
 
-  @Get('provider/:providerId')
-  async getProviderAggregate(
-    @Param('providerId', ParseUUIDPipe) providerId: string
-  ) {
-    const aggregate = await this.aggregateService.getProviderAggregate(providerId);
+	@Get("provider/:providerId")
+	async getProviderAggregate(@Param("providerId", ParseUUIDPipe) providerId: string) {
+		const aggregate = await this.aggregateService.getProviderAggregate(providerId);
 
-    // Transform field names for frontend compatibility
-    const transformedAggregate = aggregate ? {
-      ...aggregate,
-      one_star_count: aggregate.rating_1_count,
-      two_star_count: aggregate.rating_2_count,
-      three_star_count: aggregate.rating_3_count,
-      four_star_count: aggregate.rating_4_count,
-      five_star_count: aggregate.rating_5_count
-    } : null;
+		// Transform field names for frontend compatibility
+		const transformedAggregate =
+			aggregate ?
+				{
+					...aggregate,
+					one_star_count: aggregate.rating_1_count,
+					two_star_count: aggregate.rating_2_count,
+					three_star_count: aggregate.rating_3_count,
+					four_star_count: aggregate.rating_4_count,
+					five_star_count: aggregate.rating_5_count,
+				}
+			:	null;
 
-    return {
-      success: true,
-      data: transformedAggregate,
-      message: 'Provider review aggregate retrieved successfully'
-    };
-  async getRatingDistribution(
-    @Param('providerId', ParseUUIDPipe) providerId: string
-  ) {
-    const distribution = await this.aggregateService.getRatingDistribution(providerId);
+		return { message: "Provider review aggregate retrieved successfully", data: transformedAggregate };
+	}
 
-    return {
-      success: true,
-      data: distribution,
-      message: 'Rating distribution retrieved successfully'
-    };
-  async checkTrustBadge(
-    @Param('providerId', ParseUUIDPipe) providerId: string
-  ) {
-    const eligibility = await this.aggregateService.checkTrustBadgeEligibility(
-      providerId
-    );
+	@Get("provider/:providerId/distribution")
+	async getRatingDistribution(@Param("providerId", ParseUUIDPipe) providerId: string) {
+		const distribution = await this.aggregateService.getRatingDistribution(providerId);
 
-    return {
-      success: true,
-      data: eligibility,
-      message: 'Trust badge eligibility retrieved successfully'
-    };
-  async getTopRatedProviders(
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
-  ) {
-    const providers = await this.aggregateService.getTopRatedProviders(
-      limit || 10
-    );
+		return { message: "Rating distribution retrieved successfully", data: distribution };
+	}
 
-    // Transform field names for frontend compatibility
-    const transformedProviders = providers.map(aggregate => ({
-      ...aggregate,
-      one_star_count: aggregate.rating_1_count,
-      two_star_count: aggregate.rating_2_count,
-      three_star_count: aggregate.rating_3_count,
-      four_star_count: aggregate.rating_4_count,
-      five_star_count: aggregate.rating_5_count
-    }));
+	@Get("provider/:providerId/trust-badge")
+	async checkTrustBadge(@Param("providerId", ParseUUIDPipe) providerId: string) {
+		const eligibility = await this.aggregateService.checkTrustBadgeEligibility(providerId);
 
-    return {
-      success: true,
-      data: transformedProviders,
-      message: 'Top rated providers retrieved successfully'
-    };
-  async getProvidersByRating(
-    @Query('min', ParseFloatPipe) minRating: number,
-    @Query('max', ParseFloatPipe) maxRating: number,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
-  ) {
-    const providers = await this.aggregateService.getProvidersByRating(
-      minRating,
-      maxRating,
-      limit || 20
-    );
+		return { message: "Trust badge eligibility retrieved successfully", data: eligibility };
+	}
 
-    // Transform field names for frontend compatibility
-    const transformedProviders = providers.map(aggregate => ({
-      ...aggregate,
-      one_star_count: aggregate.rating_1_count,
-      two_star_count: aggregate.rating_2_count,
-      three_star_count: aggregate.rating_3_count,
-      four_star_count: aggregate.rating_4_count,
-      five_star_count: aggregate.rating_5_count
-    }));
+	@Get("top-rated")
+	async getTopRatedProviders(@Query("limit", new ParseIntPipe({ optional: true })) limit?: number) {
+		const providers = await this.aggregateService.getTopRatedProviders(limit || 10);
 
-    return {
-      success: true,
-      data: transformedProviders,
-      message: 'Providers by rating retrieved successfully'
-    };
+		// Transform field names for frontend compatibility
+		const transformedProviders = providers.map((aggregate) => ({
+			...aggregate,
+			one_star_count: aggregate.rating_1_count,
+			two_star_count: aggregate.rating_2_count,
+			three_star_count: aggregate.rating_3_count,
+			four_star_count: aggregate.rating_4_count,
+			five_star_count: aggregate.rating_5_count,
+		}));
 
+		return { message: "Top rated providers retrieved successfully", data: transformedProviders };
+	}
 
+	@Get("by-rating")
+	async getProvidersByRating(
+		@Query("min", ParseFloatPipe) minRating: number,
+		@Query("max", ParseFloatPipe) maxRating: number,
+		@Query("limit", new ParseIntPipe({ optional: true })) limit?: number,
+	) {
+		const providers = await this.aggregateService.getProvidersByRating(minRating, maxRating, limit || 20);
+
+		// Transform field names for frontend compatibility
+		const transformedProviders = providers.map((aggregate) => ({
+			...aggregate,
+			one_star_count: aggregate.rating_1_count,
+			two_star_count: aggregate.rating_2_count,
+			three_star_count: aggregate.rating_3_count,
+			four_star_count: aggregate.rating_4_count,
+			five_star_count: aggregate.rating_5_count,
+		}));
+
+		return { message: "Providers by rating retrieved successfully", data: transformedProviders };
+	}
+}
