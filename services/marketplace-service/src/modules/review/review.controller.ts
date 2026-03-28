@@ -7,6 +7,7 @@ import {
 	Query,
 	Request,
 	ParseIntPipe,
+	ParseUUIDPipe,
 	DefaultValuePipe,
 	UseGuards,
 	HttpCode,
@@ -33,8 +34,8 @@ export class ReviewController {
 		return review;
 	}
 
-	@Get(":id")
-	async getReviewById(@Param("id") id: string) {
+	@Get(":id([0-9a-fA-F-]{36})")
+	async getReviewById(@Param("id", ParseUUIDPipe) id: string) {
 		const review = await this.reviewService.getReviewById(id);
 		return review;
 	}
@@ -44,7 +45,7 @@ export class ReviewController {
 	 * GET /jobs/:jobId/review
 	 */
 	@Get("jobs/:jobId/review")
-	async getJobReview(@Param("jobId") jobId: string) {
+	async getJobReview(@Param("jobId", ParseUUIDPipe) jobId: string) {
 		const review = await this.reviewRepository.getReviewByJobId(jobId);
 
 		if (!review) {
@@ -87,7 +88,21 @@ export class ReviewController {
 		@Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
 		@Query("offset", new DefaultValuePipe(0), ParseIntPipe) offset: number,
 	) {
-		return this.reviewService.getProviderReviews(providerId, limit, offset);
+		const result = await this.reviewService.getProviderReviews(providerId, limit, offset);
+		return {
+			success: true,
+			message: "Provider reviews retrieved successfully",
+			data: {
+				reviews: result.data,
+				averageRating: result.averageRating,
+			},
+			meta: {
+				page: Math.floor(offset / limit) + 1,
+				limit,
+				total: result.total,
+				totalPages: Math.ceil(result.total / limit),
+			},
+		};
 	}
 
 	/**

@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { Pool } from 'pg';
 import { Proposal } from '../entities/proposal.entity';
 import { CreateProposalDto } from '../dto/create-proposal.dto';
-import { ProposalQueryDto } from '../dto/proposal-query.dto';
+import { ProposalQueryDto, ProposalSortBy, SortOrder } from "../dto/proposal-query.dto";
 
 @Injectable()
 export class ProposalRepository {
@@ -93,7 +93,20 @@ export class ProposalRepository {
   }
 
   async getProposalsPaginated(queryDto: ProposalQueryDto): Promise<Proposal[]> {
-    const { request_id, provider_id, status, limit = 20, cursor } = queryDto;
+    const {
+      request_id,
+      provider_id,
+      status,
+      limit = 20,
+      cursor,
+      page,
+      min_price,
+      max_price,
+      created_from,
+      created_to,
+      sortBy = ProposalSortBy.CREATED_AT,
+      sortOrder = SortOrder.DESC,
+    } = queryDto;
 
     let query = `
       SELECT id, request_id, provider_id, price, message, status, created_at
@@ -119,16 +132,105 @@ export class ProposalRepository {
       values.push(status);
     }
 
-    if (cursor) {
-      query += ` AND created_at < (SELECT created_at FROM proposals WHERE id = $${paramIndex++})`;
-      values.push(cursor);
-    }
+    const usingOffset = page !== undefined && page > 0;
 
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++}`;
-    values.push(limit + 1);
+		if (cursor && !usingOffset) {
+			query += ` AND created_at < (SELECT created_at FROM proposals WHERE id = $${paramIndex++})`;
+			values.push(cursor);
+		}
+
+    if (min_price !== undefined) {
+			query += ` AND price >= $${paramIndex++}`;
+			values.push(min_price);
+		}
+
+		if (max_price !== undefined) {
+			query += ` AND price <= $${paramIndex++}`;
+			values.push(max_price);
+		}
+
+		if (created_from) {
+			query += ` AND created_at >= $${paramIndex++}`;
+			values.push(created_from);
+		}
+
+		if (created_to) {
+			query += ` AND created_at <= $${paramIndex++}`;
+			values.push(created_to);
+		}
+
+		const sortMap: Record<ProposalSortBy, string> = {
+			[ProposalSortBy.CREATED_AT]: "created_at",
+			[ProposalSortBy.PRICE]: "price",
+			[ProposalSortBy.START_DATE]: "start_date",
+		};
+		const safeSortColumn = sortMap[sortBy] || "created_at";
+		const safeSortOrder = sortOrder === SortOrder.ASC ? "ASC" : "DESC";
+
+		query += ` ORDER BY ${safeSortColumn} ${safeSortOrder}, id DESC`;
+
+		if (usingOffset) {
+			const offset = ((page || 1) - 1) * limit;
+			query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+			values.push(limit, offset);
+		} else {
+			query += ` LIMIT $${paramIndex++}`;
+			values.push(limit + 1);
+		}
 
     const result = await this.pool.query(query, values);
     return result.rows;
+  }
+
+  async countProposals(queryDto: ProposalQueryDto): Promise<number> {
+    const { request_id, provider_id, status, min_price, max_price, created_from, created_to } = queryDto;
+
+    let query = `
+      SELECT COUNT(*)::int AS total
+      FROM proposals
+      WHERE 1=1
+    `;
+
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (request_id) {
+      query += ` AND request_id = $${paramIndex++}`;
+      values.push(request_id);
+    }
+
+    if (provider_id) {
+      query += ` AND provider_id = $${paramIndex++}`;
+      values.push(provider_id);
+    }
+
+    if (status) {
+      query += ` AND status = $${paramIndex++}`;
+      values.push(status);
+    }
+
+    if (min_price !== undefined) {
+      query += ` AND price >= $${paramIndex++}`;
+      values.push(min_price);
+    }
+
+    if (max_price !== undefined) {
+      query += ` AND price <= $${paramIndex++}`;
+      values.push(max_price);
+    }
+
+    if (created_from) {
+      query += ` AND created_at >= $${paramIndex++}`;
+      values.push(created_from);
+    }
+
+    if (created_to) {
+      query += ` AND created_at <= $${paramIndex++}`;
+      values.push(created_to);
+    }
+
+    const result = await this.pool.query(query, values);
+    return result.rows[0].total;
   }
 
   async hasExistingProposal(requestId: string, providerId: string): Promise<boolean> {

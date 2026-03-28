@@ -10,10 +10,10 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
-  );
+		<div className='min-h-screen flex justify-between flex-col bg-gray-50 dark:bg-gray-900'>
+			<Navbar />
+			<main className='flex-1'>{children}</main>
+			<Footer />
+		</div>
+	);
 }

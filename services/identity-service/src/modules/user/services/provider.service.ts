@@ -218,58 +218,107 @@ export class ProviderService {
       throw new BadRequestException(`Limit cannot exceed ${maxLimit}`);
     }
 
-    this.logger.info('Fetching providers', {
-      context: 'ProviderService',
-      limit,
-      cursor: queryDto.cursor,
-      category_id: queryDto.category_id,
-    });
+    if (
+			queryDto.min_rating !== undefined &&
+			queryDto.max_rating !== undefined &&
+			queryDto.min_rating > queryDto.max_rating
+		) {
+			throw new BadRequestException("min_rating cannot be greater than max_rating");
+		}
 
-    // Fetch one extra to determine if there are more results
-    const providers = await this.providerRepo.findPaginated(
-      limit + 1,
-      queryDto.cursor,
-      queryDto.category_id,
-      queryDto.search,
-      queryDto.location_id,
-    );
+    this.logger.info("Fetching providers", {
+			context: "ProviderService",
+			limit,
+			cursor: queryDto.cursor,
+			page: queryDto.page,
+			category_id: queryDto.category_id,
+			sortBy: queryDto.sortBy,
+			sortOrder: queryDto.sortOrder,
+			verification_status: queryDto.verification_status,
+			min_rating: queryDto.min_rating,
+			max_rating: queryDto.max_rating,
+		});
 
-    const hasMore = providers.length > limit;
-    const data = providers.slice(0, limit);
+    // Use cursor mode only when cursor param is explicitly provided
+    if (queryDto.cursor) {
+			// Fetch one extra to determine if there are more results
+			const providers = await this.providerRepo.findPaginated(
+				limit + 1,
+				queryDto.cursor,
+				queryDto.category_id,
+				queryDto.search,
+				queryDto.location_id,
+				undefined,
+				queryDto.sortBy,
+				queryDto.sortOrder,
+				queryDto.verification_status,
+				queryDto.min_rating,
+				queryDto.max_rating,
+			);
 
-    // Build full provider responses
-    const providerResponses: ProviderResponseDto[] = [];
-    for (const provider of data) {
+			const hasMore = providers.length > limit;
+			const data = providers.slice(0, limit);
+			const providerResponses = await this.buildProviderResponses(data);
+			const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : undefined;
+
+			return { data: providerResponses, nextCursor, hasMore };
+		}
+
+		// Default: page-based pagination
+		const page = queryDto.page || 1;
+		const offset = (page - 1) * limit;
+
+		const [providers, total] = await Promise.all([
+			this.providerRepo.findPaginated(
+				limit,
+				undefined,
+				queryDto.category_id,
+				queryDto.search,
+				queryDto.location_id,
+				offset,
+				queryDto.sortBy,
+				queryDto.sortOrder,
+				queryDto.verification_status,
+				queryDto.min_rating,
+				queryDto.max_rating,
+			),
+			this.providerRepo.countProviders(
+				queryDto.category_id,
+				queryDto.search,
+				queryDto.location_id,
+				queryDto.verification_status,
+				queryDto.min_rating,
+				queryDto.max_rating,
+			),
+		]);
+
+    const providerResponses = await this.buildProviderResponses(providers);
+
+    return { data: providerResponses, total, page, limit };
+  }
+
+  private async buildProviderResponses(providers: any[]): Promise<ProviderResponseDto[]> {
+    const responses: ProviderResponseDto[] = [];
+    for (const provider of providers) {
       const services = await this.providerServiceRepo.findByProviderId(provider.id);
       const availability = await this.providerAvailabilityRepo.findByProviderId(provider.id);
-
-      providerResponses.push({
-        id: provider.id,
-        user_id: provider.user_id,
-        business_name: provider.business_name,
-        description: provider.description,
-        rating: provider.rating,
-        services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
-        availability: availability.map((a) => ({
-          id: a.id,
-          day_of_week: a.day_of_week,
-          start_time: a.start_time,
-          end_time: a.end_time,
-        })),
-        created_at: provider.created_at,
-      });
+      responses.push({
+				id: provider.id,
+				user_id: provider.user_id,
+				business_name: provider.business_name,
+				description: provider.description,
+				rating: provider.rating,
+				services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
+				availability: availability.map((a) => ({
+					id: a.id,
+					day_of_week: a.day_of_week,
+					start_time: a.start_time,
+					end_time: a.end_time,
+				})),
+				created_at: provider.created_at,
+			});
     }
-
-    const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : undefined;
-
-    return {
-      data: providerResponses,
-      pagination: {
-        limit,
-        nextCursor,
-        hasMore,
-      },
-    };
+    return responses;
   }
 
   async deleteProvider(providerId: string): Promise<void> {

@@ -19,6 +19,7 @@ import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 export default function MyProposalsPage() {
 	const queryClient = useQueryClient();
 	const { user, isAuthenticated } = useAuth();
+	const router = useRouter();
 	const [statusFilter, setStatusFilter] = useState<string>("");
 
 	// Fetch provider's proposals

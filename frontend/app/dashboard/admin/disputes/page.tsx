@@ -42,7 +42,7 @@ export default function AdminDisputesPage() {
 					<Card>
 						<CardHeader>
 							<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>
-								All Disputes ({disputes?.length || 0})
+								All Disputes ({disputes?.total || 0})
 							</h2>
 						</CardHeader>
 						<CardContent>
@@ -54,9 +54,9 @@ export default function AdminDisputesPage() {
 									message="We couldn't load dispute data. Please try again."
 									retry={() => refetch()}
 								/>
-							: disputes && disputes.length > 0 ?
+							: disputes?.data && disputes.data.length > 0 ?
 								<div className='space-y-4'>
-									{disputes.map((dispute: any) => (
+									{disputes.data.map((dispute: any) => (
 										<div
 											key={dispute.id}
 											className='p-4 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700'>

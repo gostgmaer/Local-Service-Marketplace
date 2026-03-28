@@ -74,7 +74,7 @@ export class AuthController {
 		// Set tokens as HTTP-only cookies
 		this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-		return result;
+		return { message: 'Account created successfully', ...result };
 	}
 
 	@Post("login")
@@ -90,7 +90,7 @@ export class AuthController {
 		// Set tokens as HTTP-only cookies
 		this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-		return result;
+		return { message: 'Login successful', ...result };
 	}
 
 	@Post("logout")
@@ -98,14 +98,14 @@ export class AuthController {
 	async logout(
 		@Body() refreshTokenDto: RefreshTokenDto,
 		@Res({ passthrough: true }) res: Response,
-	): Promise<{ result: string }> {
+	): Promise<{ message: string }> {
 		this.logger.info("POST /auth/logout", { context: "AuthController" });
 		await this.authService.logout(refreshTokenDto.refreshToken);
 
 		// Clear cookies
 		this.clearAuthCookies(res);
 
-		return { result: "Logged out successfully" };
+		return { message: 'Logged out successfully' };
 	}
 
 	@Post("refresh")
@@ -113,7 +113,7 @@ export class AuthController {
 	async refresh(
 		@Body() refreshTokenDto: RefreshTokenDto,
 		@Res({ passthrough: true }) res: Response,
-	): Promise<{ accessToken: string }> {
+	): Promise<{ message: string; accessToken: string }> {
 		this.logger.info("POST /auth/refresh", { context: "AuthController" });
 		const result = await this.authService.refreshAccessToken(refreshTokenDto.refreshToken);
 
@@ -125,26 +125,26 @@ export class AuthController {
 			maxAge: 15 * 60 * 1000, // 15 minutes
 		});
 
-		return result;
+		return { message: 'Token refreshed successfully', ...result };
 	}
 
 	@Post("password-reset/request")
 	@HttpCode(HttpStatus.OK)
-	async requestPasswordReset(@Body() passwordResetRequestDto: PasswordResetRequestDto): Promise<{ result: string }> {
+	async requestPasswordReset(@Body() passwordResetRequestDto: PasswordResetRequestDto): Promise<{ message: string }> {
 		this.logger.info("POST /auth/password-reset/request", {
 			context: "AuthController",
 			email: passwordResetRequestDto.email,
 		});
 		await this.authService.requestPasswordReset(passwordResetRequestDto.email);
-		return { result: "Password reset email sent if account exists" };
+		return { message: 'Password reset email sent if account exists' };
 	}
 
 	@Post("password-reset/confirm")
 	@HttpCode(HttpStatus.OK)
-	async confirmPasswordReset(@Body() passwordResetConfirmDto: PasswordResetConfirmDto): Promise<{ result: string }> {
+	async confirmPasswordReset(@Body() passwordResetConfirmDto: PasswordResetConfirmDto): Promise<{ message: string }> {
 		this.logger.info("POST /auth/password-reset/confirm", { context: "AuthController" });
 		await this.authService.confirmPasswordReset(passwordResetConfirmDto.token, passwordResetConfirmDto.newPassword);
-		return { result: "Password reset successful" };
+		return { message: 'Password has been reset successfully' };
 	}
 
 	// ==========================================
@@ -214,15 +214,15 @@ export class AuthController {
 		// Set tokens as HTTP-only cookies
 		this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-		return result;
+		return { message: "Login successful", ...result };
 	}
 
 	@Post("phone/otp/request")
 	@HttpCode(HttpStatus.OK)
-	async requestPhoneOtp(@Body() phoneOtpRequestDto: PhoneOtpRequestDto): Promise<{ result: string }> {
+	async requestPhoneOtp(@Body() phoneOtpRequestDto: PhoneOtpRequestDto): Promise<{ message: string }> {
 		this.logger.info("POST /auth/phone/otp/request", { context: "AuthController", phone: phoneOtpRequestDto.phone });
 		await this.authService.requestPhoneOtp(phoneOtpRequestDto.phone);
-		return { result: "OTP sent successfully" };
+		return { message: "OTP sent successfully" };
 	}
 
 	@Post("phone/otp/verify")
@@ -242,7 +242,7 @@ export class AuthController {
 		// Set tokens as HTTP-only cookies
 		this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-		return result;
+		return { message: "Phone verified and login successful", ...result };
 	}
 
 	// ==========================================
@@ -276,12 +276,12 @@ export class AuthController {
 	async verifyEmail(
 		@Query("token") token: string,
 		@Res({ passthrough: true }) res: Response,
-	): Promise<{ result: string }> {
+	): Promise<{ message: string }> {
 		this.logger.info("GET /auth/email/verify", { context: "AuthController" });
 		await this.authService.verifyEmail(token);
 		// Optionally, could redirect to frontend with success message
 		// For now, return JSON response
-		return { result: "Email verified successfully" };
+		return { message: "Email verified successfully" };
 	}
 
 	// ==========================================

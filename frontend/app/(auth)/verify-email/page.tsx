@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { authService } from "@/services/auth-service";
 import { ROUTES } from "@/config/constants";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const token = searchParams.get("token");
@@ -102,5 +102,21 @@ export default function VerifyEmailPage() {
 				)}
 			</div>
 		</div>
+	);
+}
+
+export default function VerifyEmailPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4'>
+					<div className='max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center'>
+						<Loader2 className='mx-auto h-16 w-16 text-primary-600 animate-spin mb-4' />
+						<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>Loading…</h1>
+					</div>
+				</div>
+			}>
+			<VerifyEmailContent />
+		</Suspense>
 	);
 }

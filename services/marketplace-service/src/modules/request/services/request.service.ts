@@ -5,9 +5,14 @@ import { CategoryRepository } from '../repositories/category.repository';
 import { LocationRepository } from '../repositories/location.repository';
 import { CreateRequestDto } from '../dto/create-request.dto';
 import { UpdateRequestDto } from '../dto/update-request.dto';
-import { RequestQueryDto } from '../dto/request-query.dto';
+import { RequestQueryDto, RequestSortBy, SortOrder } from "../dto/request-query.dto";
 import { RequestResponseDto, PaginatedRequestResponseDto } from '../dto/request-response.dto';
 import { NotFoundException, BadRequestException, ForbiddenException } from "../../../common/exceptions/http.exceptions";
+import {
+	validateCursorMode,
+	validateDateRange,
+	validateMinMaxRange,
+} from "../../../common/pagination/list-query-validation.util";
 import { KafkaService } from '../../../kafka/kafka.service';
 import { RedisService } from '../../../redis/redis.service';
 import { NotificationClient } from '../../../common/notification/notification.client';
@@ -129,16 +134,35 @@ export class RequestService {
 	async getRequests(queryDto: RequestQueryDto): Promise<PaginatedRequestResponseDto> {
 		this.logger.log(`Fetching requests with filters: ${JSON.stringify(queryDto)}`, RequestService.name);
 
+		validateMinMaxRange(queryDto.min_budget, queryDto.max_budget, "min_budget", "max_budget");
+		validateDateRange(queryDto.created_from, queryDto.created_to, "created_from", "created_to");
+		validateCursorMode(
+			queryDto.cursor,
+			queryDto.page,
+			queryDto.sortBy,
+			queryDto.sortOrder,
+			RequestSortBy.CREATED_AT,
+			SortOrder.DESC,
+		);
+
 		const limit = queryDto.limit || 20;
-		const requests = await this.requestRepository.getRequestsPaginated(queryDto);
 
-		const hasMore = requests.length > limit;
-		const data = requests.slice(0, limit);
-		const nextCursor = hasMore ? data[data.length - 1].id : undefined;
+		if (queryDto.cursor) {
+			const requests = await this.requestRepository.getRequestsPaginated(queryDto);
+			const hasMore = requests.length > limit;
+			const data = requests.slice(0, limit);
+			const nextCursor = hasMore ? data[data.length - 1].id : undefined;
+			const response = data.map(RequestResponseDto.fromEntity);
+			return new PaginatedRequestResponseDto(response, nextCursor, hasMore, undefined, queryDto.page || 1, limit);
+		}
 
-		const response = data.map(RequestResponseDto.fromEntity);
+		const [requests, total] = await Promise.all([
+			this.requestRepository.getRequestsPaginated(queryDto),
+			this.requestRepository.countRequests(queryDto),
+		]);
 
-		return new PaginatedRequestResponseDto(response, nextCursor, hasMore);
+		const response = requests.map(RequestResponseDto.fromEntity);
+		return new PaginatedRequestResponseDto(response, undefined, false, total, queryDto.page || 1, limit);
 	}
 
 	async getRequestById(id: string): Promise<RequestResponseDto> {
@@ -255,11 +279,12 @@ export class RequestService {
 		this.logger.log(`Request deleted successfully: ${id}`, RequestService.name);
 	}
 
-	async getRequestsByUser(userId: string): Promise<RequestResponseDto[]> {
+	async getRequestsByUser(userId: string): Promise<{ data: RequestResponseDto[]; total: number }> {
 		this.logger.log(`Fetching requests for user: ${userId}`, RequestService.name);
 
 		const requests = await this.requestRepository.getRequestsByUser(userId);
+		const data = requests.map(RequestResponseDto.fromEntity);
 
-		return requests.map(RequestResponseDto.fromEntity);
+		return { data, total: data.length };
 	}
 }

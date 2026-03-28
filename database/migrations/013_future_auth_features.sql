@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS two_factor_secrets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   secret TEXT NOT NULL,
-  backup_codes JSONB DEFAULT '[]', -- Array of unused backup codes
+  backup_codes TEXT[] DEFAULT ARRAY[]::TEXT[], -- Array of unused backup codes
   enabled BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   updated_at TIMESTAMP

@@ -138,23 +138,23 @@ export const publicGetRoutes = [
 	// ============================================
 	// Service Requests (Public Marketplace Browsing)
 	// ============================================
-	"/api/v1/requests",                       // Browse all service requests (GET only)
-	"/api/v1/requests/",                      // View individual request details (GET /requests/:id)
+	// "/api/v1/requests",                       // Browse all service requests (GET only)
+	"/api/v1/requests/", // View individual request details (GET /requests/:id)
 
 	// ============================================
 	// Provider Directory (Public Browsing)
 	// ============================================
-	"/api/v1/providers",                      // Browse provider directory (GET only)
-	"/api/v1/providers/",                     // View individual provider profiles (GET /providers/:id)
+	"/api/v1/providers", // Browse provider directory (GET only)
+	"/api/v1/providers/", // View individual provider profiles (GET /providers/:id)
 
 	// ============================================
 	// Provider Reviews (Public Viewing)
 	// ============================================
-	"/api/v1/reviews",                        // Browse reviews (GET only)
-	"/api/v1/providers/",                     // Includes /providers/:id/reviews
+	"/api/v1/reviews", // Browse reviews (GET only)
+	"/api/v1/providers/", // Includes /providers/:id/reviews
 
 	// ============================================
 	// Pricing Plans (Public Information)
 	// ============================================
-	"/api/v1/pricing-plans",                  // View pricing tiers (GET only)
+	"/api/v1/pricing-plans", // View pricing tiers (GET only)
 ];

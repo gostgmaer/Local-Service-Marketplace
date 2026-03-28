@@ -2,6 +2,7 @@ import {
 	Controller,
 	Post,
 	Get,
+	Patch,
 	Body,
 	Param,
 	Query,
@@ -11,7 +12,7 @@ import {
 	ParseUUIDPipe,
 	UseGuards,
 	HttpCode,
-	HttpStatus
+	HttpStatus,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { MessageService } from "./services/message.service";
@@ -33,19 +34,12 @@ export class MessagingController {
 	@HttpCode(HttpStatus.CREATED)
 	async createMessage(@Body() createMessageDto: CreateMessageDto) {
 		this.logger.log("POST /messages - Create message", "MessagingController");
-		const message = await this.messageService.createMessage(
+		const item = await this.messageService.createMessage(
 			createMessageDto.job_id,
 			createMessageDto.sender_id,
 			createMessageDto.message,
 		);
-		return { message };
-	}
-
-	@Get(":id")
-	async getMessage(@Param("id") id: string) {
-		this.logger.log(`GET /messages/${id} - Get message`, "MessagingController");
-		const message = await this.messageService.getMessageById(id);
-		return { message };
+		return { success: true, data: item, message: "Message sent successfully" };
 	}
 
 	@Get("jobs/:jobId")
@@ -63,7 +57,7 @@ export class MessagingController {
 	async getConversations(@Query("user_id", ParseUUIDPipe) userId: string) {
 		this.logger.log(`GET /messages/conversations - Get user conversations`, "MessagingController");
 		const conversations = await this.messageService.getUserConversations(userId);
-		return { conversations };
+		return { data: conversations, total: conversations.length, page: 1, limit: conversations.length || 1 };
 	}
 
 	@Post("attachments")
@@ -77,20 +71,35 @@ export class MessagingController {
 			createAttachmentDto.file_size,
 			createAttachmentDto.mime_type,
 		);
-		return { attachment };
-	}
-
-	@Get("attachments/:id")
-	async getAttachment(@Param("id") id: string) {
-		this.logger.log(`GET /messages/attachments/${id} - Get attachment`, "MessagingController");
-		const attachment = await this.attachmentService.getAttachmentById(id);
-		return { attachment };
+		return { success: true, data: attachment, message: "Attachment uploaded successfully" };
 	}
 
 	@Get("attachments/message/:messageId")
 	async getAttachmentsByMessage(@Param("messageId") messageId: string) {
 		this.logger.log(`GET /messages/attachments/message/${messageId} - Get attachments`, "MessagingController");
 		const attachments = await this.attachmentService.getAttachmentsByMessageId(messageId);
-		return { attachments };
+		return { data: attachments, total: attachments.length, page: 1, limit: attachments.length || 1 };
+	}
+
+	@Get("attachments/:id")
+	async getAttachment(@Param("id") id: string) {
+		this.logger.log(`GET /messages/attachments/${id} - Get attachment`, "MessagingController");
+		const attachment = await this.attachmentService.getAttachmentById(id);
+		return { success: true, data: attachment, message: "Attachment retrieved successfully" };
+	}
+
+	@Get(":id")
+	async getMessage(@Param("id") id: string) {
+		this.logger.log(`GET /messages/${id} - Get message`, "MessagingController");
+		const item = await this.messageService.getMessageById(id);
+		return { success: true, data: item, message: "Message retrieved successfully" };
+	}
+
+	@Patch(":id/read")
+	@HttpCode(HttpStatus.OK)
+	async markAsRead(@Param("id", ParseUUIDPipe) id: string) {
+		this.logger.log(`PATCH /messages/${id}/read - Mark as read`, "MessagingController");
+		const item = await this.messageService.markMessageAsRead(id);
+		return { success: true, data: item, message: "Message marked as read" };
 	}
 }

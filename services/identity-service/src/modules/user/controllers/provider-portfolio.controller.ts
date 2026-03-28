@@ -62,19 +62,15 @@ export class ProviderPortfolioController {
   async getProviderPortfolio(
     @Param('providerId', ParseUUIDPipe) providerId: string
   ) {
-    const portfolio = await this.portfolioService.getProviderPortfolio(providerId);
+    const result = await this.portfolioService.getProviderPortfolio(providerId);
 
     // Transform image_url to images array for frontend compatibility
-    const transformedPortfolio = portfolio.map(item => ({
-      ...item,
-      images: [item.image_url] // Convert single image_url to array
-    }));
+    const transformedData = result.data.map((item) => ({
+			...item,
+			images: [item.image_url], // Convert single image_url to array
+		}));
 
-    return {
-      success: true,
-      data: transformedPortfolio,
-      count: transformedPortfolio.length
-    };
+    return { data: transformedData, total: transformedData.length };
   }
 
   @Get(':itemId')

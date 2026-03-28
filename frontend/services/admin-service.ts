@@ -33,15 +33,15 @@ export interface AuditLog {
 }
 
 class AdminService {
-	async getUsers(params?: { cursor?: string; limit?: number; status?: string }): Promise<User[]> {
+	async getUsers(params?: { cursor?: string; limit?: number; status?: string }): Promise<{ data: User[]; total: number }> {
 		const searchParams = new URLSearchParams();
 		if (params?.cursor) searchParams.append("cursor", params.cursor);
 		if (params?.limit) searchParams.append("limit", params.limit.toString());
 		if (params?.status) searchParams.append("status", params.status);
 
-		const response = await apiClient.get<User[]>(`/admin/users?${searchParams.toString()}`);
-		// API client unwraps standardized response
-		return response.data.data || [];
+		const response = await apiClient.get<{ data: User[]; total: number }>(`/admin/users?${searchParams.toString()}`);
+		// API client unwraps standardized response and returns { data, total } for paginated responses
+		return response.data;
 	}
 
 	async getUserById(id: string): Promise<User> {
@@ -59,15 +59,15 @@ class AdminService {
 		return response.data;
 	}
 
-	async getDisputes(params?: { status?: string; cursor?: string; limit?: number }): Promise<Dispute[]> {
+	async getDisputes(params?: { status?: string; cursor?: string; limit?: number }): Promise<{ data: Dispute[]; total: number }> {
 		const searchParams = new URLSearchParams();
 		if (params?.status) searchParams.append("status", params.status);
 		if (params?.cursor) searchParams.append("cursor", params.cursor);
 		if (params?.limit) searchParams.append("limit", params.limit.toString());
 
-		const response = await apiClient.get<Dispute[]>(`/admin/disputes?${searchParams.toString()}`);
-		// API client unwraps standardized response
-		return response.data.disputes || [];
+		const response = await apiClient.get<{ data: Dispute[]; total: number }>(`/admin/disputes?${searchParams.toString()}`);
+		// API client unwraps standardized response and returns { data, total } for paginated responses
+		return response.data;
 	}
 
 	async getDisputeById(id: string): Promise<Dispute> {

@@ -56,13 +56,23 @@ export class NotificationController {
 		this.logger.log(`GET /notifications - Get notifications for user ${userId}`, "NotificationController");
 		const notifications = await this.notificationService.getNotificationsByUserId(userId, limit);
 		const unreadCount = await this.notificationService.getUnreadCount(userId);
-		return { notifications, unreadCount };
+		return {
+			success: true,
+			message: "Notifications retrieved successfully",
+			data: { notifications, unreadCount },
+			meta: {
+				page: 1,
+				limit,
+				total: notifications.length,
+				totalPages: Math.ceil(notifications.length / limit),
+			},
+		};
 	}
 
 	@Get("features")
 	async getFeatures() {
 		this.logger.log("GET /notifications/features - Get enabled features", "NotificationController");
-		return {
+		const features = {
 			enabled_channels: this.featureFlags.getEnabledChannels(),
 			features: {
 				email: this.featureFlags.emailEnabled,
@@ -73,13 +83,14 @@ export class NotificationController {
 				device_tracking: this.featureFlags.deviceTrackingEnabled,
 			},
 		};
+		return { message: "Notification features retrieved successfully", data: features };
 	}
 
 	@Get("unread-count")
 	async getUnreadCount(@Headers("x-user-id") userId: string) {
 		this.logger.log(`GET /notifications/unread-count for user ${userId}`, "NotificationController");
 		const count = await this.notificationService.getUnreadCount(userId);
-		return { data: { count } };
+		return { message: "Unread count retrieved successfully", data: { count } };
 	}
 
 	@Patch("read-all")
@@ -87,7 +98,7 @@ export class NotificationController {
 	async markAllAsRead(@Headers("x-user-id") userId: string) {
 		this.logger.log(`PATCH /notifications/read-all for user ${userId}`, "NotificationController");
 		await this.notificationService.markAllAsRead(userId);
-		return {};
+		return { message: "All notifications marked as read" };
 	}
 
 	@Get(":id")
@@ -141,7 +152,7 @@ export class NotificationController {
 			"NotificationController",
 		);
 		const result = await this.notificationService.sendNotification(dto);
-		return result;
+		return { message: "Notification sent successfully", data: result };
 	}
 
 	/**
@@ -154,7 +165,7 @@ export class NotificationController {
 	async sendEmail(@Body() dto: SendEmailDto) {
 		this.logger.log(`POST /notifications/email/send - Sending email to ${dto.to}`, "NotificationController");
 		const result = await this.notificationService.sendEmailDirect(dto);
-		return result;
+		return { message: "Email sent successfully", data: result };
 	}
 
 	/**
@@ -167,7 +178,7 @@ export class NotificationController {
 	async sendSms(@Body() dto: SendSmsDto) {
 		this.logger.log(`POST /notifications/sms/send - Sending SMS to ${dto.phone}`, "NotificationController");
 		const result = await this.notificationService.sendSmsDirect(dto);
-		return result;
+		return { message: "SMS sent successfully", data: result };
 	}
 
 	/**
@@ -180,7 +191,7 @@ export class NotificationController {
 	async sendOtp(@Body() dto: SendOtpDto) {
 		this.logger.log(`POST /notifications/otp/send - Sending OTP to ${dto.phone}`, "NotificationController");
 		const result = await this.notificationService.sendOtp(dto.phone, dto.purpose);
-		return result;
+		return { message: "OTP sent successfully", data: result };
 	}
 
 	/**
@@ -191,7 +202,7 @@ export class NotificationController {
 	async verifyOtp(@Body() dto: VerifyOtpDto) {
 		this.logger.log(`POST /notifications/otp/verify - Verifying OTP for ${dto.phone}`, "NotificationController");
 		const result = await this.notificationService.verifyOtp(dto.phone, dto.code, dto.purpose);
-		return result;
+		return { message: "OTP verified successfully", data: result };
 	}
 
 	// ========== Worker endpoints (for background job scheduler) ==========

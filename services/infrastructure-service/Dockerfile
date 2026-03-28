@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN OPENSSL_CONF=/dev/null npm install -g pnpm
+RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate)
 
 # Copy package files
 COPY package*.json pnpm-lock.yaml* ./
@@ -30,7 +30,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install pnpm
-RUN OPENSSL_CONF=/dev/null npm install -g pnpm
+RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate)
 
 # Copy package files
 COPY package*.json pnpm-lock.yaml* ./

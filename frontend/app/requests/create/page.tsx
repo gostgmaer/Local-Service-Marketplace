@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +21,7 @@ import { createRequestSchema, type CreateRequestFormData } from '@/schemas/reque
 import { analytics } from '@/utils/analytics';
 import toast from 'react-hot-toast';
 
-export default function CreateRequestPage() {
+function CreateRequestContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 	const prefillQuery = searchParams.get("q") || "";
@@ -274,4 +274,19 @@ export default function CreateRequestPage() {
       </div>
     </Layout>
   );
+}
+
+export default function CreateRequestPageWrapper() {
+	return (
+		<Suspense
+			fallback={
+				<Layout>
+					<div className='min-h-screen flex items-center justify-center'>
+						<Loading />
+					</div>
+				</Layout>
+			}>
+			<CreateRequestContent />
+		</Suspense>
+	);
 }

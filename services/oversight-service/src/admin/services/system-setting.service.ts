@@ -4,75 +4,68 @@ import { SystemSettingRepository } from '../repositories/system-setting.reposito
 import { AuditLogRepository } from '../repositories/audit-log.repository';
 import { SystemSetting } from '../entities/system-setting.entity';
 import { NotFoundException } from '../../common/exceptions/http.exceptions';
+import { SystemSettingQueryDto } from "../dto/system-setting-query.dto";
+import { resolvePagination } from "../../common/pagination/list-query-validation.util";
 
 @Injectable()
 export class SystemSettingService {
-  constructor(
-    private readonly systemSettingRepository: SystemSettingRepository,
-    private readonly auditLogRepository: AuditLogRepository,
-    @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly logger: LoggerService,
-  ) {}
+	constructor(
+		private readonly systemSettingRepository: SystemSettingRepository,
+		private readonly auditLogRepository: AuditLogRepository,
+		@Inject(WINSTON_MODULE_NEST_PROVIDER)
+		private readonly logger: LoggerService,
+	) {}
 
-  async getAllSettings(): Promise<SystemSetting[]> {
-    this.logger.log('Fetching all system settings', 'SystemSettingService');
+	async getAllSettings(
+		queryDto: SystemSettingQueryDto,
+	): Promise<{ data: SystemSetting[]; total: number; page: number; limit: number }> {
+		const pagination = resolvePagination(queryDto, { page: 1, limit: 50 });
+		this.logger.log(
+			`Fetching system settings (page: ${pagination.page}, limit: ${pagination.limit}, offset: ${pagination.offset})`,
+			"SystemSettingService",
+		);
 
-    return this.systemSettingRepository.getAllSettings();
-  }
+		const [data, total] = await Promise.all([
+			this.systemSettingRepository.findSettings(queryDto, pagination),
+			this.systemSettingRepository.countSettings(queryDto),
+		]);
 
-  async getSettingByKey(key: string): Promise<SystemSetting> {
-    this.logger.log(
-      `Fetching system setting with key: ${key}`,
-      'SystemSettingService',
-    );
+		return { data, total, page: pagination.page, limit: pagination.limit };
+	}
 
-    const setting = await this.systemSettingRepository.getSettingByKey(key);
+	async getSettingByKey(key: string): Promise<SystemSetting> {
+		this.logger.log(`Fetching system setting with key: ${key}`, "SystemSettingService");
 
-    if (!setting) {
-      throw new NotFoundException('System setting not found');
-    }
+		const setting = await this.systemSettingRepository.getSettingByKey(key);
 
-    return setting;
-  }
+		if (!setting) {
+			throw new NotFoundException("System setting not found");
+		}
 
-  async updateSetting(
-    key: string,
-    value: string,
-    adminId: string,
-  ): Promise<SystemSetting> {
-    this.logger.log(
-      `Updating system setting ${key} to ${value} by admin ${adminId}`,
-      'SystemSettingService',
-    );
+		return setting;
+	}
 
-    // Check if setting exists
-    const existingSetting =
-      await this.systemSettingRepository.getSettingByKey(key);
+	async updateSetting(key: string, value: string, adminId: string): Promise<SystemSetting> {
+		this.logger.log(`Updating system setting ${key} to ${value} by admin ${adminId}`, "SystemSettingService");
 
-    if (!existingSetting) {
-      throw new NotFoundException('System setting not found');
-    }
+		// Check if setting exists
+		const existingSetting = await this.systemSettingRepository.getSettingByKey(key);
 
-    // Update setting
-    const updatedSetting = await this.systemSettingRepository.updateSetting(
-      key,
-      value,
-    );
+		if (!existingSetting) {
+			throw new NotFoundException("System setting not found");
+		}
 
-    // Create audit log
-    await this.auditLogRepository.createAuditLog(
-      adminId,
-      'update_system_setting',
-      'system_setting',
-      key,
-      { oldValue: existingSetting.value, newValue: value },
-    );
+		// Update setting
+		const updatedSetting = await this.systemSettingRepository.updateSetting(key, value);
 
-    this.logger.log(
-      `System setting ${key} updated successfully`,
-      'SystemSettingService',
-    );
+		// Create audit log
+		await this.auditLogRepository.createAuditLog(adminId, "update_system_setting", "system_setting", key, {
+			oldValue: existingSetting.value,
+			newValue: value,
+		});
 
-    return updatedSetting;
-  }
+		this.logger.log(`System setting ${key} updated successfully`, "SystemSettingService");
+
+		return updatedSetting;
+	}
 }

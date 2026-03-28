@@ -4,195 +4,132 @@ import { BackgroundJobRepository } from '../repositories/background-job.reposito
 import { RedisService } from '../../redis/redis.service';
 import { CreateBackgroundJobDto } from '../dto/create-background-job.dto';
 import { BackgroundJob } from '../entities/background-job.entity';
+import { BackgroundJobQueryDto } from "../dto/background-job-query.dto";
+import {
+	resolvePagination,
+	validateDateRange,
+	validateMinMaxRange,
+} from "../../common/pagination/list-query-validation.util";
 
 @Injectable()
 export class BackgroundJobService {
-  constructor(
-    @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly logger: LoggerService,
-    private readonly backgroundJobRepository: BackgroundJobRepository,
-    private readonly redisService: RedisService,
-  ) {}
+	constructor(
+		@Inject(WINSTON_MODULE_NEST_PROVIDER)
+		private readonly logger: LoggerService,
+		private readonly backgroundJobRepository: BackgroundJobRepository,
+		private readonly redisService: RedisService,
+	) {}
 
-  async createJob(createJobDto: CreateBackgroundJobDto): Promise<BackgroundJob> {
-    try {
-      // Create job in database
-      const job = await this.backgroundJobRepository.createJob(createJobDto);
+	async createJob(createJobDto: CreateBackgroundJobDto): Promise<BackgroundJob> {
+		try {
+			// Create job in database
+			const job = await this.backgroundJobRepository.createJob(createJobDto);
 
-      // Add job to Redis queue
-      await this.redisService.addJob(
-        'background-jobs',
-        createJobDto.jobType,
-        {
-          jobId: job.id,
-          ...createJobDto.payload,
-        },
-        {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 2000,
-          },
-        },
-      );
+			// Add job to Redis queue
+			await this.redisService.addJob(
+				"background-jobs",
+				createJobDto.jobType,
+				{ jobId: job.id, ...createJobDto.payload },
+				{ attempts: 3, backoff: { type: "exponential", delay: 2000 } },
+			);
 
-      this.logger.log(
-        `Background job created: ${createJobDto.jobType} (ID: ${job.id})`,
-        'BackgroundJobService',
-      );
+			this.logger.log(`Background job created: ${createJobDto.jobType} (ID: ${job.id})`, "BackgroundJobService");
 
-      return job;
-    } catch (error) {
-      this.logger.error(
-        `Failed to create background job: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			return job;
+		} catch (error) {
+			this.logger.error(`Failed to create background job: ${error.message}`, error.stack, "BackgroundJobService");
+			throw error;
+		}
+	}
 
-  async getJobById(id: string): Promise<BackgroundJob | null> {
-    try {
-      const job = await this.backgroundJobRepository.getJobById(id);
+	async getJobById(id: string): Promise<BackgroundJob | null> {
+		try {
+			const job = await this.backgroundJobRepository.getJobById(id);
 
-      this.logger.log(
-        `Retrieved background job by ID: ${id}`,
-        'BackgroundJobService',
-      );
+			this.logger.log(`Retrieved background job by ID: ${id}`, "BackgroundJobService");
 
-      return job;
-    } catch (error) {
-      this.logger.error(
-        `Failed to get background job: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			return job;
+		} catch (error) {
+			this.logger.error(`Failed to get background job: ${error.message}`, error.stack, "BackgroundJobService");
+			throw error;
+		}
+	}
 
-  async getAllJobs(
-    limit: number = 100,
-    offset: number = 0,
-  ): Promise<{ data: BackgroundJob[]; total: number }> {
-    try {
-      const [data, total] = await Promise.all([
-        this.backgroundJobRepository.getAllJobs(limit, offset),
-        this.backgroundJobRepository.getJobsCount(),
-      ]);
+	async getAllJobs(
+		queryDto: BackgroundJobQueryDto,
+	): Promise<{ data: BackgroundJob[]; total: number; page: number; limit: number }> {
+		try {
+			validateDateRange(queryDto.createdFrom, queryDto.createdTo, "createdAt");
+			validateDateRange(queryDto.scheduledFrom, queryDto.scheduledTo, "scheduledFor");
+			validateMinMaxRange(queryDto.minAttempts, queryDto.maxAttempts, "attempts");
+			const pagination = resolvePagination(queryDto, { page: 1, limit: 100 });
+			const [data, total] = await Promise.all([
+				this.backgroundJobRepository.findJobs(queryDto, pagination),
+				this.backgroundJobRepository.countJobs(queryDto),
+			]);
 
-      this.logger.log(
-        `Retrieved ${data.length} background jobs`,
-        'BackgroundJobService',
-      );
+			this.logger.log(`Retrieved ${data.length} background jobs`, "BackgroundJobService");
 
-      return { data, total };
-    } catch (error) {
-      this.logger.error(
-        `Failed to get all jobs: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			return { data, total, page: pagination.page, limit: pagination.limit };
+		} catch (error) {
+			this.logger.error(`Failed to get all jobs: ${error.message}`, error.stack, "BackgroundJobService");
+			throw error;
+		}
+	}
 
-  async getJobsByStatus(status: string): Promise<BackgroundJob[]> {
-    try {
-      const jobs = await this.backgroundJobRepository.getJobsByStatus(status);
+	async getJobsByStatus(
+		status: string,
+	): Promise<{ data: BackgroundJob[]; total: number; page: number; limit: number }> {
+		return this.getAllJobs({ status: status as any, page: 1, limit: 100 });
+	}
 
-      this.logger.log(
-        `Retrieved ${jobs.length} jobs with status: ${status}`,
-        'BackgroundJobService',
-      );
+	async updateJobStatus(id: string, status: string): Promise<BackgroundJob | null> {
+		try {
+			const job = await this.backgroundJobRepository.updateJobStatus(id, status);
 
-      return jobs;
-    } catch (error) {
-      this.logger.error(
-        `Failed to get jobs by status: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			this.logger.log(`Updated job ${id} status to: ${status}`, "BackgroundJobService");
 
-  async updateJobStatus(id: string, status: string): Promise<BackgroundJob | null> {
-    try {
-      const job = await this.backgroundJobRepository.updateJobStatus(id, status);
+			return job;
+		} catch (error) {
+			this.logger.error(`Failed to update job status: ${error.message}`, error.stack, "BackgroundJobService");
+			throw error;
+		}
+	}
 
-      this.logger.log(
-        `Updated job ${id} status to: ${status}`,
-        'BackgroundJobService',
-      );
+	async incrementJobAttempts(id: string): Promise<BackgroundJob | null> {
+		try {
+			const job = await this.backgroundJobRepository.incrementJobAttempts(id);
 
-      return job;
-    } catch (error) {
-      this.logger.error(
-        `Failed to update job status: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			this.logger.log(`Incremented attempts for job: ${id}`, "BackgroundJobService");
 
-  async incrementJobAttempts(id: string): Promise<BackgroundJob | null> {
-    try {
-      const job = await this.backgroundJobRepository.incrementJobAttempts(id);
+			return job;
+		} catch (error) {
+			this.logger.error(`Failed to increment job attempts: ${error.message}`, error.stack, "BackgroundJobService");
+			throw error;
+		}
+	}
 
-      this.logger.log(
-        `Incremented attempts for job: ${id}`,
-        'BackgroundJobService',
-      );
+	async deleteJob(id: string): Promise<void> {
+		try {
+			await this.backgroundJobRepository.deleteJob(id);
 
-      return job;
-    } catch (error) {
-      this.logger.error(
-        `Failed to increment job attempts: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			this.logger.log(`Deleted background job: ${id}`, "BackgroundJobService");
+		} catch (error) {
+			this.logger.error(`Failed to delete job: ${error.message}`, error.stack, "BackgroundJobService");
+			throw error;
+		}
+	}
 
-  async deleteJob(id: string): Promise<void> {
-    try {
-      await this.backgroundJobRepository.deleteJob(id);
+	async getQueueStats(): Promise<any> {
+		try {
+			const counts = await this.redisService.getJobCounts("background-jobs");
 
-      this.logger.log(
-        `Deleted background job: ${id}`,
-        'BackgroundJobService',
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to delete job: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			this.logger.log("Retrieved queue statistics", "BackgroundJobService");
 
-  async getQueueStats(): Promise<any> {
-    try {
-      const counts = await this.redisService.getJobCounts('background-jobs');
-
-      this.logger.log(
-        'Retrieved queue statistics',
-        'BackgroundJobService',
-      );
-
-      return counts;
-    } catch (error) {
-      this.logger.error(
-        `Failed to get queue stats: ${error.message}`,
-        error.stack,
-        'BackgroundJobService',
-      );
-      throw error;
-    }
-  }
+			return counts;
+		} catch (error) {
+			this.logger.error(`Failed to get queue stats: ${error.message}`, error.stack, "BackgroundJobService");
+			throw error;
+		}
+	}
 }

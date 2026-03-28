@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,7 @@ import { CheckCircle, CreditCard, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const planId = searchParams.get("plan");
@@ -209,5 +209,20 @@ export default function CheckoutPage() {
 				</div>
 			</div>
 		</Layout>
+	);
+}
+
+export default function CheckoutPage() {
+	return (
+		<Suspense
+			fallback={
+				<Layout>
+					<div className='min-h-screen flex items-center justify-center'>
+						<Loading />
+					</div>
+				</Layout>
+			}>
+			<CheckoutContent />
+		</Suspense>
 	);
 }

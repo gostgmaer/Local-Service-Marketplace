@@ -5,98 +5,86 @@ import { AdminActionRepository } from '../repositories/admin-action.repository';
 import { AuditLogRepository } from '../repositories/audit-log.repository';
 import { Dispute } from '../entities/dispute.entity';
 import { NotFoundException } from '../../common/exceptions/http.exceptions';
+import { DisputeListQueryDto } from "../dto/dispute-list-query.dto";
+import { resolvePagination, validateDateRange } from "../../common/pagination/list-query-validation.util";
 
 @Injectable()
 export class DisputeService {
-  constructor(
-    private readonly disputeRepository: DisputeRepository,
-    private readonly adminActionRepository: AdminActionRepository,
-    private readonly auditLogRepository: AuditLogRepository,
-    @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly logger: LoggerService,
-  ) {}
+	constructor(
+		private readonly disputeRepository: DisputeRepository,
+		private readonly adminActionRepository: AdminActionRepository,
+		private readonly auditLogRepository: AuditLogRepository,
+		@Inject(WINSTON_MODULE_NEST_PROVIDER)
+		private readonly logger: LoggerService,
+	) {}
 
-  async getAllDisputes(
-    limit: number = 50,
-    offset: number = 0,
-  ): Promise<{ disputes: Dispute[]; total: number }> {
-    this.logger.log(
-      `Fetching disputes (limit: ${limit}, offset: ${offset})`,
-      'DisputeService',
-    );
+	async getAllDisputes(
+		queryDto: DisputeListQueryDto,
+	): Promise<{ data: Dispute[]; total: number; page: number; limit: number }> {
+		validateDateRange(queryDto.createdFrom, queryDto.createdTo, "createdAt");
+		const pagination = resolvePagination(queryDto, { page: 1, limit: 50 });
 
-    const disputes = await this.disputeRepository.getAllDisputes(limit, offset);
-    const total = await this.disputeRepository.getDisputeCount();
+		this.logger.log(
+			`Fetching disputes (page: ${pagination.page}, limit: ${pagination.limit}, offset: ${pagination.offset})`,
+			"DisputeService",
+		);
 
-    return { disputes, total };
-  }
+		const [disputes, total] = await Promise.all([
+			this.disputeRepository.findDisputes(queryDto, pagination),
+			this.disputeRepository.countDisputes(queryDto),
+		]);
 
-  async getDisputeById(id: string): Promise<Dispute> {
-    this.logger.log(`Fetching dispute with ID ${id}`, 'DisputeService');
+		return { data: disputes, total, page: pagination.page, limit: pagination.limit };
+	}
 
-    const dispute = await this.disputeRepository.getDisputeById(id);
+	async getDisputeById(id: string): Promise<Dispute> {
+		this.logger.log(`Fetching dispute with ID ${id}`, "DisputeService");
 
-    if (!dispute) {
-      throw new NotFoundException('Dispute not found');
-    }
+		const dispute = await this.disputeRepository.getDisputeById(id);
 
-    return dispute;
-  }
+		if (!dispute) {
+			throw new NotFoundException("Dispute not found");
+		}
 
-  async getDisputesByStatus(status: string): Promise<Dispute[]> {
-    this.logger.log(`Fetching disputes with status: ${status}`, 'DisputeService');
+		return dispute;
+	}
 
-    return this.disputeRepository.getDisputesByStatus(status);
-  }
+	async getDisputesByStatus(status: string): Promise<Dispute[]> {
+		this.logger.log(`Fetching disputes with status: ${status}`, "DisputeService");
 
-  async updateDispute(
-    id: string,
-    adminId: string,
-    status: string,
-    resolution: string,
-  ): Promise<Dispute> {
-    this.logger.log(
-      `Updating dispute ${id} by admin ${adminId}`,
-      'DisputeService',
-    );
+		return this.disputeRepository.getDisputesByStatus(status);
+	}
 
-    // Check if dispute exists
-    const existingDispute = await this.disputeRepository.getDisputeById(id);
-    if (!existingDispute) {
-      throw new NotFoundException('Dispute not found');
-    }
+	async updateDispute(id: string, adminId: string, status: string, resolution: string): Promise<Dispute> {
+		this.logger.log(`Updating dispute ${id} by admin ${adminId}`, "DisputeService");
+		const normalizedStatus = status === "in_progress" ? "investigating" : status;
 
-    // Update dispute
-    const updatedDispute = await this.disputeRepository.updateDispute(
-      id,
-      status,
-      resolution,
-      adminId,
-    );
+		// Check if dispute exists
+		const existingDispute = await this.disputeRepository.getDisputeById(id);
+		if (!existingDispute) {
+			throw new NotFoundException("Dispute not found");
+		}
 
-    // Log admin action
-    await this.adminActionRepository.createAdminAction(
-      adminId,
-      'resolve_dispute',
-      'dispute',
-      id,
-      `Status: ${status}, Resolution: ${resolution}`,
-    );
+		// Update dispute
+		const updatedDispute = await this.disputeRepository.updateDispute(id, normalizedStatus, resolution, adminId);
 
-    // Create audit log
-    await this.auditLogRepository.createAuditLog(
-      adminId,
-      'update_dispute',
-      'dispute',
-      id,
-      { status, resolution },
-    );
+		// Log admin action
+		await this.adminActionRepository.createAdminAction(
+			adminId,
+			"resolve_dispute",
+			"dispute",
+			id,
+			`Status: ${normalizedStatus}, Resolution: ${resolution}`,
+		);
 
-    this.logger.log(
-      `Dispute ${id} updated successfully`,
-      'DisputeService',
-    );
+		// Create audit log
+		await this.auditLogRepository.createAuditLog(adminId, "update_dispute", "dispute", id, {
+			status: normalizedStatus,
+			resolution,
+		});
 
-    return updatedDispute;
-  }
+		this.logger.log(`Dispute ${id} updated successfully`, "DisputeService");
+
+		return updatedDispute;
+	}
 }

@@ -23,13 +23,19 @@ export class ProposalResponseDto {
 }
 
 export class PaginatedProposalResponseDto {
-  data: ProposalResponseDto[];
-  nextCursor?: string;
-  hasMore: boolean;
+	data: ProposalResponseDto[];
+	total?: number;
+  page?: number;
+  limit?: number;
+	nextCursor?: string;
+	hasMore?: boolean;
 
-  constructor(data: ProposalResponseDto[], nextCursor?: string, hasMore = false) {
-    this.data = data;
-    this.nextCursor = nextCursor;
-    this.hasMore = hasMore;
-  }
+  constructor(data: ProposalResponseDto[], nextCursor?: string, hasMore = false, total?: number, page?: number, limit?: number) {
+		this.data = data;
+		this.total = total;
+    this.page = page;
+    this.limit = limit;
+		this.nextCursor = nextCursor;
+		this.hasMore = hasMore;
+	}
 }

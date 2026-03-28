@@ -21,6 +21,10 @@ import { BackgroundJobRepository } from './repositories/background-job.repositor
 import { RateLimitRepository } from './repositories/rate-limit.repository';
 import { FeatureFlagRepository } from './repositories/feature-flag.repository';
 
+// Guards
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+
 @Module({
   imports: [DatabaseModule, RedisModule],
   controllers: [
@@ -30,6 +34,9 @@ import { FeatureFlagRepository } from './repositories/feature-flag.repository';
     FeatureFlagController,
   ],
   providers: [
+    // Guards
+    JwtAuthGuard,
+    RolesGuard,
     // Services
     EventService,
     BackgroundJobService,

@@ -87,39 +87,21 @@ export class ProviderDocumentController {
     @Param('providerId', ParseUUIDPipe) providerId: string,
     @Request() req: any
   ) {
-    const documents = await this.documentService.getProviderDocuments(providerId);
-
-    return {
-      success: true,
-      data: documents,
-      count: documents.length
-    };
+    return this.documentService.getProviderDocuments(providerId);
   }
 
   @Roles('admin')
   @UseGuards(RolesGuard)
   @Get('pending')
   async getPendingDocuments(@Request() req: any) {
-    const documents = await this.documentService.getPendingDocuments();
-
-    return {
-      success: true,
-      data: documents,
-      count: documents.length
-    };
+    return this.documentService.getPendingDocuments();
   }
 
   @Roles('admin')
   @UseGuards(RolesGuard)
   @Get('expiring')
   async getExpiringDocuments(@Request() req: any) {
-    const documents = await this.documentService.getExpiringDocuments(30);
-
-    return {
-      success: true,
-      data: documents,
-      count: documents.length
-    };
+    return this.documentService.getExpiringDocuments(30);
   }
 
   @Get('verification-status/:providerId')

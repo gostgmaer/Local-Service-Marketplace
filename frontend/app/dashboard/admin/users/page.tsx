@@ -26,7 +26,7 @@ export default function AdminUsersPage() {
 		refetch,
 	} = useQuery({ queryKey: ["admin-users"], queryFn: () => adminService.getUsers(), enabled: user?.role === "admin" });
 
-  const filteredUsers = users?.filter((u: any) => {
+  const filteredUsers = users?.data?.filter((u: any) => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
