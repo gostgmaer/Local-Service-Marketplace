@@ -17,6 +17,7 @@ import { TokenService } from './token.service';
 import { SmsClient } from '../clients/sms.client';
 import { NotificationClient } from '../../../common/notification/notification.client';
 import { SignupDto } from '../dto/signup.dto';
+import { RegisterDto, RegisterResponseDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { OAuthUserDto } from '../dto/oauth-user.dto';
@@ -50,6 +51,135 @@ export class AuthService {
 		@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
 	) {
 		this.maxLoginAttempts = parseInt(this.configService.get<string>("MAX_LOGIN_ATTEMPTS", "5"), 10);
+	}
+
+	private generatePassword(length = 12): string {
+		const upper = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+		const lower = 'abcdefghjkmnpqrstuvwxyz';
+		const digits = '23456789';
+		const special = '!@#$%^&*';
+		const all = upper + lower + digits + special;
+
+		// Guarantee at least one of each required category
+		const guaranteed = [
+			upper.charAt(Math.floor(Math.random() * upper.length)),
+			lower.charAt(Math.floor(Math.random() * lower.length)),
+			digits.charAt(Math.floor(Math.random() * digits.length)),
+			special.charAt(Math.floor(Math.random() * special.length)),
+		];
+
+		const remaining: string[] = [];
+		for (let i = guaranteed.length; i < length; i++) {
+			remaining.push(all.charAt(Math.floor(Math.random() * all.length)));
+		}
+
+		// Shuffle all characters to avoid predictable positions
+		const combined = [...guaranteed, ...remaining];
+		for (let i = combined.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[combined[i], combined[j]] = [combined[j], combined[i]];
+		}
+
+		return combined.join('');
+	}
+
+	async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
+		const { email, phone, name, role = 'customer' } = registerDto;
+
+		if (!email && !phone) {
+			throw new BadRequestException('Either email or phone is required');
+		}
+
+		this.logger.info('Register attempt', { context: 'AuthService', email, phone, role });
+
+		// Check for duplicate email
+		if (email) {
+			const existingByEmail = await this.userRepo.findByEmail(email);
+			if (existingByEmail) {
+				throw new ConflictException('A user with this email already exists');
+			}
+		}
+
+		// Check for duplicate phone
+		if (phone) {
+			const existingByPhone = await this.userRepo.findByPhone(phone);
+			if (existingByPhone) {
+				throw new ConflictException('A user with this phone number already exists');
+			}
+		}
+
+		// Auto-generate password if not provided
+		const passwordWasGenerated = !registerDto.password;
+		const rawPassword = registerDto.password || this.generatePassword(8);
+		const passwordHash = await bcrypt.hash(rawPassword, this.saltRounds);
+
+		// Create user (no auto-login)
+		const user = await this.userRepo.create(email, passwordHash, role, phone, name);
+
+		// Generate email verification token
+		const verificationToken = await this.tokenService.createEmailVerificationToken(user.id);
+
+		const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+		const displayName = name || (email ? email.split('@')[0] : phone);
+		let emailSent = false;
+		let verificationEmailSent = false;
+
+		if (email) {
+			// Send generated password email if password was auto-generated
+			if (passwordWasGenerated) {
+				await this.notificationClient
+					.sendEmail({
+						to: email,
+						template: 'generatedPassword',
+						variables: {
+							name: displayName,
+							password: rawPassword,
+							loginUrl: `${frontendUrl}/login`,
+						},
+					})
+					.then(() => { emailSent = true; })
+					.catch((err) => {
+						this.logger.error('Failed to send generated password email', {
+							context: 'AuthService',
+							error: err.message,
+							userId: user.id,
+						});
+					});
+			}
+
+			// Send email verification link
+			await this.notificationClient
+				.sendEmail({
+					to: email,
+					template: 'emailVerification',
+					variables: {
+						name: displayName,
+						verificationUrl: `${frontendUrl}/verify-email?token=${verificationToken}`,
+					},
+				})
+				.then(() => { verificationEmailSent = true; })
+				.catch((err) => {
+					this.logger.error('Failed to send verification email', {
+						context: 'AuthService',
+						error: err.message,
+						userId: user.id,
+					});
+				});
+		}
+
+		this.logger.info('User registered successfully', {
+			context: 'AuthService',
+			userId: user.id,
+			email: user.email,
+			passwordWasGenerated,
+		});
+
+		return {
+			message: 'Registration successful. Please verify your email before logging in.',
+			email: user.email,
+			emailSent,
+			verificationEmailSent,
+		};
 	}
 
 	async signup(signupDto: SignupDto, ipAddress?: string): Promise<AuthResponseDto> {
