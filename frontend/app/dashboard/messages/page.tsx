@@ -98,7 +98,7 @@ export default function MessagesPage() {
 													selectedJobId === conv.job_id ? "bg-primary-50 border-primary-200" : "hover:bg-gray-50"
 												}`}>
 												<p className='font-medium text-gray-900'>Job #{conv.job_id.slice(0, 8)}</p>
-												<p className='text-sm text-gray-600 truncate'>{conv.lastMessage}</p>
+												<p className='text-sm text-gray-600 truncate'>{conv.last_message}</p>
 											</button>
 										))}
 									</div>

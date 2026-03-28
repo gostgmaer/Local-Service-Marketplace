@@ -56,9 +56,9 @@ export default function AdminDashboard() {
 		);
 	}
 
-  const totalUsers = users?.length || 0;
-  const activeDisputes = disputes?.filter((d: any) => d.status === 'open').length || 0;
-  const totalDisputes = disputes?.length || 0;
+  const totalUsers = users?.total || 0;
+  const activeDisputes = disputes?.data?.filter((d: any) => d.status === 'open').length || 0;
+  const totalDisputes = disputes?.total || 0;
 
   return (
     <Layout>
@@ -179,9 +179,9 @@ export default function AdminDashboard() {
             <CardContent>
               {usersLoading ? (
                 <Loading size="sm" />
-              ) : users && users.length > 0 ? (
+              ) : users?.data && users.data.length > 0 ? (
                 <div className="space-y-3">
-                  {users.slice(0, 5).map((user: any) => (
+                  {users.data.slice(0, 5).map((user: any) => (
                     <div
                       key={user.id}
                       className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-md"
@@ -222,9 +222,9 @@ export default function AdminDashboard() {
             <CardContent>
               {disputesLoading ? (
                 <Loading size="sm" />
-              ) : disputes && disputes.length > 0 ? (
+              ) : disputes?.data && disputes.data.length > 0 ? (
                 <div className="space-y-3">
-                  {disputes.slice(0, 5).map((dispute: any) => (
+                  {disputes.data.slice(0, 5).map((dispute: any) => (
                     <div
                       key={dispute.id}
                       className="p-3 border border-gray-200 dark:border-gray-700 rounded-md"
