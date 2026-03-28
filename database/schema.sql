@@ -4,6 +4,8 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "postgis";
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
 
 -- =====================================================
 -- USERS & AUTHENTICATION
@@ -29,6 +31,7 @@ CREATE TABLE users (
 );
 
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_email_covering ON users(email) INCLUDE (id, role, status, email_verified, deleted_at, password_hash);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_created_at ON users(created_at DESC);
@@ -50,6 +53,8 @@ CREATE TABLE sessions (
 
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+CREATE UNIQUE INDEX idx_sessions_refresh_token ON sessions(refresh_token) WHERE refresh_token IS NOT NULL;
+CREATE INDEX idx_sessions_active ON sessions(user_id, expires_at) WHERE expires_at > now();
 
 CREATE TABLE email_verification_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -61,6 +66,7 @@ CREATE TABLE email_verification_tokens (
 
 CREATE INDEX idx_email_verification_tokens_user_id ON email_verification_tokens(user_id);
 CREATE INDEX idx_email_verification_tokens_token ON email_verification_tokens(token);
+CREATE INDEX idx_email_verification_tokens_token_hash ON email_verification_tokens USING HASH(token);
 CREATE INDEX idx_email_verification_tokens_expires ON email_verification_tokens(expires_at);
 
 CREATE TABLE password_reset_tokens (
@@ -73,6 +79,7 @@ CREATE TABLE password_reset_tokens (
 
 CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
 CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token);
+CREATE INDEX idx_password_reset_tokens_token_hash ON password_reset_tokens USING HASH(token);
 CREATE INDEX idx_password_reset_tokens_expires ON password_reset_tokens(expires_at);
 
 CREATE TABLE login_attempts (
@@ -88,6 +95,7 @@ CREATE TABLE login_attempts (
 CREATE INDEX idx_login_attempts_email ON login_attempts(email);
 CREATE INDEX idx_login_attempts_ip_address ON login_attempts(ip_address);
 CREATE INDEX idx_login_attempts_created_at ON login_attempts(created_at DESC);
+CREATE INDEX idx_login_attempts_brin ON login_attempts USING BRIN(created_at) WITH (pages_per_range = 32);
 CREATE INDEX idx_login_attempts_email_created ON login_attempts(email, created_at DESC);
 CREATE INDEX idx_login_attempts_failed ON login_attempts(email, created_at DESC) WHERE success = false;
 CREATE INDEX idx_login_attempts_ip_failed ON login_attempts(ip_address, created_at DESC) WHERE success = false;
@@ -272,6 +280,7 @@ CREATE TABLE locations (
 
 CREATE INDEX idx_locations_coordinates ON locations(latitude, longitude);
 CREATE INDEX idx_locations_user_id ON locations(user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX idx_locations_geo ON locations USING GIST(ST_MakePoint(longitude, latitude)::geography);
 
 -- =====================================================
 -- SERVICE REQUESTS
@@ -316,6 +325,8 @@ CREATE INDEX idx_service_requests_guest_email ON service_requests(guest_email) W
 CREATE INDEX idx_service_requests_status_created_at ON service_requests(status, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_service_requests_category_status_created_at ON service_requests(category_id, status, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_service_requests_urgency_created_at ON service_requests(urgency, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_service_requests_budget ON service_requests(budget) WHERE deleted_at IS NULL;
+CREATE INDEX idx_service_requests_budget_status ON service_requests(budget, status) WHERE deleted_at IS NULL;
 
 -- =====================================================
 -- PROPOSALS
@@ -424,6 +435,8 @@ CREATE TABLE payment_webhooks (
 CREATE INDEX idx_payment_webhooks_unprocessed ON payment_webhooks(processed) WHERE processed = false;
 CREATE INDEX idx_payment_webhooks_gateway ON payment_webhooks(gateway);
 CREATE INDEX idx_payment_webhooks_external_id ON payment_webhooks(external_id);
+CREATE INDEX idx_payment_webhooks_brin ON payment_webhooks USING BRIN(created_at) WITH (pages_per_range = 32);
+CREATE INDEX idx_payment_webhooks_gateway_event ON payment_webhooks(gateway, event_type);
 
 CREATE TABLE refunds (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -460,6 +473,7 @@ CREATE INDEX idx_reviews_provider_id ON reviews(provider_id);
 CREATE INDEX idx_reviews_user_id ON reviews(user_id);
 CREATE INDEX idx_reviews_created_at ON reviews(created_at DESC);
 CREATE INDEX idx_reviews_provider_rating ON reviews(provider_id, rating DESC);
+CREATE INDEX idx_reviews_provider_covering ON reviews(provider_id, created_at DESC) INCLUDE (rating, comment, user_id);
 CREATE UNIQUE INDEX idx_reviews_job_user_unique ON reviews(job_id, user_id);
 
 -- =====================================================
@@ -481,6 +495,7 @@ CREATE TABLE messages (
 CREATE INDEX idx_messages_job_id ON messages(job_id);
 CREATE INDEX idx_messages_sender_id ON messages(sender_id);
 CREATE INDEX idx_messages_created_at ON messages(created_at ASC);
+CREATE INDEX idx_messages_brin ON messages USING BRIN(created_at) WITH (pages_per_range = 32);
 CREATE INDEX idx_messages_job_created ON messages(job_id, created_at ASC);
 CREATE INDEX idx_messages_job_read_created ON messages(job_id, read, created_at ASC) WHERE read = false;
 
@@ -501,6 +516,7 @@ CREATE TABLE notifications (
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_unread ON notifications(read) WHERE read = false;
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX idx_notifications_brin ON notifications USING BRIN(created_at) WITH (pages_per_range = 32);
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id, read, created_at DESC);
 
 CREATE TABLE notification_deliveries (
@@ -514,6 +530,7 @@ CREATE TABLE notification_deliveries (
 
 CREATE INDEX idx_notification_deliveries_notification_id ON notification_deliveries(notification_id);
 CREATE INDEX idx_notification_deliveries_status ON notification_deliveries(status);
+CREATE UNIQUE INDEX idx_notification_deliveries_channel_unique ON notification_deliveries(notification_id, channel);
 
 -- =====================================================
 -- FAVORITES
@@ -604,7 +621,7 @@ CREATE INDEX idx_disputes_opened_by ON disputes(opened_by);
 
 CREATE TABLE audit_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   action TEXT NOT NULL,
   entity TEXT NOT NULL,
   entity_id UUID NOT NULL,
@@ -615,6 +632,7 @@ CREATE TABLE audit_logs (
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity, entity_id);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action, created_at DESC);
 
 -- =====================================================
 -- USER ACTIVITY
@@ -631,6 +649,9 @@ CREATE TABLE user_activity_logs (
 
 CREATE INDEX idx_user_activity_user_id ON user_activity_logs(user_id);
 CREATE INDEX idx_user_activity_created_at ON user_activity_logs(created_at DESC);
+CREATE INDEX idx_user_activity_brin ON user_activity_logs USING BRIN(created_at) WITH (pages_per_range = 32);
+CREATE INDEX idx_user_activity_action ON user_activity_logs(action, created_at DESC);
+CREATE INDEX idx_user_activity_user_action ON user_activity_logs(user_id, action, created_at DESC);
 
 -- =====================================================
 -- EVENTS
@@ -979,6 +1000,7 @@ FROM service_requests
 WHERE deleted_at IS NULL
 GROUP BY DATE_TRUNC('day', created_at), category_id;
 
+CREATE UNIQUE INDEX idx_service_request_stats_unique ON service_request_stats(date, category_id);
 CREATE INDEX idx_service_request_stats_date ON service_request_stats(date DESC);
 CREATE INDEX idx_service_request_stats_category ON service_request_stats(category_id);
 
@@ -1019,6 +1041,9 @@ CREATE INDEX IF NOT EXISTS idx_background_jobs_type_status
 
 CREATE INDEX IF NOT EXISTS idx_background_jobs_attempts 
   ON background_jobs(attempts) WHERE status != 'completed';
+
+CREATE INDEX IF NOT EXISTS idx_background_jobs_scheduled_pending
+  ON background_jobs(scheduled_for ASC) WHERE status = 'pending';
 
 -- =====================================================
 -- SECURITY & AUDIT
@@ -1174,6 +1199,8 @@ CREATE INDEX idx_saved_payment_methods_default ON saved_payment_methods(user_id,
 CREATE UNIQUE INDEX idx_saved_payment_methods_one_default 
   ON saved_payment_methods(user_id) 
   WHERE is_default = true;
+CREATE INDEX idx_saved_payment_methods_gateway_customer ON saved_payment_methods(gateway_customer_id) WHERE gateway_customer_id IS NOT NULL;
+CREATE INDEX idx_saved_payment_methods_gateway_method ON saved_payment_methods(gateway_payment_method_id) WHERE gateway_payment_method_id IS NOT NULL;
 
 -- =====================================================
 -- PROVIDER SUBSCRIPTIONS
@@ -1204,6 +1231,8 @@ CREATE TABLE subscriptions (
 CREATE INDEX idx_subscriptions_provider_id ON subscriptions(provider_id);
 CREATE INDEX idx_subscriptions_status ON subscriptions(status);
 CREATE INDEX idx_subscriptions_expires_at ON subscriptions(expires_at) WHERE status = 'active';
+CREATE INDEX idx_subscriptions_provider_status ON subscriptions(provider_id, status);
+CREATE INDEX idx_subscriptions_active_covering ON subscriptions(provider_id) INCLUDE (plan_id, status, expires_at) WHERE status = 'active';
 
 -- =====================================================
 -- REVIEW AGGREGATES (CACHED STATISTICS)
