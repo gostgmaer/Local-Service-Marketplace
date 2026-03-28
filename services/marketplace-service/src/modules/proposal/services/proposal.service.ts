@@ -203,16 +203,32 @@ export class ProposalService {
 	async getProposals(queryDto: ProposalQueryDto): Promise<PaginatedProposalResponseDto> {
 		this.logger.log(`Fetching proposals with filters: ${JSON.stringify(queryDto)}`, ProposalService.name);
 
+		if (
+			queryDto.min_price !== undefined &&
+			queryDto.max_price !== undefined &&
+			queryDto.min_price > queryDto.max_price
+		) {
+			throw new BadRequestException("min_price cannot be greater than max_price");
+		}
+
 		const limit = queryDto.limit || 20;
-		const proposals = await this.proposalRepository.getProposalsPaginated(queryDto);
 
-		const hasMore = proposals.length > limit;
-		const data = proposals.slice(0, limit);
-		const nextCursor = hasMore ? data[data.length - 1].id : undefined;
+		if (queryDto.cursor) {
+			const proposals = await this.proposalRepository.getProposalsPaginated(queryDto);
+			const hasMore = proposals.length > limit;
+			const data = proposals.slice(0, limit);
+			const nextCursor = hasMore ? data[data.length - 1].id : undefined;
+			const response = data.map(ProposalResponseDto.fromEntity);
+			return new PaginatedProposalResponseDto(response, nextCursor, hasMore);
+		}
 
-		const response = data.map(ProposalResponseDto.fromEntity);
+		const [proposals, total] = await Promise.all([
+			this.proposalRepository.getProposalsPaginated(queryDto),
+			this.proposalRepository.countProposals(queryDto),
+		]);
 
-		return new PaginatedProposalResponseDto(response, nextCursor, hasMore);
+		const response = proposals.map(ProposalResponseDto.fromEntity);
+		return new PaginatedProposalResponseDto(response, undefined, false, total);
 	}
 
 	async getMyProposals(userId: string): Promise<{ data: ProposalResponseDto[]; total: number }> {
