@@ -84,7 +84,7 @@ export class AuthService {
 	}
 
 	async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
-		const { email, phone, name, role = 'customer' } = registerDto;
+		const { email, phone, name, userType: role = "customer" } = registerDto;
 
 		if (!email && !phone) {
 			throw new BadRequestException('Either email or phone is required');
@@ -183,7 +183,7 @@ export class AuthService {
 	}
 
 	async signup(signupDto: SignupDto, ipAddress?: string): Promise<AuthResponseDto> {
-		const { email, password, role = "customer", phone, name, timezone, language } = signupDto;
+		const { email, password, userType: role = "customer", phone, name, timezone, language } = signupDto;
 
 		this.logger.info("Signup attempt", { context: "AuthService", email, role, name });
 

@@ -54,8 +54,8 @@ export class RegisterDto {
 	password?: string;
 
 	@IsOptional()
-	@IsEnum(UserRole, { message: "Role must be customer or provider" })
-	role?: UserRole = UserRole.CUSTOMER;
+	@IsEnum(UserRole, { message: "User type must be customer or provider" })
+	userType?: UserRole = UserRole.CUSTOMER;
 }
 
 export class RegisterResponseDto {
