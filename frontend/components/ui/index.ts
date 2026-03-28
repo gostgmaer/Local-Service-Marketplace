@@ -4,6 +4,13 @@ export { Avatar } from './Avatar';
 export { Badge, StatusBadge } from './Badge';
 export { Button } from './Button';
 export { Card, CardHeader, CardContent } from './Card';
+export { DataTable } from "./DataTable";
+export type {
+	DataTableColumn,
+	DataTableSortDirection,
+	DataTableQuickSortOption,
+	DataTableProcessingMode,
+} from "./DataTable";
 export { Dropdown } from './Dropdown';
 export type { DropdownOption } from './Dropdown';
 export { EmptyState } from './EmptyState';

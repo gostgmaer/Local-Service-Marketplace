@@ -1,25 +1,32 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from "@/hooks/usePagination";
 import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from '@/components/ui/Badge';
 import { paymentService } from '@/services/payment-service';
 import { formatDate, formatCurrency } from '@/utils/helpers';
 import { analytics } from '@/utils/analytics';
 import toast from 'react-hot-toast';
 import { ErrorState } from "@/components/ui/ErrorState";
-import { DollarSign, Download } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, DollarSign, Download } from "lucide-react";
+
+type PaymentSortField = "created_at" | "amount" | "status";
 
 export default function PaymentHistoryPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+	const [sortField, setSortField] = useState<PaymentSortField>("created_at");
+	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+	const { page, limit, setLimit, goToPage } = usePagination({ initialLimit: 10 });
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -36,6 +43,64 @@ export default function PaymentHistoryPage() {
 		queryFn: () => paymentService.getMyPayments(user!.id),
 		enabled: isAuthenticated && !!user?.id,
 	});
+
+	const sortedPayments = useMemo(() => {
+		const list = [...(payments || [])];
+		list.sort((a: any, b: any) => {
+			const direction = sortDirection === "asc" ? 1 : -1;
+
+			if (sortField === "created_at") {
+				return (new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()) * direction;
+			}
+
+			if (sortField === "amount") {
+				return ((a.amount || 0) - (b.amount || 0)) * direction;
+			}
+
+			const left = String(a.status || "").toLowerCase();
+			const right = String(b.status || "").toLowerCase();
+			return left.localeCompare(right) * direction;
+		});
+		return list;
+	}, [payments, sortDirection, sortField]);
+
+	const numberFormatter = useMemo(() => new Intl.NumberFormat("en-US"), []);
+
+	const totalPages = Math.max(1, Math.ceil(sortedPayments.length / limit));
+	const paginatedPayments = useMemo(() => {
+		const start = (page - 1) * limit;
+		return sortedPayments.slice(start, start + limit);
+	}, [sortedPayments, page, limit]);
+	const startRow = sortedPayments.length === 0 ? 0 : (page - 1) * limit + 1;
+	const endRow = sortedPayments.length === 0 ? 0 : Math.min(page * limit, sortedPayments.length);
+
+	useEffect(() => {
+		goToPage(1);
+	}, [sortField, sortDirection, limit, goToPage]);
+
+	useEffect(() => {
+		if (page > totalPages) {
+			goToPage(totalPages);
+		}
+	}, [page, totalPages, goToPage]);
+
+	const handleSort = (field: PaymentSortField) => {
+		if (field === sortField) {
+			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+			return;
+		}
+		setSortField(field);
+		setSortDirection(field === "created_at" ? "desc" : "asc");
+	};
+
+	const sortIcon = (field: PaymentSortField) => {
+		if (sortField !== field) {
+			return <ArrowUpDown className='h-4 w-4 text-gray-400' />;
+		}
+		return sortDirection === "asc" ?
+				<ArrowUp className='h-4 w-4 text-primary-600 dark:text-primary-400' />
+			:	<ArrowDown className='h-4 w-4 text-primary-600 dark:text-primary-400' />;
+	};
 
   useEffect(() => {
     analytics.pageview({
@@ -60,6 +125,16 @@ export default function PaymentHistoryPage() {
 						<h1 className='text-3xl font-bold text-gray-900 dark:text-gray-100'>Payment History</h1>
 						<p className='mt-2 text-gray-600 dark:text-gray-400'>View all your payment transactions</p>
 					</div>
+					<div className='flex flex-wrap items-center gap-2'>
+						<select
+							value={sortField}
+							onChange={(e) => handleSort(e.target.value as PaymentSortField)}
+							className='h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:focus:ring-primary-900'>
+							<option value='created_at'>Sort by Date</option>
+							<option value='amount'>Sort by Amount</option>
+							<option value='status'>Sort by Status</option>
+						</select>
+					</div>
 				</div>
 
 				{isLoading ?
@@ -70,9 +145,24 @@ export default function PaymentHistoryPage() {
 						message="We couldn't load your payment history. Please try again."
 						retry={() => refetch()}
 					/>
-				: payments && payments.length > 0 ?
+				: paginatedPayments.length > 0 ?
 					<div className='space-y-4'>
-						{payments.map((payment: any) => (
+						<div className='flex flex-wrap items-center gap-2 px-1 pb-2 text-xs text-gray-500 dark:text-gray-400'>
+							<span className='font-medium'>Quick sort:</span>
+							<button
+								type='button'
+								onClick={() => handleSort("created_at")}
+								className='inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700'>
+								Date {sortIcon("created_at")}
+							</button>
+							<button
+								type='button'
+								onClick={() => handleSort("amount")}
+								className='inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700'>
+								Amount {sortIcon("amount")}
+							</button>
+						</div>
+						{paginatedPayments.map((payment: any) => (
 							<Card
 								key={payment.id}
 								hover>
@@ -135,6 +225,27 @@ export default function PaymentHistoryPage() {
 								</CardContent>
 							</Card>
 						))}
+						<Pagination
+							currentPage={page}
+							totalPages={totalPages}
+							onPageChange={goToPage}
+							leftContent={
+								<div className='flex flex-wrap items-center gap-3'>
+									<div className='text-sm text-gray-600 dark:text-gray-300'>
+										Showing {numberFormatter.format(startRow)}-{numberFormatter.format(endRow)} of{" "}
+										{numberFormatter.format(sortedPayments.length)} records
+									</div>
+									<select
+										value={limit}
+										onChange={(e) => setLimit(Number(e.target.value))}
+										className='h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:focus:ring-primary-900'>
+										<option value={10}>10 per page</option>
+										<option value={20}>20 per page</option>
+										<option value={50}>50 per page</option>
+									</select>
+								</div>
+							}
+						/>
 					</div>
 				:	<EmptyState
 						title='No payments yet'

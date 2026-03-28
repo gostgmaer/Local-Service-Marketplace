@@ -33,11 +33,25 @@ export interface AuditLog {
 }
 
 class AdminService {
-	async getUsers(params?: { cursor?: string; limit?: number; status?: string }): Promise<{ data: User[]; total: number }> {
+	async getUsers(params?: {
+		cursor?: string;
+		limit?: number;
+		status?: string;
+		role?: string;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+		page?: number;
+	}): Promise<{ data: User[]; total: number }> {
 		const searchParams = new URLSearchParams();
 		if (params?.cursor) searchParams.append("cursor", params.cursor);
 		if (params?.limit) searchParams.append("limit", params.limit.toString());
 		if (params?.status) searchParams.append("status", params.status);
+		if (params?.role) searchParams.append("role", params.role);
+		if (params?.search) searchParams.append("search", params.search);
+		if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+		if (params?.page) searchParams.append("page", params.page.toString());
 
 		const response = await apiClient.get<{ data: User[]; total: number }>(`/admin/users?${searchParams.toString()}`);
 		// API client unwraps standardized response and returns { data, total } for paginated responses
@@ -59,13 +73,29 @@ class AdminService {
 		return response.data;
 	}
 
-	async getDisputes(params?: { status?: string; cursor?: string; limit?: number }): Promise<{ data: Dispute[]; total: number }> {
+	async getDisputes(params?: {
+		status?: string;
+		cursor?: string;
+		limit?: number;
+		jobId?: string;
+		openedBy?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+		page?: number;
+	}): Promise<{ data: Dispute[]; total: number }> {
 		const searchParams = new URLSearchParams();
 		if (params?.status) searchParams.append("status", params.status);
 		if (params?.cursor) searchParams.append("cursor", params.cursor);
 		if (params?.limit) searchParams.append("limit", params.limit.toString());
+		if (params?.jobId) searchParams.append("jobId", params.jobId);
+		if (params?.openedBy) searchParams.append("openedBy", params.openedBy);
+		if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+		if (params?.page) searchParams.append("page", params.page.toString());
 
-		const response = await apiClient.get<{ data: Dispute[]; total: number }>(`/admin/disputes?${searchParams.toString()}`);
+		const response = await apiClient.get<{ data: Dispute[]; total: number }>(
+			`/admin/disputes?${searchParams.toString()}`,
+		);
 		// API client unwraps standardized response and returns { data, total } for paginated responses
 		return response.data;
 	}

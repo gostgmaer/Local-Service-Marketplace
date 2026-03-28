@@ -334,8 +334,8 @@ class DatabaseSeeder {
 			}
 		}
 
-    // Create 100 customers
-    for (let i = 0; i < 100; i++) {
+    // Create 200 customers
+    for (let i = 0; i < 200; i++) {
       const id = uuid();
       const firstName = faker.person.firstName();
       const lastName = faker.person.lastName();
@@ -369,8 +369,8 @@ class DatabaseSeeder {
       }
     }
 
-    // Create 50 providers
-    for (let i = 0; i < 50; i++) {
+    // Create 120 providers
+    for (let i = 0; i < 120; i++) {
       const id = uuid();
       const firstName = faker.person.firstName();
       const lastName = faker.person.lastName();
@@ -411,26 +411,26 @@ class DatabaseSeeder {
     console.log('🔐 Seeding sessions...');
     let count = 0;
 
-    for (let i = 0; i < 100; i++) {
-      if (this.userIds.length === 0) break;
+    for (let i = 0; i < 300; i++) {
+			if (this.userIds.length === 0) break;
 
-      const success = await safeInsert(
-        `INSERT INTO sessions (id, user_id, refresh_token, ip_address, user_agent, device_type, location, expires_at) 
+			const success = await safeInsert(
+				`INSERT INTO sessions (id, user_id, refresh_token, ip_address, user_agent, device_type, location, expires_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          uuid(),
-          randomPick(this.userIds),
-          crypto.randomBytes(32).toString('hex'),
-          faker.internet.ip(),
-          faker.internet.userAgent(),
-          randomPick(['desktop', 'mobile', 'tablet']),
-          faker.location.city(),
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        ]
-      );
+				[
+					uuid(),
+					randomPick(this.userIds),
+					crypto.randomBytes(32).toString("hex"),
+					faker.internet.ip(),
+					faker.internet.userAgent(),
+					randomPick(["desktop", "mobile", "tablet"]),
+					faker.location.city(),
+					new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} sessions`);
   }
@@ -439,28 +439,28 @@ class DatabaseSeeder {
     console.log('🔑 Seeding login attempts...');
     let count = 0;
 
-    for (let i = 0; i < 200; i++) {
-      if (this.userIds.length === 0) break;
+    for (let i = 0; i < 600; i++) {
+			if (this.userIds.length === 0) break;
 
-      const userId = randomPick(this.userIds);
-      const email = this.userEmailMap.get(userId) || faker.internet.email();
+			const userId = randomPick(this.userIds);
+			const email = this.userEmailMap.get(userId) || faker.internet.email();
 
-      const success = await safeInsert(
-        `INSERT INTO login_attempts (id, email, ip_address, user_agent, location, success, created_at) 
+			const success = await safeInsert(
+				`INSERT INTO login_attempts (id, email, ip_address, user_agent, location, success, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          uuid(),
-          email,
-          faker.internet.ip(),
-          faker.internet.userAgent(),
-          faker.location.city(),
-          randomInt(0, 10) > 2,
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					email,
+					faker.internet.ip(),
+					faker.internet.userAgent(),
+					faker.location.city(),
+					randomInt(0, 10) > 2,
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} login attempts`);
   }
@@ -617,32 +617,32 @@ class DatabaseSeeder {
     console.log('📍 Seeding locations...');
     let count = 0;
 
-    for (let i = 0; i < 150; i++) {
-      const city = randomPick(cities);
-      const id = uuid();
-      const userId = randomInt(0, 1) === 1 && this.userIds.length > 0 ? randomPick(this.userIds) : null;
+    for (let i = 0; i < 450; i++) {
+			const city = randomPick(cities);
+			const id = uuid();
+			const userId = randomInt(0, 1) === 1 && this.userIds.length > 0 ? randomPick(this.userIds) : null;
 
-      const success = await safeInsert(
-        `INSERT INTO locations (id, user_id, latitude, longitude, address, city, state, zip_code, country) 
+			const success = await safeInsert(
+				`INSERT INTO locations (id, user_id, latitude, longitude, address, city, state, zip_code, country) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
-          id,
-          userId,
-          city.lat + (Math.random() - 0.5) * 0.2,
-          city.lng + (Math.random() - 0.5) * 0.2,
-          faker.location.streetAddress(),
-          city.name,
-          city.state,
-          faker.location.zipCode(),
-          'US',
-        ]
-      );
+				[
+					id,
+					userId,
+					city.lat + (Math.random() - 0.5) * 0.2,
+					city.lng + (Math.random() - 0.5) * 0.2,
+					faker.location.streetAddress(),
+					city.name,
+					city.state,
+					faker.location.zipCode(),
+					"US",
+				],
+			);
 
-      if (success) {
-        this.locationIds.push(id);
-        count++;
-      }
-    }
+			if (success) {
+				this.locationIds.push(id);
+				count++;
+			}
+		}
 
     console.log(`   ✓ Created ${count} locations`);
   }
@@ -653,49 +653,49 @@ class DatabaseSeeder {
     const urgencies = ['low', 'medium', 'high', 'urgent'];
     let count = 0;
 
-    for (let i = 0; i < 120; i++) {
-      if (this.categoryIds.length === 0 || this.locationIds.length === 0) break;
+    for (let i = 0; i < 500; i++) {
+			if (this.categoryIds.length === 0 || this.locationIds.length === 0) break;
 
-      const id = uuid();
-      const isAnonymous = randomInt(0, 10) < 3;
-      const userId = isAnonymous || this.customerIds.length === 0 ? null : randomPick(this.customerIds);
+			const id = uuid();
+			const isAnonymous = randomInt(0, 10) < 3;
+			const userId = isAnonymous || this.customerIds.length === 0 ? null : randomPick(this.customerIds);
 
-      const success = await safeInsert(
-        `INSERT INTO service_requests (id, user_id, category_id, location_id, description, budget, images, preferred_date, urgency, expiry_date, view_count, status, guest_name, guest_email, guest_phone, created_at) 
+			const success = await safeInsert(
+				`INSERT INTO service_requests (id, user_id, category_id, location_id, description, budget, images, preferred_date, urgency, expiry_date, view_count, status, guest_name, guest_email, guest_phone, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-        [
-          id,
-          userId,
-          randomPick(this.categoryIds),
-          randomPick(this.locationIds),
-          faker.lorem.paragraphs(2),
-          randomInt(50, 5000) * 100,
-          JSON.stringify([faker.image.url(), faker.image.url()]),
-          randomDate(new Date(), new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-          randomPick(urgencies),
-          new Date(Date.now() + randomInt(7, 30) * 24 * 60 * 60 * 1000),
-          randomInt(0, 100),
-          randomPick(statuses),
-          isAnonymous ? faker.person.fullName() : null,
-          isAnonymous ? uniqueEmail(faker.person.firstName(), faker.person.lastName()) : null,
-          isAnonymous ? `+1${randomInt(1000000000, 9999999999)}` : null,
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					id,
+					userId,
+					randomPick(this.categoryIds),
+					randomPick(this.locationIds),
+					faker.lorem.paragraphs(2),
+					randomInt(50, 5000) * 100,
+					JSON.stringify([faker.image.url(), faker.image.url()]),
+					randomDate(new Date(), new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+					randomPick(urgencies),
+					new Date(Date.now() + randomInt(7, 30) * 24 * 60 * 60 * 1000),
+					randomInt(0, 100),
+					randomPick(statuses),
+					isAnonymous ? faker.person.fullName() : null,
+					isAnonymous ? uniqueEmail(faker.person.firstName(), faker.person.lastName()) : null,
+					isAnonymous ? `+1${randomInt(1000000000, 9999999999)}` : null,
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) {
-        this.requestIds.push(id);
-        count++;
+			if (success) {
+				this.requestIds.push(id);
+				count++;
 
-        // Create search entry - ignore failures
-        await safeInsert(
-          `INSERT INTO service_request_search (request_id, category, location, description) 
+				// Create search entry - ignore failures
+				await safeInsert(
+					`INSERT INTO service_request_search (request_id, category, location, description) 
            VALUES ($1, $2, $3, $4)
            ON CONFLICT (request_id) DO NOTHING`,
-          [id, 'Service', 'Location', faker.lorem.paragraph()]
-        );
-      }
-    }
+					[id, "Service", "Location", faker.lorem.paragraph()],
+				);
+			}
+		}
 
     console.log(`   ✓ Created ${count} service requests`);
   }
@@ -705,35 +705,35 @@ class DatabaseSeeder {
     const statuses = ['pending', 'accepted', 'rejected', 'withdrawn'];
     let count = 0;
 
-    for (let i = 0; i < 200; i++) {
-      if (this.requestIds.length === 0 || this.providerRecordIds.length === 0) break;
+    for (let i = 0; i < 1200; i++) {
+			if (this.requestIds.length === 0 || this.providerRecordIds.length === 0) break;
 
-      const id = uuid();
-      const status = randomPick(statuses);
+			const id = uuid();
+			const status = randomPick(statuses);
 
-      const success = await safeInsert(
-        `INSERT INTO proposals (id, request_id, provider_id, price, message, estimated_hours, start_date, completion_date, rejected_reason, status, created_at) 
+			const success = await safeInsert(
+				`INSERT INTO proposals (id, request_id, provider_id, price, message, estimated_hours, start_date, completion_date, rejected_reason, status, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-        [
-          id,
-          randomPick(this.requestIds),
-          randomPick(this.providerRecordIds),
-          randomInt(50, 5000) * 100,
-          faker.lorem.paragraph(),
-          randomInt(1, 40),
-          randomDate(new Date(), new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
-          randomDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-          status === 'rejected' ? faker.lorem.sentence() : null,
-          status,
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					id,
+					randomPick(this.requestIds),
+					randomPick(this.providerRecordIds),
+					randomInt(50, 5000) * 100,
+					faker.lorem.paragraph(),
+					randomInt(1, 40),
+					randomDate(new Date(), new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+					randomDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+					status === "rejected" ? faker.lorem.sentence() : null,
+					status,
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) {
-        this.proposalIds.push(id);
-        count++;
-      }
-    }
+			if (success) {
+				this.proposalIds.push(id);
+				count++;
+			}
+		}
 
     console.log(`   ✓ Created ${count} proposals`);
   }
@@ -743,19 +743,19 @@ class DatabaseSeeder {
     const statuses = ['scheduled', 'in_progress', 'completed', 'cancelled', 'disputed'];
     let count = 0;
 
-    for (let i = 0; i < 80; i++) {
-      if (this.requestIds.length === 0 || this.providerRecordIds.length === 0 || this.customerIds.length === 0) break;
+    for (let i = 0; i < 400; i++) {
+			if (this.requestIds.length === 0 || this.providerRecordIds.length === 0 || this.customerIds.length === 0) break;
 
-      const id = uuid();
-      const customerId = randomPick(this.customerIds);
-      const providerId = randomPick(this.providerRecordIds);
-      const providerUserId = randomPick(this.providerIds);
-      const status = randomPick(statuses);
-      const createdAt = randomDate(new Date(2024, 0, 1), new Date());
-      const startedAt = status !== "scheduled" ? randomDate(createdAt, new Date()) : null;
+			const id = uuid();
+			const customerId = randomPick(this.customerIds);
+			const providerId = randomPick(this.providerRecordIds);
+			const providerUserId = randomPick(this.providerIds);
+			const status = randomPick(statuses);
+			const createdAt = randomDate(new Date(2024, 0, 1), new Date());
+			const startedAt = status !== "scheduled" ? randomDate(createdAt, new Date()) : null;
 			const completedAt = status === "completed" && startedAt ? randomDate(startedAt, new Date()) : null;
 
-      const success = await safeInsert(
+			const success = await safeInsert(
 				`INSERT INTO jobs (id, request_id, provider_id, customer_id, proposal_id, actual_amount, cancelled_by, cancellation_reason, status, started_at, completed_at, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 				[
@@ -774,11 +774,11 @@ class DatabaseSeeder {
 				],
 			);
 
-      if (success) {
-        this.jobIds.push(id);
-        count++;
-      }
-    }
+			if (success) {
+				this.jobIds.push(id);
+				count++;
+			}
+		}
 
     console.log(`   ✓ Created ${count} jobs`);
   }
@@ -829,8 +829,8 @@ class DatabaseSeeder {
     let count = 0;
 
     const failedPayments = await safeQuery(
-      `SELECT id, amount FROM payments WHERE status IN ('failed', 'refunded') LIMIT 50`
-    );
+			`SELECT id, amount FROM payments WHERE status IN ('failed', 'refunded') LIMIT 250`,
+		);
 
     for (const payment of failedPayments.rows) {
       const success = await safeInsert(
@@ -856,8 +856,8 @@ class DatabaseSeeder {
     let count = 0;
 
     const completedJobs = await safeQuery(
-      `SELECT id, customer_id, provider_id FROM jobs WHERE status = 'completed' LIMIT 100`
-    );
+			`SELECT id, customer_id, provider_id FROM jobs WHERE status = 'completed' LIMIT 300`,
+		);
 
     for (const job of completedJobs.rows) {
       if (randomInt(0, 10) < 8) {
@@ -889,35 +889,35 @@ class DatabaseSeeder {
     console.log('💬 Seeding messages...');
     let count = 0;
 
-    for (const jobId of this.jobIds.slice(0, 50)) {
-      const numMessages = randomInt(3, 15);
+    for (const jobId of this.jobIds.slice(0, 250)) {
+			const numMessages = randomInt(3, 15);
 
-      for (let i = 0; i < numMessages; i++) {
-        if (this.customerIds.length === 0) break;
+			for (let i = 0; i < numMessages; i++) {
+				if (this.customerIds.length === 0) break;
 
-        const id = uuid();
-        const isRead = randomInt(0, 1) === 1;
+				const id = uuid();
+				const isRead = randomInt(0, 1) === 1;
 
-        const success = await safeInsert(
-          `INSERT INTO messages (id, job_id, sender_id, message, read, read_at, created_at) 
+				const success = await safeInsert(
+					`INSERT INTO messages (id, job_id, sender_id, message, read, read_at, created_at) 
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            id,
-            jobId,
-            randomPick(this.customerIds),
-            faker.lorem.sentences(randomInt(1, 3)),
-            isRead,
-            isRead ? new Date() : null,
-            randomDate(new Date(2024, 0, 1), new Date()),
-          ]
-        );
+					[
+						id,
+						jobId,
+						randomPick(this.customerIds),
+						faker.lorem.sentences(randomInt(1, 3)),
+						isRead,
+						isRead ? new Date() : null,
+						randomDate(new Date(2024, 0, 1), new Date()),
+					],
+				);
 
-        if (success) {
-          this.messageIds.push(id);
-          count++;
-        }
-      }
-    }
+				if (success) {
+					this.messageIds.push(id);
+					count++;
+				}
+			}
+		}
 
     console.log(`   ✓ Created ${count} messages`);
   }
@@ -926,7 +926,7 @@ class DatabaseSeeder {
     console.log('📎 Seeding attachments...');
     let count = 0;
 
-    const messages = await safeQuery('SELECT id FROM messages ORDER BY RANDOM() LIMIT 100');
+    const messages = await safeQuery("SELECT id FROM messages ORDER BY RANDOM() LIMIT 500");
 
     for (const message of messages.rows) {
       if (randomInt(0, 10) < 3) {
@@ -955,24 +955,24 @@ class DatabaseSeeder {
     const types = ['request_created', 'proposal_received', 'job_started', 'payment_completed', 'review_received', 'message_received'];
     let count = 0;
 
-    for (let i = 0; i < 300; i++) {
-      if (this.userIds.length === 0) break;
+    for (let i = 0; i < 1200; i++) {
+			if (this.userIds.length === 0) break;
 
-      const success = await safeInsert(
-        `INSERT INTO notifications (id, user_id, type, message, read, created_at) 
+			const success = await safeInsert(
+				`INSERT INTO notifications (id, user_id, type, message, read, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          uuid(),
-          randomPick(this.userIds),
-          randomPick(types),
-          faker.lorem.sentence(),
-          randomInt(0, 1) === 1,
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					randomPick(this.userIds),
+					randomPick(types),
+					faker.lorem.sentence(),
+					randomInt(0, 1) === 1,
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} notifications`);
   }
@@ -981,7 +981,7 @@ class DatabaseSeeder {
     console.log('📨 Seeding notification deliveries...');
     let count = 0;
 
-    const notifications = await safeQuery('SELECT id FROM notifications LIMIT 200');
+    const notifications = await safeQuery("SELECT id FROM notifications LIMIT 800");
 
     for (const notification of notifications.rows) {
       const channels = randomPickMultiple(['email', 'sms', 'push'], randomInt(1, 3));
@@ -1010,18 +1010,18 @@ class DatabaseSeeder {
     console.log('❤️ Seeding favorites...');
     let count = 0;
 
-    for (let i = 0; i < 100; i++) {
-      if (this.customerIds.length === 0 || this.providerRecordIds.length === 0) break;
+    for (let i = 0; i < 400; i++) {
+			if (this.customerIds.length === 0 || this.providerRecordIds.length === 0) break;
 
-      const success = await safeInsert(
-        `INSERT INTO favorites (id, user_id, provider_id) 
+			const success = await safeInsert(
+				`INSERT INTO favorites (id, user_id, provider_id) 
          VALUES ($1, $2, $3)
          ON CONFLICT (user_id, provider_id) DO NOTHING`,
-        [uuid(), randomPick(this.customerIds), randomPick(this.providerRecordIds)]
-      );
+				[uuid(), randomPick(this.customerIds), randomPick(this.providerRecordIds)],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} favorites`);
   }
@@ -1030,31 +1030,31 @@ class DatabaseSeeder {
     console.log('🎫 Seeding coupons...');
     let count = 0;
 
-    for (let i = 0; i < 50; i++) {
-      const id = uuid();
-      const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+    for (let i = 0; i < 180; i++) {
+			const id = uuid();
+			const code = crypto.randomBytes(4).toString("hex").toUpperCase();
 
-      const success = await safeInsert(
-        `INSERT INTO coupons (id, code, discount_percent, max_uses, max_uses_per_user, min_purchase_amount, active, expires_at) 
+			const success = await safeInsert(
+				`INSERT INTO coupons (id, code, discount_percent, max_uses, max_uses_per_user, min_purchase_amount, active, expires_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (code) DO NOTHING`,
-        [
-          id,
-          code,
-          randomInt(5, 50),
-          randomInt(10, 1000),
-          randomInt(1, 3),
-          randomInt(0, 50) * 100,
-          randomInt(0, 1) === 1,
-          new Date(Date.now() + randomInt(30, 365) * 24 * 60 * 60 * 1000),
-        ]
-      );
+				[
+					id,
+					code,
+					randomInt(5, 50),
+					randomInt(10, 1000),
+					randomInt(1, 3),
+					randomInt(0, 50) * 100,
+					randomInt(0, 1) === 1,
+					new Date(Date.now() + randomInt(30, 365) * 24 * 60 * 60 * 1000),
+				],
+			);
 
-      if (success) {
-        this.couponIds.push(id);
-        count++;
-      }
-    }
+			if (success) {
+				this.couponIds.push(id);
+				count++;
+			}
+		}
 
     console.log(`   ✓ Created ${count} coupons`);
   }
@@ -1063,22 +1063,17 @@ class DatabaseSeeder {
     console.log('🏷️ Seeding coupon usage...');
     let count = 0;
 
-    for (let i = 0; i < 80; i++) {
-      if (this.couponIds.length === 0 || this.userIds.length === 0) break;
+    for (let i = 0; i < 350; i++) {
+			if (this.couponIds.length === 0 || this.userIds.length === 0) break;
 
-      const success = await safeInsert(
-        `INSERT INTO coupon_usage (id, coupon_id, user_id, used_at) 
+			const success = await safeInsert(
+				`INSERT INTO coupon_usage (id, coupon_id, user_id, used_at) 
          VALUES ($1, $2, $3, $4)`,
-        [
-          uuid(),
-          randomPick(this.couponIds),
-          randomPick(this.userIds),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[uuid(), randomPick(this.couponIds), randomPick(this.userIds), randomDate(new Date(2024, 0, 1), new Date())],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} coupon usage records`);
   }
@@ -1088,8 +1083,8 @@ class DatabaseSeeder {
     let count = 0;
 
     const disputedJobs = await safeQuery(
-      `SELECT id, customer_id, provider_id FROM jobs WHERE status = 'disputed' LIMIT 20`
-    );
+			`SELECT id, customer_id, provider_id FROM jobs WHERE status = 'disputed' LIMIT 120`,
+		);
 
     for (const job of disputedJobs.rows) {
       const success = await safeInsert(
@@ -1117,8 +1112,8 @@ class DatabaseSeeder {
     const entities = ['user', 'provider', 'request', 'job', 'payment'];
     let count = 0;
 
-    for (let i = 0; i < 200; i++) {
-      const success = await safeInsert(
+    for (let i = 0; i < 800; i++) {
+			const success = await safeInsert(
 				`INSERT INTO audit_logs (id, user_id, action, entity, entity_id, metadata, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 				[
@@ -1132,8 +1127,8 @@ class DatabaseSeeder {
 				],
 			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} audit logs`);
   }
@@ -1143,24 +1138,24 @@ class DatabaseSeeder {
     const actions = ['login', 'logout', 'profile_update', 'request_create', 'proposal_submit', 'payment_made'];
     let count = 0;
 
-    for (let i = 0; i < 500; i++) {
-      if (this.userIds.length === 0) break;
+    for (let i = 0; i < 2000; i++) {
+			if (this.userIds.length === 0) break;
 
-      const success = await safeInsert(
-        `INSERT INTO user_activity_logs (id, user_id, action, metadata, ip_address, created_at) 
+			const success = await safeInsert(
+				`INSERT INTO user_activity_logs (id, user_id, action, metadata, ip_address, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          uuid(),
-          randomPick(this.userIds),
-          randomPick(actions),
-          JSON.stringify({ page: faker.internet.url(), duration: randomInt(1, 300) }),
-          faker.internet.ip(),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					randomPick(this.userIds),
+					randomPick(actions),
+					JSON.stringify({ page: faker.internet.url(), duration: randomInt(1, 300) }),
+					faker.internet.ip(),
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} user activity logs`);
   }
@@ -1170,20 +1165,24 @@ class DatabaseSeeder {
     const eventTypes = ['request.created', 'proposal.submitted', 'job.started', 'payment.completed', 'review.submitted'];
     let count = 0;
 
-    for (let i = 0; i < 300; i++) {
-      const success = await safeInsert(
-        `INSERT INTO events (id, event_type, payload, created_at) 
+    for (let i = 0; i < 1200; i++) {
+			const success = await safeInsert(
+				`INSERT INTO events (id, event_type, payload, created_at) 
          VALUES ($1, $2, $3, $4)`,
-        [
-          uuid(),
-          randomPick(eventTypes),
-          JSON.stringify({ entity_id: uuid(), user_id: this.userIds.length > 0 ? randomPick(this.userIds) : null, data: {} }),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					randomPick(eventTypes),
+					JSON.stringify({
+						entity_id: uuid(),
+						user_id: this.userIds.length > 0 ? randomPick(this.userIds) : null,
+						data: {},
+					}),
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} events`);
   }
@@ -1194,23 +1193,23 @@ class DatabaseSeeder {
     const statuses = ['pending', 'processing', 'completed', 'failed'];
     let count = 0;
 
-    for (let i = 0; i < 150; i++) {
-      const success = await safeInsert(
-        `INSERT INTO background_jobs (id, job_type, payload, status, attempts, scheduled_for, created_at) 
+    for (let i = 0; i < 600; i++) {
+			const success = await safeInsert(
+				`INSERT INTO background_jobs (id, job_type, payload, status, attempts, scheduled_for, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          uuid(),
-          randomPick(jobTypes),
-          JSON.stringify({ data: 'sample' }),
-          randomPick(statuses),
-          randomInt(0, 3),
-          randomDate(new Date(2024, 0, 1), new Date(Date.now() + 24 * 60 * 60 * 1000)),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					randomPick(jobTypes),
+					JSON.stringify({ data: "sample" }),
+					randomPick(statuses),
+					randomInt(0, 3),
+					randomDate(new Date(2024, 0, 1), new Date(Date.now() + 24 * 60 * 60 * 1000)),
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} background jobs`);
   }
@@ -1271,23 +1270,23 @@ class DatabaseSeeder {
     const targetTypes = ['user', 'provider', 'dispute', 'payment', 'request'];
     let count = 0;
 
-    for (let i = 0; i < 100; i++) {
-      const success = await safeInsert(
-        `INSERT INTO admin_actions (id, admin_id, action, target_type, target_id, reason, created_at) 
+    for (let i = 0; i < 400; i++) {
+			const success = await safeInsert(
+				`INSERT INTO admin_actions (id, admin_id, action, target_type, target_id, reason, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          uuid(),
-          this.adminIds.length > 0 ? randomPick(this.adminIds) : null,
-          randomPick(actions),
-          randomPick(targetTypes),
-          uuid(),
-          faker.lorem.sentence(),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					this.adminIds.length > 0 ? randomPick(this.adminIds) : null,
+					randomPick(actions),
+					randomPick(targetTypes),
+					uuid(),
+					faker.lorem.sentence(),
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} admin actions`);
   }
@@ -1297,28 +1296,28 @@ class DatabaseSeeder {
     const statuses = ['new', 'in_progress', 'resolved', 'closed'];
     let count = 0;
 
-    for (let i = 0; i < 80; i++) {
-      const hasUser = randomInt(0, 1) === 1 && this.userIds.length > 0;
+    for (let i = 0; i < 250; i++) {
+			const hasUser = randomInt(0, 1) === 1 && this.userIds.length > 0;
 
-      const success = await safeInsert(
-        `INSERT INTO contact_messages (id, name, email, subject, message, status, user_id, ip_address, user_agent, created_at) 
+			const success = await safeInsert(
+				`INSERT INTO contact_messages (id, name, email, subject, message, status, user_id, ip_address, user_agent, created_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [
-          uuid(),
-          faker.person.fullName(),
-          uniqueEmail(faker.person.firstName(), faker.person.lastName()),
-          faker.lorem.sentence(),
-          faker.lorem.paragraphs(2),
-          randomPick(statuses),
-          hasUser ? randomPick(this.userIds) : null,
-          faker.internet.ip(),
-          faker.internet.userAgent(),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[
+					uuid(),
+					faker.person.fullName(),
+					uniqueEmail(faker.person.firstName(), faker.person.lastName()),
+					faker.lorem.sentence(),
+					faker.lorem.paragraphs(2),
+					randomPick(statuses),
+					hasUser ? randomPick(this.userIds) : null,
+					faker.internet.ip(),
+					faker.internet.userAgent(),
+					randomDate(new Date(2024, 0, 1), new Date()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} contact messages`);
   }
@@ -1464,27 +1463,27 @@ class DatabaseSeeder {
     console.log('💳 Seeding saved payment methods...');
     let count = 0;
 
-    for (let i = 0; i < 60; i++) {
-      if (this.userIds.length === 0) break;
+    for (let i = 0; i < 300; i++) {
+			if (this.userIds.length === 0) break;
 
-      const success = await safeInsert(
-        `INSERT INTO saved_payment_methods (id, user_id, payment_type, card_brand, last_four, expiry_month, expiry_year, is_default, billing_email) 
+			const success = await safeInsert(
+				`INSERT INTO saved_payment_methods (id, user_id, payment_type, card_brand, last_four, expiry_month, expiry_year, is_default, billing_email) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
-          uuid(),
-          randomPick(this.userIds),
-          'card',
-          randomPick(['Visa', 'Mastercard', 'Amex']),
-          String(randomInt(1000, 9999)),
-          randomInt(1, 12),
-          randomInt(2024, 2030),
-          randomInt(0, 4) === 0,
-          uniqueEmail(faker.person.firstName(), faker.person.lastName()),
-        ]
-      );
+				[
+					uuid(),
+					randomPick(this.userIds),
+					"card",
+					randomPick(["Visa", "Mastercard", "Amex"]),
+					String(randomInt(1000, 9999)),
+					randomInt(1, 12),
+					randomInt(2024, 2030),
+					randomInt(0, 4) === 0,
+					uniqueEmail(faker.person.firstName(), faker.person.lastName()),
+				],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} saved payment methods`);
   }
@@ -1518,27 +1517,21 @@ class DatabaseSeeder {
     console.log('🚫 Seeding unsubscribes...');
     let count = 0;
 
-    for (let i = 0; i < 20; i++) {
-      if (this.userIds.length === 0) break;
+    for (let i = 0; i < 100; i++) {
+			if (this.userIds.length === 0) break;
 
-      const userId = randomPick(this.userIds);
-      const email = this.userEmailMap.get(userId) || uniqueEmail(faker.person.firstName(), faker.person.lastName());
+			const userId = randomPick(this.userIds);
+			const email = this.userEmailMap.get(userId) || uniqueEmail(faker.person.firstName(), faker.person.lastName());
 
-      const success = await safeInsert(
-        `INSERT INTO unsubscribes (id, user_id, email, reason, unsubscribed_at) 
+			const success = await safeInsert(
+				`INSERT INTO unsubscribes (id, user_id, email, reason, unsubscribed_at) 
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (email) DO UPDATE SET reason = EXCLUDED.reason`,
-        [
-          uuid(),
-          userId,
-          email,
-          faker.lorem.sentence(),
-          randomDate(new Date(2024, 0, 1), new Date()),
-        ]
-      );
+				[uuid(), userId, email, faker.lorem.sentence(), randomDate(new Date(2024, 0, 1), new Date())],
+			);
 
-      if (success) count++;
-    }
+			if (success) count++;
+		}
 
     console.log(`   ✓ Created ${count} unsubscribe records`);
   }

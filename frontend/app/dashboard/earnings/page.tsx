@@ -1,23 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { usePagination } from "@/hooks/usePagination";
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
 import { Button } from '@/components/ui/Button';
+import { Pagination } from "@/components/ui/Pagination";
 import { paymentService } from '@/services/payment-service';
 import { formatDate, formatCurrency } from '@/utils/helpers';
 import { ErrorState } from "@/components/ui/ErrorState";
-import { DollarSign, TrendingUp, Calendar, Download } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, DollarSign, Download, TrendingUp } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+
+type TransactionSortField = "date" | "id" | "customer" | "total_amount" | "platform_fee" | "provider_amount" | "status";
 
 export default function EarningsPage() {
 	const { user, isAuthenticated } = useAuth();
 	const [dateRange, setDateRange] = useState<string>("all");
+	const [sortField, setSortField] = useState<TransactionSortField>("date");
+	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+	const { page, limit, setLimit, goToPage } = usePagination({ initialLimit: 10 });
 	const router = useRouter();
 
 	// Fetch provider's earnings from payment service
@@ -62,6 +69,77 @@ export default function EarningsPage() {
 	});
 
 	const isLoading = earningsLoading || transactionsLoading;
+
+	const sortedTransactions = useMemo(() => {
+		const source = transactions?.data || [];
+		const list = [...source];
+
+		list.sort((a, b) => {
+			const direction = sortDirection === "asc" ? 1 : -1;
+
+			if (sortField === "date") {
+				const left = new Date(a.paid_at || a.created_at || 0).getTime();
+				const right = new Date(b.paid_at || b.created_at || 0).getTime();
+				return (left - right) * direction;
+			}
+
+			if (sortField === "total_amount" || sortField === "platform_fee" || sortField === "provider_amount") {
+				return ((a[sortField] || 0) - (b[sortField] || 0)) * direction;
+			}
+
+			if (sortField === "id") {
+				return a.id.localeCompare(b.id) * direction;
+			}
+
+			if (sortField === "customer") {
+				return String(a.customer_name || "").localeCompare(String(b.customer_name || "")) * direction;
+			}
+
+			return String(a.status || "").localeCompare(String(b.status || "")) * direction;
+		});
+
+		return list;
+	}, [transactions?.data, sortDirection, sortField]);
+
+	const numberFormatter = useMemo(() => new Intl.NumberFormat("en-US"), []);
+
+	const totalPages = Math.max(1, Math.ceil(sortedTransactions.length / limit));
+	const paginatedTransactions = useMemo(() => {
+		const start = (page - 1) * limit;
+		return sortedTransactions.slice(start, start + limit);
+	}, [sortedTransactions, page, limit]);
+	const startRow = sortedTransactions.length === 0 ? 0 : (page - 1) * limit + 1;
+	const endRow = sortedTransactions.length === 0 ? 0 : Math.min(page * limit, sortedTransactions.length);
+
+	useEffect(() => {
+		goToPage(1);
+	}, [dateRange, sortField, sortDirection, limit, goToPage]);
+
+	useEffect(() => {
+		if (page > totalPages) {
+			goToPage(totalPages);
+		}
+	}, [page, totalPages, goToPage]);
+
+	const handleSort = (field: TransactionSortField) => {
+		if (field === sortField) {
+			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+			return;
+		}
+
+		setSortField(field);
+		setSortDirection(field === "date" ? "desc" : "asc");
+	};
+
+	const sortIcon = (field: TransactionSortField) => {
+		if (sortField !== field) {
+			return <ArrowUpDown className='h-4 w-4 text-gray-400' />;
+		}
+
+		return sortDirection === "asc" ?
+				<ArrowUp className='h-4 w-4 text-primary-600 dark:text-primary-400' />
+			:	<ArrowDown className='h-4 w-4 text-primary-600 dark:text-primary-400' />;
+	};
 
 	return (
 		<ProtectedRoute requiredRoles={["provider"]}>
@@ -198,41 +276,104 @@ export default function EarningsPage() {
 							{/* Earnings History */}
 							<Card>
 								<CardHeader>
-									<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Transaction History</h2>
+									<div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+										<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Transaction History</h2>
+										<div className='flex flex-wrap items-center gap-2'>
+											<select
+												value={sortField}
+												onChange={(e) => handleSort(e.target.value as TransactionSortField)}
+												className='h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:focus:ring-primary-900'>
+												<option value='date'>Sort by Date</option>
+												<option value='provider_amount'>Sort by Earnings</option>
+												<option value='total_amount'>Sort by Amount</option>
+												<option value='status'>Sort by Status</option>
+											</select>
+										</div>
+									</div>
 								</CardHeader>
 								<CardContent>
 									{isLoading ?
 										<Loading size='sm' />
-									: transactions && transactions.data.length > 0 ?
+									: paginatedTransactions.length > 0 ?
 										<div className='overflow-x-auto'>
+											<div className='mb-3 flex flex-wrap items-center gap-2 px-1 text-xs text-gray-500 dark:text-gray-400'>
+												<span className='font-medium'>Quick sort:</span>
+												<button
+													type='button'
+													onClick={() => handleSort("date")}
+													className='inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700'>
+													Date {sortIcon("date")}
+												</button>
+												<button
+													type='button'
+													onClick={() => handleSort("provider_amount")}
+													className='inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700'>
+													Earnings {sortIcon("provider_amount")}
+												</button>
+											</div>
 											<table className='w-full'>
 												<thead>
 													<tr className='border-b border-gray-200 dark:border-gray-700'>
 														<th className='text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-															Date
+															<button
+																type='button'
+																onClick={() => handleSort("date")}
+																className='inline-flex items-center gap-1'>
+																Date {sortIcon("date")}
+															</button>
 														</th>
 														<th className='text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-															Transaction ID
+															<button
+																type='button'
+																onClick={() => handleSort("id")}
+																className='inline-flex items-center gap-1'>
+																Transaction ID {sortIcon("id")}
+															</button>
 														</th>
 														<th className='text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-															Customer
+															<button
+																type='button'
+																onClick={() => handleSort("customer")}
+																className='inline-flex items-center gap-1'>
+																Customer {sortIcon("customer")}
+															</button>
 														</th>
 														<th className='text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-															Amount
+															<button
+																type='button'
+																onClick={() => handleSort("total_amount")}
+																className='inline-flex items-center justify-end gap-1'>
+																Amount {sortIcon("total_amount")}
+															</button>
 														</th>
 														<th className='text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-															Platform Fee
+															<button
+																type='button'
+																onClick={() => handleSort("platform_fee")}
+																className='inline-flex items-center justify-end gap-1'>
+																Platform Fee {sortIcon("platform_fee")}
+															</button>
 														</th>
 														<th className='text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-															Your Earnings
+															<button
+																type='button'
+																onClick={() => handleSort("provider_amount")}
+																className='inline-flex items-center justify-end gap-1'>
+																Your Earnings {sortIcon("provider_amount")}
+															</button>
 														</th>
 														<th className='text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300'>
-															Status
+															<button
+																type='button'
+																onClick={() => handleSort("status")}
+																className='inline-flex items-center justify-end gap-1'>
+																Status {sortIcon("status")}
+															</button>
 														</th>
 													</tr>
 												</thead>
 												<tbody>
-													{transactions.data.map((transaction) => (
+													{paginatedTransactions.map((transaction) => (
 														<tr
 															key={transaction.id}
 															className='border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'>
@@ -270,6 +411,29 @@ export default function EarningsPage() {
 													))}
 												</tbody>
 											</table>
+											<div className='pt-4'>
+												<Pagination
+													currentPage={page}
+													totalPages={totalPages}
+													onPageChange={goToPage}
+													leftContent={
+														<div className='flex flex-wrap items-center gap-3'>
+															<div className='text-sm text-gray-600 dark:text-gray-300'>
+																Showing {numberFormatter.format(startRow)}-{numberFormatter.format(endRow)} of{" "}
+																{numberFormatter.format(sortedTransactions.length)} records
+															</div>
+															<select
+																value={limit}
+																onChange={(e) => setLimit(Number(e.target.value))}
+																className='h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:focus:ring-primary-900'>
+																<option value={10}>10 per page</option>
+																<option value={20}>20 per page</option>
+																<option value={50}>50 per page</option>
+															</select>
+														</div>
+													}
+												/>
+											</div>
 										</div>
 									:	<div className='text-center py-12'>
 											<DollarSign className='h-12 w-12 text-gray-400 mx-auto mb-4' />
