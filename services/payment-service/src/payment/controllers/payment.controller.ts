@@ -82,7 +82,7 @@ export class PaymentController {
 	async getPaymentsByJob(@Param("jobId", ParseUUIDPipe) jobId: string) {
 		const payments = await this.paymentService.getPaymentsByJobId(jobId);
 
-		return payments;
+		return { data: payments, total: payments.length };
 	}
 
 	/**

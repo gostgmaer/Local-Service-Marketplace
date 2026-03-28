@@ -72,7 +72,7 @@ export class SubscriptionController {
       providerId
     );
 
-    return { success: true, data: subscriptions, message: "Provider subscriptions retrieved successfully" };
+    return { data: subscriptions, total: subscriptions.length };
   }
 
   @Get('provider/:providerId/active')
@@ -136,11 +136,7 @@ export class SubscriptionController {
       daysAhead
     );
 
-    return {
-      success: true,
-      data: subscriptions,
-      count: subscriptions.length
-    };
+    return { data: subscriptions, total: subscriptions.length };
   }
 
   @Get('provider/:providerId/status')

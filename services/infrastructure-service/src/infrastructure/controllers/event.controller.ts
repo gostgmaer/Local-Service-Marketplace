@@ -70,6 +70,6 @@ export class EventController {
     const parsedLimit = limit ? parseInt(limit) : 100;
     const data = await this.eventService.getEventsByType(eventType, parsedLimit);
 
-    return data;
+    return { data, total: data.length };
   }
 }

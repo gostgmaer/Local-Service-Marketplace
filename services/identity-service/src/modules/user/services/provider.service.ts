@@ -262,14 +262,7 @@ export class ProviderService {
 
     const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : undefined;
 
-    return {
-      data: providerResponses,
-      pagination: {
-        limit,
-        nextCursor,
-        hasMore,
-      },
-    };
+    return { data: providerResponses, nextCursor, hasMore };
   }
 
   async deleteProvider(providerId: string): Promise<void> {

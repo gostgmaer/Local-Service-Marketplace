@@ -7,72 +7,53 @@ import { NotFoundException } from '../../common/exceptions/http.exceptions';
 
 @Injectable()
 export class SystemSettingService {
-  constructor(
-    private readonly systemSettingRepository: SystemSettingRepository,
-    private readonly auditLogRepository: AuditLogRepository,
-    @Inject(WINSTON_MODULE_NEST_PROVIDER)
-    private readonly logger: LoggerService,
-  ) {}
+	constructor(
+		private readonly systemSettingRepository: SystemSettingRepository,
+		private readonly auditLogRepository: AuditLogRepository,
+		@Inject(WINSTON_MODULE_NEST_PROVIDER)
+		private readonly logger: LoggerService,
+	) {}
 
-  async getAllSettings(): Promise<SystemSetting[]> {
-    this.logger.log('Fetching all system settings', 'SystemSettingService');
+	async getAllSettings(): Promise<{ data: SystemSetting[]; total: number }> {
+		this.logger.log("Fetching all system settings", "SystemSettingService");
 
-    return this.systemSettingRepository.getAllSettings();
-  }
+		const data = await this.systemSettingRepository.getAllSettings();
+		return { data, total: data.length };
+	}
 
-  async getSettingByKey(key: string): Promise<SystemSetting> {
-    this.logger.log(
-      `Fetching system setting with key: ${key}`,
-      'SystemSettingService',
-    );
+	async getSettingByKey(key: string): Promise<SystemSetting> {
+		this.logger.log(`Fetching system setting with key: ${key}`, "SystemSettingService");
 
-    const setting = await this.systemSettingRepository.getSettingByKey(key);
+		const setting = await this.systemSettingRepository.getSettingByKey(key);
 
-    if (!setting) {
-      throw new NotFoundException('System setting not found');
-    }
+		if (!setting) {
+			throw new NotFoundException("System setting not found");
+		}
 
-    return setting;
-  }
+		return setting;
+	}
 
-  async updateSetting(
-    key: string,
-    value: string,
-    adminId: string,
-  ): Promise<SystemSetting> {
-    this.logger.log(
-      `Updating system setting ${key} to ${value} by admin ${adminId}`,
-      'SystemSettingService',
-    );
+	async updateSetting(key: string, value: string, adminId: string): Promise<SystemSetting> {
+		this.logger.log(`Updating system setting ${key} to ${value} by admin ${adminId}`, "SystemSettingService");
 
-    // Check if setting exists
-    const existingSetting =
-      await this.systemSettingRepository.getSettingByKey(key);
+		// Check if setting exists
+		const existingSetting = await this.systemSettingRepository.getSettingByKey(key);
 
-    if (!existingSetting) {
-      throw new NotFoundException('System setting not found');
-    }
+		if (!existingSetting) {
+			throw new NotFoundException("System setting not found");
+		}
 
-    // Update setting
-    const updatedSetting = await this.systemSettingRepository.updateSetting(
-      key,
-      value,
-    );
+		// Update setting
+		const updatedSetting = await this.systemSettingRepository.updateSetting(key, value);
 
-    // Create audit log
-    await this.auditLogRepository.createAuditLog(
-      adminId,
-      'update_system_setting',
-      'system_setting',
-      key,
-      { oldValue: existingSetting.value, newValue: value },
-    );
+		// Create audit log
+		await this.auditLogRepository.createAuditLog(adminId, "update_system_setting", "system_setting", key, {
+			oldValue: existingSetting.value,
+			newValue: value,
+		});
 
-    this.logger.log(
-      `System setting ${key} updated successfully`,
-      'SystemSettingService',
-    );
+		this.logger.log(`System setting ${key} updated successfully`, "SystemSettingService");
 
-    return updatedSetting;
-  }
+		return updatedSetting;
+	}
 }

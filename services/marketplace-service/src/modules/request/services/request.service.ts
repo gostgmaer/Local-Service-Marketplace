@@ -255,11 +255,12 @@ export class RequestService {
 		this.logger.log(`Request deleted successfully: ${id}`, RequestService.name);
 	}
 
-	async getRequestsByUser(userId: string): Promise<RequestResponseDto[]> {
+	async getRequestsByUser(userId: string): Promise<{ data: RequestResponseDto[]; total: number }> {
 		this.logger.log(`Fetching requests for user: ${userId}`, RequestService.name);
 
 		const requests = await this.requestRepository.getRequestsByUser(userId);
+		const data = requests.map(RequestResponseDto.fromEntity);
 
-		return requests.map(RequestResponseDto.fromEntity);
+		return { data, total: data.length };
 	}
 }

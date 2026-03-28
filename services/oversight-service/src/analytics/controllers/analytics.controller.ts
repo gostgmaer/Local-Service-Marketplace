@@ -85,7 +85,7 @@ export class AnalyticsController {
     const parsedLimit = limit ? parseInt(limit) : 100;
     const data = await this.analyticsService.getActivityByAction(action, parsedLimit);
 
-    return data;
+    return { data, total: data.length };
   }
 
   @Get('metrics')
@@ -106,7 +106,7 @@ export class AnalyticsController {
       parsedLimit,
     );
 
-    return data;
+    return { data, total: data.length };
   }
 
   @Get('metrics/:date')

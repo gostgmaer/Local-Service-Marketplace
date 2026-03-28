@@ -33,7 +33,7 @@ export class FeatureFlagController {
 
     const data = await this.featureFlagService.getAllFeatureFlags();
 
-    return data;
+    return { data, total: data.length };
   }
 
   @Get(':key')

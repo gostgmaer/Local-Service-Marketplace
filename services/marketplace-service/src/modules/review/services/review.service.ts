@@ -49,7 +49,7 @@ export class ReviewService {
 		providerId: string,
 		limit: number = 20,
 		offset: number = 0,
-	): Promise<{ reviews: Review[]; total: number; averageRating: number }> {
+	): Promise<{ data: Review[]; total: number; averageRating: number }> {
 		this.logger.log(
 			`Fetching reviews for provider ${providerId} (limit: ${limit}, offset: ${offset})`,
 			"ReviewService",
@@ -59,7 +59,7 @@ export class ReviewService {
 
 		const ratingData = await this.reviewRepository.getProviderRating(providerId);
 
-		return { reviews, total: ratingData.totalReviews, averageRating: ratingData.averageRating };
+		return { data: reviews, total: ratingData.totalReviews, averageRating: ratingData.averageRating };
 	}
 
 	async getProviderRating(providerId: string): Promise<{ averageRating: number; totalReviews: number }> {

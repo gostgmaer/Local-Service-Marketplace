@@ -47,7 +47,7 @@ export class SavedPaymentMethodController {
       req.user.id
     );
 
-    return { success: true, data: methods, message: "Payment methods retrieved successfully" };
+    return { data: methods, total: methods.length };
   }
 
   @Get('default')
@@ -66,7 +66,7 @@ export class SavedPaymentMethodController {
       2 // 2 months ahead
     );
 
-    return { success: true, data: expiringCards, message: "Expiring payment cards retrieved successfully" };
+    return { data: expiringCards, total: expiringCards.length };
   }
 
   @Get(':methodId')

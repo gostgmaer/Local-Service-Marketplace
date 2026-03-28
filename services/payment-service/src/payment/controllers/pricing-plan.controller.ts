@@ -51,14 +51,14 @@ export class PricingPlanController {
       activeOnly !== 'false'
     );
 
-    return { success: true, data: plans, message: "Pricing plans retrieved successfully" };
+    return { data: plans, total: plans.length };
   }
 
   @Get('active')
   async getActivePlans() {
     const plans = await this.pricingPlanService.getActivePlans();
 
-    return { success: true, data: plans, message: "Active pricing plans retrieved successfully" };
+    return { data: plans, total: plans.length };
   }
 
   @Get('compare')

@@ -17,21 +17,15 @@ export interface User {
 @Injectable()
 export class UserModerationService {
 	constructor(
-		@Inject('DATABASE_POOL') private readonly pool: Pool,
+		@Inject("DATABASE_POOL") private readonly pool: Pool,
 		private readonly adminActionRepository: AdminActionRepository,
 		private readonly auditLogRepository: AuditLogRepository,
 		@Inject(WINSTON_MODULE_NEST_PROVIDER)
 		private readonly logger: LoggerService,
-	) { }
+	) {}
 
-	async getAllUsers(
-		limit: number = 50,
-		offset: number = 0,
-	): Promise<User[]> {
-		this.logger.log(
-			`Fetching users (limit: ${limit}, offset: ${offset})`,
-			'UserModerationService',
-		);
+	async getAllUsers(limit: number = 50, offset: number = 0): Promise<{ data: User[]; total: number }> {
+		this.logger.log(`Fetching users (limit: ${limit}, offset: ${offset})`, "UserModerationService");
 
 		const query = `
       SELECT id, email, name, role, status, created_at as "createdAt"
@@ -41,12 +35,18 @@ export class UserModerationService {
       LIMIT $1 OFFSET $2
     `;
 
-		const result = await this.pool.query(query, [limit, offset]);
-		return result.rows;
+		const countQuery = `SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL`;
+
+		const [result, countResult] = await Promise.all([
+			this.pool.query(query, [limit, offset]),
+			this.pool.query(countQuery),
+		]);
+
+		return { data: result.rows, total: countResult.rows[0].total };
 	}
 
 	async getUserById(id: string): Promise<User> {
-		this.logger.log(`Fetching user with ID ${id}`, 'UserModerationService');
+		this.logger.log(`Fetching user with ID ${id}`, "UserModerationService");
 
 		const query = `
       SELECT id, email, name, role, status, created_at as "createdAt"
@@ -57,24 +57,16 @@ export class UserModerationService {
 		const result = await this.pool.query(query, [id]);
 
 		if (!result.rows[0]) {
-			throw new NotFoundException('User not found');
+			throw new NotFoundException("User not found");
 		}
 
 		return result.rows[0];
 	}
 
-	async suspendUser(
-		userId: string,
-		adminId: string,
-		suspended: boolean,
-		reason?: string,
-	): Promise<User> {
-		const newStatus = suspended ? 'suspended' : 'active';
+	async suspendUser(userId: string, adminId: string, suspended: boolean, reason?: string): Promise<User> {
+		const newStatus = suspended ? "suspended" : "active";
 
-		this.logger.log(
-			`Setting user ${userId} status to '${newStatus}' by admin ${adminId}`,
-			'UserModerationService',
-		);
+		this.logger.log(`Setting user ${userId} status to '${newStatus}' by admin ${adminId}`, "UserModerationService");
 
 		const query = `
       UPDATE users
@@ -86,35 +78,32 @@ export class UserModerationService {
 		const result = await this.pool.query(query, [newStatus, userId]);
 
 		if (!result.rows[0]) {
-			throw new NotFoundException('User not found');
+			throw new NotFoundException("User not found");
 		}
 
 		await this.adminActionRepository.createAdminAction(
 			adminId,
-			suspended ? 'suspend_user' : 'unsuspend_user',
-			'user',
+			suspended ? "suspend_user" : "unsuspend_user",
+			"user",
 			userId,
-			reason || 'No reason provided',
+			reason || "No reason provided",
 		);
 
 		await this.auditLogRepository.createAuditLog(
 			adminId,
-			suspended ? 'suspend_user' : 'unsuspend_user',
-			'user',
+			suspended ? "suspend_user" : "unsuspend_user",
+			"user",
 			userId,
 			{ reason, status: newStatus },
 		);
 
-		this.logger.log(
-			`User ${userId} status set to '${newStatus}' successfully`,
-			'UserModerationService',
-		);
+		this.logger.log(`User ${userId} status set to '${newStatus}' successfully`, "UserModerationService");
 
 		return result.rows[0];
 	}
 
 	async getStats(): Promise<{ total: number; active: number; suspended: number; providers: number }> {
-		this.logger.log('Fetching user stats', 'UserModerationService');
+		this.logger.log("Fetching user stats", "UserModerationService");
 
 		const query = `
       SELECT
@@ -137,11 +126,11 @@ export class UserModerationService {
 	}
 
 	async activateUser(userId: string, adminId: string): Promise<User> {
-		return this.suspendUser(userId, adminId, false, 'Account activated by admin');
+		return this.suspendUser(userId, adminId, false, "Account activated by admin");
 	}
 
-	async searchUsers(query: string): Promise<User[]> {
-		this.logger.log(`Searching users with query: ${query}`, 'UserModerationService');
+	async searchUsers(query: string): Promise<{ data: User[]; total: number }> {
+		this.logger.log(`Searching users with query: ${query}`, "UserModerationService");
 
 		const sql = `
       SELECT id, email, name, role, status, created_at as "createdAt"
@@ -153,6 +142,6 @@ export class UserModerationService {
     `;
 
 		const result = await this.pool.query(sql, [`%${query}%`]);
-		return result.rows;
+		return { data: result.rows, total: result.rows.length };
 	}
 }

@@ -54,7 +54,7 @@ export class BackgroundJobController {
 
     const data = await this.backgroundJobService.getJobsByStatus(status);
 
-    return data;
+    return { data, total: data.length };
   }
 
   @Get('stats')
