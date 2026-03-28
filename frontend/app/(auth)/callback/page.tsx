@@ -1,159 +1,171 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { ROUTES } from '@/config/constants';
 import toast from 'react-hot-toast';
+import Link from "next/link";
 
 export default function AuthCallbackPage() {
 	return (
-		<Suspense
-			fallback={
-				<div className='min-h-screen flex items-center justify-center'>
-					<div className='animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600'></div>
-				</div>
-			}>
+		<Suspense fallback={<CallbackSkeleton />}>
 			<AuthCallbackContent />
 		</Suspense>
 	);
 }
 
+function CallbackSkeleton() {
+	return (
+		<div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50'>
+			<div className='bg-white rounded-2xl shadow-xl p-10 w-full max-w-sm text-center'>
+				<div className='flex justify-center mb-6'>
+					<div className='w-16 h-16 rounded-full bg-blue-100 animate-pulse' />
+				</div>
+				<div className='h-5 bg-gray-200 rounded animate-pulse mb-3 mx-auto w-48' />
+				<div className='h-4 bg-gray-100 rounded animate-pulse mx-auto w-36' />
+			</div>
+		</div>
+	);
+}
+
+type Status = "loading" | "success" | "error";
+
 function AuthCallbackContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+	const [status, setStatus] = useState<Status>("loading");
+	const [errorMessage, setErrorMessage] = useState<string>("Something went wrong. Please try again.");
+	const [countdown, setCountdown] = useState(3);
 
 	useEffect(() => {
 		const handleCallback = async () => {
-			const token = searchParams.get("token");
-			const refreshToken = searchParams.get("refresh");
-			const error = searchParams.get("error");
+			try {
+				const token = searchParams.get("token");
+				const refreshToken = searchParams.get("refresh");
+				const oauthError = searchParams.get("error");
 
-			// Handle OAuth errors
-			if (error) {
-				setStatus("error");
-				toast.error("Authentication failed. Please try again.");
-				setTimeout(() => {
-					router.push(ROUTES.LOGIN);
-				}, 2000);
-				return;
-			}
-
-			// Handle OAuth success
-			if (token && refreshToken) {
-				try {
-					setStatus("loading");
-
-					// Store tokens and create NextAuth session
-					// We'll use a cookie to pass the tokens to NextAuth
-					document.cookie = `oauth-token=${token}; path=/; max-age=3600; SameSite=Lax`;
-					document.cookie = `oauth-refresh=${refreshToken}; path=/; max-age=3600; SameSite=Lax`;
-
-					// Create session with the OAuth tokens
-					// This is a workaround - in production, consider using a backend endpoint
-					// to validate the tokens and create a proper session
-					const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/auth/verify-token`, {
-						headers: { Authorization: `Bearer ${token}` },
-					});
-
-					if (response.ok) {
-						const userData = await response.json();
-
-						// Sign in with credentials using the token
-						// This will create a NextAuth session
-						const result = await signIn("credentials", { email: userData.user?.email, token: token, redirect: false });
-
-						if (result?.ok) {
-							setStatus("success");
-							toast.success("Successfully logged in!");
-							router.push(ROUTES.DASHBOARD);
-						} else {
-							throw new Error("Failed to create session");
-						}
-					} else {
-						throw new Error("Invalid token");
-					}
-				} catch (err) {
-					console.error("OAuth callback error:", err);
+				if (oauthError) {
+					setErrorMessage("Authentication was cancelled or denied.");
 					setStatus("error");
-					toast.error("Failed to complete authentication. Please try again.");
-					setTimeout(() => {
-						router.push(ROUTES.LOGIN);
-					}, 2000);
+					return;
 				}
-			} else {
+
+				if (!token) {
+					setErrorMessage("No authentication token was received.");
+					setStatus("error");
+					return;
+				}
+
+				const result = await signIn("oauth-token", { token, refreshToken: refreshToken || "", redirect: false });
+
+				if (result?.error) {
+					setErrorMessage("We couldn't create your session. Please try again.");
+					setStatus("error");
+					return;
+				}
+
+				setStatus("success");
+				toast.success("You're signed in!");
+				setTimeout(() => router.push(ROUTES.DASHBOARD), 1200);
+			} catch (err: any) {
+				console.error("OAuth callback error:", err);
+				setErrorMessage(err.message || "Authentication failed. Please try again.");
 				setStatus("error");
-				toast.error("Invalid authentication response.");
-				setTimeout(() => {
-					router.push(ROUTES.LOGIN);
-				}, 2000);
 			}
 		};
 
 		handleCallback();
 	}, [searchParams, router]);
 
+	// Countdown redirect timer for error state
+	useEffect(() => {
+		if (status !== "error") return;
+		if (countdown <= 0) {
+			router.push(ROUTES.LOGIN);
+			return;
+		}
+		const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+		return () => clearTimeout(t);
+	}, [status, countdown, router]);
+
 	return (
-		<div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50'>
-			<div className='max-w-md w-full'>
-				<div className='bg-white rounded-2xl shadow-xl p-8 text-center'>
-					{status === "loading" && (
-						<>
-							<div className='flex justify-center mb-4'>
-								<div className='animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600'></div>
+		<div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4'>
+			<div className='bg-white rounded-2xl shadow-xl p-10 w-full max-w-sm text-center'>
+				{/* ── Loading ── */}
+				{status === "loading" && (
+					<>
+						<div className='flex justify-center mb-6'>
+							<div className='relative w-16 h-16'>
+								<div className='absolute inset-0 rounded-full border-4 border-blue-100' />
+								<div className='absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin' />
 							</div>
-							<h2 className='text-2xl font-bold text-gray-900 mb-2'>Completing Sign In...</h2>
-							<p className='text-gray-600'>Please wait while we finalize your authentication.</p>
-						</>
-					)}
+						</div>
+						<h1 className='text-xl font-semibold text-gray-900 mb-2'>Signing you in…</h1>
+						<p className='text-sm text-gray-500'>Please wait while we securely complete your login.</p>
+					</>
+				)}
 
-					{status === "success" && (
-						<>
-							<div className='flex justify-center mb-4'>
-								<div className='rounded-full bg-green-100 p-4'>
-									<svg
-										className='h-16 w-16 text-green-600'
-										fill='none'
-										viewBox='0 0 24 24'
-										stroke='currentColor'>
-										<path
-											strokeLinecap='round'
-											strokeLinejoin='round'
-											strokeWidth={2}
-											d='M5 13l4 4L19 7'
-										/>
-									</svg>
-								</div>
+				{/* ── Success ── */}
+				{status === "success" && (
+					<>
+						<div className='flex justify-center mb-6'>
+							<div className='w-16 h-16 rounded-full bg-green-100 flex items-center justify-center'>
+								<svg
+									className='w-8 h-8 text-green-600'
+									fill='none'
+									viewBox='0 0 24 24'
+									stroke='currentColor'
+									strokeWidth={2.5}>
+									<path
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										d='M5 13l4 4L19 7'
+									/>
+								</svg>
 							</div>
-							<h2 className='text-2xl font-bold text-gray-900 mb-2'>Success!</h2>
-							<p className='text-gray-600'>Redirecting to your dashboard...</p>
-						</>
-					)}
+						</div>
+						<h1 className='text-xl font-semibold text-gray-900 mb-2'>You're in!</h1>
+						<p className='text-sm text-gray-500'>Redirecting you to your dashboard…</p>
+						<div className='mt-5 h-1 w-full bg-gray-100 rounded-full overflow-hidden'>
+							<div className='h-1 bg-green-500 rounded-full animate-[progress_1.2s_ease-in-out_forwards]' />
+						</div>
+					</>
+				)}
 
-					{status === "error" && (
-						<>
-							<div className='flex justify-center mb-4'>
-								<div className='rounded-full bg-red-100 p-4'>
-									<svg
-										className='h-16 w-16 text-red-600'
-										fill='none'
-										viewBox='0 0 24 24'
-										stroke='currentColor'>
-										<path
-											strokeLinecap='round'
-											strokeLinejoin='round'
-											strokeWidth={2}
-											d='M6 18L18 6M6 6l12 12'
-										/>
-									</svg>
-								</div>
+				{/* ── Error ── */}
+				{status === "error" && (
+					<>
+						<div className='flex justify-center mb-6'>
+							<div className='w-16 h-16 rounded-full bg-red-100 flex items-center justify-center'>
+								<svg
+									className='w-8 h-8 text-red-500'
+									fill='none'
+									viewBox='0 0 24 24'
+									stroke='currentColor'
+									strokeWidth={2.5}>
+									<path
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										d='M6 18L18 6M6 6l12 12'
+									/>
+								</svg>
 							</div>
-							<h2 className='text-2xl font-bold text-gray-900 mb-2'>Authentication Failed</h2>
-							<p className='text-gray-600'>Redirecting to login page...</p>
-						</>
-					)}
-				</div>
+						</div>
+						<h1 className='text-xl font-semibold text-gray-900 mb-2'>Authentication Failed</h1>
+						<p className='text-sm text-gray-500 mb-6'>{errorMessage}</p>
+
+						<Link
+							href={ROUTES.LOGIN}
+							className='inline-flex items-center justify-center w-full gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'>
+							Back to Login
+						</Link>
+
+						<p className='mt-4 text-xs text-gray-400'>
+							Redirecting automatically in <span className='font-semibold text-gray-600'>{countdown}s</span>…
+						</p>
+					</>
+				)}
 			</div>
 		</div>
 	);

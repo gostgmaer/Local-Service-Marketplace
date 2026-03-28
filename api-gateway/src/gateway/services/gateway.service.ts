@@ -59,11 +59,13 @@ export class GatewayService {
 
       // Prepare request config
       const config: AxiosRequestConfig = {
-        method: method as any,
-        url: targetUrl,
-        headers: this.prepareHeaders(headers, user),
-        timeout: 30000, // 30 seconds timeout
-      };
+				method: method as any,
+				url: targetUrl,
+				headers: this.prepareHeaders(headers, user),
+				timeout: 30000, // 30 seconds timeout
+				maxRedirects: 0, // Never follow redirects — pass them through to the browser (needed for OAuth flows)
+				validateStatus: () => true, // Never throw on any HTTP status — let the controller handle it
+			};
 
       if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
         config.data = body;

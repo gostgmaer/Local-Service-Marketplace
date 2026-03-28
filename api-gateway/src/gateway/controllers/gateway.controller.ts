@@ -29,43 +29,38 @@ export class GatewayController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      const { method, path, body, headers, query } = req;
+			const { method, path, body, headers, query } = req;
 
-      this.logger.log(
-        `Gateway received ${method} ${path}`,
-        'GatewayController',
-      );
+			this.logger.log(`Gateway received ${method} ${path}`, "GatewayController");
 
-      // Forward request to microservice with user context
-      const response = await this.gatewayService.forwardRequest(
-        path,
-        method,
-        body,
-        headers,
-        query,
-        (req as any).user, // Pass decoded JWT user info
-      );
+			// Forward request to microservice with user context
+			const response = await this.gatewayService.forwardRequest(
+				path,
+				method,
+				body,
+				headers,
+				query,
+				(req as any).user, // Pass decoded JWT user info
+			);
 
-      // Forward response headers from microservice
-      if (response.headers) {
-        Object.keys(response.headers).forEach((key) => {
-          // Skip certain headers that shouldn't be forwarded
-          if (
-            ![
-              'content-encoding',
-              'transfer-encoding',
-              'connection',
-              'keep-alive',
-            ].includes(key.toLowerCase())
-          ) {
-            res.setHeader(key, response.headers[key]);
-          }
-        });
-      }
+			// Forward response headers from microservice
+			if (response.headers) {
+				Object.keys(response.headers).forEach((key) => {
+					// Skip certain headers that shouldn't be forwarded
+					if (!["content-encoding", "transfer-encoding", "connection", "keep-alive"].includes(key.toLowerCase())) {
+						res.setHeader(key, response.headers[key]);
+					}
+				});
+			}
 
-      // Microservices now return standardized responses, pass them through as-is
-      res.status(response.status).json(response.data);
-    } catch (error) {
+			// Pass through redirects as-is (needed for OAuth browser flows)
+			if (response.status >= 300 && response.status < 400 && response.headers?.location) {
+				return res.redirect(response.status, response.headers.location);
+			}
+
+			// Microservices now return standardized responses, pass them through as-is
+			res.status(response.status).json(response.data);
+		} catch (error) {
       this.logger.error(
         `Gateway error: ${error.message}`,
         error.stack,

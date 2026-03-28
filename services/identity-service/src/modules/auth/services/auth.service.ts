@@ -488,6 +488,7 @@ export class AuthService {
 					null, // No password for OAuth users
 					"customer", // Default role
 					null, // No phone initially
+					name || null, // Name from OAuth provider profile
 				);
 
 				// Mark email as verified since OAuth provides verified email
