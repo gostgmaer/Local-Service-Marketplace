@@ -32,10 +32,7 @@ export class NotificationPreferencesController {
 
     const preferences = await this.preferencesService.getPreferences(req.user.id);
 
-    return {
-      success: true,
-      data: preferences
-    };
+    return { success: true, data: preferences, message: "Notification preferences retrieved successfully" };
   }
 
   @Put()

@@ -92,6 +92,6 @@ export class FeatureFlagController {
 
     await this.featureFlagService.deleteFeatureFlag(key);
 
-    return { result: "Feature flag deleted successfully" };
+    return { message: "Feature flag deleted successfully" };
   }
 }

@@ -33,19 +33,19 @@ export class MessagingController {
 	@HttpCode(HttpStatus.CREATED)
 	async createMessage(@Body() createMessageDto: CreateMessageDto) {
 		this.logger.log("POST /messages - Create message", "MessagingController");
-		const message = await this.messageService.createMessage(
+		const item = await this.messageService.createMessage(
 			createMessageDto.job_id,
 			createMessageDto.sender_id,
 			createMessageDto.message,
 		);
-		return { message };
+		return { message: "Message sent successfully", data: item };
 	}
 
 	@Get(":id")
 	async getMessage(@Param("id") id: string) {
 		this.logger.log(`GET /messages/${id} - Get message`, "MessagingController");
-		const message = await this.messageService.getMessageById(id);
-		return { message };
+		const item = await this.messageService.getMessageById(id);
+		return { message: "Message retrieved successfully", data: item };
 	}
 
 	@Get("jobs/:jobId")
@@ -63,7 +63,7 @@ export class MessagingController {
 	async getConversations(@Query("user_id", ParseUUIDPipe) userId: string) {
 		this.logger.log(`GET /messages/conversations - Get user conversations`, "MessagingController");
 		const conversations = await this.messageService.getUserConversations(userId);
-		return { conversations };
+		return { message: "Conversations retrieved successfully", data: conversations };
 	}
 
 	@Post("attachments")
@@ -77,20 +77,20 @@ export class MessagingController {
 			createAttachmentDto.file_size,
 			createAttachmentDto.mime_type,
 		);
-		return { attachment };
+		return { message: "Attachment uploaded successfully", data: attachment };
 	}
 
 	@Get("attachments/:id")
 	async getAttachment(@Param("id") id: string) {
 		this.logger.log(`GET /messages/attachments/${id} - Get attachment`, "MessagingController");
 		const attachment = await this.attachmentService.getAttachmentById(id);
-		return { attachment };
+		return { message: "Attachment retrieved successfully", data: attachment };
 	}
 
 	@Get("attachments/message/:messageId")
 	async getAttachmentsByMessage(@Param("messageId") messageId: string) {
 		this.logger.log(`GET /messages/attachments/message/${messageId} - Get attachments`, "MessagingController");
 		const attachments = await this.attachmentService.getAttachmentsByMessageId(messageId);
-		return { attachments };
+		return { message: "Attachments retrieved successfully", data: attachments };
 	}
 }

@@ -36,11 +36,9 @@ export class ProviderReviewAggregateController {
 
     return {
       success: true,
-      data: transformedAggregate
+      data: transformedAggregate,
+      message: 'Provider review aggregate retrieved successfully'
     };
-  }
-
-  @Get('provider/:providerId/distribution')
   async getRatingDistribution(
     @Param('providerId', ParseUUIDPipe) providerId: string
   ) {
@@ -48,11 +46,9 @@ export class ProviderReviewAggregateController {
 
     return {
       success: true,
-      data: distribution
+      data: distribution,
+      message: 'Rating distribution retrieved successfully'
     };
-  }
-
-  @Get('provider/:providerId/trust-badge')
   async checkTrustBadge(
     @Param('providerId', ParseUUIDPipe) providerId: string
   ) {
@@ -62,11 +58,9 @@ export class ProviderReviewAggregateController {
 
     return {
       success: true,
-      data: eligibility
+      data: eligibility,
+      message: 'Trust badge eligibility retrieved successfully'
     };
-  }
-
-  @Get('top-rated')
   async getTopRatedProviders(
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number
   ) {
@@ -87,11 +81,8 @@ export class ProviderReviewAggregateController {
     return {
       success: true,
       data: transformedProviders,
-      count: transformedProviders.length
+      message: 'Top rated providers retrieved successfully'
     };
-  }
-
-  @Get('by-rating')
   async getProvidersByRating(
     @Query('min', ParseFloatPipe) minRating: number,
     @Query('max', ParseFloatPipe) maxRating: number,
@@ -116,9 +107,7 @@ export class ProviderReviewAggregateController {
     return {
       success: true,
       data: transformedProviders,
-      count: transformedProviders.length
+      message: 'Providers by rating retrieved successfully'
     };
-  }
-}
 
 

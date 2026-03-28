@@ -110,6 +110,6 @@ export class BackgroundJobController {
 
     await this.backgroundJobService.deleteJob(id);
 
-    return { result: "Background job deleted successfully" };
+    return { message: "Background job deleted successfully" };
   }
 }

@@ -51,42 +51,28 @@ export class PricingPlanController {
       activeOnly !== 'false'
     );
 
-    return {
-      success: true,
-      data: plans,
-      count: plans.length
-    };
+    return { success: true, data: plans, message: "Pricing plans retrieved successfully" };
   }
 
   @Get('active')
   async getActivePlans() {
     const plans = await this.pricingPlanService.getActivePlans();
 
-    return {
-      success: true,
-      data: plans,
-      count: plans.length
-    };
+    return { success: true, data: plans, message: "Active pricing plans retrieved successfully" };
   }
 
   @Get('compare')
   async comparePlans() {
     const comparison = await this.pricingPlanService.comparePlans();
 
-    return {
-      success: true,
-      data: comparison
-    };
+    return { success: true, data: comparison, message: "Pricing plan comparison retrieved successfully" };
   }
 
   @Get(':planId')
   async getPlanById(@Param('planId', ParseUUIDPipe) planId: string) {
     const plan = await this.pricingPlanService.getPlanById(planId);
 
-    return {
-      success: true,
-      data: plan
-    };
+    return { success: true, data: plan, message: "Pricing plan retrieved successfully" };
   }
 
   @Roles('admin')

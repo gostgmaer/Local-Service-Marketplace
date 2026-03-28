@@ -72,11 +72,7 @@ export class SubscriptionController {
       providerId
     );
 
-    return {
-      success: true,
-      data: subscriptions,
-      count: subscriptions.length
-    };
+    return { success: true, data: subscriptions, message: "Provider subscriptions retrieved successfully" };
   }
 
   @Get('provider/:providerId/active')
@@ -88,11 +84,7 @@ export class SubscriptionController {
       providerId
     );
 
-    return {
-      success: true,
-      data: subscription,
-      has_active: !!subscription
-    };
+    return { success: true, data: subscription, message: "Active subscription retrieved successfully" };
   }
 
   @Put(':subscriptionId/cancel')

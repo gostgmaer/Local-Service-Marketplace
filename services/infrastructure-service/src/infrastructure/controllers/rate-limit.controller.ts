@@ -35,7 +35,7 @@ export class RateLimitController {
 
     await this.rateLimitService.resetRateLimit(key);
 
-    return { result: "Rate limit reset successfully" };
+    return { message: "Rate limit reset successfully" };
   }
 
   @Post('cleanup')
@@ -48,6 +48,6 @@ export class RateLimitController {
 
     await this.rateLimitService.cleanupExpiredLimits();
 
-    return { result: "Expired rate limits cleaned up successfully" };
+    return { message: "Expired rate limits cleaned up successfully" };
   }
 }
