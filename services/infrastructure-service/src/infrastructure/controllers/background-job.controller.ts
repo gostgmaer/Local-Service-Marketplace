@@ -11,14 +11,20 @@ import {
 	LoggerService,
 	HttpCode,
 	HttpStatus,
+	UseGuards,
 	ParseUUIDPipe,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { BackgroundJobService } from "../services/background-job.service";
 import { CreateBackgroundJobDto } from "../dto/create-background-job.dto";
 import { UpdateJobStatusDto } from "../dto/update-job-status.dto";
 import { BackgroundJobQueryDto } from "../dto/background-job-query.dto";
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 @Controller("background-jobs")
 export class BackgroundJobController {
 	constructor(

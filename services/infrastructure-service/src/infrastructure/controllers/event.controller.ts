@@ -9,13 +9,20 @@ import {
 	LoggerService,
 	HttpCode,
 	HttpStatus,
+	UseGuards,
+	Delete,
 	ParseUUIDPipe,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { EventService } from "../services/event.service";
 import { CreateEventDto } from "../dto/create-event.dto";
 import { EventQueryDto } from "../dto/event-query.dto";
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 @Controller("events")
 export class EventController {
 	constructor(

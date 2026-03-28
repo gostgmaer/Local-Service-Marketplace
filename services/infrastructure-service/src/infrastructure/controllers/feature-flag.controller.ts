@@ -1,10 +1,15 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Inject, LoggerService, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Inject, LoggerService, HttpCode, HttpStatus, UseGuards } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
+import { Roles } from '@/common/decorators/roles.decorator';
 import { FeatureFlagService } from '../services/feature-flag.service';
 import { CreateFeatureFlagDto } from '../dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from '../dto/update-feature-flag.dto';
 import { FeatureFlagQueryDto } from "../dto/feature-flag-query.dto";
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 @Controller("feature-flags")
 export class FeatureFlagController {
 	constructor(
