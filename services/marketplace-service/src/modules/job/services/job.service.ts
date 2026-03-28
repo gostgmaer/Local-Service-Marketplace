@@ -235,7 +235,7 @@ export class JobService {
 			const data = jobs.slice(0, limit);
 			const nextCursor = hasMore ? data[data.length - 1].id : undefined;
 			const response = data.map(JobResponseDto.fromEntity);
-			return new PaginatedJobResponseDto(response, nextCursor, hasMore);
+			return new PaginatedJobResponseDto(response, nextCursor, hasMore, undefined, queryDto.page || 1, limit);
 		}
 
 		const [jobs, total] = await Promise.all([
@@ -243,6 +243,6 @@ export class JobService {
 			this.jobRepository.countJobs(queryDto),
 		]);
 		const response = jobs.map(JobResponseDto.fromEntity);
-		return new PaginatedJobResponseDto(response, undefined, false, total);
+		return new PaginatedJobResponseDto(response, undefined, false, total, queryDto.page || 1, limit);
 	}
 }

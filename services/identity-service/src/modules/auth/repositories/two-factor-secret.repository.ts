@@ -35,7 +35,7 @@ export class TwoFactorSecretRepository {
 	async disable(userId: string): Promise<void> {
 		const query = `
       UPDATE two_factor_secrets 
-      SET enabled = false, updated_at = NOW(), backup_codes = '[]'
+			SET enabled = false, updated_at = NOW(), backup_codes = ARRAY[]::TEXT[]
       WHERE user_id = $1
     `;
 		await this.pool.query(query, [userId]);

@@ -13,9 +13,11 @@ export class CategoryController {
 	async getAllCategories(@Query("search") search?: string, @Query("limit") limit?: string): Promise<any> {
 		if (search) {
 			const limitNum = limit ? parseInt(limit, 10) : 10;
-			return this.categoryService.searchCategories(search, limitNum);
+			const result = await this.categoryService.searchCategories(search, limitNum);
+			return { ...result, page: 1, limit: limitNum };
 		}
-		return this.categoryService.getAllCategories();
+		const result = await this.categoryService.getAllCategories();
+		return { ...result, page: 1, limit: result.data.length || 1 };
 	}
 
 	@Get(":id")

@@ -153,7 +153,7 @@ export class RequestService {
 			const data = requests.slice(0, limit);
 			const nextCursor = hasMore ? data[data.length - 1].id : undefined;
 			const response = data.map(RequestResponseDto.fromEntity);
-			return new PaginatedRequestResponseDto(response, nextCursor, hasMore);
+			return new PaginatedRequestResponseDto(response, nextCursor, hasMore, undefined, queryDto.page || 1, limit);
 		}
 
 		const [requests, total] = await Promise.all([
@@ -162,7 +162,7 @@ export class RequestService {
 		]);
 
 		const response = requests.map(RequestResponseDto.fromEntity);
-		return new PaginatedRequestResponseDto(response, undefined, false, total);
+		return new PaginatedRequestResponseDto(response, undefined, false, total, queryDto.page || 1, limit);
 	}
 
 	async getRequestById(id: string): Promise<RequestResponseDto> {

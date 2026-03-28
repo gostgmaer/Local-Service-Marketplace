@@ -47,7 +47,7 @@ export class SavedPaymentMethodController {
       req.user.id
     );
 
-    return { data: methods, total: methods.length };
+    return { data: methods, total: methods.length, page: 1, limit: methods.length || 1 };
   }
 
   @Get('default')
@@ -66,7 +66,7 @@ export class SavedPaymentMethodController {
       2 // 2 months ahead
     );
 
-    return { data: expiringCards, total: expiringCards.length };
+    return { data: expiringCards, total: expiringCards.length, page: 1, limit: expiringCards.length || 1 };
   }
 
   @Get(':methodId')

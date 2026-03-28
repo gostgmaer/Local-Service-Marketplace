@@ -56,7 +56,17 @@ export class NotificationController {
 		this.logger.log(`GET /notifications - Get notifications for user ${userId}`, "NotificationController");
 		const notifications = await this.notificationService.getNotificationsByUserId(userId, limit);
 		const unreadCount = await this.notificationService.getUnreadCount(userId);
-		return { message: "Notifications retrieved successfully", data: { notifications, unreadCount } };
+		return {
+			success: true,
+			message: "Notifications retrieved successfully",
+			data: { notifications, unreadCount },
+			meta: {
+				page: 1,
+				limit,
+				total: notifications.length,
+				totalPages: Math.ceil(notifications.length / limit),
+			},
+		};
 	}
 
 	@Get("features")

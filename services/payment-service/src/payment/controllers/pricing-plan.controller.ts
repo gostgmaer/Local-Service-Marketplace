@@ -51,14 +51,14 @@ export class PricingPlanController {
       activeOnly !== 'false'
     );
 
-    return { data: plans, total: plans.length };
+    return { data: plans, total: plans.length, page: 1, limit: plans.length || 1 };
   }
 
   @Get('active')
   async getActivePlans() {
     const plans = await this.pricingPlanService.getActivePlans();
 
-    return { data: plans, total: plans.length };
+    return { data: plans, total: plans.length, page: 1, limit: plans.length || 1 };
   }
 
   @Get('compare')

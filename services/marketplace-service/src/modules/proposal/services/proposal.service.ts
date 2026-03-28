@@ -227,7 +227,7 @@ export class ProposalService {
 			const data = proposals.slice(0, limit);
 			const nextCursor = hasMore ? data[data.length - 1].id : undefined;
 			const response = data.map(ProposalResponseDto.fromEntity);
-			return new PaginatedProposalResponseDto(response, nextCursor, hasMore);
+			return new PaginatedProposalResponseDto(response, nextCursor, hasMore, undefined, queryDto.page || 1, limit);
 		}
 
 		const [proposals, total] = await Promise.all([
@@ -236,7 +236,7 @@ export class ProposalService {
 		]);
 
 		const response = proposals.map(ProposalResponseDto.fromEntity);
-		return new PaginatedProposalResponseDto(response, undefined, false, total);
+		return new PaginatedProposalResponseDto(response, undefined, false, total, queryDto.page || 1, limit);
 	}
 
 	async getMyProposals(userId: string): Promise<{ data: ProposalResponseDto[]; total: number }> {
