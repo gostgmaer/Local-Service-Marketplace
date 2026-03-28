@@ -225,44 +225,68 @@ export class ProviderService {
       category_id: queryDto.category_id,
     });
 
-    // Fetch one extra to determine if there are more results
-    const providers = await this.providerRepo.findPaginated(
-      limit + 1,
-      queryDto.cursor,
-      queryDto.category_id,
-      queryDto.search,
-      queryDto.location_id,
-    );
+    // Use cursor mode only when cursor param is explicitly provided
+    if (queryDto.cursor) {
+			// Fetch one extra to determine if there are more results
+			const providers = await this.providerRepo.findPaginated(
+				limit + 1,
+				queryDto.cursor,
+				queryDto.category_id,
+				queryDto.search,
+				queryDto.location_id,
+			);
 
-    const hasMore = providers.length > limit;
-    const data = providers.slice(0, limit);
+			const hasMore = providers.length > limit;
+			const data = providers.slice(0, limit);
+			const providerResponses = await this.buildProviderResponses(data);
+			const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : undefined;
 
-    // Build full provider responses
-    const providerResponses: ProviderResponseDto[] = [];
-    for (const provider of data) {
+			return { data: providerResponses, nextCursor, hasMore };
+		}
+
+		// Default: page-based pagination
+		const page = queryDto.page || 1;
+		const offset = (page - 1) * limit;
+
+		const [providers, total] = await Promise.all([
+			this.providerRepo.findPaginated(
+				limit,
+				undefined,
+				queryDto.category_id,
+				queryDto.search,
+				queryDto.location_id,
+				offset,
+			),
+			this.providerRepo.countProviders(queryDto.category_id, queryDto.search, queryDto.location_id),
+		]);
+
+    const providerResponses = await this.buildProviderResponses(providers);
+
+    return { data: providerResponses, total };
+  }
+
+  private async buildProviderResponses(providers: any[]): Promise<ProviderResponseDto[]> {
+    const responses: ProviderResponseDto[] = [];
+    for (const provider of providers) {
       const services = await this.providerServiceRepo.findByProviderId(provider.id);
       const availability = await this.providerAvailabilityRepo.findByProviderId(provider.id);
-
-      providerResponses.push({
-        id: provider.id,
-        user_id: provider.user_id,
-        business_name: provider.business_name,
-        description: provider.description,
-        rating: provider.rating,
-        services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
-        availability: availability.map((a) => ({
-          id: a.id,
-          day_of_week: a.day_of_week,
-          start_time: a.start_time,
-          end_time: a.end_time,
-        })),
-        created_at: provider.created_at,
-      });
+      responses.push({
+				id: provider.id,
+				user_id: provider.user_id,
+				business_name: provider.business_name,
+				description: provider.description,
+				rating: provider.rating,
+				services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
+				availability: availability.map((a) => ({
+					id: a.id,
+					day_of_week: a.day_of_week,
+					start_time: a.start_time,
+					end_time: a.end_time,
+				})),
+				created_at: provider.created_at,
+			});
     }
-
-    const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : undefined;
-
-    return { data: providerResponses, nextCursor, hasMore };
+    return responses;
   }
 
   async deleteProvider(providerId: string): Promise<void> {
