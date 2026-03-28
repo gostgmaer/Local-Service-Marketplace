@@ -211,3 +211,17 @@ function CheckoutContent() {
 		</Layout>
 	);
 }
+
+export default function CheckoutPage() {
+	return (
+		<Suspense fallback={
+			<Layout>
+				<div className='min-h-screen flex items-center justify-center'>
+					<Loading />
+				</div>
+			</Layout>
+		)}>
+			<CheckoutContent />
+		</Suspense>
+	);
+}
