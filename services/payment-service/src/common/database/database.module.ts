@@ -4,6 +4,10 @@ import { Pool } from 'pg';
 const databasePoolFactory = async () => {
   const connectionString = process.env.DATABASE_URL;
 	const sslEnabled = process.env.DATABASE_SSL === "true";
+  const poolMax = parseInt(process.env.DATABASE_POOL_MAX || "20", 10);
+  const idleTimeoutMs = parseInt(process.env.DATABASE_IDLE_TIMEOUT_MS || "30000", 10);
+  const connectionTimeoutMs = parseInt(process.env.DATABASE_CONNECTION_TIMEOUT_MS || "10000", 10);
+  const queryTimeoutMs = parseInt(process.env.DATABASE_QUERY_TIMEOUT_MS || "30000", 10);
   const pool = new Pool({
 		...(connectionString ?
 			{ connectionString }
@@ -15,9 +19,11 @@ const databasePoolFactory = async () => {
 				password: process.env.DATABASE_PASSWORD,
 			}),
 		ssl: sslEnabled || connectionString?.includes("sslmode=require") ? { rejectUnauthorized: false } : false,
-		max: 20,
-		idleTimeoutMillis: 30000,
-		connectionTimeoutMillis: 2000,
+    max: poolMax,
+    idleTimeoutMillis: idleTimeoutMs,
+    connectionTimeoutMillis: connectionTimeoutMs,
+    query_timeout: queryTimeoutMs,
+    keepAlive: true,
 	});
 
   // Test the connection
