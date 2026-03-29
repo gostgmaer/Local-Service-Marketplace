@@ -990,6 +990,10 @@ export class AuthService {
 	 * Uses TOTP (Time-based One-Time Password) via otplib
 	 */
 
+	async get2FAStatus(userId: string): Promise<boolean> {
+		return this.twoFactorSecretRepo.is2FAEnabled(userId);
+	}
+
 	async enable2FA(userId: string): Promise<{ secret: string; qrCodeUrl: string }> {
 		this.logger.info("2FA enable requested", { context: "AuthService", userId });
 

@@ -23,20 +23,30 @@ export default function AdminDashboardPage() {
 		isLoading: usersLoading,
 		error: usersError,
 		refetch: refetchUsers,
-	} = useQuery({ queryKey: ["admin-users"], queryFn: () => adminService.getUsers(), enabled: user?.role === "admin" });
+	} = useQuery({
+		queryKey: ["admin-users-recent"],
+		queryFn: () => adminService.getUsers({ page: 1, limit: 5 }),
+		enabled: user?.role === "admin",
+	});
 
   const {
 		data: disputes,
 		isLoading: disputesLoading,
 		error: disputesError,
 	} = useQuery({
-		queryKey: ["admin-disputes"],
-		queryFn: () => adminService.getDisputes(),
+		queryKey: ["admin-disputes-recent"],
+		queryFn: () => adminService.getDisputes({ page: 1, limit: 5 }),
+		enabled: user?.role === "admin",
+	});
+
+	const { data: openDisputesData } = useQuery({
+		queryKey: ["admin-disputes-open-count"],
+		queryFn: () => adminService.getDisputes({ page: 1, limit: 1, status: "open" }),
 		enabled: user?.role === "admin",
 	});
 
   const totalUsers = users?.total || 0;
-  const activeDisputes = disputes?.data?.filter((d: any) => d.status === "open").length || 0;
+  const activeDisputes = openDisputesData?.total || 0;
 	const totalDisputes = disputes?.total || 0;
 
   return (
