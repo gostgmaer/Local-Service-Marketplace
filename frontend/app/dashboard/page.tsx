@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { ROUTES, getDashboardHomeByRole } from "@/config/constants";
 import { Loading } from '@/components/ui/Loading';
 import { analytics } from "@/utils/analytics";
+import CustomerDashboard from "@/components/dashboard/CustomerDashboard";
+import ProviderDashboard from "@/components/dashboard/ProviderDashboard";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -19,7 +21,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
 		if (isAuthenticated && user?.role) {
-			router.replace(getDashboardHomeByRole(user.role));
+      if (user.role === "admin") {
+				router.replace(getDashboardHomeByRole(user.role));
+			}
 			analytics.pageview({
 				path: "/dashboard",
 				title: `${
@@ -37,5 +41,9 @@ export default function DashboardPage() {
 
   if (!isAuthenticated) return null;
 
-  return <Loading />;
+  if (user?.role === "provider") {
+		return <ProviderDashboard />;
+	}
+
+	return <CustomerDashboard />;
 }

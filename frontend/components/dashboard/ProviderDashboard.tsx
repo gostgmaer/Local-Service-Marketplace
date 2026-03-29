@@ -14,18 +14,7 @@ import { proposalService } from '@/services/proposal-service';
 import { jobService } from '@/services/job-service';
 import { formatDate, formatCurrency } from '@/utils/helpers';
 import Link from 'next/link';
-import {
-  Plus,
-  Briefcase,
-  FileText,
-  DollarSign,
-  Search,
-  Calendar,
-  TrendingUp,
-  User,
-  Star,
-  ImageIcon,
-} from 'lucide-react';
+import { Briefcase, FileText, DollarSign, Search, Calendar, TrendingUp, User, Star, ImageIcon } from "lucide-react";
 
 export default function ProviderDashboard() {
   const { user, isAuthenticated } = useAuth();
@@ -176,7 +165,7 @@ export default function ProviderDashboard() {
 					</CardHeader>
 					<CardContent>
 						<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-							<Link href={ROUTES.DASHBOARD_BROWSE_REQUESTS || "/dashboard/browse-requests"}>
+							<Link href={ROUTES.DASHBOARD_BROWSE_REQUESTS}>
 								<Button
 									variant='outline'
 									className='w-full justify-start'>
@@ -184,7 +173,7 @@ export default function ProviderDashboard() {
 									Browse Service Requests
 								</Button>
 							</Link>
-							<Link href={ROUTES.DASHBOARD_MY_PROPOSALS || "/dashboard/my-proposals"}>
+							<Link href={ROUTES.DASHBOARD_MY_PROPOSALS}>
 								<Button
 									variant='outline'
 									className='w-full justify-start'>
@@ -192,7 +181,7 @@ export default function ProviderDashboard() {
 									View My Proposals
 								</Button>
 							</Link>
-							<Link href={ROUTES.DASHBOARD_AVAILABILITY || "/dashboard/availability"}>
+							<Link href={ROUTES.DASHBOARD_AVAILABILITY}>
 								<Button
 									variant='outline'
 									className='w-full justify-start'>
@@ -253,7 +242,7 @@ export default function ProviderDashboard() {
 						<CardHeader>
 							<div className='flex items-center justify-between'>
 								<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Recent Proposals</h2>
-								<Link href={ROUTES.DASHBOARD_MY_PROPOSALS || "/dashboard/my-proposals"}>
+								<Link href={ROUTES.DASHBOARD_MY_PROPOSALS}>
 									<Button
 										variant='outline'
 										size='sm'>
@@ -296,7 +285,10 @@ export default function ProviderDashboard() {
 									title='No proposals yet'
 									description='Browse open service requests and submit your first proposal.'
 									icon='search'
-									action={{ label: "Browse Requests", onClick: () => {} }}
+									action={{
+										label: "Browse Requests",
+										onClick: () => window.location.assign(ROUTES.DASHBOARD_BROWSE_REQUESTS),
+									}}
 								/>
 							}
 						</CardContent>
@@ -331,7 +323,7 @@ export default function ProviderDashboard() {
 										.map((job: any) => (
 											<Link
 												key={job.id}
-												href={`/jobs/${job.id}`}
+												href={ROUTES.DASHBOARD_JOB_DETAIL(job.id)}
 												className='block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-green-200 dark:hover:border-green-700 transition-all'>
 												<div className='flex items-start justify-between gap-3'>
 													<div className='flex-1 min-w-0'>
@@ -365,7 +357,7 @@ export default function ProviderDashboard() {
 					<CardHeader>
 						<div className='flex items-center justify-between'>
 							<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Earnings Overview</h2>
-							<Link href={ROUTES.DASHBOARD_EARNINGS || "/dashboard/earnings"}>
+							<Link href={ROUTES.DASHBOARD_EARNINGS}>
 								<Button
 									variant='outline'
 									size='sm'>

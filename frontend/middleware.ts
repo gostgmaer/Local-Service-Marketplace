@@ -6,8 +6,7 @@ type Role = "customer" | "provider" | "admin";
 
 function getDashboardHomeByRole(role?: Role) {
 	if (role === "admin") return "/dashboard/admin";
-	if (role === "provider") return "/dashboard/provider";
-	return "/dashboard/customer";
+	return "/dashboard";
 }
 
 /**
@@ -27,7 +26,6 @@ const ROLE_ROUTES: Array<{ prefix: string; roles: Role[] }> = [
 	{ prefix: "/dashboard/my-proposals", roles: ["provider"] },
 
 	// Customer-only
-	{ prefix: "/dashboard/customer", roles: ["customer"] },
 	{ prefix: "/dashboard/requests", roles: ["customer"] },
 	{ prefix: "/dashboard/favorites", roles: ["customer"] },
 	{ prefix: "/dashboard/reviews/submit", roles: ["customer"] },
@@ -64,8 +62,8 @@ export async function middleware(req: NextRequest) {
 		return NextResponse.redirect(new URL(getDashboardHomeByRole(userRole), nextUrl));
 	}
 
-	// Canonicalize generic dashboard route to role-specific home route
-	if (pathname === "/dashboard" && isLoggedIn) {
+	// Only admins are canonicalized to their dedicated URL namespace.
+	if (pathname === "/dashboard" && isLoggedIn && userRole === "admin") {
 		return NextResponse.redirect(new URL(getDashboardHomeByRole(userRole), nextUrl));
 	}
 

@@ -42,8 +42,6 @@ export const ROUTES = {
 
 	// Dashboard - Main
 	DASHBOARD: "/dashboard",
-	DASHBOARD_CUSTOMER: "/dashboard/customer",
-	DASHBOARD_PROVIDER: "/dashboard/provider",
 
 	// Dashboard - Profile
 	DASHBOARD_PROFILE: "/dashboard/profile",
@@ -110,29 +108,10 @@ export const ROUTES = {
 	PROVIDERS: "/providers",
 	PROVIDER_DETAIL: (id: string) => `/providers/${id}`,
 
-	// Admin (Legacy - redirects to dashboard/admin)
-	ADMIN: "/dashboard/admin",
-	ADMIN_USERS: "/dashboard/admin/users",
-	ADMIN_DISPUTES: "/dashboard/admin/disputes",
-	ADMIN_SETTINGS: "/dashboard/admin/settings",
-
 	// Legal
 	PRIVACY: "/privacy",
 	TERMS: "/terms",
 	COOKIES: "/cookies",
-
-	// Legacy routes (for backward compatibility - redirects)
-	PROFILE: "/dashboard/profile",
-	PROFILE_EDIT: "/dashboard/profile/edit",
-	SETTINGS: "/dashboard/settings",
-	REQUESTS: "/dashboard/requests", // Requires authentication - view all requests
-	JOBS: "/dashboard/jobs",
-	JOB_DETAIL: (id: string) => `/dashboard/jobs/${id}`,
-	MESSAGES: "/dashboard/messages",
-	NOTIFICATIONS: "/dashboard/notifications",
-	PAYMENT_HISTORY: "/dashboard/payments/history",
-	REVIEW_SUBMIT: "/dashboard/reviews/submit",
-	DASHBOARD_CREATE_REQUEST: "/requests/create", // Public route - unauthenticated users can create requests
 } as const;
 
 export const API_ENDPOINTS = {
@@ -233,8 +212,7 @@ export type DashboardRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
 export function getDashboardHomeByRole(role?: string): string {
 	if (role === USER_ROLES.ADMIN) return ROUTES.DASHBOARD_ADMIN;
-	if (role === USER_ROLES.PROVIDER) return ROUTES.DASHBOARD_PROVIDER;
-	return ROUTES.DASHBOARD_CUSTOMER;
+	return ROUTES.DASHBOARD;
 }
 
 export const NOTIFICATION_TYPES = {
