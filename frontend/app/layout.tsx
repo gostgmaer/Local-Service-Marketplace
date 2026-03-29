@@ -18,15 +18,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ThemeProvider>
-          <Providers>
-            <main id="main-content">{children}</main>
-            <Toaster position="top-right" />
-          </Providers>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+		<html lang='en'>
+			<head>
+				{/* Trusted Types policy for DOM-based XSS mitigation */}
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `
+              if (window.trustedTypes && window.trustedTypes.createPolicy) {
+                window.trustedTypes.createPolicy('default', {
+                  createHTML: (input) => input,
+                  createScript: (input) => input,
+                  createScriptURL: (input) => input
+                });
+              }
+            `,
+					}}
+				/>
+			</head>
+			<body className={inter.className}>
+				<ThemeProvider>
+					<Providers>
+						<main id='main-content'>{children}</main>
+						<Toaster position='top-right' />
+					</Providers>
+				</ThemeProvider>
+			</body>
+		</html>
+	);
 }
