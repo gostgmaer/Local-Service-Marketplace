@@ -78,13 +78,7 @@ export class TokenService {
 	}
 
 	async verifyEmailOtpToken(userId: string, code: string): Promise<boolean> {
-		const record = await this.emailVerificationTokenRepo.findByUserIdAndToken(userId, code);
-		if (!record) {
-			return false;
-		}
-		// Consume the token (one-time use)
-		await this.emailVerificationTokenRepo.deleteByToken(code);
-		return true;
+		return this.emailVerificationTokenRepo.consumeByUserIdAndToken(userId, code);
 	}
 
 	async verifyPasswordResetToken(token: string): Promise<string | null> {

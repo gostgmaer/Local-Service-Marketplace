@@ -42,6 +42,16 @@ export class EmailVerificationTokenRepository {
 		return result.rows[0] || null;
 	}
 
+	async consumeByUserIdAndToken(userId: string, token: string): Promise<boolean> {
+		const query = `
+      DELETE FROM email_verification_tokens
+      WHERE user_id = $1 AND token = $2 AND expires_at > NOW()
+      RETURNING id
+    `;
+		const result = await this.pool.query(query, [userId, token]);
+		return result.rowCount > 0;
+	}
+
 	async deleteExpired(): Promise<void> {
 		const query = "DELETE FROM email_verification_tokens WHERE expires_at < NOW()";
 		await this.pool.query(query);

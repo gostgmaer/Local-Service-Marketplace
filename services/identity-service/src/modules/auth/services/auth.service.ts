@@ -800,14 +800,15 @@ export class AuthService {
 	// ==========================================
 
 	async requestEmailOtp(email: string): Promise<{ message: string }> {
-		this.logger.info("Email OTP request", { context: "AuthService", email });
+		const normalizedEmail = email.trim().toLowerCase();
+		this.logger.info("Email OTP request", { context: "AuthService", email: normalizedEmail });
 
 		if (!this.notificationClient.isEmailEnabled()) {
 			this.logger.warn("Email OTP request but email service is disabled", { context: "AuthService", email });
 			throw new BadRequestException("Email OTP service is currently unavailable. Please use password login instead.");
 		}
 
-		const user = await this.userRepo.findByEmail(email);
+		const user = await this.userRepo.findByEmail(normalizedEmail);
 		if (!user) {
 			// Avoid email enumeration
 			return { message: "If this email is registered, an OTP will be sent" };
@@ -819,24 +820,34 @@ export class AuthService {
 
 		const otp = await this.tokenService.createEmailOtpToken(user.id);
 
-		await this.notificationClient.sendEmail({
-			to: email,
-			template: "email-otp",
-			variables: { name: user.name, code: otp, expiresInMinutes: 10 },
-		});
+		void this.notificationClient
+			.sendEmail({
+				to: normalizedEmail,
+				template: "email-otp",
+				variables: { name: user.name, code: otp, expiresInMinutes: 10 },
+			})
+			.then((sent) => {
+				if (!sent) {
+					this.logger.warn("Email OTP delivery returned false", { context: "AuthService", userId: user.id });
+				}
+			})
+			.catch((err) => {
+				this.logger.error("Email OTP delivery failed", { context: "AuthService", userId: user.id, error: err.message });
+			});
 
 		this.logger.info("Email OTP sent", { context: "AuthService", userId: user.id });
 		return { message: "If this email is registered, an OTP will be sent" };
 	}
 
 	async verifyEmailOtp(email: string, code: string, ipAddress?: string): Promise<AuthResponseDto> {
-		this.logger.info("Email OTP verification attempt", { context: "AuthService", email });
+		const normalizedEmail = email.trim().toLowerCase();
+		this.logger.info("Email OTP verification attempt", { context: "AuthService", email: normalizedEmail });
 
 		if (!this.notificationClient.isEmailEnabled()) {
 			throw new BadRequestException("Email OTP service is currently unavailable. Please use password login instead.");
 		}
 
-		const user = await this.userRepo.findByEmail(email);
+		const user = await this.userRepo.findByEmail(normalizedEmail);
 		if (!user) {
 			throw new UnauthorizedException("Invalid email or OTP");
 		}
@@ -845,9 +856,12 @@ export class AuthService {
 			throw new UnauthorizedException("Account is not active");
 		}
 
-		const valid = await this.tokenService.verifyEmailOtpToken(user.id, code);
+		const valid = await this.tokenService.verifyEmailOtpToken(user.id, code.trim());
 		if (!valid) {
-			this.logger.warn("Email OTP verification failed: invalid or expired code", { context: "AuthService", email });
+			this.logger.warn("Email OTP verification failed: invalid or expired code", {
+				context: "AuthService",
+				email: normalizedEmail,
+			});
 			throw new UnauthorizedException("Invalid or expired OTP");
 		}
 
