@@ -84,19 +84,18 @@ export interface BackendSession {
  * Source: frontend/types/next-auth.d.ts
  */
 export interface FrontendSession {
-  user: {
-    id: string;
-    email?: string | null;
-    name?: string | null;
-    image?: string | null;
-    role: string;
-    emailVerified: boolean;
-  };
-  expires: string; // ISO date string
-  accessToken?: string;
-  refreshToken?: string;
-  accessTokenExpires?: number; // Unix timestamp
-  error?: 'RefreshAccessTokenError';
+	user: {
+		id: string;
+		email?: string | null;
+		name?: string | null;
+		image?: string | null;
+		role: string;
+		emailVerified: boolean;
+	};
+	expires: string; // ISO date string
+	accessToken?: string;
+	accessTokenExpires?: number; // Unix timestamp
+	error?: "RefreshAccessTokenError";
 }
 
 /**

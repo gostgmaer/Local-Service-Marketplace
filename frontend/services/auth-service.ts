@@ -33,6 +33,12 @@ export interface AuthResponse {
 	};
 }
 
+export interface OAuthCodeExchangeResponse {
+	message: string;
+	accessToken: string;
+	refreshToken: string;
+}
+
 export interface CheckIdentifierResult {
 	exists: boolean;
 	otpAvailable: boolean;
@@ -121,6 +127,11 @@ class AuthService {
 
 	async verifyEmail(token: string): Promise<void> {
 		const response = await apiClient.get<void>(`/user/auth/email/verify?token=${encodeURIComponent(token)}`);
+		return response.data;
+	}
+
+	async exchangeOAuthCode(code: string): Promise<OAuthCodeExchangeResponse> {
+		const response = await apiClient.post<OAuthCodeExchangeResponse>("/user/auth/oauth/exchange", { code });
 		return response.data;
 	}
 
