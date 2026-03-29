@@ -20,6 +20,20 @@ import type { ColumnFiltersState, SortingState, Table } from "@tanstack/react-ta
 
 type UserRow = { id: string; name?: string; email?: string; role?: string; status?: string; created_at: string };
 
+const USER_ROLE_OPTIONS = ["customer", "provider", "admin"] as const;
+const USER_STATUS_OPTIONS = ["active", "suspended"] as const;
+
+const ROLE_LABELS: Record<(typeof USER_ROLE_OPTIONS)[number], string> = {
+	customer: "Customer",
+	provider: "Provider",
+	admin: "Admin",
+};
+
+const STATUS_LABELS: Record<(typeof USER_STATUS_OPTIONS)[number], string> = {
+	active: "Active",
+	suspended: "Suspended",
+};
+
 const mapUserSortBy = (field?: string): "createdAt" | "email" | "name" | "role" | "lastLoginAt" => {
 	switch (field) {
 		case "email":
@@ -79,6 +93,28 @@ export default function AdminUsersPage() {
 
 	const tableUsers: UserRow[] = useMemo(() => users?.data || [], [users?.data]);
 
+	const { data: userStats } = useQuery({
+		queryKey: ["admin-users-stats-by-role-status"],
+		queryFn: async () => {
+			const [allUsers, activeUsers, suspendedUsers, customerUsers, providerUsers, adminUsers] = await Promise.all([
+				adminService.getUsers({ page: 1, limit: 1 }),
+				adminService.getUsers({ page: 1, limit: 1, status: "active" }),
+				adminService.getUsers({ page: 1, limit: 1, status: "suspended" }),
+				adminService.getUsers({ page: 1, limit: 1, role: "customer" }),
+				adminService.getUsers({ page: 1, limit: 1, role: "provider" }),
+				adminService.getUsers({ page: 1, limit: 1, role: "admin" }),
+			]);
+
+			return {
+				total: allUsers.total || 0,
+				status: { active: activeUsers.total || 0, suspended: suspendedUsers.total || 0 },
+				roles: { customer: customerUsers.total || 0, provider: providerUsers.total || 0, admin: adminUsers.total || 0 },
+			};
+		},
+		enabled: user?.role === "admin",
+		staleTime: 60_000,
+	});
+
   return (
 		<ProtectedRoute requiredRoles={["admin"]}>
 			<Layout>
@@ -88,10 +124,57 @@ export default function AdminUsersPage() {
 						<p className='text-gray-600 dark:text-gray-400'>Manage and monitor platform users</p>
 					</div>
 
+					<div className='mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+						<Card>
+							<CardContent className='p-4'>
+								<p className='text-sm text-gray-600 dark:text-gray-400'>Total Users</p>
+								<p className='mt-1 text-2xl font-bold text-gray-900 dark:text-white'>{userStats?.total ?? 0}</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className='p-4'>
+								<p className='text-sm text-gray-600 dark:text-gray-400'>Active Users</p>
+								<p className='mt-1 text-2xl font-bold text-gray-900 dark:text-white'>{userStats?.status.active ?? 0}</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className='p-4'>
+								<p className='text-sm text-gray-600 dark:text-gray-400'>Suspended Users</p>
+								<p className='mt-1 text-2xl font-bold text-gray-900 dark:text-white'>
+									{userStats?.status.suspended ?? 0}
+								</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className='p-4'>
+								<p className='text-sm text-gray-600 dark:text-gray-400'>Customers</p>
+								<p className='mt-1 text-2xl font-bold text-gray-900 dark:text-white'>
+									{userStats?.roles.customer ?? 0}
+								</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className='p-4'>
+								<p className='text-sm text-gray-600 dark:text-gray-400'>Providers</p>
+								<p className='mt-1 text-2xl font-bold text-gray-900 dark:text-white'>
+									{userStats?.roles.provider ?? 0}
+								</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent className='p-4'>
+								<p className='text-sm text-gray-600 dark:text-gray-400'>Admins</p>
+								<p className='mt-1 text-2xl font-bold text-gray-900 dark:text-white'>{userStats?.roles.admin ?? 0}</p>
+							</CardContent>
+						</Card>
+					</div>
+
 					{/* Users List */}
 					<Card>
 						<CardHeader>
-							<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>All Users ({tableUsers.length})</h2>
+							<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>
+								All Users ({users?.total ?? tableUsers.length})
+							</h2>
 						</CardHeader>
 						<CardContent>
 							{isLoading && !users ?
@@ -122,11 +205,6 @@ export default function AdminUsersPage() {
 									searchPlaceholder='Search users by name, email, role, or status...'
 									searchableColumns={["name", "email", "role", "status", "created_at"]}
 									renderToolbarFields={(table: Table<UserRow>) => {
-										const roleOptions = Array.from(new Set(tableUsers.map((u) => u.role).filter(Boolean))) as string[];
-										const statusOptions = Array.from(
-											new Set(tableUsers.map((u) => u.status).filter(Boolean)),
-										) as string[];
-
 										return (
 											<>
 												<select
@@ -134,11 +212,11 @@ export default function AdminUsersPage() {
 													onChange={(e) => table.getColumn("role")?.setFilterValue(e.target.value || undefined)}
 													className='rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200'>
 													<option value=''>All roles</option>
-													{roleOptions.map((role) => (
+													{USER_ROLE_OPTIONS.map((role) => (
 														<option
 															key={role}
 															value={role}>
-															{role}
+															{ROLE_LABELS[role]} ({userStats?.roles[role] ?? 0})
 														</option>
 													))}
 												</select>
@@ -148,11 +226,11 @@ export default function AdminUsersPage() {
 													onChange={(e) => table.getColumn("status")?.setFilterValue(e.target.value || undefined)}
 													className='rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200'>
 													<option value=''>All statuses</option>
-													{statusOptions.map((status) => (
+													{USER_STATUS_OPTIONS.map((status) => (
 														<option
 															key={status}
 															value={status}>
-															{status}
+															{STATUS_LABELS[status]} ({userStats?.status[status] ?? 0})
 														</option>
 													))}
 												</select>
