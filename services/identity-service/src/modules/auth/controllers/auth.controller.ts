@@ -18,6 +18,7 @@ import {
 	HttpCode,
 	HttpStatus,
 } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import { AuthGuard } from "@nestjs/passport";
 import { Request, Response } from "express";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -52,6 +53,12 @@ import { UpdateUserDto } from "../../user/dto/update-user.dto";
 
 @Controller("auth")
 export class AuthController {
+	private readonly oauthExchangeStore = new Map<
+		string,
+		{ accessToken: string; refreshToken: string; expiresAt: number }
+	>();
+	private readonly oauthExchangeTtlMs = 60 * 1000;
+
 	constructor(
 		private readonly authService: AuthService,
 		@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
@@ -173,9 +180,10 @@ export class AuthController {
 
 		const authResponse = await this.authService.handleOAuthLogin(oauthUser, ipAddress);
 
-		// Redirect to frontend with token
+		// Redirect to frontend with one-time code, never raw tokens.
 		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-		const redirectUrl = `${frontendUrl}/auth/callback?token=${authResponse.accessToken}&refresh=${authResponse.refreshToken}`;
+		const oauthCode = this.issueOAuthCode(authResponse.accessToken, authResponse.refreshToken);
+		const redirectUrl = `${frontendUrl}/auth/callback?code=${encodeURIComponent(oauthCode)}`;
 
 		res.redirect(redirectUrl);
 	}
@@ -196,11 +204,36 @@ export class AuthController {
 
 		const authResponse = await this.authService.handleOAuthLogin(oauthUser, ipAddress);
 
-		// Redirect to frontend with token
+		// Redirect to frontend with one-time code, never raw tokens.
 		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-		const redirectUrl = `${frontendUrl}/auth/callback?token=${authResponse.accessToken}&refresh=${authResponse.refreshToken}`;
+		const oauthCode = this.issueOAuthCode(authResponse.accessToken, authResponse.refreshToken);
+		const redirectUrl = `${frontendUrl}/auth/callback?code=${encodeURIComponent(oauthCode)}`;
 
 		res.redirect(redirectUrl);
+	}
+
+	@Post("oauth/exchange")
+	@HttpCode(HttpStatus.OK)
+	async exchangeOAuthCode(
+		@Body() body: { code?: string },
+		@Res({ passthrough: true }) res: Response,
+	): Promise<{ message: string; accessToken: string; refreshToken: string }> {
+		if (!body?.code) {
+			throw new BadRequestException("OAuth code is required");
+		}
+
+		const tokens = this.consumeOAuthCode(body.code);
+		if (!tokens) {
+			throw new UnauthorizedException("Invalid or expired OAuth code");
+		}
+
+		this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+		return {
+			message: "OAuth code exchanged successfully",
+			accessToken: tokens.accessToken,
+			refreshToken: tokens.refreshToken,
+		};
 	}
 
 	// ==========================================
@@ -584,7 +617,8 @@ export class AuthController {
 		const authResponse = await this.authService.handleOAuthLogin(oauthUser, ipAddress);
 
 		const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-		const redirectUrl = `${frontendUrl}/auth/callback?token=${authResponse.accessToken}&refresh=${authResponse.refreshToken}`;
+		const oauthCode = this.issueOAuthCode(authResponse.accessToken, authResponse.refreshToken);
+		const redirectUrl = `${frontendUrl}/auth/callback?code=${encodeURIComponent(oauthCode)}`;
 
 		res.redirect(redirectUrl);
 	}
@@ -635,5 +669,31 @@ export class AuthController {
 	private clearAuthCookies(res: Response): void {
 		res.clearCookie("access_token", { path: "/" });
 		res.clearCookie("refresh_token", { path: "/" });
+	}
+
+	private issueOAuthCode(accessToken: string, refreshToken: string): string {
+		this.cleanupExpiredOAuthCodes();
+		const code = randomUUID();
+		this.oauthExchangeStore.set(code, { accessToken, refreshToken, expiresAt: Date.now() + this.oauthExchangeTtlMs });
+		return code;
+	}
+
+	private consumeOAuthCode(code: string): { accessToken: string; refreshToken: string } | null {
+		const entry = this.oauthExchangeStore.get(code);
+		if (!entry) return null;
+
+		this.oauthExchangeStore.delete(code);
+		if (Date.now() > entry.expiresAt) return null;
+
+		return { accessToken: entry.accessToken, refreshToken: entry.refreshToken };
+	}
+
+	private cleanupExpiredOAuthCodes(): void {
+		const now = Date.now();
+		for (const [code, entry] of this.oauthExchangeStore.entries()) {
+			if (entry.expiresAt <= now) {
+				this.oauthExchangeStore.delete(code);
+			}
+		}
 	}
 }

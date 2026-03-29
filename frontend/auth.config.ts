@@ -149,8 +149,8 @@ export const authOptions = {
 			},
 		}),
 
-		// OAuth Token — used by /auth/callback when backend completes social login
-		// and redirects with token+refresh in query params
+		// OAuth Token — used by /auth/callback after one-time code exchange
+		// to establish NextAuth session from backend-issued tokens
 		CredentialsProvider({
 			id: "oauth-token",
 			name: "OAuth Token",
@@ -206,7 +206,7 @@ export const authOptions = {
 
 			// Handle session updates (e.g., from client-side session.update())
 			if (trigger === "update" && session) {
-				return { ...token, ...session };
+				return { ...token, name: session?.user?.name ?? token.name, image: session?.user?.image ?? token.image };
 			}
 
 			// Return previous token if the access token has not expired yet
@@ -227,7 +227,6 @@ export const authOptions = {
 				session.user.role = token.role || "customer";
 				session.user.emailVerified = Boolean(token.emailVerified);
 				session.accessToken = token.accessToken;
-				session.refreshToken = token.refreshToken;
 				session.accessTokenExpires = token.accessTokenExpires;
 				session.error = token.error;
 			}
