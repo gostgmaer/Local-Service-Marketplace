@@ -37,7 +37,7 @@ export class PaymentController {
 			createPaymentDto.job_id,
 			createPaymentDto.amount,
 			createPaymentDto.currency,
-			req.user.id, // user_id from authenticated user
+			req.user.userId, // user_id from authenticated user
 			createPaymentDto.provider_id,
 			createPaymentDto.coupon_code,
 		);
@@ -52,7 +52,7 @@ export class PaymentController {
 	@Get("my")
 	@UseGuards(JwtAuthGuard)
 	async getMyPayments(@Request() req: any, @Query() queryDto: TransactionQueryDto) {
-		return this.paymentService.getPaymentsByUserPaginated(req.user.id, queryDto);
+		return this.paymentService.getPaymentsByUserPaginated(req.user.userId, queryDto);
 	}
 
 	@Get("jobs/:jobId")
