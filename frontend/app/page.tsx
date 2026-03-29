@@ -1,7 +1,7 @@
-import { Layout } from '@/components/layout/Layout';
-import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Layout } from "@/components/layout/Layout";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/Card";
 import { HeroSearch } from "@/components/layout/HeroSearch";
 import {
 	ShieldCheck,
@@ -19,6 +19,34 @@ import {
 	Zap,
 	Check,
 } from "lucide-react";
+import { Metadata } from "next";
+
+// Advanced SEO metadata for homepage
+export const metadata: Metadata = {
+	title: "Local Service Marketplace | Find Trusted Local Providers",
+	description:
+		"Connect with verified, licensed professionals in your neighborhood. Post your request free, get multiple quotes, and hire with confidence.",
+	openGraph: {
+		title: "Local Service Marketplace",
+		description:
+			"Connect with verified, licensed professionals in your neighborhood. Post your request free, get multiple quotes, and hire with confidence.",
+		url: "https://yourdomain.com/",
+		siteName: "Local Service Marketplace",
+		images: [
+			{ url: "https://yourdomain.com/og-image.png", width: 1200, height: 630, alt: "Local Service Marketplace" },
+		],
+		locale: "en_US",
+		type: "website",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "Local Service Marketplace",
+		description: "Connect with verified, licensed professionals in your neighborhood.",
+		images: ["https://yourdomain.com/og-image.png"],
+		site: "@yourtwitter",
+	},
+	alternates: { canonical: "https://yourdomain.com/" },
+};
 
 const serviceCategories = [
 	{
@@ -161,52 +189,58 @@ const features: Array<{
 ];
 
 const stats = [
-  { value: '15K+', label: 'Active Providers' },
-  { value: '87K+', label: 'Jobs Completed' },
-  { value: '4.9/5', label: 'Average Rating' },
-  { value: '150+', label: 'Service Categories' },
+	{ value: "15K+", label: "Active Providers" },
+	{ value: "87K+", label: "Jobs Completed" },
+	{ value: "4.9/5", label: "Average Rating" },
+	{ value: "150+", label: "Service Categories" },
 ];
 
 const howItWorksCustomer = [
-  {
-    step: '1',
-    title: 'Describe Your Project',
-    description: 'Tell us what you need done. Include photos, budget, timeline, and any special requirements. Get instant matches with qualified providers.',
-    image: '📝',
-  },
-  {
-    step: '2',
-    title: 'Compare & Chat',
-    description: 'Receive proposals within hours. Review provider profiles, ratings, portfolios, and pricing. Ask questions through our secure messaging.',
-    image: '💬',
-  },
-  {
-    step: '3',
-    title: 'Hire with Confidence',
-    description: 'Choose your provider and set milestones. Track progress, communicate in real-time, and release payment when satisfied.',
-    image: '✅',
-  },
+	{
+		step: "1",
+		title: "Describe Your Project",
+		description:
+			"Tell us what you need done. Include photos, budget, timeline, and any special requirements. Get instant matches with qualified providers.",
+		image: "📝",
+	},
+	{
+		step: "2",
+		title: "Compare & Chat",
+		description:
+			"Receive proposals within hours. Review provider profiles, ratings, portfolios, and pricing. Ask questions through our secure messaging.",
+		image: "💬",
+	},
+	{
+		step: "3",
+		title: "Hire with Confidence",
+		description:
+			"Choose your provider and set milestones. Track progress, communicate in real-time, and release payment when satisfied.",
+		image: "✅",
+	},
 ];
 
 const howItWorksProvider = [
-  {
-    step: '1',
-    title: 'Create Your Profile',
-    description: 'Set up your professional profile with services, service areas, portfolio, certifications, and pricing.',
-    image: '👤',
-  },
-  {
-    step: '2',
-    title: 'Find Jobs',
-    description: 'Browse requests in your area or get matched automatically. Submit competitive proposals with your timeline and pricing.',
-    image: '🔍',
-  },
-  {
-    step: '3',
-    title: 'Get Paid Securely',
-    description: 'Complete the job, request payment, and receive funds within 1-2 business days via your preferred method.',
-    image: '💰',
-  },
+	{
+		step: "1",
+		title: "Create Your Profile",
+		description:
+			"Set up your professional profile with services, service areas, portfolio, certifications, and pricing.",
+		image: "👤",
+	},
+	{
+		step: "2",
+		title: "Find Jobs",
+		description:
+			"Browse requests in your area or get matched automatically. Submit competitive proposals with your timeline and pricing.",
+		image: "🔍",
+	},
+	{
+		step: "3",
+		title: "Get Paid Securely",
+		description:
+			"Complete the job, request payment, and receive funds within 1-2 business days via your preferred method.",
+		image: "💰",
+	},
 ];
 
 const trustIndicators: Array<{ label: string; Icon: React.ElementType }> = [
@@ -219,34 +253,39 @@ const trustIndicators: Array<{ label: string; Icon: React.ElementType }> = [
 ];
 
 const faqs = [
-  {
-    question: 'How much does it cost to post a request?',
-    answer: 'Posting requests is completely free! You only pay when you hire a provider and the job is completed to your satisfaction.',
-  },
-  {
-    question: 'How are providers verified?',
-    answer: 'All providers undergo background checks, license verification, insurance confirmation, and identity validation before joining our platform.',
-  },
-  {
-    question: 'What if I\'m not satisfied with the work?',
-    answer: 'We offer a satisfaction guarantee. If work doesn\'t meet agreed standards, we offer mediation, refunds, or free rework through our dispute resolution.',
-  },
-  {
-    question: 'How long does it take to get proposals?',
-    answer: 'Most requests receive 3-5 proposals within 24 hours. Urgent requests can get responses within 1-2 hours.',
-  },
-  {
-    question: 'Is my payment secure?',
-    answer: 'Yes! Payments are held in escrow and only released when you approve completed work. We use bank-level encryption for all transactions.',
-  },
-  {
-    question: 'Can I message providers before hiring?',
-    answer: 'Absolutely! Our secure messaging lets you discuss details, ask questions, and clarify requirements before making a decision.',
-  },
+	{
+		question: "How much does it cost to post a request?",
+		answer:
+			"Posting requests is completely free! You only pay when you hire a provider and the job is completed to your satisfaction.",
+	},
+	{
+		question: "How are providers verified?",
+		answer:
+			"All providers undergo background checks, license verification, insurance confirmation, and identity validation before joining our platform.",
+	},
+	{
+		question: "What if I'm not satisfied with the work?",
+		answer:
+			"We offer a satisfaction guarantee. If work doesn't meet agreed standards, we offer mediation, refunds, or free rework through our dispute resolution.",
+	},
+	{
+		question: "How long does it take to get proposals?",
+		answer: "Most requests receive 3-5 proposals within 24 hours. Urgent requests can get responses within 1-2 hours.",
+	},
+	{
+		question: "Is my payment secure?",
+		answer:
+			"Yes! Payments are held in escrow and only released when you approve completed work. We use bank-level encryption for all transactions.",
+	},
+	{
+		question: "Can I message providers before hiring?",
+		answer:
+			"Absolutely! Our secure messaging lets you discuss details, ask questions, and clarify requirements before making a decision.",
+	},
 ];
 
 export default function HomePage() {
-  return (
+	return (
 		<Layout>
 			<div className='bg-white dark:bg-gray-950'>
 				{/* Hero Section */}

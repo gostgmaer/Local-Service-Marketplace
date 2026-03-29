@@ -9,7 +9,7 @@ export class Job {
   cancellation_reason?: string;          // ✅ NEW
   status: string;
   started_at: Date;
-  completed_at: Date;
+  completed_at?: Date;
   created_at: Date;                      // ✅ NEW
   updated_at?: Date;                     // ✅ NEW
 }
