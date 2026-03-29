@@ -1,6 +1,7 @@
 import {
 	Controller,
 	Post,
+	Patch,
 	Body,
 	Ip,
 	Inject,
@@ -36,6 +37,7 @@ import { OAuthUserDto } from "../dto/oauth-user.dto";
 import { VerifyTokenDto, VerifyTokenResponseDto } from "../dto/verify-token.dto";
 import { CheckIdentifierDto, CheckIdentifierResponseDto } from "../dto/check-identifier.dto";
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
+import { UpdateUserDto } from "../../user/dto/update-user.dto";
 // Future feature DTOs (uncomment when implementing)
 // import { Enable2faDto } from '../dto/2fa.dto';
 // import { ChangePasswordDto } from '../dto/account-management.dto';
@@ -55,10 +57,12 @@ export class AuthController {
 
 	@Post("register")
 	@HttpCode(HttpStatus.CREATED)
-	async register(
-		@Body() registerDto: RegisterDto,
-	): Promise<RegisterResponseDto> {
-		this.logger.info("POST /auth/register", { context: "AuthController", email: registerDto.email, phone: registerDto.phone });
+	async register(@Body() registerDto: RegisterDto): Promise<RegisterResponseDto> {
+		this.logger.info("POST /auth/register", {
+			context: "AuthController",
+			email: registerDto.email,
+			phone: registerDto.phone,
+		});
 		return this.authService.register(registerDto);
 	}
 
@@ -74,7 +78,7 @@ export class AuthController {
 		// Set tokens as HTTP-only cookies
 		this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-		return { message: 'Account created successfully', ...result };
+		return { message: "Account created successfully", ...result };
 	}
 
 	@Post("login")
@@ -90,7 +94,7 @@ export class AuthController {
 		// Set tokens as HTTP-only cookies
 		this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-		return { message: 'Login successful', ...result };
+		return { message: "Login successful", ...result };
 	}
 
 	@Post("logout")
@@ -105,7 +109,7 @@ export class AuthController {
 		// Clear cookies
 		this.clearAuthCookies(res);
 
-		return { message: 'Logged out successfully' };
+		return { message: "Logged out successfully" };
 	}
 
 	@Post("refresh")
@@ -125,7 +129,7 @@ export class AuthController {
 			maxAge: 15 * 60 * 1000, // 15 minutes
 		});
 
-		return { message: 'Token refreshed successfully', ...result };
+		return { message: "Token refreshed successfully", ...result };
 	}
 
 	@Post("password-reset/request")
@@ -136,7 +140,7 @@ export class AuthController {
 			email: passwordResetRequestDto.email,
 		});
 		await this.authService.requestPasswordReset(passwordResetRequestDto.email);
-		return { message: 'Password reset email sent if account exists' };
+		return { message: "Password reset email sent if account exists" };
 	}
 
 	@Post("password-reset/confirm")
@@ -144,7 +148,7 @@ export class AuthController {
 	async confirmPasswordReset(@Body() passwordResetConfirmDto: PasswordResetConfirmDto): Promise<{ message: string }> {
 		this.logger.info("POST /auth/password-reset/confirm", { context: "AuthController" });
 		await this.authService.confirmPasswordReset(passwordResetConfirmDto.token, passwordResetConfirmDto.newPassword);
-		return { message: 'Password has been reset successfully' };
+		return { message: "Password has been reset successfully" };
 	}
 
 	// ==========================================
@@ -269,6 +273,26 @@ export class AuthController {
 	}
 
 	// ==========================================
+	// Current User Profile
+	// ==========================================
+
+	@Get("me")
+	@UseGuards(JwtAuthGuard)
+	@HttpCode(HttpStatus.OK)
+	async getProfile(@Req() req: Request): Promise<any> {
+		const userId = req.user?.["sub"];
+		return this.authService.getProfile(userId);
+	}
+
+	@Patch("me")
+	@UseGuards(JwtAuthGuard)
+	@HttpCode(HttpStatus.OK)
+	async updateProfile(@Req() req: Request, @Body() updateUserDto: UpdateUserDto): Promise<any> {
+		const userId = req.user?.["sub"];
+		return this.authService.updateProfile(userId, updateUserDto);
+	}
+
+	// ==========================================
 	// Email Verification
 	// ==========================================
 
@@ -337,10 +361,7 @@ export class AuthController {
 	@Post("2fa/disable")
 	@UseGuards(JwtAuthGuard)
 	@HttpCode(HttpStatus.OK)
-	async disable2FA(
-		@Body() dto: { password: string; code?: string },
-		@Req() req: Request,
-	): Promise<{ result: string }> {
+	async disable2FA(@Body() dto: { password: string; code?: string }, @Req() req: Request): Promise<{ result: string }> {
 		await this.authService.disable2FA(req.user["sub"], dto.password, dto.code);
 		return { result: "2FA disabled successfully" };
 	}

@@ -100,7 +100,7 @@ class AuthService {
 	}
 
 	async getProfile(): Promise<AuthResponse["user"]> {
-		const response = await apiClient.get<AuthResponse["user"]>("/user/auth/profile");
+		const response = await apiClient.get<AuthResponse["user"]>("/user/auth/me");
 		return response.data;
 	}
 

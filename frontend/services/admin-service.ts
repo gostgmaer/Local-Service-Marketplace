@@ -9,6 +9,18 @@ export interface User {
   created_at: string;
 }
 
+export interface AdminCreateUserPayload {
+	email: string;
+	password: string;
+	name: string;
+	phone?: string;
+	role: "customer" | "provider" | "admin";
+	emailVerified?: boolean;
+	timezone?: string;
+	language?: string;
+	status?: "active" | "suspended";
+}
+
 export interface Dispute {
   id: string;
   job_id: string;
@@ -53,23 +65,36 @@ class AdminService {
 		if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
 		if (params?.page) searchParams.append("page", params.page.toString());
 
-		const response = await apiClient.get<{ data: User[]; total: number }>(`/admin/users?${searchParams.toString()}`);
+		const response = await apiClient.get<{ data: User[]; total: number }>(`/users?${searchParams.toString()}`);
 		// API client unwraps standardized response and returns { data, total } for paginated responses
 		return response.data;
 	}
 
 	async getUserById(id: string): Promise<User> {
-		const response = await apiClient.get<User>(`/admin/users/${id}`);
+		const response = await apiClient.get<User>(`/users/${id}`);
+		return response.data;
+	}
+
+	async createUser(payload: AdminCreateUserPayload): Promise<User> {
+		const response = await apiClient.post<User>("/users", payload);
 		return response.data;
 	}
 
 	async suspendUser(id: string, reason: string): Promise<User> {
-		const response = await apiClient.patch<User>(`/admin/users/${id}/suspend`, { reason });
+		const response = await apiClient.patch<User>(`/users/${id}/suspend`, { reason });
 		return response.data;
 	}
 
 	async activateUser(id: string): Promise<User> {
-		const response = await apiClient.patch<User>(`/admin/users/${id}/activate`, {});
+		const response = await apiClient.patch<User>(`/users/${id}/activate`, {});
+		return response.data;
+	}
+
+	async resetUserPassword(id: string, newPassword: string, reason?: string): Promise<{ success: true }> {
+		const response = await apiClient.patch<{ success: true }>(`/users/${id}/reset-password`, {
+			newPassword,
+			reason,
+		});
 		return response.data;
 	}
 
@@ -128,7 +153,7 @@ class AdminService {
 	}
 
 	async getSystemStats(): Promise<any> {
-		const response = await apiClient.get<any>("/admin/stats");
+		const response = await apiClient.get<any>("/users/stats");
 		return response.data;
 	}
 }

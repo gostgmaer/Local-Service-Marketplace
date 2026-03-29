@@ -14,6 +14,8 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { useMemo, useState } from "react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ROUTES } from "@/config/constants";
 import type { ColumnFiltersState, SortingState, Table } from "@tanstack/react-table";
 
 type UserRow = { id: string; name?: string; email?: string; role?: string; status?: string; created_at: string };
@@ -33,6 +35,7 @@ const mapUserSortBy = (field?: string): "createdAt" | "email" | "name" | "role" 
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
+	const router = useRouter();
 	const [serverSearch, setServerSearch] = useState("");
 	const [serverSorting, setServerSorting] = useState<SortingState>([{ id: "created_at", desc: true }]);
 	const [serverFilters, setServerFilters] = useState<ColumnFiltersState>([]);
@@ -167,6 +170,9 @@ export default function AdminUsersPage() {
 									exportLabel='Export Users'
 									exportFileName='admin-users'
 									emptyMessage='No users found'
+									emptyActionLabel='Create User'
+									onEmptyAction={() => router.push(ROUTES.DASHBOARD_ADMIN_USERS_CREATE)}
+									showEmptyAction={user?.role === "admin"}
 									isLoading={isFetching && !!users}
 									searchDebounceMs={300}
 									columns={[
