@@ -1,4 +1,5 @@
 import * as winston from 'winston';
+import { redactFormat } from './log-redaction';
 
 const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 
@@ -35,5 +36,6 @@ if (!isServerless) {
 }
 
 export const winstonConfig = {
+  format: redactFormat(),
   transports,
 };

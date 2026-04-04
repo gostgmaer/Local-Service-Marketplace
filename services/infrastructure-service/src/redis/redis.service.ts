@@ -18,7 +18,7 @@ export class RedisService implements OnModuleDestroy {
     if (this.cacheEnabled) {
       this.redisClient = new Redis({
         host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT) || 6379,
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
         password: process.env.REDIS_PASSWORD || undefined,
         retryStrategy: (times) => {
           const delay = Math.min(times * 50, 2000);
@@ -30,7 +30,7 @@ export class RedisService implements OnModuleDestroy {
         this.logger.log('Redis connected successfully', 'RedisService');
       });
 
-      this.redisClient.on('error', (err) => {
+      this.redisClient.on('error', (err: Error) => {
         this.logger.error(`Redis connection error: ${err.message}`, err.stack, 'RedisService');
         this.cacheEnabled = false; // Disable cache on error
       });
@@ -52,7 +52,7 @@ export class RedisService implements OnModuleDestroy {
     return this.cacheEnabled;
   }
 
-  getClient(): Redis {
+  getClient(): Redis | null {
     if (!this.cacheEnabled) {
       this.logger.warn('Attempted to get Redis client but cache is disabled', 'RedisService');
       return null;
@@ -63,7 +63,7 @@ export class RedisService implements OnModuleDestroy {
   /**
    * Get or create a Bull queue for job processing
    */
-  getQueue(queueName: string): Bull.Queue {
+  getQueue(queueName: string): Bull.Queue | null {
     if (!this.cacheEnabled) {
       this.logger.warn(`Attempted to get queue ${queueName} but cache is disabled`, 'RedisService');
       return null;
@@ -73,7 +73,7 @@ export class RedisService implements OnModuleDestroy {
       const queue = new Bull(queueName, {
         redis: {
           host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT) || 6379,
+          port: parseInt(process.env.REDIS_PORT || '6379', 10),
           password: process.env.REDIS_PASSWORD || undefined,
         },
       });
@@ -82,13 +82,13 @@ export class RedisService implements OnModuleDestroy {
       this.logger.log(`Created Bull queue: ${queueName}`, 'RedisService');
     }
 
-    return this.jobQueues.get(queueName);
+    return this.jobQueues.get(queueName) ?? null;
   }
 
   /**
    * Add a job to a queue
    */
-  async addJob(queueName: string, jobType: string, data: any, options?: Bull.JobOptions): Promise<Bull.Job> {
+  async addJob(queueName: string, jobType: string, data: any, options?: Bull.JobOptions): Promise<Bull.Job | null> {
     if (!this.cacheEnabled) {
       this.logger.warn(`Attempted to add job to queue ${queueName} but cache is disabled. Job will be skipped.`, 'RedisService');
       return null;
@@ -150,7 +150,7 @@ export class RedisService implements OnModuleDestroy {
   /**
    * Get job counts from queue
    */
-  async getJobCounts(queueName: string): Promise<Bull.JobCounts> {
+  async getJobCounts(queueName: string): Promise<Bull.JobCounts | null> {
     if (!this.cacheEnabled) {
       this.logger.warn(`Attempted to get job counts from queue ${queueName} but cache is disabled`, 'RedisService');
       return null;
@@ -168,6 +168,7 @@ export class RedisService implements OnModuleDestroy {
    */
   async cleanQueue(queueName: string, grace: number = 0, status: 'completed' | 'wait' | 'active' | 'delayed' | 'failed' = 'completed'): Promise<Bull.Job[]> {
     const queue = this.getQueue(queueName);
+    if (!queue) return [];
     return queue.clean(grace, status);
   }
 
