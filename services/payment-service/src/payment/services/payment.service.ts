@@ -132,6 +132,12 @@ export class PaymentService {
 			metadata: { jobId: payment.job_id, amount: finalAmount, currency, providerId },
 		});
 
+		// Attach gateway_response so the controller can forward redirect fields to
+		// the frontend (PayUbiz form POST fields, Instamojo longurl, etc.).
+		if (chargeResult.gatewayResponse) {
+			(payment as any).gateway_response = chargeResult.gatewayResponse;
+		}
+
 		return payment;
 	}
 

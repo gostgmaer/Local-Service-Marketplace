@@ -197,6 +197,33 @@ services:
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
       - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
+      # Payment gateway selection (default: mock for local dev)
+      - PAYMENT_GATEWAY=${PAYMENT_GATEWAY:-mock}
+      # Stripe
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      # Razorpay
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
+      # PayPal
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_WEBHOOK_ID=${PAYPAL_WEBHOOK_ID:-}
+      - PAYPAL_API_URL=${PAYPAL_API_URL:-https://api-m.sandbox.paypal.com}
+      # PayUbiz (India)
+      - PAYU_KEY=${PAYU_KEY:-}
+      - PAYU_SALT=${PAYU_SALT:-}
+      - PAYU_SUCCESS_URL=${PAYU_SUCCESS_URL:-}
+      - PAYU_FAILURE_URL=${PAYU_FAILURE_URL:-}
+      - PAYU_API_URL=${PAYU_API_URL:-https://test.payu.in}
+      # Instamojo (India)
+      - INSTAMOJO_API_KEY=${INSTAMOJO_API_KEY:-}
+      - INSTAMOJO_AUTH_TOKEN=${INSTAMOJO_AUTH_TOKEN:-}
+      - INSTAMOJO_SALT=${INSTAMOJO_SALT:-}
+      - INSTAMOJO_WEBHOOK_URL=${INSTAMOJO_WEBHOOK_URL:-}
+      - INSTAMOJO_REDIRECT_URL=${INSTAMOJO_REDIRECT_URL:-}
+      - INSTAMOJO_API_URL=${INSTAMOJO_API_URL:-https://test.instamojo.com}
     depends_on: [identity-service, comms-service]
     networks:
       - marketplace-network

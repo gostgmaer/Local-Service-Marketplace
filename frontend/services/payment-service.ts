@@ -7,20 +7,32 @@ function extractList<T>(payload: any): T[] {
 }
 
 export interface Payment {
-  id: string;
-  job_id: string;
-  amount: number;
-  currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
-  payment_method?: string;
-  transaction_id?: string;
-  created_at: string;
-  paid_at?: string;
-  user_id: string;
-  provider_id?: string;
-  platform_fee?: number;
-  provider_amount?: number;
-  failed_reason?: string;
+	id: string;
+	job_id: string;
+	amount: number;
+	currency: string;
+	status: "pending" | "completed" | "failed" | "refunded";
+	payment_method?: string;
+	transaction_id?: string;
+	created_at: string;
+	paid_at?: string;
+	user_id: string;
+	provider_id?: string;
+	platform_fee?: number;
+	provider_amount?: number;
+	failed_reason?: string;
+	/** Gateway used: stripe | razorpay | paypal | payubiz | instamojo | mock */
+	gateway?: string;
+	/**
+	 * Raw gateway response for redirect-based flows.
+	 *
+	 * PayUbiz  → { txnid, key, amount, productinfo, firstname, email, hash, surl, furl, payuAction }
+	 *            Submit a hidden form POST to `payuAction` to redirect the user.
+	 *
+	 * Instamojo → { id, longurl }
+	 *             Redirect the user to `longurl` to complete payment.
+	 */
+	gateway_response?: Record<string, any>;
 }
 
 export interface CreatePaymentData {
