@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { AvailabilitySchedule } from '@/components/features/providers/AvailabilitySchedule';
 import { getProviderProfile } from '@/services/user-service';
 import { getProviderReviews, getProviderReviewAggregates, ReviewWithDetails, ReviewAggregate } from '@/services/review-service';
+import { requestService, ServiceCategory } from '@/services/request-service';
 import { favoriteService } from '@/services/favorite-service';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/utils/helpers';
@@ -47,6 +48,16 @@ export default function ProviderDetailPage() {
     queryFn: () => getProviderReviewAggregates(providerId),
     enabled: !!providerId,
   });
+
+  const { data: categories } = useQuery({
+    queryKey: ['service-categories'],
+    queryFn: () => requestService.getCategories(),
+  });
+
+  const categoryMap = (categories || []).reduce<Record<string, ServiceCategory>>((acc, cat) => {
+    acc[cat.id] = cat;
+    return acc;
+  }, {});
 
   // Check if provider is favorited
   useEffect(() => {
@@ -199,14 +210,21 @@ export default function ProviderDetailPage() {
 								</CardHeader>
 								<CardContent>
 									<div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-										{provider.services?.map((service) => (
-											<div
-												key={service.id}
-												className='p-4 border border-gray-200 rounded-lg'>
-												<p className='text-sm text-gray-600'>Service ID:</p>
-												<p className='font-medium text-gray-900 truncate'>{service.category_id}</p>
-											</div>
-										))}
+										{provider.services?.map((service) => {
+											const category = categoryMap[service.category_id];
+											return (
+												<div
+													key={service.id}
+													className='p-4 border border-gray-200 rounded-lg'>
+													<p className='font-medium text-gray-900'>
+														{category?.name || 'Service'}
+													</p>
+													{category?.description && (
+														<p className='text-sm text-gray-500 mt-1'>{category.description}</p>
+													)}
+												</div>
+											);
+										})}
 									</div>
 								</CardContent>
 							</Card>
