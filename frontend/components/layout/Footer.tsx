@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ROUTES } from '@/config/constants';
 import { Mail, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -12,8 +13,9 @@ export function Footer() {
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement newsletter subscription
+    if (!email.trim()) return;
     setSubscribed(true);
+    toast.success('Thanks for subscribing! We\'ll keep you updated.');
     setEmail('');
     setTimeout(() => setSubscribed(false), 3000);
   };
@@ -211,38 +213,38 @@ export function Footer() {
             {/* Social Links */}
             <div className="flex items-center space-x-6">
               <a
-                href="https://facebook.com"
+                href={process.env.NEXT_PUBLIC_FACEBOOK_URL || '/contact'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                aria-label="Facebook"
+                aria-label="Follow us on Facebook"
               >
                 <Facebook className="w-5 h-5" />
               </a>
               <a
-                href="https://twitter.com"
+                href={process.env.NEXT_PUBLIC_TWITTER_URL || '/contact'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                aria-label="Twitter"
+                aria-label="Follow us on Twitter"
               >
                 <Twitter className="w-5 h-5" />
               </a>
               <a
-                href="https://linkedin.com"
+                href={process.env.NEXT_PUBLIC_LINKEDIN_URL || '/contact'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                aria-label="LinkedIn"
+                aria-label="Follow us on LinkedIn"
               >
                 <Linkedin className="w-5 h-5" />
               </a>
               <a
-                href="https://instagram.com"
+                href={process.env.NEXT_PUBLIC_INSTAGRAM_URL || '/contact'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                aria-label="Instagram"
+                aria-label="Follow us on Instagram"
               >
                 <Instagram className="w-5 h-5" />
               </a>

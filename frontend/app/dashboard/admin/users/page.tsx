@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { DataTable } from "@/components/ui";
@@ -165,7 +166,7 @@ export default function AdminUsersPage() {
 						</CardHeader>
 						<CardContent>
 							{isLoading && !users ?
-								<Loading size='sm' />
+								<SkeletonTable rows={8} />
 							: error ?
 								<ErrorState
 									title='Failed to load users'

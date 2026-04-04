@@ -29,7 +29,8 @@ export class RateLimitService {
         const count = parseInt(currentCount);
         
         if (count >= maxRequests) {
-          const ttl = await this.redisService.getClient().ttl(redisKey);
+          const client = this.redisService.getClient();
+          const ttl = client ? await client.ttl(redisKey) : 0;
           const resetAt = new Date(Date.now() + ttl * 1000);
 
           this.logger.log(

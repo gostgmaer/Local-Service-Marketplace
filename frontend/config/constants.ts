@@ -42,6 +42,7 @@ export const ROUTES = {
 
 	// Dashboard - Main
 	DASHBOARD: "/dashboard",
+	ONBOARDING: "/onboarding",
 
 	// Dashboard - Profile
 	DASHBOARD_PROFILE: "/dashboard/profile",

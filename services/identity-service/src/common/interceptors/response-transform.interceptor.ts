@@ -45,14 +45,8 @@ export class ResponseTransformInterceptor<T>
 					return data as StandardResponse<T>;
 				}
 
-				// If controller returned { success, data, message? } partial format, unwrap it
-				if (
-					data &&
-					typeof data === "object" &&
-					"success" in data &&
-					typeof (data as any).success === "boolean" &&
-					"data" in data
-				) {
+				// If controller returned { success, data?, message?, statusCode?, meta? } partial format, unwrap it
+				if (data && typeof data === "object" && "success" in data && typeof (data as any).success === "boolean") {
 					const partial = data as any;
 					return {
 						success: partial.success,

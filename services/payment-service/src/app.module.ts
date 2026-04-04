@@ -8,6 +8,7 @@ import { NotificationModule } from './common/notification/notification.module';
 import { UserModule } from './common/user/user.module';
 import { PaymentModule } from './payment/payment.module';
 import { HealthController } from './common/health/health.controller';
+import { AnalyticsModule } from './common/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HealthController } from './common/health/health.controller';
     NotificationModule,
     UserModule,
     PaymentModule,
+    AnalyticsModule,
   ],
   controllers: [HealthController],
 })

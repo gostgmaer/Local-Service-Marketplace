@@ -1,7 +1,7 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { DATABASE_POOL } from '@/common/database/database.module';
-import { User } from '../entities/user.entity';
+import { Injectable, Inject, NotFoundException } from "@nestjs/common";
+import { Pool } from "pg";
+import { DATABASE_POOL } from "@/common/database/database.module";
+import { User } from "../entities/user.entity";
 import { AdminCreateUserDto } from "../dto/admin-create-user.dto";
 import { AdminUserListQueryDto, AdminUserSortBy } from "../dto/admin-user-list-query.dto";
 
@@ -26,7 +26,12 @@ export class UserRepository {
 	}
 
 	async findById(id: string): Promise<User | null> {
-		const query = "SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL";
+		// Excludes password_hash — use findByEmail for auth lookups that need it
+		const query = `
+      SELECT id, email, name, phone, role, status, email_verified, profile_picture_url,
+             timezone, language, created_at, updated_at, last_login_at, deleted_at
+      FROM users WHERE id = $1 AND deleted_at IS NULL
+    `;
 		const result = await this.pool.query(query, [id]);
 		return result.rows[0] || null;
 	}
@@ -84,7 +89,7 @@ export class UserRepository {
 			// No updates, just return current user
 			const user = await this.findById(id);
 			if (!user) {
-				throw new Error("User not found");
+				throw new NotFoundException("User not found");
 			}
 			return user;
 		}
@@ -101,7 +106,7 @@ export class UserRepository {
 
 		const result = await this.pool.query(query, values);
 		if (result.rows.length === 0) {
-			throw new Error("User not found or update failed");
+			throw new NotFoundException("User not found or update failed");
 		}
 
 		return result.rows[0];
@@ -137,7 +142,8 @@ export class UserRepository {
 		const sortOrder = queryDto.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
 		const query = `
-      SELECT *
+      SELECT id, email, name, phone, role, status, email_verified, profile_picture_url,
+             timezone, language, created_at, updated_at, last_login_at, deleted_at
       FROM users
       ${whereClause}
       ORDER BY ${sortColumn} ${sortOrder} NULLS LAST, id ${sortOrder}

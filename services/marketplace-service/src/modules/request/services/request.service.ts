@@ -44,7 +44,7 @@ export class RequestService {
 		}
 
 		// Validate budget
-		if (dto.budget < 0) {
+		if (dto.budget <= 0) {
 			throw new BadRequestException("Budget must be a positive number");
 		}
 

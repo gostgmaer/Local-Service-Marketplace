@@ -4,12 +4,16 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { Providers } from './providers';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { WebVitals } from '@/components/performance/WebVitals';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Local Service Marketplace',
-  description: 'Connect with local service providers',
+  title: {
+    default: 'Local Service Marketplace',
+    template: '%s | Local Service Marketplace',
+  },
+  description: 'Connect with local service providers in your area. Find trusted professionals for home repairs, cleaning, tutoring, and more.',
 };
 
 export default function RootLayout({
@@ -38,6 +42,7 @@ export default function RootLayout({
 			<body className={inter.className}>
 				<ThemeProvider>
 					<Providers>
+						<WebVitals />
 						<main id='main-content'>{children}</main>
 						<Toaster position='top-right' />
 					</Providers>

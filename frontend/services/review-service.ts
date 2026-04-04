@@ -24,11 +24,10 @@ export interface Review {
 }
 
 export interface CreateReviewData {
-  job_id: string;
-  user_id: string;
-  provider_id: string;
-  rating: number;
-  comment: string;
+	job_id: string;
+	provider_id: string;
+	rating: number;
+	comment: string;
 }
 
 export interface ReviewWithDetails extends Review {

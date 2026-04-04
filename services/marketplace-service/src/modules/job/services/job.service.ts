@@ -5,12 +5,18 @@ import { CreateJobDto } from '../dto/create-job.dto';
 import { UpdateJobStatusDto, JobStatus } from '../dto/update-job-status.dto';
 import { JobResponseDto, PaginatedJobResponseDto } from "../dto/job-response.dto";
 import { JobQueryDto, JobSortBy, SortOrder } from "../dto/job-query.dto";
-import { NotFoundException, BadRequestException, ConflictException } from '../../../common/exceptions/http.exceptions';
+import {
+	NotFoundException,
+	BadRequestException,
+	ConflictException,
+	ForbiddenException,
+} from "../../../common/exceptions/http.exceptions";
 import { validateCursorMode, validateDateRange } from "../../../common/pagination/list-query-validation.util";
 import { KafkaService } from '../../../kafka/kafka.service';
 import { RedisService } from '../../../redis/redis.service';
 import { NotificationClient } from '../../../common/notification/notification.client';
 import { UserClient } from '../../../common/user/user.client';
+import { AnalyticsClient } from '../../../common/analytics/analytics.client';
 
 @Injectable()
 export class JobService {
@@ -22,6 +28,7 @@ export class JobService {
 		private readonly redisService: RedisService,
 		private readonly notificationClient: NotificationClient,
 		private readonly userClient: UserClient,
+		private readonly analyticsClient: AnalyticsClient,
 		@Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
 	) {}
 
@@ -67,6 +74,15 @@ export class JobService {
 			data: { jobId: job.id, requestId: job.request_id, providerId: job.provider_id, status: job.status },
 		});
 
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: dto.customer_id,
+			action: 'job_created',
+			resource: 'job',
+			resourceId: job.id,
+			metadata: { providerId: job.provider_id, requestId: job.request_id, status: job.status },
+		});
+
 		return JobResponseDto.fromEntity(job);
 	}
 
@@ -101,13 +117,23 @@ export class JobService {
 		return response;
 	}
 
-	async updateJobStatus(id: string, dto: UpdateJobStatusDto): Promise<JobResponseDto> {
+	async updateJobStatus(
+		id: string,
+		dto: UpdateJobStatusDto,
+		userId: string,
+		userRole: string,
+	): Promise<JobResponseDto> {
 		this.logger.log(`Updating job status: ${id} to ${dto.status}`, JobService.name);
 
 		// Validate job exists
 		const existingJob = await this.jobRepository.getJobById(id);
 		if (!existingJob) {
 			throw new NotFoundException("Job not found");
+		}
+
+		// Ownership check: only the customer, provider, or admin can update job status
+		if (userRole !== "admin" && existingJob.customer_id !== userId && existingJob.provider_id !== userId) {
+			throw new ForbiddenException("You are not authorized to update this job");
 		}
 
 		// Validate status transition
@@ -136,16 +162,30 @@ export class JobService {
 			data: { jobId: job.id, requestId: job.request_id, providerId: job.provider_id, status: job.status },
 		});
 
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: userId,
+			action: dto.status === 'in_progress' ? 'job_started' : `job_${dto.status}`,
+			resource: 'job',
+			resourceId: job.id,
+			metadata: { status: job.status, providerId: job.provider_id },
+		});
+
 		return JobResponseDto.fromEntity(job);
 	}
 
-	async completeJob(id: string): Promise<JobResponseDto> {
+	async completeJob(id: string, userId: string, userRole: string): Promise<JobResponseDto> {
 		this.logger.log(`Completing job: ${id}`, JobService.name);
 
 		// Validate job exists
 		const existingJob = await this.jobRepository.getJobById(id);
 		if (!existingJob) {
 			throw new NotFoundException("Job not found");
+		}
+
+		// Ownership check: only the customer or admin can complete a job
+		if (userRole !== "admin" && existingJob.customer_id !== userId) {
+			throw new ForbiddenException("Only the customer or an admin can complete a job");
 		}
 
 		// Validate job is in progress
@@ -172,6 +212,15 @@ export class JobService {
 			eventId: `${job.id}-${Date.now()}`,
 			timestamp: new Date().toISOString(),
 			data: { jobId: job.id, requestId: job.request_id, providerId: job.provider_id, status: job.status },
+		});
+
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: userId,
+			action: 'job_completed',
+			resource: 'job',
+			resourceId: job.id,
+			metadata: { providerId: job.provider_id, requestId: job.request_id },
 		});
 
 		return JobResponseDto.fromEntity(job);

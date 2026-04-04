@@ -5,9 +5,6 @@ export class CreatePaymentDto {
   job_id: string;
 
   @IsUUID()
-  user_id: string;
-
-  @IsUUID()
   provider_id: string;
 
   @IsNumber()

@@ -35,7 +35,7 @@ export default function ContactPage() {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
       await axios.post(`${API_URL}/api/v1/admin/contact`, data);
       toast.success('Message sent successfully! We\'ll get back to you soon.');
       reset();
@@ -171,11 +171,9 @@ export default function ContactPage() {
 									</div>
 									<div className='ml-4'>
 										<h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-1'>Phone</h3>
-										<a
-											href='tel:+1234567890'
-											className='text-primary-600 dark:text-primary-400 hover:underline'>
-											+1 (234) 567-890
-										</a>
+										<p className='text-gray-600 dark:text-gray-400'>
+											Available via email or in-app messaging
+										</p>
 									</div>
 								</div>
 
@@ -186,13 +184,11 @@ export default function ContactPage() {
 										</div>
 									</div>
 									<div className='ml-4'>
-										<h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-1'>Address</h3>
+										<h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-1'>Location</h3>
 										<p className='text-gray-600 dark:text-gray-400'>
-											123 Service Street
+											Servicing your local area
 											<br />
-											San Francisco, CA 94102
-											<br />
-											United States
+											Online &amp; On-site
 										</p>
 									</div>
 								</div>
@@ -211,7 +207,7 @@ export default function ContactPage() {
 								<h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-4'>Follow Us</h3>
 								<div className='flex space-x-4'>
 									<a
-										href='https://twitter.com'
+										href={process.env.NEXT_PUBLIC_TWITTER_URL || '/contact'}
 										target='_blank'
 										rel='noopener noreferrer'
 										className='text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400'>
@@ -224,7 +220,7 @@ export default function ContactPage() {
 										</svg>
 									</a>
 									<a
-										href='https://facebook.com'
+										href={process.env.NEXT_PUBLIC_FACEBOOK_URL || '/contact'}
 										target='_blank'
 										rel='noopener noreferrer'
 										className='text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400'>
@@ -241,7 +237,7 @@ export default function ContactPage() {
 										</svg>
 									</a>
 									<a
-										href='https://linkedin.com'
+										href={process.env.NEXT_PUBLIC_LINKEDIN_URL || '/contact'}
 										target='_blank'
 										rel='noopener noreferrer'
 										className='text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400'>

@@ -8,6 +8,7 @@ import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from "@/components/ui/Card";
 import { Loading } from '@/components/ui/Loading';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusBadge } from '@/components/ui/Badge';
 import { ErrorState } from "@/components/ui/ErrorState";
 import { jobService } from '@/services/job-service';
@@ -50,7 +51,7 @@ export default function JobsPage() {
 				</div>
 
 				{isLoading ?
-					<Loading />
+					<div className='grid gap-6'>{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
 				: error ?
 					<ErrorState
 						title='Failed to load jobs'

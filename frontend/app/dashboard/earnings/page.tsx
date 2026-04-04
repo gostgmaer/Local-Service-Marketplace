@@ -9,6 +9,7 @@ import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from "@/components/ui/Pagination";
 import { paymentService } from '@/services/payment-service';
@@ -293,7 +294,7 @@ export default function EarningsPage() {
 								</CardHeader>
 								<CardContent>
 									{isLoading ?
-										<Loading size='sm' />
+										<SkeletonTable rows={5} />
 									: paginatedTransactions.length > 0 ?
 										<div className='overflow-x-auto'>
 											<div className='mb-3 flex flex-wrap items-center gap-2 px-1 text-xs text-gray-500 dark:text-gray-400'>

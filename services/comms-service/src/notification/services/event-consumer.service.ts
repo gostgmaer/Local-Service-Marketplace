@@ -44,6 +44,9 @@ export class EventConsumerService implements OnModuleInit {
         case 'job_completed':
           await this.handleJobCompleted(event);
           break;
+        case 'job_cancelled':
+          await this.handleJobCancelled(event);
+          break;
         case 'payment_completed':
           await this.handlePaymentCompleted(event);
           break;
@@ -119,6 +122,15 @@ export class EventConsumerService implements OnModuleInit {
       event.data.userId, // Customer ID
       'job',
       'Your job has been completed'
+    );
+  }
+
+  private async handleJobCancelled(event: any): Promise<void> {
+    // Notify both provider and customer about cancellation
+    await this.notificationRepository.createNotification(
+      event.data.providerId,
+      'job',
+      'A job assigned to you has been cancelled'
     );
   }
 

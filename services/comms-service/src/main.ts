@@ -6,9 +6,12 @@ import { WinstonModule } from "nest-winston";
 import { winstonConfig } from "./common/config/winston.config";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { ResponseTransformInterceptor } from "./common/interceptors/response-transform.interceptor";
+import helmet from "helmet";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { logger: WinstonModule.createLogger(winstonConfig) });
+
+	app.use(helmet());
 
 	const configService = app.get(ConfigService);
 	const port = configService.get<number>("PORT", 3007);
@@ -28,8 +31,18 @@ async function bootstrap() {
 	const logger = app.get("winston");
 	app.useGlobalFilters(new HttpExceptionFilter(logger));
 
+	// Graceful shutdown — drain in-flight requests before exit
+	app.enableShutdownHooks();
+	const shutdown = async (signal: string) => {
+		logger.info(`${signal} received — shutting down ${serviceName} gracefully`);
+		await app.close();
+		process.exit(0);
+	};
+	process.once('SIGTERM', () => shutdown('SIGTERM'));
+	process.once('SIGINT', () => shutdown('SIGINT'));
+
 	await app.listen(port);
-	console.log(`🚀 ${serviceName} running on port ${port}`);
+	logger.info(`${serviceName} running on port ${port}`);
 }
 
 bootstrap();

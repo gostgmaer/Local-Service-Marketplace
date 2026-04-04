@@ -5,7 +5,13 @@
 # when you run `docker compose up` — no extra flags needed.
 #
 # Purpose: Wire every backend service to the LOCAL postgres container
-# instead of a cloud database (Neon, etc.).
+# via PgBouncer (transaction-mode connection pooler) instead of a cloud
+# database (Neon, etc.).
+#
+# Connection flow (local):
+#   Service pool (max 10)  →  pgbouncer:5432  →  postgres:5432
+#   pgbouncer: max_client_conn=200, pool_size=25 backend connections
+#   postgres: max_connections=200 (raised from default 100)
 #
 # For production / cloud builds, run WITHOUT this file:
 #   docker compose -f docker-compose.yml up -d
@@ -13,12 +19,51 @@
 
 services:
   # ---------------------------------------------------------------------------
+  # PgBouncer — transaction-mode pooler in front of local postgres.
+  # All backend services connect here (port 5432 on the pgbouncer container)
+  # instead of connecting to postgres directly.
+  # ---------------------------------------------------------------------------
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: marketplace-pgbouncer
+    restart: unless-stopped
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_dev_only
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=marketplace
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=200
+      - DEFAULT_POOL_SIZE=25
+      - MIN_POOL_SIZE=5
+      - RESERVE_POOL_SIZE=5
+      - RESERVE_POOL_TIMEOUT=3
+      - SERVER_RESET_QUERY=DISCARD ALL
+      - IGNORE_STARTUP_PARAMETERS=extra_float_digits
+      - LOG_CONNECTIONS=0
+      - LOG_DISCONNECTIONS=0
+      - STATS_PERIOD=60
+    ports:
+      - "5433:5432"
+    networks:
+      - marketplace-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
   # identity-service
   # ---------------------------------------------------------------------------
   identity-service:
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_dev_only@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
+      - DATABASE_URL=postgresql://postgres:postgres_dev_only@pgbouncer:5432/marketplace
+      - DATABASE_HOST=pgbouncer
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres_dev_only
@@ -26,7 +71,7 @@ services:
       - DATABASE_SSL=false
       - NODE_ENV=development
     depends_on:
-      postgres:
+      pgbouncer:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
@@ -34,8 +79,8 @@ services:
   # ---------------------------------------------------------------------------
   marketplace-service:
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_dev_only@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
+      - DATABASE_URL=postgresql://postgres:postgres_dev_only@pgbouncer:5432/marketplace
+      - DATABASE_HOST=pgbouncer
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres_dev_only
@@ -43,7 +88,7 @@ services:
       - DATABASE_SSL=false
       - NODE_ENV=development
     depends_on:
-      postgres:
+      pgbouncer:
         condition: service_healthy
       identity-service:
         condition: service_started
@@ -53,8 +98,8 @@ services:
   # ---------------------------------------------------------------------------
   payment-service:
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_dev_only@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
+      - DATABASE_URL=postgresql://postgres:postgres_dev_only@pgbouncer:5432/marketplace
+      - DATABASE_HOST=pgbouncer
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres_dev_only
@@ -62,7 +107,7 @@ services:
       - DATABASE_SSL=false
       - NODE_ENV=development
     depends_on:
-      postgres:
+      pgbouncer:
         condition: service_healthy
       identity-service:
         condition: service_started
@@ -74,8 +119,8 @@ services:
   # ---------------------------------------------------------------------------
   comms-service:
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_dev_only@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
+      - DATABASE_URL=postgresql://postgres:postgres_dev_only@pgbouncer:5432/marketplace
+      - DATABASE_HOST=pgbouncer
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres_dev_only
@@ -83,7 +128,7 @@ services:
       - DATABASE_SSL=false
       - NODE_ENV=development
     depends_on:
-      postgres:
+      pgbouncer:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
@@ -91,8 +136,8 @@ services:
   # ---------------------------------------------------------------------------
   oversight-service:
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_dev_only@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
+      - DATABASE_URL=postgresql://postgres:postgres_dev_only@pgbouncer:5432/marketplace
+      - DATABASE_HOST=pgbouncer
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres_dev_only
@@ -100,7 +145,7 @@ services:
       - DATABASE_SSL=false
       - NODE_ENV=development
     depends_on:
-      postgres:
+      pgbouncer:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
@@ -108,8 +153,8 @@ services:
   # ---------------------------------------------------------------------------
   infrastructure-service:
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_dev_only@postgres:5432/marketplace
-      - DATABASE_HOST=postgres
+      - DATABASE_URL=postgresql://postgres:postgres_dev_only@pgbouncer:5432/marketplace
+      - DATABASE_HOST=pgbouncer
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres_dev_only
@@ -117,5 +162,6 @@ services:
       - DATABASE_SSL=false
       - NODE_ENV=development
     depends_on:
-      postgres:
+      pgbouncer:
         condition: service_healthy
+

@@ -70,8 +70,8 @@ function ResetPasswordContent() {
 			}
 
 			try {
-				const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
-				await axios.post(`${API_URL}/auth/verify-reset-token`, { token });
+				const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
+				await axios.post(`${API_URL}/api/v1/user/auth/verify-reset-token`, { token });
 				setTokenValid(true);
 			} catch (error) {
 				setTokenValid(false);
@@ -90,8 +90,8 @@ function ResetPasswordContent() {
 
 		setIsSubmitting(true);
 		try {
-			const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
-			await axios.post(`${API_URL}/auth/reset-password`, { token, password: data.password });
+			const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
+			await axios.post(`${API_URL}/api/v1/user/auth/reset-password`, { token, password: data.password });
 
 			setResetSuccess(true);
 			toast.success("Password reset successfully");

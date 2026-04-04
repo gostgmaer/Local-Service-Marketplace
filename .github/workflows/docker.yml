@@ -1,0 +1,183 @@
+name: Docker Build & Security Scan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/**'
+      - 'api-gateway/**'
+      - 'docker-compose.yml'
+      - 'docker-compose.prod.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/**'
+      - 'api-gateway/**'
+      - 'docker-compose.yml'
+      - 'docker-compose.prod.yml'
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-build:
+    name: "Docker Build (${{ matrix.service }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: identity-service
+            context: services/identity-service
+          - service: marketplace-service
+            context: services/marketplace-service
+          - service: payment-service
+            context: services/payment-service
+          - service: comms-service
+            context: services/comms-service
+          - service: oversight-service
+            context: services/oversight-service
+          - service: infrastructure-service
+            context: services/infrastructure-service
+          - service: api-gateway
+            context: api-gateway
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          load: true
+          tags: lsmp-${{ matrix.service }}:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Check image size
+        run: |
+          docker images lsmp-${{ matrix.service }}:ci-${{ github.sha }} --format "{{.Size}}"
+          SIZE=$(docker images lsmp-${{ matrix.service }}:ci-${{ github.sha }} --format "{{.Size}}")
+          echo "Image size for ${{ matrix.service }}: $SIZE"
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: lsmp-${{ matrix.service }}:ci-${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+        continue-on-error: true
+
+      - name: Login to Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY || 'ghcr.io' }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          REGISTRY="${{ secrets.DOCKER_REGISTRY || 'ghcr.io' }}"
+          IMAGE_BASE="${REGISTRY}/${{ github.repository_owner }}/lsmp-${{ matrix.service }}"
+          docker tag lsmp-${{ matrix.service }}:ci-${{ github.sha }} ${IMAGE_BASE}:${{ github.sha }}
+          docker tag lsmp-${{ matrix.service }}:ci-${{ github.sha }} ${IMAGE_BASE}:latest
+          docker push ${IMAGE_BASE}:${{ github.sha }}
+          docker push ${IMAGE_BASE}:latest
+
+  compose-validation:
+    name: "Validate Docker Compose Files"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate base compose
+        run: docker compose -f docker-compose.yml config --quiet
+
+      - name: Validate production compose
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
+
+  migration-check:
+    name: "Database Migration Validation"
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: marketplace_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Apply base schema
+        run: |
+          PGPASSWORD=testpass psql -h localhost -U postgres -d marketplace_test -f database/schema.sql
+        env:
+          PGPASSWORD: testpass
+
+      - name: Install migration dependencies
+        working-directory: database
+        run: npm install --production
+
+      - name: Check migration status
+        working-directory: database
+        run: node migrate.js status
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: testpass
+          DATABASE_NAME: marketplace_test
+
+      - name: Run pending migrations
+        working-directory: database
+        run: node migrate.js up
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: testpass
+          DATABASE_NAME: marketplace_test
+
+  security-scan:
+    name: "OWASP ZAP Baseline Scan"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [docker-build, compose-validation]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ secrets.STAGING_URL || 'http://localhost:3700' }}
+          rules_file_name: 'config/security/zap-config.conf'
+          allow_issue_writing: false
+        continue-on-error: true
+
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-security-report
+          path: report_html.html
+          retention-days: 30

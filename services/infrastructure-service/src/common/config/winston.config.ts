@@ -1,6 +1,8 @@
 import * as winston from 'winston';
+import { redactFormat } from './log-redaction';
 
 export const winstonConfig = {
+  format: redactFormat(),
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(

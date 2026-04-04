@@ -13,7 +13,7 @@ import { ConflictException, NotFoundException } from "@/common/exceptions/http.e
 
 @Injectable()
 export class UserService {
-	private readonly saltRounds = 10;
+	private readonly saltRounds = 12;
 
 	constructor(
 		private readonly userRepository: UserRepository,
@@ -52,10 +52,14 @@ export class UserService {
 		}
 	}
 
-	async suspendUser(userId: string): Promise<UserResponseDto> {
+	async suspendUser(userId: string, reason?: string): Promise<UserResponseDto> {
 		const updated = await this.userRepository.updateStatus(userId, "suspended");
 		if (!updated) {
 			throw new NotFoundException(`User with ID ${userId} not found`);
+		}
+
+		if (reason) {
+			this.logger.info(`User ${userId} suspended. Reason: ${reason}`, "UserService");
 		}
 
 		return this.mapToDto(updated);

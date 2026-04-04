@@ -11,6 +11,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loading } from '@/components/ui/Loading';
+import { SkeletonListItem } from '@/components/ui/Skeleton';
 import { ErrorState } from "@/components/ui/ErrorState";
 import { messageService, Conversation } from "@/services/message-service";
 import { formatDateTime } from '@/utils/helpers';
@@ -53,7 +54,7 @@ export default function MessagesPage() {
     if (!messageText.trim() || !selectedJobId) return;
 
     try {
-      await messageService.sendMessage({ job_id: selectedJobId, sender_id: user?.id ?? "", message: messageText });
+      await messageService.sendMessage({ job_id: selectedJobId, message: messageText });
       setMessageText('');
     } catch (error) {
       console.error('Failed to send message');
@@ -87,7 +88,7 @@ export default function MessagesPage() {
 							</CardHeader>
 							<CardContent>
 								{isLoading ?
-									<Loading size='sm' />
+									<div className='space-y-2'>{Array.from({ length: 4 }).map((_, i) => <SkeletonListItem key={i} />)}</div>
 								: conversations && conversations.length > 0 ?
 									<div className='space-y-2'>
 										{conversations.map((conv: Conversation) => (

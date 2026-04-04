@@ -73,16 +73,17 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     await this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         try {
-          const event = JSON.parse(message.value.toString());
+          const event = JSON.parse(message.value?.toString() ?? '{}');
           this.logger.log(
             `Received event from ${topic}: ${event.eventType}`,
             'KafkaService',
           );
           await callback(event);
         } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
           this.logger.error(
-            `Failed to process event: ${error.message}`,
-            error.stack,
+            `Failed to process event: ${err.message}`,
+            err.stack,
             'KafkaService',
           );
         }

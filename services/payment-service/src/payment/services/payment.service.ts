@@ -8,6 +8,8 @@ import { validateCursorMode, validateDateRange } from "../../common/pagination/l
 import { KafkaService } from '../../kafka/kafka.service';
 import { NotificationClient } from '../../common/notification/notification.client';
 import { UserClient } from '../../common/user/user.client';
+import { AnalyticsClient } from '../../common/analytics/analytics.client';
+import { PaymentGatewayService } from "../gateway/payment-gateway.service";
 import {
 	PaginatedTransactionResponseDto,
 	SortOrder,
@@ -24,6 +26,8 @@ export class PaymentService {
 		private readonly kafkaService: KafkaService,
 		private readonly notificationClient: NotificationClient,
 		private readonly userClient: UserClient,
+		private readonly analyticsClient: AnalyticsClient,
+		private readonly paymentGateway: PaymentGatewayService,
 	) {}
 
 	async createPayment(
@@ -33,6 +37,7 @@ export class PaymentService {
 		userId: string,
 		providerId: string,
 		couponCode?: string,
+		gateway?: string,
 	): Promise<Payment> {
 		this.logger.log(`Creating payment for job ${jobId}`, "PaymentService");
 
@@ -45,9 +50,25 @@ export class PaymentService {
 			this.logger.log(`Coupon ${couponCode} applied. Original: ${amount}, Final: ${finalAmount}`, "PaymentService");
 		}
 
-		// In production, this would integrate with a payment gateway (Stripe, PayPal, etc.)
-		// For now, we simulate payment processing
-		const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		// Pre-fetch user info — needed by PayUbiz (firstname/email) and Instamojo (buyer_name/email).
+		// Non-blocking: charge proceeds with defaults if identity-service is temporarily unavailable.
+		const user = await this.userClient.getUserById(userId).catch(() => null);
+
+		// Charge via payment gateway — per-request override via X-Payment-Gateway header
+		const chargeParams = {
+			amount: finalAmount,
+			currency,
+			description: `Job ${jobId} payment`,
+			customerEmail: user?.email,
+			customerName: user?.name,
+			metadata: { job_id: jobId, user_id: userId, provider_id: providerId },
+		};
+		const chargeResult =
+			gateway ?
+				await this.paymentGateway.chargeWith(gateway, chargeParams)
+			:	await this.paymentGateway.charge(chargeParams);
+
+		const activeGatewayName = gateway ?? this.paymentGateway.getActiveGatewayName();
 
 		const payment = await this.paymentRepository.createPayment(
 			jobId,
@@ -56,23 +77,30 @@ export class PaymentService {
 			finalAmount,
 			currency,
 			"card",
-			transactionId,
+			chargeResult.transactionId,
+			activeGatewayName,
 		);
 
-		// Simulate payment processing - in real scenario, this would be async
-		// and status would be updated via webhook
-		await this.paymentRepository.updatePaymentStatus(payment.id, "completed", transactionId);
+		// Mark as completed immediately for succeeded gateway responses.
+		// For 'pending' (async confirmations), status is updated via Stripe webhook.
+		const paymentStatus = chargeResult.status === "succeeded" ? "completed" : "pending";
+		await this.paymentRepository.updatePaymentStatus(payment.id, paymentStatus, chargeResult.transactionId);
 
-		this.logger.log(`Payment created successfully: ${payment.id}`, "PaymentService");
+		this.logger.log(`Payment created: ${payment.id}, gateway status: ${chargeResult.status}`, "PaymentService");
 
-		// Send payment confirmation email
-		const userEmail = await this.userClient.getUserEmail(userId);
+		// Send payment confirmation email (reuse pre-fetched user — avoids a second HTTP call)
+		const userEmail = user?.email ?? null;
 		if (userEmail) {
 			this.notificationClient
 				.sendEmail({
 					to: userEmail,
 					template: "paymentReceived",
-					variables: { amount: finalAmount, currency: currency, transactionId: transactionId, serviceName: "Service" },
+					variables: {
+						amount: finalAmount,
+						currency: currency,
+						transactionId: chargeResult.transactionId,
+						serviceName: "Service",
+					},
 				})
 				.catch((err) => {
 					this.logger.warn(`Failed to send payment confirmation: ${err.message}`, "PaymentService");
@@ -91,8 +119,24 @@ export class PaymentService {
 				currency: payment.currency,
 				status: "completed",
 				transactionId: payment.transaction_id,
+				gateway: activeGatewayName,
 			},
 		});
+
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: userId,
+			action: "payment_completed",
+			resource: "payment",
+			resourceId: payment.id,
+			metadata: { jobId: payment.job_id, amount: finalAmount, currency, providerId },
+		});
+
+		// Attach gateway_response so the controller can forward redirect fields to
+		// the frontend (PayUbiz form POST fields, Instamojo longurl, etc.).
+		if (chargeResult.gatewayResponse) {
+			(payment as any).gateway_response = chargeResult.gatewayResponse;
+		}
 
 		return payment;
 	}

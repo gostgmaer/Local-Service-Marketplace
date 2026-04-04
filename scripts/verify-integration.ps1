@@ -1,7 +1,7 @@
-# Quick Verification Script
+﻿# Quick Verification Script
 # Tests all services through API Gateway
 
-Write-Host "🔍 Platform Integration Verification" -ForegroundColor Cyan
+Write-Host "?? Platform Integration Verification" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -17,19 +17,19 @@ function Test-Endpoint {
     
     try {
         $response = Invoke-WebRequest -Uri "$GATEWAY_URL$Url" -Method $Method -UseBasicParsing -ErrorAction Stop
-        Write-Host "✅ $Name" -ForegroundColor Green
+        Write-Host "(+) $Name" -ForegroundColor Green
         $results[$Name] = @{ Status = "OK"; Code = $response.StatusCode }
         return $true
     }
     catch {
         $statusCode = $_.Exception.Response.StatusCode.value__
         if ($statusCode -eq 401) {
-            Write-Host "🔒 $Name (401 Unauthorized - Expected)" -ForegroundColor Yellow
+            Write-Host "?? $Name (401 Unauthorized - Expected)" -ForegroundColor Yellow
             $results[$Name] = @{ Status = "Protected"; Code = 401 }
             return $true
         }
         else {
-            Write-Host "❌ $Name (Error: $statusCode)" -ForegroundColor Red
+            Write-Host "(x) $Name (Error: $statusCode)" -ForegroundColor Red
             $results[$Name] = @{ Status = "Failed"; Code = $statusCode }
             return $false
         }
@@ -59,7 +59,7 @@ Test-Endpoint "Provider Services Endpoint" "/providers/test-id/services" -Method
 Test-Endpoint "Provider Availability Endpoint" "/providers/test-id/availability" -Method "PATCH"
 
 Write-Host "`n=====================================" -ForegroundColor Cyan
-Write-Host "📊 Test Summary" -ForegroundColor Cyan
+Write-Host "?? Test Summary" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
 
 $total = $results.Count
@@ -68,19 +68,19 @@ $protected = ($results.Values | Where-Object { $_.Status -eq "Protected" }).Coun
 $failed = ($results.Values | Where-Object { $_.Status -eq "Failed" }).Count
 
 Write-Host "`nTotal Tests: $total" -ForegroundColor White
-Write-Host "✅ OK: $ok" -ForegroundColor Green
-Write-Host "🔒 Protected (Expected): $protected" -ForegroundColor Yellow
-Write-Host "❌ Failed: $failed" -ForegroundColor Red
+Write-Host "(+) OK: $ok" -ForegroundColor Green
+Write-Host "?? Protected (Expected): $protected" -ForegroundColor Yellow
+Write-Host "(x) Failed: $failed" -ForegroundColor Red
 
 if ($failed -eq 0) {
-    Write-Host "`n🎉 All services are healthy and properly integrated!" -ForegroundColor Green
+    Write-Host "`n?? All services are healthy and properly integrated!" -ForegroundColor Green
 }
 else {
-    Write-Host "`n⚠️  Some services are not responding. Check docker-compose logs." -ForegroundColor Yellow
+    Write-Host "`n(!)?  Some services are not responding. Check docker-compose logs." -ForegroundColor Yellow
 }
 
 Write-Host "`n=====================================" -ForegroundColor Cyan
-Write-Host "🎛️  Feature Flags Status" -ForegroundColor Cyan
+Write-Host "???  Feature Flags Status" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
 
 # Check .env file for feature flags
@@ -88,31 +88,31 @@ if (Test-Path ".env") {
     $envContent = Get-Content ".env"
     
     $flags = @{
-        "EMAIL_ENABLED" = "📧 Email Notifications"
-        "SMS_ENABLED" = "📱 SMS Notifications"
-        "CACHE_ENABLED" = "💾 Redis Cache"
-        "EVENT_BUS_ENABLED" = "📡 Kafka Events"
-        "WORKERS_ENABLED" = "⚙️  Background Workers"
+        "EMAIL_ENABLED" = "?? Email Notifications"
+        "SMS_ENABLED" = "?? SMS Notifications"
+        "CACHE_ENABLED" = "?? Redis Cache"
+        "EVENT_BUS_ENABLED" = "?? Kafka Events"
+        "WORKERS_ENABLED" = "(gear)?  Background Workers"
     }
     
     foreach ($flag in $flags.Keys) {
         $line = $envContent | Where-Object { $_ -match "^$flag=" }
         if ($line) {
             $value = ($line -split "=")[1]
-            $status = if ($value -eq "true") { "✅ Enabled" } else { "❌ Disabled" }
+            $status = if ($value -eq "true") { "(+) Enabled" } else { "(x) Disabled" }
             Write-Host "$($flags[$flag]): $status" -ForegroundColor $(if ($value -eq "true") { "Green" } else { "Gray" })
         }
         else {
-            Write-Host "$($flags[$flag]): ⚠️  Not Configured" -ForegroundColor Yellow
+            Write-Host "$($flags[$flag]): (!)?  Not Configured" -ForegroundColor Yellow
         }
     }
 }
 else {
-    Write-Host "⚠️  .env file not found. Using defaults." -ForegroundColor Yellow
+    Write-Host "(!)?  .env file not found. Using defaults." -ForegroundColor Yellow
 }
 
 Write-Host "`n=====================================" -ForegroundColor Cyan
-Write-Host "📝 Recommendations" -ForegroundColor Cyan
+Write-Host "?? Recommendations" -ForegroundColor Cyan
 Write-Host "=====================================" -ForegroundColor Cyan
 
 Write-Host ""
@@ -131,4 +131,4 @@ Write-Host "4. View detailed report:" -ForegroundColor White
 Write-Host "   See PLATFORM_INTEGRATION_REPORT.md" -ForegroundColor Gray
 Write-Host ""
 
-Write-Host "✨ Verification Complete!" -ForegroundColor Cyan
+Write-Host "? Verification Complete!" -ForegroundColor Cyan

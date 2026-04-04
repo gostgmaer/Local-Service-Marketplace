@@ -8,7 +8,12 @@
     "seed:ts": "npx ts-node seed.ts",
     "seed:ts:dev": "cross-env NODE_ENV=development npx ts-node seed.ts",
     "verify": "node verify-seed.js",
-    "verify-schema": "node verify-schema.js"
+    "verify-schema": "node verify-schema.js",
+    "migrate": "node migrate.js",
+    "migrate:up": "node migrate.js up",
+    "migrate:down": "node migrate.js down",
+    "migrate:status": "node migrate.js status",
+    "migrate:create": "node migrate.js create"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

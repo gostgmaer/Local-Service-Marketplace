@@ -13,6 +13,7 @@ import { formatDate } from '@/utils/helpers';
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import Link from "next/link";
 import { Loading } from "@/components/ui";
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { useMemo, useState } from "react";
 import type { ColumnFiltersState, SortingState, Table } from "@tanstack/react-table";
 
@@ -136,7 +137,7 @@ export default function AdminDisputesPage() {
 						</CardHeader>
 						<CardContent>
 							{isLoading && !disputes ?
-								<Loading size='sm' />
+								<SkeletonTable rows={6} />
 							: error ?
 								<ErrorState
 									title='Failed to load disputes'

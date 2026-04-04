@@ -4,6 +4,7 @@ services:
     image: postgres:17-alpine
     container_name: marketplace-postgres
     restart: unless-stopped
+    command: ["postgres", "-c", "max_connections=200", "-c", "shared_buffers=256MB"]
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev_only}
@@ -20,8 +21,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # Cache & Queue
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
   redis:
     image: redis:7-alpine
     container_name: marketplace-redis
@@ -116,19 +120,30 @@ services:
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3700/api/v1/auth/google/callback}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3700/api/v1/user/auth/google/callback}
       - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
       - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
-      - FACEBOOK_CALLBACK_URL=${FACEBOOK_CALLBACK_URL:-http://localhost:3700/api/v1/auth/facebook/callback}
+      - FACEBOOK_CALLBACK_URL=${FACEBOOK_CALLBACK_URL:-http://localhost:3700/api/v1/user/auth/facebook/callback}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
 
   # marketplace-service: request + proposal + job + review merged
   marketplace-service:
@@ -157,14 +172,28 @@ services:
       - USER_SERVICE_URL=http://identity-service:3001
       - AUTH_SERVICE_URL=http://identity-service:3001
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
+      - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [identity-service]
+    depends_on:
+      identity-service:
+        condition: service_healthy
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3003/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
 
   payment-service:
     build:
@@ -190,21 +219,58 @@ services:
       - REDIS_URL=redis://redis:6379
       - USER_SERVICE_URL=http://identity-service:3001
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
+      - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
-    depends_on: [identity-service, comms-service]
+      # Payment gateway selection (default: mock for local dev)
+      - PAYMENT_GATEWAY=${PAYMENT_GATEWAY:-mock}
+      # Stripe
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      # Razorpay
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
+      # PayPal
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_WEBHOOK_ID=${PAYPAL_WEBHOOK_ID:-}
+      - PAYPAL_API_URL=${PAYPAL_API_URL:-https://api-m.sandbox.paypal.com}
+      # PayUbiz (India)
+      - PAYU_KEY=${PAYU_KEY:-}
+      - PAYU_SALT=${PAYU_SALT:-}
+      - PAYU_SUCCESS_URL=${PAYU_SUCCESS_URL:-}
+      - PAYU_FAILURE_URL=${PAYU_FAILURE_URL:-}
+      - PAYU_API_URL=${PAYU_API_URL:-https://test.payu.in}
+      # Instamojo (India)
+      - INSTAMOJO_API_KEY=${INSTAMOJO_API_KEY:-}
+      - INSTAMOJO_AUTH_TOKEN=${INSTAMOJO_AUTH_TOKEN:-}
+      - INSTAMOJO_SALT=${INSTAMOJO_SALT:-}
+      - INSTAMOJO_WEBHOOK_URL=${INSTAMOJO_WEBHOOK_URL:-}
+      - INSTAMOJO_REDIRECT_URL=${INSTAMOJO_REDIRECT_URL:-}
+      - INSTAMOJO_API_URL=${INSTAMOJO_API_URL:-https://test.instamojo.com}
+    depends_on:
+      identity-service:
+        condition: service_healthy
+      comms-service:
+        condition: service_healthy
     networks:
       - marketplace-network
-    # healthcheck:
-      # test: ["CMD", "wget", "--spider", "-q", "http://localhost:3006/health"]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 40s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3006/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
 
   # comms-service: notification + messaging merged
   comms-service:
@@ -239,14 +305,26 @@ services:
       - PUSH_NOTIFICATIONS_ENABLED=${PUSH_NOTIFICATIONS_ENABLED:-false}
       - NOTIFICATION_PREFERENCES_ENABLED=${NOTIFICATION_PREFERENCES_ENABLED:-false}
       - DEVICE_TRACKING_ENABLED=${DEVICE_TRACKING_ENABLED:-false}
+      - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3007/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
 
   # oversight-service: admin + analytics merged
   oversight-service:
@@ -277,10 +355,21 @@ services:
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - ANALYTICS_ENABLED=${ANALYTICS_ENABLED:-true}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3010/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   infrastructure-service:
     build:
@@ -310,22 +399,28 @@ services:
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - BACKGROUND_JOBS_ENABLED=${BACKGROUND_JOBS_ENABLED:-false}
       - RATE_LIMITING_ENABLED=${RATE_LIMITING_ENABLED:-true}
       - FEATURE_FLAGS_ENABLED=${FEATURE_FLAGS_ENABLED:-true}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
-    # healthcheck:
-      # test: ["CMD", "wget", "--spider", "-q", "http://localhost:3012/health"]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 40s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3012/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   # Shared MongoDB for all services
   mongo:
@@ -335,8 +430,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: mongoadmin
-      MONGO_INITDB_ROOT_PASSWORD: mongopass123
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME must be set}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD must be set}
     volumes:
       - mongo_data:/data/db
     networks:
@@ -366,7 +461,7 @@ services:
       - ENABLE_LOGGING=true
       - ENABLE_FILE_LOGS=false
       - CORS_ORIGIN=*
-      - MONGO_URL=mongodb://mongoadmin:mongopass123@mongo:27017/email_service?authSource=admin
+      - MONGO_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/email_service?authSource=admin
       - MONGO_MAX_POOL_SIZE=50
       - MONGO_MIN_POOL_SIZE=10
       - ENABLE_KAFKA=${EVENT_BUS_ENABLED:-false}
@@ -384,7 +479,8 @@ services:
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     networks:
       - marketplace-network
 
@@ -407,7 +503,7 @@ services:
       - TENANCY_ENABLED=false
       - DEFAULT_TENANT_ID=marketplace
       - API_KEY=${SMS_API_KEY:-change-me-to-a-strong-random-secret}
-      - MONGODB_URI=mongodb://mongoadmin:mongopass123@mongo:27017/sms_service?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/sms_service?authSource=admin
       - SMS_PROVIDER=${SMS_PROVIDER:-mock}
       - SMS_FALLBACK_PROVIDER=${SMS_FALLBACK_PROVIDER:-}
       - OTP_LENGTH=6
@@ -429,7 +525,8 @@ services:
       - VONAGE_API_SECRET=${VONAGE_API_SECRET:-}
       - VONAGE_FROM_NUMBER=${VONAGE_FROM_NUMBER:-}
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     networks:
       - marketplace-network
 
@@ -473,21 +570,31 @@ services:
       - ANALYTICS_ENABLED=${ANALYTICS_ENABLED:-false}
       - INFRASTRUCTURE_ENABLED=${INFRASTRUCTURE_ENABLED:-false}
     depends_on:
-      - identity-service
-      - marketplace-service
-      - payment-service
-      - comms-service
-      - oversight-service
+      identity-service:
+        condition: service_healthy
+      marketplace-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      comms-service:
+        condition: service_healthy
+      oversight-service:
+        condition: service_healthy
       # Optional services (infrastructure) removed from depends_on
       # They will start independently if their profiles are enabled
     networks:
       - marketplace-network
-    # healthcheck:
-      # test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
 
   # Frontend service skipped for local development
 

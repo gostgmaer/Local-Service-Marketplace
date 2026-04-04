@@ -1,7 +1,20 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { Pool } from 'pg';
 import { NotificationPreferences } from '../entities/notification-preferences.entity';
 import { UpdateNotificationPreferencesDto } from '../dto/update-notification-preferences.dto';
+
+const ALLOWED_PREFERENCE_COLUMNS: Record<string, string> = {
+  email_notifications: 'email_notifications',
+  sms_notifications: 'sms_notifications',
+  push_notifications: 'push_notifications',
+  marketing_emails: 'marketing_emails',
+  new_request_alerts: 'new_request_alerts',
+  proposal_alerts: 'proposal_alerts',
+  job_updates: 'job_updates',
+  payment_alerts: 'payment_alerts',
+  review_alerts: 'review_alerts',
+  message_alerts: 'message_alerts',
+};
 
 @Injectable()
 export class NotificationPreferencesRepository {
@@ -34,8 +47,8 @@ export class NotificationPreferencesRepository {
     let paramIndex = 1;
 
     Object.keys(data).forEach((key) => {
-      if (data[key] !== undefined) {
-        updates.push(`${key} = $${paramIndex++}`);
+      if (data[key] !== undefined && ALLOWED_PREFERENCE_COLUMNS[key]) {
+        updates.push(`${ALLOWED_PREFERENCE_COLUMNS[key]} = $${paramIndex++}`);
         values.push(data[key]);
       }
     });
@@ -64,9 +77,15 @@ export class NotificationPreferencesRepository {
   }
 
   async getUsersWithPreference(preferenceName: string, enabled: boolean = true): Promise<NotificationPreferences[]> {
+    const column = ALLOWED_PREFERENCE_COLUMNS[preferenceName];
+    if (!column) {
+      throw new BadRequestException(`Invalid preference name: ${preferenceName}`);
+    }
+
     const query = `
       SELECT * FROM notification_preferences
-      WHERE ${preferenceName} = $1
+      WHERE ${column} = $1
+      ORDER BY created_at DESC
     `;
     const result = await this.pool.query(query, [enabled]);
     return result.rows;

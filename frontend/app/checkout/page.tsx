@@ -9,11 +9,33 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
-import { paymentService, PricingPlan } from "@/services/payment-service";
+import { paymentService, Payment, PricingPlan } from "@/services/payment-service";
 import { formatCurrency } from "@/utils/helpers";
 import { CheckCircle, CreditCard, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+
+/**
+ * Auto-submit a hidden form to the PayU hosted checkout page.
+ * The backend returns all required fields (key, txnid, amount, hash, etc.)
+ * plus `payuAction` — the POST URL. We build the form dynamically and submit
+ * it, which redirects the browser to PayU's payment page.
+ */
+function submitPayUForm(gatewayResponse: Record<string, any>) {
+	const { payuAction, ...fields } = gatewayResponse;
+	const form = document.createElement("form");
+	form.method = "POST";
+	form.action = payuAction as string;
+	Object.entries(fields).forEach(([name, value]) => {
+		const input = document.createElement("input");
+		input.type = "hidden";
+		input.name = name;
+		input.value = String(value ?? "");
+		form.appendChild(input);
+	});
+	document.body.appendChild(form);
+	form.submit();
+}
 
 function CheckoutContent() {
 	const router = useRouter();
@@ -40,13 +62,29 @@ function CheckoutContent() {
 		mutationFn: () =>
 			paymentService.createPayment({
 				job_id: selectedPlan!.id, // subscription payments use plan id as reference
-				user_id: user!.id,
 				provider_id: user!.id,
 				amount: selectedPlan!.price,
 				currency: "USD",
 				payment_method: "subscription",
 			}),
-		onSuccess: () => {
+		onSuccess: (payment: Payment) => {
+			const gr = payment.gateway_response;
+
+			// PayUbiz — redirect via hidden form POST to PayU's hosted checkout.
+			if (gr?.payuAction) {
+				toast.loading("Redirecting to PayU…");
+				submitPayUForm(gr);
+				return;
+			}
+
+			// Instamojo — redirect to hosted payment link.
+			if (gr?.longurl) {
+				toast.loading("Redirecting to Instamojo…");
+				window.location.href = gr.longurl as string;
+				return;
+			}
+
+			// Stripe / Razorpay / PayPal / Mock — payment was captured server-side.
 			setSuccess(true);
 			toast.success("Subscription activated!");
 			setTimeout(() => router.push(ROUTES.DASHBOARD), 3000);

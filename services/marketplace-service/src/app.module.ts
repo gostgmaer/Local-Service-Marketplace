@@ -10,6 +10,7 @@ import { KafkaModule } from "./kafka/kafka.module";
 import { RedisModule } from "./redis/redis.module";
 import { NotificationModule } from "./common/notification/notification.module";
 import { UserModule } from "./common/user/user.module";
+import { AnalyticsModule } from "./common/analytics/analytics.module";
 import { HealthController } from "./common/health/health.controller";
 
 @Module({
@@ -21,6 +22,7 @@ import { HealthController } from "./common/health/health.controller";
 		KafkaModule,
 		NotificationModule,
 		UserModule,
+		AnalyticsModule,
 		RequestModule,
 		ProposalModule,
 		JobModule,

@@ -48,62 +48,54 @@ export class CacheWarmingService implements OnModuleInit {
 
   private async warmTopProvidersCache(): Promise<void> {
     try {
-      this.logger.info('Warming provider cache...', {
-        context: 'CacheWarmingService',
-      });
+			this.logger.info("Warming provider cache...", { context: "CacheWarmingService" });
 
-      // Fetch top 50 providers (most likely to be accessed)
-      const providers = await this.providerRepo.findPaginated(50, null, null, null, null);
+			// Fetch top 50 providers (most likely to be accessed)
+			const providers = await this.providerRepo.findPaginated(50, null, null, null, null);
 
-      let cachedCount = 0;
+			let cachedCount = 0;
 
-      for (const provider of providers) {
-        try {
-          // Fetch services and availability
-          const services = await this.providerServiceRepo.findByProviderId(provider.id);
-          const availability = await this.providerAvailabilityRepo.findByProviderId(
-            provider.id,
-          );
+			// Parallelize per-provider lookups — was 101 sequential queries (1 + 50 + 50)
+			await Promise.all(
+				providers.map(async (provider) => {
+					try {
+						const [services, availability] = await Promise.all([
+							this.providerServiceRepo.findByProviderId(provider.id),
+							this.providerAvailabilityRepo.findByProviderId(provider.id),
+						]);
 
-          const response = {
-            id: provider.id,
-            user_id: provider.user_id,
-            business_name: provider.business_name,
-            description: provider.description,
-            rating: provider.rating,
-            services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
-            availability: availability.map((a) => ({
-              id: a.id,
-              day_of_week: a.day_of_week,
-              start_time: a.start_time,
-              end_time: a.end_time,
-            })),
-            created_at: provider.created_at,
-          };
+						const response = {
+							id: provider.id,
+							user_id: provider.user_id,
+							business_name: provider.business_name,
+							description: provider.description,
+							rating: provider.rating,
+							services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
+							availability: availability.map((a) => ({
+								id: a.id,
+								day_of_week: a.day_of_week,
+								start_time: a.start_time,
+								end_time: a.end_time,
+							})),
+							created_at: provider.created_at,
+						};
 
-          // Cache provider profile
-          const cacheKey = `provider:${provider.id}`;
-          await this.redisService.set(
-            cacheKey,
-            JSON.stringify(response),
-            this.PROVIDER_CACHE_TTL,
-          );
+						const cacheKey = `provider:${provider.id}`;
+						await this.redisService.set(cacheKey, JSON.stringify(response), this.PROVIDER_CACHE_TTL);
 
-          cachedCount++;
-        } catch (error) {
-          this.logger.warn('Failed to cache provider', {
-            context: 'CacheWarmingService',
-            providerId: provider.id,
-            error: error.message,
-          });
-        }
-      }
+						cachedCount++;
+					} catch (error) {
+						this.logger.warn("Failed to cache provider", {
+							context: "CacheWarmingService",
+							providerId: provider.id,
+							error: error.message,
+						});
+					}
+				}),
+			);
 
-      this.logger.info('Provider cache warmed', {
-        context: 'CacheWarmingService',
-        cachedCount,
-      });
-    } catch (error) {
+			this.logger.info("Provider cache warmed", { context: "CacheWarmingService", cachedCount });
+		} catch (error) {
       this.logger.error('Failed to warm provider cache', {
         context: 'CacheWarmingService',
         error: error.message,

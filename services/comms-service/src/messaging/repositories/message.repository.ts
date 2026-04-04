@@ -53,41 +53,32 @@ export class MessageRepository {
     page: number = 1,
     limit: number = 20,
   ): Promise<PaginatedMessages> {
-    const offset = (page - 1) * limit;
+		const offset = (page - 1) * limit;
 
-    // Get total count
-    const countQuery = 'SELECT COUNT(*) FROM messages WHERE job_id = $1';
-    const countResult = await this.pool.query(countQuery, [jobId]);
-    const total = parseInt(countResult.rows[0].count);
-
-    // Get paginated messages
-    const query = `
-      SELECT * FROM messages 
+		// Single query: COUNT(*) OVER() avoids a separate COUNT round-trip
+		const query = `
+      SELECT *, COUNT(*) OVER() AS total_count
+      FROM messages 
       WHERE job_id = $1 
       ORDER BY created_at ASC 
       LIMIT $2 OFFSET $3
     `;
-    const result = await this.pool.query(query, [jobId, limit, offset]);
+		const result = await this.pool.query(query, [jobId, limit, offset]);
 
-    const messages = result.rows.map(
-      (row) =>
-        new Message({
-          id: row.id,
-          job_id: row.job_id,
-          sender_id: row.sender_id,
-          message: row.message,
-          created_at: row.created_at,
-        }),
-    );
+		const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+		const messages = result.rows.map(
+			(row) =>
+				new Message({
+					id: row.id,
+					job_id: row.job_id,
+					sender_id: row.sender_id,
+					message: row.message,
+					created_at: row.created_at,
+				}),
+		);
 
-    return {
-      data: messages,
-      total,
-      page,
-      limit,
-      hasMore: offset + messages.length < total,
-    };
-  }
+		return { data: messages, total, page, limit, hasMore: offset + messages.length < total };
+	}
 
   async deleteMessage(id: string): Promise<void> {
     const query = 'DELETE FROM messages WHERE id = $1';
@@ -95,24 +86,52 @@ export class MessageRepository {
   }
 
   async getUserConversations(userId: string): Promise<any[]> {
-    const query = `
-      SELECT DISTINCT 
-        m.job_id,
-        j.status as job_status,
+		// Uses CTEs + DISTINCT ON to avoid 3 correlated subqueries per row (O(3N) problem).
+		// conversations CTE scopes all relevant job_ids first, then last_messages uses
+		// DISTINCT ON for an efficient index scan, and unread_counts aggregates once per job.
+		const query = `
+      WITH conversations AS (
+        SELECT DISTINCT m.job_id
+        FROM messages m
+        JOIN jobs j ON j.id = m.job_id
+        WHERE m.sender_id = $1 OR j.customer_id = $1 OR j.provider_id = $1
+        LIMIT 200
+      ),
+      last_messages AS (
+        SELECT DISTINCT ON (m.job_id)
+          m.job_id,
+          m.message  AS last_message,
+          m.created_at AS last_message_at
+        FROM messages m
+        JOIN conversations c ON c.job_id = m.job_id
+        ORDER BY m.job_id, m.created_at DESC
+      ),
+      unread_counts AS (
+        SELECT m.job_id, COUNT(*)::int AS unread_count
+        FROM messages m
+        JOIN conversations c ON c.job_id = m.job_id
+        WHERE m.read = false AND m.sender_id != $1
+        GROUP BY m.job_id
+      )
+      SELECT
+        j.id          AS job_id,
+        j.status      AS job_status,
         j.request_id,
         j.provider_id,
         j.customer_id,
-        (SELECT message FROM messages WHERE job_id = m.job_id ORDER BY created_at DESC LIMIT 1) as last_message,
-        (SELECT created_at FROM messages WHERE job_id = m.job_id ORDER BY created_at DESC LIMIT 1) as last_message_at,
-        (SELECT COUNT(*) FROM messages WHERE job_id = m.job_id AND read = false AND sender_id != $1) as unread_count
-      FROM messages m
-      JOIN jobs j ON j.id = m.job_id
-      WHERE m.sender_id = $1 OR j.customer_id = $1 OR j.provider_id = $1
-      ORDER BY last_message_at DESC
+        lm.last_message,
+        lm.last_message_at,
+        COALESCE(uc.unread_count, 0) AS unread_count
+      FROM conversations conv
+      JOIN jobs j ON j.id = conv.job_id
+      JOIN last_messages lm ON lm.job_id = conv.job_id
+      LEFT JOIN unread_counts uc ON uc.job_id = conv.job_id
+      ORDER BY lm.last_message_at DESC
+      LIMIT 50
     `;
-    const result = await this.pool.query(query, [userId]);
-    return result.rows;
-  }
+		const result = await this.pool.query(query, [userId]);
+		return result.rows;
+	}
 
   // ✅ NEW: Advanced query methods for new fields
   async markAsRead(messageId: string): Promise<Message> {

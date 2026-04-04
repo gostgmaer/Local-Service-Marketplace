@@ -59,8 +59,19 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  console.log(`API Gateway is running on port ${port}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  // Graceful shutdown — drain in-flight requests before exit
+  app.enableShutdownHooks();
+  const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
+  const shutdown = async (signal: string) => {
+    logger.log(`${signal} received — shutting down API Gateway gracefully`);
+    await app.close();
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
+
+  logger.log(`API Gateway is running on port ${port}`);
+  logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
 bootstrap();

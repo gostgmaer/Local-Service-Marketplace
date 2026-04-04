@@ -1,10 +1,24 @@
-import { Controller, Post, Get, Patch, Body, Param, Query, HttpCode, HttpStatus, ParseUUIDPipe, UseGuards } from '@nestjs/common';
-import { JobService } from '../services/job.service';
-import { CreateJobDto } from '../dto/create-job.dto';
-import { UpdateJobStatusDto } from '../dto/update-job-status.dto';
+import {
+	Controller,
+	Post,
+	Get,
+	Patch,
+	Body,
+	Param,
+	Query,
+	HttpCode,
+	HttpStatus,
+	ParseUUIDPipe,
+	UseGuards,
+	BadRequestException,
+	Request,
+} from "@nestjs/common";
+import { JobService } from "../services/job.service";
+import { CreateJobDto } from "../dto/create-job.dto";
+import { UpdateJobStatusDto } from "../dto/update-job-status.dto";
 import { JobResponseDto, PaginatedJobResponseDto } from "../dto/job-response.dto";
 import { JobQueryDto } from "../dto/job-query.dto";
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 
 @UseGuards(JwtAuthGuard)
 @Controller("jobs")
@@ -13,7 +27,9 @@ export class JobController {
 
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
-	async createJob(@Body() createJobDto: CreateJobDto): Promise<JobResponseDto> {
+	async createJob(@Body() createJobDto: CreateJobDto, @Request() req: any): Promise<JobResponseDto> {
+		// Override customer_id with the authenticated user's ID
+		createJobDto.customer_id = req.user.userId;
 		return this.jobService.createJob(createJobDto);
 	}
 
@@ -26,11 +42,9 @@ export class JobController {
 	@Get("my")
 	@HttpCode(HttpStatus.OK)
 	async getMyJobs(
-		@Query("user_id", ParseUUIDPipe) userId: string,
+		@Request() req: any,
 	): Promise<{ data: JobResponseDto[]; total: number; page: number; limit: number }> {
-		if (!userId) {
-			throw new Error("User ID is required");
-		}
+		const userId = req.user.userId;
 		// Get jobs where user is either customer or provider
 		const customerJobs = await this.jobService.getJobsByCustomer(userId);
 		const providerJobs = await this.jobService.getJobsByProviderUser(userId);
@@ -56,14 +70,15 @@ export class JobController {
 	async updateJobStatus(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() updateJobStatusDto: UpdateJobStatusDto,
+		@Request() req: any,
 	): Promise<JobResponseDto> {
-		return this.jobService.updateJobStatus(id, updateJobStatusDto);
+		return this.jobService.updateJobStatus(id, updateJobStatusDto, req.user.userId, req.user.role);
 	}
 
 	@Post(":id([0-9a-fA-F-]{36})/complete")
 	@HttpCode(HttpStatus.OK)
-	async completeJob(@Param("id", ParseUUIDPipe) id: string): Promise<JobResponseDto> {
-		return this.jobService.completeJob(id);
+	async completeJob(@Param("id", ParseUUIDPipe) id: string, @Request() req: any): Promise<JobResponseDto> {
+		return this.jobService.completeJob(id, req.user.userId, req.user.role);
 	}
 
 	@Get("provider/:providerId")

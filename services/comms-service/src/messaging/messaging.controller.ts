@@ -6,6 +6,7 @@ import {
 	Body,
 	Param,
 	Query,
+	Request,
 	Inject,
 	LoggerService,
 	ParseIntPipe,
@@ -32,11 +33,11 @@ export class MessagingController {
 
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
-	async createMessage(@Body() createMessageDto: CreateMessageDto) {
+	async createMessage(@Body() createMessageDto: CreateMessageDto, @Request() req: any) {
 		this.logger.log("POST /messages - Create message", "MessagingController");
 		const item = await this.messageService.createMessage(
 			createMessageDto.job_id,
-			createMessageDto.sender_id,
+			req.user.userId,
 			createMessageDto.message,
 		);
 		return { success: true, data: item, message: "Message sent successfully" };
@@ -54,9 +55,9 @@ export class MessagingController {
 	}
 
 	@Get("conversations")
-	async getConversations(@Query("user_id", ParseUUIDPipe) userId: string) {
+	async getConversations(@Request() req: any) {
 		this.logger.log(`GET /messages/conversations - Get user conversations`, "MessagingController");
-		const conversations = await this.messageService.getUserConversations(userId);
+		const conversations = await this.messageService.getUserConversations(req.user.userId);
 		return { data: conversations, total: conversations.length, page: 1, limit: conversations.length || 1 };
 	}
 
@@ -75,21 +76,21 @@ export class MessagingController {
 	}
 
 	@Get("attachments/message/:messageId")
-	async getAttachmentsByMessage(@Param("messageId") messageId: string) {
+	async getAttachmentsByMessage(@Param("messageId", ParseUUIDPipe) messageId: string) {
 		this.logger.log(`GET /messages/attachments/message/${messageId} - Get attachments`, "MessagingController");
 		const attachments = await this.attachmentService.getAttachmentsByMessageId(messageId);
 		return { data: attachments, total: attachments.length, page: 1, limit: attachments.length || 1 };
 	}
 
 	@Get("attachments/:id")
-	async getAttachment(@Param("id") id: string) {
+	async getAttachment(@Param("id", ParseUUIDPipe) id: string) {
 		this.logger.log(`GET /messages/attachments/${id} - Get attachment`, "MessagingController");
 		const attachment = await this.attachmentService.getAttachmentById(id);
 		return { success: true, data: attachment, message: "Attachment retrieved successfully" };
 	}
 
 	@Get(":id")
-	async getMessage(@Param("id") id: string) {
+	async getMessage(@Param("id", ParseUUIDPipe) id: string) {
 		this.logger.log(`GET /messages/${id} - Get message`, "MessagingController");
 		const item = await this.messageService.getMessageById(id);
 		return { success: true, data: item, message: "Message retrieved successfully" };

@@ -1,4 +1,3 @@
-import { getSession } from "next-auth/react";
 import { apiClient } from "./api-client";
 
 export interface Job {
@@ -25,7 +24,6 @@ export interface CreateJobData {
 	request_id: string;
 	proposal_id: string;
 	provider_id: string;
-	customer_id: string;
 	actual_amount?: number;
 }
 
@@ -66,12 +64,7 @@ class JobService {
 	}
 
 	async getMyJobs(): Promise<Job[]> {
-		const session = await getSession();
-		const userId = session?.user?.id;
-		if (!userId) {
-			throw new Error("User not authenticated");
-		}
-		const response = await apiClient.get<Job[]>(`/jobs/my?user_id=${userId}`);
+		const response = await apiClient.get<Job[]>(`/jobs/my`);
 		return response.data || [];
 	}
 

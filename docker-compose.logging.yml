@@ -1,0 +1,153 @@
+# =============================================================================
+# OBSERVABILITY STACK (ELK)
+# =============================================================================
+# Optional Docker Compose file for centralized logging with Elasticsearch,
+# Logstash, and Kibana.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.logging.yml up -d
+#
+# Access:
+#   Kibana:        http://localhost:5601
+#   Elasticsearch: http://localhost:9200
+#
+# All services forward logs via Docker's GELF driver to Logstash,
+# which stores them in Elasticsearch for querying via Kibana.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Elasticsearch — log storage and search engine
+  # ---------------------------------------------------------------------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: marketplace-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  # ---------------------------------------------------------------------------
+  # Logstash — log ingestion pipeline (receives GELF from Docker)
+  # ---------------------------------------------------------------------------
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: marketplace-logstash
+    restart: unless-stopped
+    volumes:
+      - ./config/logstash/pipeline.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "12201:12201/udp"
+      - "5044:5044"
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - marketplace-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Kibana — log visualization dashboard
+  # ---------------------------------------------------------------------------
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: marketplace-kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - marketplace-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Service log driver overrides
+  # When this compose file is merged, services send logs to Logstash via GELF
+  # ---------------------------------------------------------------------------
+  identity-service:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "identity-service"
+
+  marketplace-service:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "marketplace-service"
+
+  payment-service:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "payment-service"
+
+  comms-service:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "comms-service"
+
+  oversight-service:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "oversight-service"
+
+  infrastructure-service:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "infrastructure-service"
+
+  api-gateway:
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "api-gateway"
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  marketplace-network:
+    external: true

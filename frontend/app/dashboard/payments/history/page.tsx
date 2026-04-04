@@ -9,6 +9,7 @@ import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from '@/components/ui/Badge';
@@ -40,8 +41,8 @@ export default function PaymentHistoryPage() {
 		refetch,
 	} = useQuery({
 		queryKey: ["payment-history"],
-		queryFn: () => paymentService.getMyPayments(user!.id),
-		enabled: isAuthenticated && !!user?.id,
+		queryFn: () => paymentService.getMyPayments(),
+		enabled: isAuthenticated,
 	});
 
 	const sortedPayments = useMemo(() => {
@@ -138,7 +139,7 @@ export default function PaymentHistoryPage() {
 				</div>
 
 				{isLoading ?
-					<Loading />
+					<div className='space-y-4'>{Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}</div>
 				: error ?
 					<ErrorState
 						title='Failed to load payments'
@@ -212,10 +213,26 @@ export default function PaymentHistoryPage() {
 										<div className='flex flex-col items-end gap-2'>
 											<button
 												className='text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1'
-												onClick={() => {
+												onClick={async () => {
 													analytics.event({ action: "download_receipt", category: "engagement", label: payment.id });
-													// Implement receipt download
-													console.log("Download receipt for payment:", payment.id);
+													try {
+														const response = await fetch(`/api/v1/payments/${payment.id}/invoice/download`, {
+															credentials: 'include',
+														});
+														if (!response.ok) throw new Error('Failed to download');
+														const blob = await response.blob();
+														const url = window.URL.createObjectURL(blob);
+														const a = document.createElement('a');
+														a.href = url;
+														a.download = `invoice-${payment.id.slice(0, 8)}.html`;
+														document.body.appendChild(a);
+														a.click();
+														window.URL.revokeObjectURL(url);
+														document.body.removeChild(a);
+														toast.success('Invoice downloaded');
+													} catch {
+														toast.error('Failed to download invoice');
+													}
 												}}>
 												<Download className='h-4 w-4' />
 												Receipt

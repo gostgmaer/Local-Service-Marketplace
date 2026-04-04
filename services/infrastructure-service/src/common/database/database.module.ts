@@ -1,5 +1,7 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, Logger } from '@nestjs/common';
 import { Pool } from 'pg';
+
+const logger = new Logger('DatabaseModule');
 
 const databasePoolFactory = async () => {
   const connectionString = process.env.DATABASE_URL;
@@ -9,7 +11,7 @@ const databasePoolFactory = async () => {
 			{ connectionString }
 		:	{
 				host: process.env.DATABASE_HOST || "localhost",
-				port: parseInt(process.env.DATABASE_PORT, 10) || 5432,
+				port: parseInt(process.env.DATABASE_PORT || '5432', 10),
 				user: process.env.DATABASE_USER || "postgres",
 				password: process.env.DATABASE_PASSWORD,
 				database: process.env.DATABASE_NAME || "marketplace",
@@ -22,10 +24,10 @@ const databasePoolFactory = async () => {
 
   try {
 		const client = await pool.connect();
-		console.log("✅ Database connected successfully");
+		logger.log('Database connected successfully');
 		client.release();
 	} catch (error) {
-		console.error("❌ Database connection failed:", error);
+		logger.error('Database connection failed:', error);
 		throw error;
 	}
 

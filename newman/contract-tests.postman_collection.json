@@ -1,0 +1,560 @@
+{
+  "info": {
+    "name": "API Contract Tests",
+    "description": "Validates response schemas for all critical API endpoints. Run with: pnpm test:contracts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "{{base_url}}" },
+    { "key": "token", "value": "" },
+    { "key": "refresh_token", "value": "" },
+    { "key": "user_id", "value": "" },
+    { "key": "request_id", "value": "" },
+    { "key": "proposal_id", "value": "" },
+    { "key": "job_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has status field', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('status');",
+                  "  pm.expect(json.status).to.be.oneOf(['ok', 'healthy']);",
+                  "});",
+                  "pm.test('Response has service field', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('service');",
+                  "});",
+                  "pm.test('Response has timestamp', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('timestamp');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Services Health",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health/services"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is object with service statuses', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth Contract",
+      "item": [
+        {
+          "name": "Register - Contract",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/user/auth/signup",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"contract-test-{{$timestamp}}@test.com\",\"password\":\"ContractTest123!\",\"name\":\"Contract Test User\",\"role\":\"customer\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has success boolean', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('success', true);",
+                  "});",
+                  "pm.test('Response has data object', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('data');",
+                  "});",
+                  "pm.test('Data has user object with id and email', () => {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.have.property('user');",
+                  "  pm.expect(data.user).to.have.property('id');",
+                  "  pm.expect(data.user).to.have.property('email');",
+                  "});",
+                  "pm.test('Data has tokens', () => {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.have.property('accessToken');",
+                  "  pm.expect(data).to.have.property('refreshToken');",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('token', data.accessToken);",
+                  "  pm.collectionVariables.set('refresh_token', data.refreshToken);",
+                  "  pm.collectionVariables.set('user_id', data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login - Contract",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/user/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin@marketplace.com\",\"password\":\"password123\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success response shape', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json).to.have.property('message');",
+                  "});",
+                  "pm.test('Data has accessToken string', () => {",
+                  "  pm.expect(pm.response.json().data.accessToken).to.be.a('string');",
+                  "});",
+                  "pm.test('Data has refreshToken string', () => {",
+                  "  pm.expect(pm.response.json().data.refreshToken).to.be.a('string');",
+                  "});",
+                  "pm.test('Data has user object', () => {",
+                  "  const user = pm.response.json().data.user;",
+                  "  pm.expect(user).to.have.property('id');",
+                  "  pm.expect(user).to.have.property('email');",
+                  "  pm.expect(user).to.not.have.property('password');",
+                  "  pm.expect(user).to.not.have.property('password_hash');",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('token', data.accessToken);",
+                  "  pm.collectionVariables.set('refresh_token', data.refreshToken);",
+                  "  pm.collectionVariables.set('user_id', data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token - Contract",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/user/auth/refresh",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\":\"{{refresh_token}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has new tokens', () => {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data).to.have.property('accessToken');",
+                  "  pm.expect(data).to.have.property('refreshToken');",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('token', data.accessToken);",
+                  "  pm.collectionVariables.set('refresh_token', data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Validation - Contract (400)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/user/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 or 401', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+                  "});",
+                  "pm.test('Error response has message', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unauthorized Access - Contract (401)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/users/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Error response shape', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('message');",
+                  "  pm.expect(json).to.have.property('statusCode', 401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Requests Contract",
+      "item": [
+        {
+          "name": "Create Request - Contract",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/requests",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Contract Test Request\",\"description\":\"Testing response shape\",\"budget\":100,\"urgency\":\"low\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Standard response shape', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json).to.have.property('message');",
+                  "});",
+                  "pm.test('Data has UUID id', () => {",
+                  "  const id = pm.response.json().data.id;",
+                  "  pm.expect(id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('request_id', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Requests - Contract",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/requests?limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["requests"],
+              "query": [{ "key": "limit", "value": "5" }]
+            },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Paginated response shape', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "});",
+                  "pm.test('Has pagination meta', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('meta');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Request - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/requests/{{request_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Single resource shape', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Proposals Contract",
+      "item": [
+        {
+          "name": "List Proposals - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/proposals",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has data array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Jobs Contract",
+      "item": [
+        {
+          "name": "List Jobs - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/jobs",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has data array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payments Contract",
+      "item": [
+        {
+          "name": "List Payments - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/payments",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response shape', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json).to.have.property('data');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notifications Contract",
+      "item": [
+        {
+          "name": "Get Features - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/notifications/features",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has features data', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.have.property('features');",
+                  "  pm.expect(json.data).to.have.property('enabled_channels');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Unread Count - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/notifications/unread-count",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has count number', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.have.property('count');",
+                  "  pm.expect(json.data.count).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Categories Contract",
+      "item": [
+        {
+          "name": "List Categories - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/categories"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has data array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Feature Flags Contract",
+      "item": [
+        {
+          "name": "List Feature Flags - Contract",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/feature-flags",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response shape', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('success', true);",
+                  "  pm.expect(json).to.have.property('data');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
