@@ -40,7 +40,6 @@ function CheckoutContent() {
 		mutationFn: () =>
 			paymentService.createPayment({
 				job_id: selectedPlan!.id, // subscription payments use plan id as reference
-				user_id: user!.id,
 				provider_id: user!.id,
 				amount: selectedPlan!.price,
 				currency: "USD",

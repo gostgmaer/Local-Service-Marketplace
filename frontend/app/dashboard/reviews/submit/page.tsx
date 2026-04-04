@@ -64,13 +64,7 @@ function SubmitReviewContent() {
 
   const submitMutation = useMutation({
 		mutationFn: (data: ReviewFormData) =>
-			createReview({
-				job_id: jobId!,
-				user_id: user?.id ?? "",
-				provider_id: providerId!,
-				rating: data.rating,
-				comment: data.comment,
-			}),
+			createReview({ job_id: jobId!, provider_id: providerId!, rating: data.rating, comment: data.comment }),
 		onSuccess: () => {
 			toast.success("Review submitted successfully!");
 			analytics.event({ action: "review_submitted", category: "engagement", label: "Job Review", value: rating });

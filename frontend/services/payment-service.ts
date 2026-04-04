@@ -24,13 +24,12 @@ export interface Payment {
 }
 
 export interface CreatePaymentData {
-  job_id: string;
-  user_id: string;
-  provider_id: string;
-  amount: number;
-  currency: 'USD' | 'EUR' | 'GBP' | 'INR';
-  payment_method?: string;
-  coupon_code?: string;
+	job_id: string;
+	provider_id: string;
+	amount: number;
+	currency: "USD" | "EUR" | "GBP" | "INR";
+	payment_method?: string;
+	coupon_code?: string;
 }
 
 export interface RefundData {
@@ -59,11 +58,8 @@ class PaymentService {
 		return response.data;
 	}
 
-	async getMyPayments(userId: string): Promise<Payment[]> {
-		if (!userId) {
-			throw new Error("User not authenticated");
-		}
-		const response = await apiClient.get<Payment[]>(`/payments/my?user_id=${userId}`);
+	async getMyPayments(): Promise<Payment[]> {
+		const response = await apiClient.get<Payment[]>(`/payments/my`);
 		return extractList<Payment>(response.data);
 	}
 

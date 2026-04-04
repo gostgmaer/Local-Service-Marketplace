@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 # Recreate PostgreSQL Database in Docker
 # This will completely delete and recreate the database
 
@@ -53,12 +53,12 @@ else {
 }
 
 # Get configuration
-$containerName = $env:POSTGRES_CONTAINER ?? "marketplace-postgres"
+$containerName = if ($env:POSTGRES_CONTAINER) { $env:POSTGRES_CONTAINER } else { "marketplace-postgres" }
 $volumeName = "local-service-marketplace_postgres_data"
-$dbName = $env:POSTGRES_DB ?? "marketplace"
-$dbUser = $env:POSTGRES_USER ?? "postgres"
-$dbPassword = $env:POSTGRES_PASSWORD ?? "postgres"
-$dbPort = $env:POSTGRES_PORT ?? "5432"
+$dbName = if ($env:POSTGRES_DB) { $env:POSTGRES_DB } else { "marketplace" }
+$dbUser = if ($env:POSTGRES_USER) { $env:POSTGRES_USER } else { "postgres" }
+$dbPassword = if ($env:POSTGRES_PASSWORD) { $env:POSTGRES_PASSWORD } else { "postgres" }
+$dbPort = if ($env:POSTGRES_PORT) { $env:POSTGRES_PORT } else { "5432" }
 
 Write-Host ""
 Write-Info "Configuration:"

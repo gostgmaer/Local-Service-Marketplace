@@ -42,16 +42,14 @@ export interface Conversation {
 }
 
 export interface SendMessageData {
-  job_id: string;
-  sender_id: string;
-  message: string;
+	job_id: string;
+	message: string;
 }
 
 class MessageService {
   async sendMessage(data: SendMessageData): Promise<Message> {
     const formData = new FormData();
-    formData.append('job_id', data.job_id);
-    formData.append('sender_id', data.sender_id);
+    formData.append("job_id", data.job_id);
     formData.append('message', data.message);
 
     const response = await apiClient.post<Message>('/messages', formData, {

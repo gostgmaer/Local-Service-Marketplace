@@ -1,4 +1,3 @@
-import { getSession } from "next-auth/react";
 import { apiClient } from "./api-client";
 
 export interface Proposal {
@@ -71,12 +70,7 @@ class ProposalService {
 	}
 
 	async getMyProposals(): Promise<Proposal[]> {
-		const session = await getSession();
-		const userId = session?.user?.id;
-		if (!userId) {
-			throw new Error("User not authenticated");
-		}
-		const response = await apiClient.get<Proposal[]>(`/proposals/my?user_id=${userId}`);
+		const response = await apiClient.get<Proposal[]>(`/proposals/my`);
 		return response.data || [];
 	}
 }

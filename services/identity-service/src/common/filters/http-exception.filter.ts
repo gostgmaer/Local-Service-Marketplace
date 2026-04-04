@@ -11,13 +11,10 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
 export interface StandardErrorResponse {
-  success: false;
-  statusCode: number;
-  message: string;
-  error: {
-    code: string;
-    details: any[];
-  };
+	success: false;
+	statusCode: number;
+	message: string;
+	error: { code: string; message: string; details: any[] };
 }
 
 @Catch()
@@ -53,22 +50,31 @@ export class HttpExceptionFilter implements ExceptionFilter {
         }
       }
     } else if (exception instanceof Error) {
-      message = exception.message;
+      const pgCode = (exception as any).code as string | undefined;
+			if (pgCode === "23505") {
+				status = HttpStatus.CONFLICT;
+				message = "Resource already exists";
+			} else if (pgCode === "23503" || pgCode === "23502" || pgCode === "23514") {
+				status = HttpStatus.BAD_REQUEST;
+				message = "Invalid request data";
+			} else if (pgCode === "22P02") {
+				status = HttpStatus.BAD_REQUEST;
+				message = "Invalid input format";
+			} else {
+				message = process.env.NODE_ENV === "development" ? exception.message : "Internal server error";
+			}
       if (process.env.NODE_ENV === 'development') {
-        details = [{ name: exception.name, stack: exception.stack }];
+        details = [{ name: exception.name, code: pgCode, stack: exception.stack }];
       }
     }
 
     // Build standardized error response
     const errorResponse: StandardErrorResponse = {
-      success: false,
-      statusCode: status,
-      message,
-      error: {
-        code: this.getErrorCode(status),
-        details,
-      },
-    };
+			success: false,
+			statusCode: status,
+			message,
+			error: { code: this.getErrorCode(status), message, details },
+		};
 
     // Log error
     this.logger.error('HTTP Exception', {

@@ -1,4 +1,4 @@
-# API Response Structure Test Script
+﻿# API Response Structure Test Script
 # This script tests the standardized response structure across all endpoints
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -51,8 +51,8 @@ function Test-Endpoint {
         $hasMessage = $data.PSObject.Properties.Name -contains "message"
         $hasData = $data.PSObject.Properties.Name -contains "data"
         
-        Write-Host "  ✓ Status: $($response.StatusCode)" -ForegroundColor Green
-        Write-Host "  ✓ Response Structure:" -ForegroundColor Green
+        Write-Host "  (+) Status: $($response.StatusCode)" -ForegroundColor Green
+        Write-Host "  (+) Response Structure:" -ForegroundColor Green
         Write-Host "    - success: $($data.success)" -ForegroundColor White
         Write-Host "    - statusCode: $($data.statusCode)" -ForegroundColor White
         Write-Host "    - message: $($data.message)" -ForegroundColor White
@@ -70,7 +70,7 @@ function Test-Endpoint {
             }
         }
         
-        Write-Host "  ✓ Test Passed!" -ForegroundColor Green
+        Write-Host "  (+) Test Passed!" -ForegroundColor Green
         Write-Host ""
         
         return @{
@@ -92,7 +92,7 @@ function Test-Endpoint {
             $errorBody = $reader.ReadToEnd() | ConvertFrom-Json
         } catch {}
         
-        Write-Host "  ✗ Error: $statusCode" -ForegroundColor Red
+        Write-Host "  (x) Error: $statusCode" -ForegroundColor Red
         
         if ($errorBody) {
             Write-Host "  Error Structure:" -ForegroundColor Yellow
@@ -102,7 +102,7 @@ function Test-Endpoint {
             if ($errorBody.error) {
                 Write-Host "    - error.code: $($errorBody.error.code)" -ForegroundColor White
             }
-            Write-Host "  ✓ Error response follows standard structure!" -ForegroundColor Green
+            Write-Host "  (+) Error response follows standard structure!" -ForegroundColor Green
         }
         
         Write-Host ""
@@ -136,7 +136,7 @@ $signupResult = Test-Endpoint -Method "POST" -Url "/auth/signup" `
 $token = $null
 if ($signupResult.Success -and $signupResult.Data.data.accessToken) {
     $token = $signupResult.Data.data.accessToken
-    Write-Host "  → Token obtained: $($token.Substring(0, 20))..." -ForegroundColor Cyan
+    Write-Host "  ? Token obtained: $($token.Substring(0, 20))..." -ForegroundColor Cyan
 }
 
 # Test 3: Error Response (404)
@@ -201,7 +201,7 @@ Write-Host @"
 [{ id: "1" }, { id: "2" }]
 "@ -ForegroundColor Gray
 Write-Host ""
-Write-Host "✓ No Breaking Changes!" -ForegroundColor Green
+Write-Host "(+) No Breaking Changes!" -ForegroundColor Green
 Write-Host "  - Frontend interceptor unwraps responses automatically" -ForegroundColor White
 Write-Host "  - Existing service code works without modification" -ForegroundColor White
 Write-Host "  - All responses follow the same structure" -ForegroundColor White

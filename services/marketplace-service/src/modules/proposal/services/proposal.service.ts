@@ -4,7 +4,12 @@ import { ProposalRepository } from '../repositories/proposal.repository';
 import { CreateProposalDto } from '../dto/create-proposal.dto';
 import { ProposalQueryDto, ProposalSortBy, SortOrder } from "../dto/proposal-query.dto";
 import { ProposalResponseDto, PaginatedProposalResponseDto } from '../dto/proposal-response.dto';
-import { NotFoundException, BadRequestException, ConflictException } from '../../../common/exceptions/http.exceptions';
+import {
+	NotFoundException,
+	BadRequestException,
+	ConflictException,
+	ForbiddenException,
+} from "../../../common/exceptions/http.exceptions";
 import {
 	validateCursorMode,
 	validateDateRange,
@@ -116,13 +121,18 @@ export class ProposalService {
 		return ProposalResponseDto.fromEntity(proposal);
 	}
 
-	async acceptProposal(id: string): Promise<ProposalResponseDto> {
+	async acceptProposal(id: string, userId: string, userRole: string): Promise<ProposalResponseDto> {
 		this.logger.log(`Accepting proposal: ${id}`, ProposalService.name);
 
 		// Validate proposal exists
 		const existingProposal = await this.proposalRepository.getProposalById(id);
 		if (!existingProposal) {
 			throw new NotFoundException("Proposal not found");
+		}
+
+		// Ownership check: only the customer who owns the request or admin can accept a proposal
+		if (userRole !== "admin" && existingProposal.customer_id !== userId) {
+			throw new ForbiddenException("Only the request owner can accept a proposal");
 		}
 
 		// Check if proposal is already accepted or rejected
@@ -171,13 +181,18 @@ export class ProposalService {
 		return ProposalResponseDto.fromEntity(proposal);
 	}
 
-	async rejectProposal(id: string): Promise<ProposalResponseDto> {
+	async rejectProposal(id: string, userId: string, userRole: string): Promise<ProposalResponseDto> {
 		this.logger.log(`Rejecting proposal: ${id}`, ProposalService.name);
 
 		// Validate proposal exists
 		const existingProposal = await this.proposalRepository.getProposalById(id);
 		if (!existingProposal) {
 			throw new NotFoundException("Proposal not found");
+		}
+
+		// Ownership check: only the customer who owns the request or admin can reject a proposal
+		if (userRole !== "admin" && existingProposal.customer_id !== userId) {
+			throw new ForbiddenException("Only the request owner can reject a proposal");
 		}
 
 		// Check if proposal is already accepted or rejected

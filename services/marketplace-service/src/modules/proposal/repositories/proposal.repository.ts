@@ -47,9 +47,11 @@ export class ProposalRepository {
 
   async getProposalById(id: string): Promise<Proposal | null> {
     const query = `
-      SELECT id, request_id, provider_id, price, message, status, created_at
-      FROM proposals
-      WHERE id = $1
+      SELECT p.id, p.request_id, p.provider_id, p.price, p.message, p.status, p.created_at,
+             sr.user_id AS customer_id
+      FROM proposals p
+      JOIN service_requests sr ON sr.id = p.request_id
+      WHERE p.id = $1
     `;
 
     const result = await this.pool.query(query, [id]);

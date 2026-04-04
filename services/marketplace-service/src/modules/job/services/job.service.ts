@@ -5,7 +5,12 @@ import { CreateJobDto } from '../dto/create-job.dto';
 import { UpdateJobStatusDto, JobStatus } from '../dto/update-job-status.dto';
 import { JobResponseDto, PaginatedJobResponseDto } from "../dto/job-response.dto";
 import { JobQueryDto, JobSortBy, SortOrder } from "../dto/job-query.dto";
-import { NotFoundException, BadRequestException, ConflictException } from '../../../common/exceptions/http.exceptions';
+import {
+	NotFoundException,
+	BadRequestException,
+	ConflictException,
+	ForbiddenException,
+} from "../../../common/exceptions/http.exceptions";
 import { validateCursorMode, validateDateRange } from "../../../common/pagination/list-query-validation.util";
 import { KafkaService } from '../../../kafka/kafka.service';
 import { RedisService } from '../../../redis/redis.service';
@@ -101,13 +106,23 @@ export class JobService {
 		return response;
 	}
 
-	async updateJobStatus(id: string, dto: UpdateJobStatusDto): Promise<JobResponseDto> {
+	async updateJobStatus(
+		id: string,
+		dto: UpdateJobStatusDto,
+		userId: string,
+		userRole: string,
+	): Promise<JobResponseDto> {
 		this.logger.log(`Updating job status: ${id} to ${dto.status}`, JobService.name);
 
 		// Validate job exists
 		const existingJob = await this.jobRepository.getJobById(id);
 		if (!existingJob) {
 			throw new NotFoundException("Job not found");
+		}
+
+		// Ownership check: only the customer, provider, or admin can update job status
+		if (userRole !== "admin" && existingJob.customer_id !== userId && existingJob.provider_id !== userId) {
+			throw new ForbiddenException("You are not authorized to update this job");
 		}
 
 		// Validate status transition
@@ -139,13 +154,18 @@ export class JobService {
 		return JobResponseDto.fromEntity(job);
 	}
 
-	async completeJob(id: string): Promise<JobResponseDto> {
+	async completeJob(id: string, userId: string, userRole: string): Promise<JobResponseDto> {
 		this.logger.log(`Completing job: ${id}`, JobService.name);
 
 		// Validate job exists
 		const existingJob = await this.jobRepository.getJobById(id);
 		if (!existingJob) {
 			throw new NotFoundException("Job not found");
+		}
+
+		// Ownership check: only the customer or admin can complete a job
+		if (userRole !== "admin" && existingJob.customer_id !== userId) {
+			throw new ForbiddenException("Only the customer or an admin can complete a job");
 		}
 
 		// Validate job is in progress

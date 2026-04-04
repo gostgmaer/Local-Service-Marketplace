@@ -163,7 +163,7 @@ function Wait-ForServices {
             if ($response.StatusCode -eq 200) {
                 $health = $response.Content | ConvertFrom-Json
                 $allHealthy = $true
-                $ unhealthyServices = @()
+                $unhealthyServices = @()
 
                 foreach ($service in $health.services.PSObject.Properties) {
                     $name = $service.Name
@@ -220,7 +220,7 @@ function Show-Summary {
 
     Write-Info ""
     Write-Info "========================================"
-    Write-Info "  Test Run Summary" -ForegroundColor Cyan
+    Write-Info "  Test Run Summary"
     Write-Info "========================================"
     Write-Info ""
 
@@ -248,8 +248,8 @@ function Show-Summary {
 # MAIN
 try {
     Write-Info "========================================"
-    Write-Info "  Local Service Marketplace" -ForegroundColor Cyan
-    Write-Info "  Full Integration Test Suite" -ForegroundColor Cyan
+    Write-Info "  Local Service Marketplace"
+    Write-Info "  Full Integration Test Suite"
     Write-Info "========================================"
     Write-Info ""
 

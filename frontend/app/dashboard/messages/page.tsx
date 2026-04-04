@@ -53,7 +53,7 @@ export default function MessagesPage() {
     if (!messageText.trim() || !selectedJobId) return;
 
     try {
-      await messageService.sendMessage({ job_id: selectedJobId, sender_id: user?.id ?? "", message: messageText });
+      await messageService.sendMessage({ job_id: selectedJobId, message: messageText });
       setMessageText('');
     } catch (error) {
       console.error('Failed to send message');

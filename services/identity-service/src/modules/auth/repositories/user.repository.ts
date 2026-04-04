@@ -1,7 +1,7 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { DATABASE_POOL } from '@/common/database/database.module';
-import { User } from '../entities/user.entity';
+import { Injectable, Inject, NotFoundException } from "@nestjs/common";
+import { Pool } from "pg";
+import { DATABASE_POOL } from "@/common/database/database.module";
+import { User } from "../entities/user.entity";
 
 @Injectable()
 export class UserRepository {
@@ -124,7 +124,7 @@ export class UserRepository {
 		if (updates.length === 0) {
 			const user = await this.findById(id);
 			if (!user) {
-				throw new Error("User not found");
+				throw new NotFoundException("User not found");
 			}
 			return user;
 		}
@@ -141,7 +141,7 @@ export class UserRepository {
 
 		const result = await this.pool.query(query, values);
 		if (result.rows.length === 0) {
-			throw new Error("User not found or update failed");
+			throw new NotFoundException("User not found or update failed");
 		}
 
 		return result.rows[0];

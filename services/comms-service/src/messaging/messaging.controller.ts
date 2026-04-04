@@ -6,6 +6,7 @@ import {
 	Body,
 	Param,
 	Query,
+	Request,
 	Inject,
 	LoggerService,
 	ParseIntPipe,
@@ -32,11 +33,11 @@ export class MessagingController {
 
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
-	async createMessage(@Body() createMessageDto: CreateMessageDto) {
+	async createMessage(@Body() createMessageDto: CreateMessageDto, @Request() req: any) {
 		this.logger.log("POST /messages - Create message", "MessagingController");
 		const item = await this.messageService.createMessage(
 			createMessageDto.job_id,
-			createMessageDto.sender_id,
+			req.user.userId,
 			createMessageDto.message,
 		);
 		return { success: true, data: item, message: "Message sent successfully" };
@@ -54,9 +55,9 @@ export class MessagingController {
 	}
 
 	@Get("conversations")
-	async getConversations(@Query("user_id", ParseUUIDPipe) userId: string) {
+	async getConversations(@Request() req: any) {
 		this.logger.log(`GET /messages/conversations - Get user conversations`, "MessagingController");
-		const conversations = await this.messageService.getUserConversations(userId);
+		const conversations = await this.messageService.getUserConversations(req.user.userId);
 		return { data: conversations, total: conversations.length, page: 1, limit: conversations.length || 1 };
 	}
 

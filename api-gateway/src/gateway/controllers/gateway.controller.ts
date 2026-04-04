@@ -79,7 +79,7 @@ export class GatewayController {
 					success: false,
 					statusCode: status,
 					message: message,
-					error: { code: this.getErrorCode(status), details: [] },
+					error: { code: this.getErrorCode(status), message, details: [] },
 				});
     }
   }

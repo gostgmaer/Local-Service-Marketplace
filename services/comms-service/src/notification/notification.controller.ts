@@ -8,12 +8,15 @@ import {
 	Query,
 	Body,
 	Headers,
+	Request,
 	Inject,
 	LoggerService,
 	ParseIntPipe,
 	BadRequestException,
+	ForbiddenException,
 	HttpCode,
 	HttpStatus,
+	UnauthorizedException,
 	UseGuards,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
@@ -60,12 +63,7 @@ export class NotificationController {
 			success: true,
 			message: "Notifications retrieved successfully",
 			data: { notifications, unreadCount },
-			meta: {
-				page: 1,
-				limit,
-				total: notifications.length,
-				totalPages: Math.ceil(notifications.length / limit),
-			},
+			meta: { page: 1, limit, total: notifications.length, totalPages: Math.ceil(notifications.length / limit) },
 		};
 	}
 
@@ -102,7 +100,7 @@ export class NotificationController {
 	}
 
 	@Get(":id")
-	async getNotification(@Param("id") id: string) {
+	async getNotification(@Param("id") id: string, @Headers("x-user-id") userId: string) {
 		// Feature flag check: In-app notifications
 		if (!this.featureFlags.inAppNotificationsEnabled) {
 			throw new BadRequestException(
@@ -111,12 +109,12 @@ export class NotificationController {
 		}
 
 		this.logger.log(`GET /notifications/${id} - Get notification`, "NotificationController");
-		const notification = await this.notificationService.getNotificationById(id);
+		const notification = await this.notificationService.getNotificationById(id, userId);
 		return notification;
 	}
 
 	@Patch(":id/read")
-	async markAsRead(@Param("id") id: string) {
+	async markAsRead(@Param("id") id: string, @Headers("x-user-id") userId: string) {
 		// Feature flag check: In-app notifications
 		if (!this.featureFlags.inAppNotificationsEnabled) {
 			throw new BadRequestException(
@@ -125,15 +123,15 @@ export class NotificationController {
 		}
 
 		this.logger.log(`PATCH /notifications/${id}/read - Mark as read`, "NotificationController");
-		const notification = await this.notificationService.markAsRead(id);
+		const notification = await this.notificationService.markAsRead(id, userId);
 		return notification;
 	}
 
 	@Delete(":id")
 	@HttpCode(HttpStatus.NO_CONTENT)
-	async deleteNotification(@Param("id") id: string) {
+	async deleteNotification(@Param("id") id: string, @Headers("x-user-id") userId: string) {
 		this.logger.log(`DELETE /notifications/${id} - Delete notification`, "NotificationController");
-		await this.notificationService.deleteNotification(id);
+		await this.notificationService.deleteNotification(id, userId);
 	}
 
 	// ========== NEW ENDPOINTS: Email & SMS via HTTP ==========
@@ -209,7 +207,10 @@ export class NotificationController {
 
 	@Post("workers/process-emails")
 	@HttpCode(HttpStatus.OK)
-	async processEmails() {
+	async processEmails(@Headers("x-user-role") userRole: string) {
+		if (userRole !== "admin") {
+			throw new ForbiddenException("Admin access required");
+		}
 		this.logger.log("POST /notifications/workers/process-emails - Process email queue", "NotificationController");
 		await this.emailWorker.processPendingEmails();
 		return {};
@@ -217,7 +218,10 @@ export class NotificationController {
 
 	@Post("workers/process-push")
 	@HttpCode(HttpStatus.OK)
-	async processPush() {
+	async processPush(@Headers("x-user-role") userRole: string) {
+		if (userRole !== "admin") {
+			throw new ForbiddenException("Admin access required");
+		}
 		// Feature flag check: Push notifications
 		if (!this.featureFlags.pushNotificationsEnabled) {
 			throw new BadRequestException(

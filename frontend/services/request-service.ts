@@ -1,4 +1,3 @@
-import { getSession } from "next-auth/react";
 import { apiClient } from "./api-client";
 
 // Helper: Safely extract list from various response shapes
@@ -131,12 +130,7 @@ class RequestService {
 	}
 
 	async getMyRequests(): Promise<ServiceRequest[]> {
-		const session = await getSession();
-		const userId = session?.user?.id;
-		if (!userId) {
-			throw new Error("User not authenticated");
-		}
-		const response = await apiClient.get<any>(`/requests/my?user_id=${userId}`);
+		const response = await apiClient.get<any>(`/requests/my`);
 		return response.data || [];
 	}
 

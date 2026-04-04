@@ -19,6 +19,7 @@ import { TransactionQueryDto } from "../dto/transaction-query.dto";
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Roles } from "@/common/decorators/roles.decorator";
+import { ForbiddenException } from "@/common/exceptions/http.exceptions";
 
 @Controller("payments")
 export class PaymentController {
@@ -80,9 +81,13 @@ export class PaymentController {
 	@UseGuards(JwtAuthGuard)
 	async getProviderEarningsSummary(
 		@Param("providerId", ParseUUIDPipe) providerId: string,
+		@Request() req: any,
 		@Query("start_date") startDate?: string,
 		@Query("end_date") endDate?: string,
 	) {
+		if (req.user.role !== "admin" && req.user.providerId !== providerId) {
+			throw new ForbiddenException("Access denied");
+		}
 		const start = startDate ? new Date(startDate) : undefined;
 		const end = endDate ? new Date(endDate) : undefined;
 		const earnings = await this.paymentService.getProviderEarnings(providerId, start, end);
@@ -93,16 +98,22 @@ export class PaymentController {
 	@UseGuards(JwtAuthGuard)
 	async getProviderTransactions(
 		@Param("providerId", ParseUUIDPipe) providerId: string,
+		@Request() req: any,
 		@Query() queryDto: TransactionQueryDto,
 	) {
+		if (req.user.role !== "admin" && req.user.providerId !== providerId) {
+			throw new ForbiddenException("Access denied");
+		}
 		return this.paymentService.getProviderTransactions(providerId, queryDto);
 	}
 
 	@Get(":id([0-9a-fA-F-]{36})")
 	@UseGuards(JwtAuthGuard)
-	async getPaymentById(@Param("id", ParseUUIDPipe) id: string) {
+	async getPaymentById(@Param("id", ParseUUIDPipe) id: string, @Request() req: any) {
 		const payment = await this.paymentService.getPaymentById(id);
-
+		if (req.user.role !== "admin" && payment.user_id !== req.user.userId && payment.provider_id !== req.user.userId) {
+			throw new ForbiddenException("Access denied");
+		}
 		return payment;
 	}
 
@@ -116,8 +127,11 @@ export class PaymentController {
 	 */
 	@Get(":id/status")
 	@UseGuards(JwtAuthGuard)
-	async getPaymentStatus(@Param("id", ParseUUIDPipe) id: string) {
+	async getPaymentStatus(@Param("id", ParseUUIDPipe) id: string, @Request() req: any) {
 		const payment = await this.paymentService.getPaymentById(id);
+		if (req.user.role !== "admin" && payment.user_id !== req.user.userId && payment.provider_id !== req.user.userId) {
+			throw new ForbiddenException("Access denied");
+		}
 
 		return {
 			id: payment.id,
@@ -142,6 +156,10 @@ export class PaymentController {
 		@Body() requestRefundDto: RequestRefundDto,
 		@Request() req: any,
 	) {
+		const payment = await this.paymentService.getPaymentById(id);
+		if (req.user.role !== "admin" && payment.user_id !== req.user.userId) {
+			throw new ForbiddenException("Only the customer who made this payment can request a refund");
+		}
 		const refund = await this.refundService.createRefund(id, requestRefundDto.amount);
 
 		return refund;

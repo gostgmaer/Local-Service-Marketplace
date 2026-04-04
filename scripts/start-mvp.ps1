@@ -1,4 +1,4 @@
-# MVP Startup Script - Launch Minimal Services Only
+﻿# MVP Startup Script - Launch Minimal Services Only
 # This script starts only the essential services for MVP
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -10,9 +10,9 @@ Write-Host ""
 Write-Host "Checking Docker status..." -ForegroundColor Yellow
 try {
     docker info | Out-Null
-    Write-Host "✓ Docker is running" -ForegroundColor Green
+    Write-Host "(+) Docker is running" -ForegroundColor Green
 } catch {
-    Write-Host "✗ Docker is not running!" -ForegroundColor Red
+    Write-Host "(x) Docker is not running!" -ForegroundColor Red
     Write-Host "Please start Docker Desktop and try again." -ForegroundColor Yellow
     exit 1
 }
@@ -24,7 +24,7 @@ Write-Host ""
 # Copy MVP environment file
 if (Test-Path ".env.mvp") {
     Copy-Item -Path ".env.mvp" -Destination ".env" -Force
-    Write-Host "✓ MVP environment configured" -ForegroundColor Green
+    Write-Host "(+) MVP environment configured" -ForegroundColor Green
 }
 
 # Start only core services (no profiles = no messaging, infrastructure, redis, kafka)
@@ -40,9 +40,9 @@ Write-Host ""
 Write-Host "Applying database schema..." -ForegroundColor Cyan
 docker exec -i marketplace-postgres psql -U postgres -d marketplace -f /docker-entrypoint-initdb.d/schema.sql 2>$null
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "✓ Database schema applied" -ForegroundColor Green
+    Write-Host "(+) Database schema applied" -ForegroundColor Green
 } else {
-    Write-Host "⚠ Schema may already exist (this is OK)" -ForegroundColor Yellow
+    Write-Host "(!) Schema may already exist (this is OK)" -ForegroundColor Yellow
 }
 
 # Start core backend services
@@ -73,42 +73,42 @@ docker ps --filter "name=marketplace" --filter "name=auth-service" --filter "nam
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "  MVP Services Started Successfully! 🎉" -ForegroundColor Green
+Write-Host "  MVP Services Started Successfully! ***" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 
 Write-Host "Services running:" -ForegroundColor Cyan
-Write-Host "  ✓ Database (PostgreSQL)" -ForegroundColor Green
-Write-Host "  ✓ API Gateway (port 3500)" -ForegroundColor Green
-Write-Host "  ✓ Auth Service (port 3001)" -ForegroundColor Green
-Write-Host "  ✓ User Service (port 3002)" -ForegroundColor Green
-Write-Host "  ✓ Request Service (port 3003)" -ForegroundColor Green
-Write-Host "  ✓ Proposal Service (port 3004)" -ForegroundColor Green
-Write-Host "  ✓ Job Service (port 3005)" -ForegroundColor Green
-Write-Host "  ✓ Payment Service (port 3006)" -ForegroundColor Green
-Write-Host "  ✓ Notification Service (port 3008)" -ForegroundColor Green
-Write-Host "  ✓ Review Service (port 3009)" -ForegroundColor Green
-Write-Host "  ✓ Admin Service (port 3010)" -ForegroundColor Green
-Write-Host "  ✓ Email Service (port 3500)" -ForegroundColor Green
+Write-Host "  (+) Database (PostgreSQL)" -ForegroundColor Green
+Write-Host "  (+) API Gateway (port 3500)" -ForegroundColor Green
+Write-Host "  (+) Auth Service (port 3001)" -ForegroundColor Green
+Write-Host "  (+) User Service (port 3002)" -ForegroundColor Green
+Write-Host "  (+) Request Service (port 3003)" -ForegroundColor Green
+Write-Host "  (+) Proposal Service (port 3004)" -ForegroundColor Green
+Write-Host "  (+) Job Service (port 3005)" -ForegroundColor Green
+Write-Host "  (+) Payment Service (port 3006)" -ForegroundColor Green
+Write-Host "  (+) Notification Service (port 3008)" -ForegroundColor Green
+Write-Host "  (+) Review Service (port 3009)" -ForegroundColor Green
+Write-Host "  (+) Admin Service (port 3010)" -ForegroundColor Green
+Write-Host "  (+) Email Service (port 3500)" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Services NOT running (disabled for MVP):" -ForegroundColor Yellow
-Write-Host "  ✗ Analytics Service (use Google Analytics instead)" -ForegroundColor DarkGray
-Write-Host "  ✗ Infrastructure Service (use external tools)" -ForegroundColor DarkGray
-Write-Host "  ✗ Messaging Service (chat)" -ForegroundColor DarkGray
-Write-Host "  ✗ Redis (cache)" -ForegroundColor DarkGray
-Write-Host "  ✗ Kafka (events)" -ForegroundColor DarkGray
+Write-Host "  (x) Analytics Service (use Google Analytics instead)" -ForegroundColor DarkGray
+Write-Host "  (x) Infrastructure Service (use external tools)" -ForegroundColor DarkGray
+Write-Host "  (x) Messaging Service (chat)" -ForegroundColor DarkGray
+Write-Host "  (x) Redis (cache)" -ForegroundColor DarkGray
+Write-Host "  (x) Kafka (events)" -ForegroundColor DarkGray
 
 Write-Host ""
 Write-Host "Features disabled in notification service:" -ForegroundColor Yellow
-Write-Host "  ✗ In-app notifications" -ForegroundColor DarkGray
-Write-Host "  ✗ Push notifications" -ForegroundColor DarkGray
-Write-Host "  ✗ Device tracking" -ForegroundColor DarkGray
-Write-Host "  ✗ Notification preferences" -ForegroundColor DarkGray
+Write-Host "  (x) In-app notifications" -ForegroundColor DarkGray
+Write-Host "  (x) Push notifications" -ForegroundColor DarkGray
+Write-Host "  (x) Device tracking" -ForegroundColor DarkGray
+Write-Host "  (x) Notification preferences" -ForegroundColor DarkGray
 
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
-Write-Host "  1. Start frontend: cd frontend\nextjs-app && npm run dev" -ForegroundColor White
+Write-Host "  1. Start frontend: cd frontend\nextjs-app ; npm run dev" -ForegroundColor White
 Write-Host "  2. Open browser: http://localhost:3000" -ForegroundColor White
 Write-Host "  3. Test contact form: http://localhost:3000/contact" -ForegroundColor White
 Write-Host "  4. Check API health: http://localhost:3500/health" -ForegroundColor White

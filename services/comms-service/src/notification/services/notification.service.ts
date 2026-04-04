@@ -1,4 +1,4 @@
-import { Injectable, Inject, LoggerService, BadRequestException } from "@nestjs/common";
+import { Injectable, Inject, LoggerService, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -46,11 +46,14 @@ export class NotificationService {
 		return notification;
 	}
 
-	async getNotificationById(id: string): Promise<Notification> {
+	async getNotificationById(id: string, requestingUserId?: string): Promise<Notification> {
 		this.logger.log(`Fetching notification ${id}`, "NotificationService");
 		const notification = await this.notificationRepository.getNotificationById(id);
 		if (!notification) {
 			throw new NotFoundException("Notification not found");
+		}
+		if (requestingUserId && notification.user_id !== requestingUserId) {
+			throw new ForbiddenException("Access denied");
 		}
 		return notification;
 	}
@@ -60,9 +63,9 @@ export class NotificationService {
 		return this.notificationRepository.getNotificationsByUserId(userId, limit);
 	}
 
-	async markAsRead(id: string): Promise<Notification> {
+	async markAsRead(id: string, userId: string): Promise<Notification> {
 		this.logger.log(`Marking notification ${id} as read`, "NotificationService");
-		const notification = await this.getNotificationById(id);
+		const notification = await this.getNotificationById(id, userId);
 
 		if (notification.read) {
 			this.logger.log(`Notification ${id} already marked as read`, "NotificationService");
@@ -84,9 +87,9 @@ export class NotificationService {
 		await this.notificationRepository.markAllAsRead(userId);
 	}
 
-	async deleteNotification(id: string): Promise<void> {
+	async deleteNotification(id: string, userId: string): Promise<void> {
 		this.logger.log(`Deleting notification ${id}`, "NotificationService");
-		await this.getNotificationById(id); // throws 404 if not found
+		await this.getNotificationById(id, userId); // throws 404 if not found, 403 if not owner
 		await this.notificationRepository.deleteNotification(id);
 	}
 

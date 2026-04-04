@@ -40,8 +40,8 @@ export default function PaymentHistoryPage() {
 		refetch,
 	} = useQuery({
 		queryKey: ["payment-history"],
-		queryFn: () => paymentService.getMyPayments(user!.id),
-		enabled: isAuthenticated && !!user?.id,
+		queryFn: () => paymentService.getMyPayments(),
+		enabled: isAuthenticated,
 	});
 
 	const sortedPayments = useMemo(() => {

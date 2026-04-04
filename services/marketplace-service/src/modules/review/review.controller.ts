@@ -29,7 +29,9 @@ export class ReviewController {
 
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
-	async createReview(@Body() createReviewDto: CreateReviewDto) {
+	async createReview(@Body() createReviewDto: CreateReviewDto, @Request() req: any) {
+		// Override user_id with the authenticated user's ID
+		createReviewDto.user_id = req.user.userId;
 		const review = await this.reviewService.createReview(createReviewDto);
 		return review;
 	}
@@ -92,10 +94,7 @@ export class ReviewController {
 		return {
 			success: true,
 			message: "Provider reviews retrieved successfully",
-			data: {
-				reviews: result.data,
-				averageRating: result.averageRating,
-			},
+			data: { reviews: result.data, averageRating: result.averageRating },
 			meta: {
 				page: Math.floor(offset / limit) + 1,
 				limit,
