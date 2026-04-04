@@ -9,6 +9,7 @@ import { ROUTES } from '@/config/constants';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Loading } from '@/components/ui/Loading';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from '@/components/ui/Badge';
@@ -138,7 +139,7 @@ export default function PaymentHistoryPage() {
 				</div>
 
 				{isLoading ?
-					<Loading />
+					<div className='space-y-4'>{Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}</div>
 				: error ?
 					<ErrorState
 						title='Failed to load payments'

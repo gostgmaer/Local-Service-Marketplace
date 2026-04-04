@@ -5,6 +5,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -50,7 +51,7 @@ export default function FavoritesPage() {
     return (
       <Layout>
         <div className="max-w-6xl mx-auto container-custom py-8">
-          <Loading />
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>
         </div>
       </Layout>
     );

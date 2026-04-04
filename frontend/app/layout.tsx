@@ -8,8 +8,11 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Local Service Marketplace',
-  description: 'Connect with local service providers',
+  title: {
+    default: 'Local Service Marketplace',
+    template: '%s | Local Service Marketplace',
+  },
+  description: 'Connect with local service providers in your area. Find trusted professionals for home repairs, cleaning, tutoring, and more.',
 };
 
 export default function RootLayout({

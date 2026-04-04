@@ -12,10 +12,11 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { AvailabilitySchedule } from '@/components/features/providers/AvailabilitySchedule';
 import { getProviderProfile } from '@/services/user-service';
+import { getProviderReviews, getProviderReviewAggregates, ReviewWithDetails, ReviewAggregate } from '@/services/review-service';
 import { favoriteService } from '@/services/favorite-service';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/utils/helpers';
-import { ArrowLeft, Star, MapPin, Calendar, Briefcase, Heart } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Calendar, Briefcase, Heart, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/config/constants';
 import { toast } from 'react-hot-toast';
@@ -32,6 +33,18 @@ export default function ProviderDetailPage() {
   const { data: provider, isLoading, error, refetch } = useQuery({
     queryKey: ['provider', providerId],
     queryFn: () => getProviderProfile(providerId),
+    enabled: !!providerId,
+  });
+
+  const { data: reviews } = useQuery({
+    queryKey: ['provider-reviews', providerId],
+    queryFn: () => getProviderReviews(providerId),
+    enabled: !!providerId,
+  });
+
+  const { data: reviewAggregates } = useQuery({
+    queryKey: ['provider-review-aggregates', providerId],
+    queryFn: () => getProviderReviewAggregates(providerId),
     enabled: !!providerId,
   });
 
@@ -198,6 +211,92 @@ export default function ProviderDetailPage() {
 								</CardContent>
 							</Card>
 						)}
+
+						{/* Reviews Section */}
+						<Card>
+							<CardHeader>
+								<div className='flex items-center justify-between'>
+									<h3 className='text-lg font-semibold flex items-center gap-2'>
+										<MessageSquare className='h-5 w-5' />
+										Reviews
+										{reviewAggregates && (
+											<span className='text-sm font-normal text-gray-500'>
+												({reviewAggregates.total_reviews})
+											</span>
+										)}
+									</h3>
+									{reviewAggregates && reviewAggregates.total_reviews > 0 && (
+										<div className='flex items-center gap-1'>
+											<Star className='h-5 w-5 fill-yellow-400 text-yellow-400' />
+											<span className='font-semibold'>{reviewAggregates.average_rating.toFixed(1)}</span>
+										</div>
+									)}
+								</div>
+							</CardHeader>
+							<CardContent>
+								{/* Star Distribution */}
+								{reviewAggregates && reviewAggregates.total_reviews > 0 && (
+									<div className='mb-6 space-y-2'>
+										{[
+											{ stars: 5, count: reviewAggregates.five_star_count },
+											{ stars: 4, count: reviewAggregates.four_star_count },
+											{ stars: 3, count: reviewAggregates.three_star_count },
+											{ stars: 2, count: reviewAggregates.two_star_count },
+											{ stars: 1, count: reviewAggregates.one_star_count },
+										].map(({ stars, count }) => {
+											const pct = reviewAggregates.total_reviews > 0
+												? Math.round((count / reviewAggregates.total_reviews) * 100)
+												: 0;
+											return (
+												<div key={stars} className='flex items-center gap-2 text-sm'>
+													<span className='w-8 text-right text-gray-600'>{stars}★</span>
+													<div className='flex-1 h-2 bg-gray-200 rounded-full overflow-hidden'>
+														<div
+															className='h-full bg-yellow-400 rounded-full'
+															style={{ width: `${pct}%` }}
+														/>
+													</div>
+													<span className='w-8 text-gray-500'>{count}</span>
+												</div>
+											);
+										})}
+									</div>
+								)}
+
+								{/* Individual Reviews */}
+								{reviews && reviews.length > 0 ? (
+									<div className='space-y-4'>
+										{reviews.map((review) => (
+											<div key={review.id} className='border-t border-gray-100 pt-4 first:border-0 first:pt-0'>
+												<div className='flex items-center justify-between mb-1'>
+													<span className='font-medium text-gray-900'>
+														{review.customer_name || 'Anonymous'}
+													</span>
+													<span className='text-xs text-gray-400'>{formatDate(review.created_at)}</span>
+												</div>
+												<div className='flex items-center gap-0.5 mb-2'>
+													{Array.from({ length: 5 }).map((_, i) => (
+														<Star
+															key={i}
+															className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+														/>
+													))}
+												</div>
+												<p className='text-sm text-gray-600'>{review.comment}</p>
+												{review.response && (
+													<div className='mt-2 pl-4 border-l-2 border-primary-200'>
+														<p className='text-xs font-medium text-primary-700'>Provider Response</p>
+														<p className='text-sm text-gray-600'>{review.response}</p>
+													</div>
+												)}
+											</div>
+										))}
+									</div>
+								) : (
+									<p className='text-gray-500 text-sm'>No reviews yet.</p>
+								)}
+							</CardContent>
+						</Card>
 					</div>
 
 					{/* Sidebar */}
