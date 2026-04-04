@@ -28,6 +28,16 @@ async function bootstrap() {
 	const logger = app.get("winston");
 	app.useGlobalFilters(new HttpExceptionFilter(logger));
 
+	// Graceful shutdown — drain in-flight requests before exit
+	app.enableShutdownHooks();
+	const shutdown = async (signal: string) => {
+		console.log(`${signal} received — shutting down ${serviceName} gracefully`);
+		await app.close();
+		process.exit(0);
+	};
+	process.once('SIGTERM', () => shutdown('SIGTERM'));
+	process.once('SIGINT', () => shutdown('SIGINT'));
+
 	await app.listen(port);
 	console.log(`🚀 ${serviceName} running on port ${port}`);
 }

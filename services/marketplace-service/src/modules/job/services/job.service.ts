@@ -16,6 +16,7 @@ import { KafkaService } from '../../../kafka/kafka.service';
 import { RedisService } from '../../../redis/redis.service';
 import { NotificationClient } from '../../../common/notification/notification.client';
 import { UserClient } from '../../../common/user/user.client';
+import { AnalyticsClient } from '../../../common/analytics/analytics.client';
 
 @Injectable()
 export class JobService {
@@ -27,6 +28,7 @@ export class JobService {
 		private readonly redisService: RedisService,
 		private readonly notificationClient: NotificationClient,
 		private readonly userClient: UserClient,
+		private readonly analyticsClient: AnalyticsClient,
 		@Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
 	) {}
 
@@ -70,6 +72,15 @@ export class JobService {
 			eventId: `${job.id}-${Date.now()}`,
 			timestamp: new Date().toISOString(),
 			data: { jobId: job.id, requestId: job.request_id, providerId: job.provider_id, status: job.status },
+		});
+
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: dto.customer_id,
+			action: 'job_created',
+			resource: 'job',
+			resourceId: job.id,
+			metadata: { providerId: job.provider_id, requestId: job.request_id, status: job.status },
 		});
 
 		return JobResponseDto.fromEntity(job);
@@ -151,6 +162,15 @@ export class JobService {
 			data: { jobId: job.id, requestId: job.request_id, providerId: job.provider_id, status: job.status },
 		});
 
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: userId,
+			action: dto.status === 'in_progress' ? 'job_started' : `job_${dto.status}`,
+			resource: 'job',
+			resourceId: job.id,
+			metadata: { status: job.status, providerId: job.provider_id },
+		});
+
 		return JobResponseDto.fromEntity(job);
 	}
 
@@ -192,6 +212,15 @@ export class JobService {
 			eventId: `${job.id}-${Date.now()}`,
 			timestamp: new Date().toISOString(),
 			data: { jobId: job.id, requestId: job.request_id, providerId: job.provider_id, status: job.status },
+		});
+
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: userId,
+			action: 'job_completed',
+			resource: 'job',
+			resourceId: job.id,
+			metadata: { providerId: job.provider_id, requestId: job.request_id },
 		});
 
 		return JobResponseDto.fromEntity(job);

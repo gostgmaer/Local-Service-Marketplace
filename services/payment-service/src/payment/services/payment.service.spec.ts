@@ -3,6 +3,10 @@
 import { PaymentService } from "./payment.service";
 import { BadRequestException } from "../../common/exceptions/http.exceptions";
 
+const makeLogger = () => ({ log: jest.fn(), warn: jest.fn(), error: jest.fn() } as any);
+const makeKafka = () => ({ publishEvent: jest.fn().mockResolvedValue(undefined) } as any);
+const makeAnalytics = () => ({ track: jest.fn() } as any);
+
 describe("PaymentService list validation", () => {
 	const createService = () => {
 		const paymentRepository = {
@@ -12,12 +16,13 @@ describe("PaymentService list validation", () => {
 		} as any;
 
 		const service = new PaymentService(
-			{ log: jest.fn() } as any,
+			makeLogger(),
 			paymentRepository,
 			{} as any,
+			makeKafka(),
 			{} as any,
 			{} as any,
-			{} as any,
+			makeAnalytics(),
 		);
 
 		return { service };
@@ -35,5 +40,71 @@ describe("PaymentService list validation", () => {
 		await expect(service.getProviderTransactions("provider-1", { cursor: "x", page: 2 } as any)).rejects.toThrow(
 			BadRequestException,
 		);
+	});
+});
+
+describe("PaymentService.createPayment", () => {
+	const makePaymentEntity = (overrides = {}) => ({
+		id: "pay-1",
+		job_id: "job-1",
+		amount: 100,
+		currency: "USD",
+		transaction_id: "txn_test_123",
+		...overrides,
+	});
+
+	const createService = (overrides: { couponService?: any; paymentRepository?: any; notificationClient?: any; userClient?: any } = {}) => {
+		const paymentRepository = overrides.paymentRepository ?? {
+			createPayment: jest.fn().mockResolvedValue(makePaymentEntity()),
+			updatePaymentStatus: jest.fn().mockResolvedValue(undefined),
+		};
+		const couponService = overrides.couponService ?? {
+			validateAndUseCoupon: jest.fn().mockResolvedValue(10), // 10% discount
+		};
+		const notificationClient = overrides.notificationClient ?? { sendEmail: jest.fn().mockResolvedValue(undefined) };
+		const userClient = overrides.userClient ?? { getUserEmail: jest.fn().mockResolvedValue("user@test.com") };
+		const kafka = makeKafka();
+		const analytics = makeAnalytics();
+
+		const service = new PaymentService(
+			makeLogger(),
+			paymentRepository,
+			couponService,
+			kafka,
+			notificationClient,
+			userClient,
+			analytics,
+		);
+
+		return { service, kafka, analytics, paymentRepository, couponService };
+	};
+
+	it("creates payment without coupon and tracks analytics", async () => {
+		const { service, kafka, analytics, paymentRepository } = createService();
+
+		await service.createPayment("job-1", 100, "USD", "user-1", "prov-1");
+
+		expect(paymentRepository.createPayment).toHaveBeenCalledWith("job-1", "user-1", "prov-1", 100, "USD", "card", expect.any(String));
+		expect(paymentRepository.updatePaymentStatus).toHaveBeenCalledWith("pay-1", "completed", expect.any(String));
+		expect(kafka.publishEvent).toHaveBeenCalledWith("payment-events", expect.objectContaining({ eventType: "payment_completed" }));
+		expect(analytics.track).toHaveBeenCalledWith(expect.objectContaining({ action: "payment_completed", resource: "payment", userId: "user-1" }));
+	});
+
+	it("applies coupon discount before creating payment", async () => {
+		const { service, paymentRepository, couponService } = createService();
+
+		await service.createPayment("job-1", 200, "USD", "user-1", "prov-1", "SAVE10");
+
+		expect(couponService.validateAndUseCoupon).toHaveBeenCalledWith("SAVE10", "user-1");
+		// 200 * (1 - 10/100) = 180
+		expect(paymentRepository.createPayment).toHaveBeenCalledWith("job-1", "user-1", "prov-1", 180, "USD", "card", expect.any(String));
+	});
+
+	it("still creates payment when email notification fails", async () => {
+		const notificationClient = { sendEmail: jest.fn().mockRejectedValue(new Error("SMTP error")) };
+		const { service, paymentRepository } = createService({ notificationClient });
+
+		await expect(service.createPayment("job-1", 100, "USD", "user-1", "prov-1")).resolves.toBeDefined();
+		expect(paymentRepository.createPayment).toHaveBeenCalled();
 	});
 });

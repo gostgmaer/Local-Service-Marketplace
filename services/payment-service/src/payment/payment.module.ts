@@ -20,6 +20,7 @@ import { PricingPlanRepository } from './repositories/pricing-plan.repository';
 import { SubscriptionRepository } from './repositories/subscription.repository';
 import { NotificationModule } from '../common/notification/notification.module';
 import { UserModule } from '../common/user/user.module';
+import { AnalyticsModule } from '../common/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UserModule } from '../common/user/user.module';
     ),
     NotificationModule,
     UserModule,
+    AnalyticsModule,
   ],
   controllers: [
     PaymentController,

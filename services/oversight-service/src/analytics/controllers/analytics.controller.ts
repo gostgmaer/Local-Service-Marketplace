@@ -22,6 +22,7 @@ import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { ForbiddenException } from "@/common/exceptions/http.exceptions";
+import { InternalServiceGuard } from "@/common/guards/internal-service.guard";
 
 @UseGuards(JwtAuthGuard)
 @Controller("analytics")
@@ -173,5 +174,24 @@ export class AnalyticsController {
 		const metrics = await this.metricsAggregationService.backfillMetrics(body.startDate, body.endDate);
 
 		return metrics;
+	}
+
+	/**
+	 * Internal service endpoint — tracks analytics events from other microservices
+	 * when Kafka is disabled. Protected by the shared GATEWAY_INTERNAL_SECRET header
+	 * (not JWT), so it can receive calls directly from marketplace-service, payment-service, etc.
+	 */
+	@Post("internal/track")
+	@UseGuards(InternalServiceGuard)
+	@HttpCode(HttpStatus.OK)
+	async trackInternalEvent(@Body() trackActivityDto: TrackActivityDto) {
+		this.logger.log(
+			`POST /analytics/internal/track - Internal event: ${trackActivityDto.action} by user ${trackActivityDto.user_id}`,
+			"AnalyticsController",
+		);
+
+		const activity = await this.analyticsService.trackActivity(trackActivityDto);
+
+		return activity;
 	}
 }

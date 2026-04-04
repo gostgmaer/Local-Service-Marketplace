@@ -77,6 +77,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        run: pnpm lint --if-present
+
+      - name: Test
+        run: pnpm test --passWithNoTests --ci
+        env:
+          NODE_ENV: test
+
       - name: Build
         run: pnpm build
 
@@ -101,6 +109,14 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint --if-present
+
+      - name: Test
+        run: pnpm test --passWithNoTests --ci
+        env:
+          NODE_ENV: test
 
       - name: Build
         run: pnpm build

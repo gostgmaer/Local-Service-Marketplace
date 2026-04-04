@@ -29,6 +29,16 @@ async function bootstrap() {
 
   // CORS is handled by API Gateway - not needed in internal services
 
+  // Graceful shutdown — drain in-flight requests before exit
+  app.enableShutdownHooks();
+  const shutdown = async (signal: string) => {
+    console.log(`${signal} received — shutting down infrastructure-service gracefully`);
+    await app.close();
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
+
   const port = process.env.PORT || 3012;
   await app.listen(port);
 

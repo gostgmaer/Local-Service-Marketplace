@@ -8,6 +8,7 @@ import { validateCursorMode, validateDateRange } from "../../common/pagination/l
 import { KafkaService } from '../../kafka/kafka.service';
 import { NotificationClient } from '../../common/notification/notification.client';
 import { UserClient } from '../../common/user/user.client';
+import { AnalyticsClient } from '../../common/analytics/analytics.client';
 import {
 	PaginatedTransactionResponseDto,
 	SortOrder,
@@ -24,6 +25,7 @@ export class PaymentService {
 		private readonly kafkaService: KafkaService,
 		private readonly notificationClient: NotificationClient,
 		private readonly userClient: UserClient,
+		private readonly analyticsClient: AnalyticsClient,
 	) {}
 
 	async createPayment(
@@ -92,6 +94,15 @@ export class PaymentService {
 				status: "completed",
 				transactionId: payment.transaction_id,
 			},
+		});
+
+		// Track analytics (HTTP fallback when Kafka is disabled)
+		this.analyticsClient.track({
+			userId: userId,
+			action: 'payment_completed',
+			resource: 'payment',
+			resourceId: payment.id,
+			metadata: { jobId: payment.job_id, amount: finalAmount, currency, providerId },
 		});
 
 		return payment;

@@ -5,9 +5,10 @@ import { JobRepository } from './repositories/job.repository';
 import { DatabaseModule } from '../../common/database/database.module';
 import { NotificationModule } from '../../common/notification/notification.module';
 import { UserModule } from '../../common/user/user.module';
+import { AnalyticsModule } from '../../common/analytics/analytics.module';
 
 @Module({
-  imports: [DatabaseModule, NotificationModule, UserModule],
+  imports: [DatabaseModule, NotificationModule, UserModule, AnalyticsModule],
   controllers: [JobController],
   providers: [JobService, JobRepository],
   exports: [JobService],

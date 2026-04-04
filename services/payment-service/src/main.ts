@@ -29,6 +29,16 @@ async function bootstrap() {
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   app.useGlobalFilters(new HttpExceptionFilter(logger));
 
+  // Graceful shutdown — drain in-flight requests before exit
+  app.enableShutdownHooks();
+  const shutdown = async (signal: string) => {
+    console.log(`${signal} received — shutting down payment-service gracefully`);
+    await app.close();
+    process.exit(0);
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
+
   const port = process.env.PORT || 3006;
   await app.listen(port);
 

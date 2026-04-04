@@ -200,12 +200,12 @@ services:
     depends_on: [identity-service, comms-service]
     networks:
       - marketplace-network
-    # healthcheck:
-      # test: ["CMD", "wget", "--spider", "-q", "http://localhost:3006/health"]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 40s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3006/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # comms-service: notification + messaging merged
   comms-service:
@@ -321,12 +321,12 @@ services:
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
-    # healthcheck:
-      # test: ["CMD", "wget", "--spider", "-q", "http://localhost:3012/health"]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 40s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3012/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Shared MongoDB for all services
   mongo:
@@ -483,12 +483,12 @@ services:
       # They will start independently if their profiles are enabled
     networks:
       - marketplace-network
-    # healthcheck:
-      # test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
-      # interval: 30s
-      # timeout: 10s
-      # retries: 3
-      # start_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # Frontend service skipped for local development
 
