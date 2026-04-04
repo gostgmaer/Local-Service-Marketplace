@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **monorepo** containing:
 - **Frontend**: Next.js application (port 3000)
-- **API Gateway**: Nest.js (port 3500) - single entry point for all backend services
+- **API Gateway**: Nest.js (port 3700) - single entry point for all backend services
 - **6 Backend Microservices**: All Nest.js-based
   - identity-service (port 3001)
   - marketplace-service (port 3003)
@@ -158,7 +158,7 @@ Browser
 Frontend (Next.js)          localhost:3000
   |
   v
-API Gateway (NestJS)        localhost:3500
+API Gateway (NestJS)        localhost:3700
   |
   +---> identity-service    localhost:3001   Auth + User profiles
   +---> marketplace-service localhost:3003   Requests + Proposals + Jobs + Reviews

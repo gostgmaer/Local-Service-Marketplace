@@ -117,10 +117,10 @@ services:
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3700/api/v1/auth/google/callback}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:3700/api/v1/user/auth/google/callback}
       - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
       - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
-      - FACEBOOK_CALLBACK_URL=${FACEBOOK_CALLBACK_URL:-http://localhost:3700/api/v1/auth/facebook/callback}
+      - FACEBOOK_CALLBACK_URL=${FACEBOOK_CALLBACK_URL:-http://localhost:3700/api/v1/user/auth/facebook/callback}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
@@ -130,6 +130,12 @@ services:
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # marketplace-service: request + proposal + job + review merged
   marketplace-service:
@@ -166,6 +172,12 @@ services:
     depends_on: [identity-service]
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3003/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   payment-service:
     build:
@@ -275,6 +287,12 @@ services:
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3007/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # oversight-service: admin + analytics merged
   oversight-service:
@@ -309,6 +327,12 @@ services:
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3010/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   infrastructure-service:
     build:
