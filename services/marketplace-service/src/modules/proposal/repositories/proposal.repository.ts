@@ -136,6 +136,7 @@ export class ProposalRepository {
       FROM proposals
       WHERE provider_id = $1
       ORDER BY created_at DESC
+      LIMIT 200
     `;
 
 		const result = await this.pool.query(query, [providerId]);
@@ -300,6 +301,7 @@ export class ProposalRepository {
       INNER JOIN service_requests sr ON p.request_id = sr.id
       WHERE sr.user_id = $1
       ORDER BY p.created_at DESC
+      LIMIT 200
     `;
 
 		const result = await this.pool.query(query, [userId]);
@@ -307,12 +309,15 @@ export class ProposalRepository {
 	}
 
 	async getProposalsByProviderUser(userId: string): Promise<Proposal[]> {
+		// NOTE: providers table is owned by identity-service. In a fully separated DB
+		// setup, this should call the identity-service API to resolve provider_id first.
 		const query = `
       SELECT p.id, p.request_id, p.provider_id, p.price, p.message, p.status, p.created_at
       FROM proposals p
       INNER JOIN providers prov ON p.provider_id = prov.id
       WHERE prov.user_id = $1
       ORDER BY p.created_at DESC
+      LIMIT 200
     `;
 
 		const result = await this.pool.query(query, [userId]);

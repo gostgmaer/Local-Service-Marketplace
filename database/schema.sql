@@ -1277,3 +1277,30 @@ CREATE INDEX idx_provider_review_aggregates_total ON provider_review_aggregates(
 --
 -- 5. Monitor slow queries:
 --    SELECT * FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;
+
+-- =====================================================
+-- PERFORMANCE INDEXES (Gap fills identified in audit)
+-- =====================================================
+
+-- proposals: range queries on start_date and estimated_hours
+CREATE INDEX IF NOT EXISTS idx_proposals_start_date
+  ON proposals(start_date) WHERE start_date IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_proposals_estimated_hours
+  ON proposals(estimated_hours) WHERE estimated_hours IS NOT NULL;
+
+-- reviews: sort by helpful_count DESC for getMostHelpfulReviews
+CREATE INDEX IF NOT EXISTS idx_reviews_helpful_count
+  ON reviews(provider_id, helpful_count DESC) WHERE helpful_count > 0;
+
+-- users: trigram index on name for ILIKE %search% admin queries
+-- Requires pg_trgm extension (already standard in PostgreSQL)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_users_name_trgm
+  ON users USING GIN (name gin_trgm_ops) WHERE deleted_at IS NULL;
+
+-- messages: include message text in job+created index to avoid heap fetch
+--           in getUserConversations DISTINCT ON last message lookup
+DROP INDEX IF EXISTS idx_messages_job_created;
+CREATE INDEX idx_messages_job_created
+  ON messages(job_id, created_at ASC) INCLUDE (message, sender_id);

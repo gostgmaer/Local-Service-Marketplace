@@ -4,6 +4,7 @@ services:
     image: postgres:17-alpine
     container_name: marketplace-postgres
     restart: unless-stopped
+    command: ["postgres", "-c", "max_connections=200", "-c", "shared_buffers=256MB"]
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev_only}
@@ -125,7 +126,7 @@ services:
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
@@ -160,7 +161,7 @@ services:
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     depends_on: [identity-service]
     networks:
@@ -194,7 +195,7 @@ services:
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     depends_on: [identity-service, comms-service]
     networks:
@@ -243,7 +244,7 @@ services:
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
@@ -277,7 +278,7 @@ services:
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
       - CACHE_ENABLED=${CACHE_ENABLED:-false}
       - ANALYTICS_ENABLED=${ANALYTICS_ENABLED:-true}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network
@@ -316,7 +317,7 @@ services:
       - BACKGROUND_JOBS_ENABLED=${BACKGROUND_JOBS_ENABLED:-false}
       - RATE_LIMITING_ENABLED=${RATE_LIMITING_ENABLED:-true}
       - FEATURE_FLAGS_ENABLED=${FEATURE_FLAGS_ENABLED:-true}
-      - DB_POOL_MAX=${DB_POOL_MAX:-30}
+      - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
     networks:
       - marketplace-network

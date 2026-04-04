@@ -26,7 +26,12 @@ export class UserRepository {
 	}
 
 	async findById(id: string): Promise<User | null> {
-		const query = "SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL";
+		// Excludes password_hash — use findByEmail for auth lookups that need it
+		const query = `
+      SELECT id, email, name, phone, role, status, email_verified, profile_picture_url,
+             timezone, language, created_at, updated_at, last_login_at, deleted_at
+      FROM users WHERE id = $1 AND deleted_at IS NULL
+    `;
 		const result = await this.pool.query(query, [id]);
 		return result.rows[0] || null;
 	}
@@ -137,7 +142,8 @@ export class UserRepository {
 		const sortOrder = queryDto.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
 		const query = `
-      SELECT *
+      SELECT id, email, name, phone, role, status, email_verified, profile_picture_url,
+             timezone, language, created_at, updated_at, last_login_at, deleted_at
       FROM users
       ${whereClause}
       ORDER BY ${sortColumn} ${sortOrder} NULLS LAST, id ${sortOrder}

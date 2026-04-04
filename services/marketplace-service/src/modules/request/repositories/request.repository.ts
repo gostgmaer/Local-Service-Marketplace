@@ -204,12 +204,13 @@ export class RequestRepository {
 	}> {
 		const query = `
       SELECT
-        COUNT(*) FILTER (WHERE deleted_at IS NULL)::int AS total,
-        COUNT(*) FILTER (WHERE status = 'open' AND deleted_at IS NULL)::int AS open,
-        COUNT(*) FILTER (WHERE status = 'assigned' AND deleted_at IS NULL)::int AS assigned,
-        COUNT(*) FILTER (WHERE status = 'completed' AND deleted_at IS NULL)::int AS completed,
-        COUNT(*) FILTER (WHERE status = 'cancelled' AND deleted_at IS NULL)::int AS cancelled
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE status = 'open')::int AS open,
+        COUNT(*) FILTER (WHERE status = 'assigned')::int AS assigned,
+        COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+        COUNT(*) FILTER (WHERE status = 'cancelled')::int AS cancelled
       FROM service_requests
+      WHERE deleted_at IS NULL
     `;
 		const result = await this.pool.query(query);
 		const row = result.rows[0];
@@ -377,9 +378,10 @@ export class RequestRepository {
 	}
 
 	async deleteRequest(id: string): Promise<boolean> {
-		const query = `DELETE FROM service_requests WHERE id = $1`;
+		// Soft delete — preserves referential integrity with proposals/jobs
+		const query = `UPDATE service_requests SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`;
 		const result = await this.pool.query(query, [id]);
-		return result.rowCount > 0;
+		return (result.rowCount ?? 0) > 0;
 	}
 
 	async getRequestsByUser(userId: string): Promise<ServiceRequest[]> {
@@ -392,6 +394,7 @@ export class RequestRepository {
       LEFT JOIN locations l ON r.location_id = l.id
       WHERE r.user_id = $1 AND r.deleted_at IS NULL
       ORDER BY r.created_at DESC
+      LIMIT 200
     `;
 
 		const result = await this.pool.query(query, [userId]);

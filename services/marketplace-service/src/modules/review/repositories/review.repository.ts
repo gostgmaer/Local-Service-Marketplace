@@ -109,14 +109,17 @@ export class ReviewRepository {
 	}
 
 	// ✅ NEW: Advanced query methods
-	async addProviderResponse(reviewId: string, response: string): Promise<Review> {
+	async addProviderResponse(reviewId: string, response: string, providerId: string): Promise<Review> {
 		const query = `
       UPDATE reviews 
       SET response = $1, response_at = NOW()
-      WHERE id = $2
+      WHERE id = $2 AND provider_id = $3
       RETURNING *
     `;
-		const result = await this.pool.query(query, [response, reviewId]);
+		const result = await this.pool.query(query, [response, reviewId, providerId]);
+		if (result.rows.length === 0) {
+			throw new NotFoundException("Review not found or unauthorized");
+		}
 		return result.rows[0];
 	}
 

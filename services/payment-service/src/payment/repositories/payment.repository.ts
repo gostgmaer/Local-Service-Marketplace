@@ -114,7 +114,7 @@ export class PaymentRepository {
 	}
 
 	async getPaymentsByJobId(jobId: string): Promise<Payment[]> {
-		const query = "SELECT * FROM payments WHERE job_id = $1 ORDER BY created_at DESC";
+		const query = "SELECT * FROM payments WHERE job_id = $1 ORDER BY created_at DESC LIMIT 20";
 		const result = await this.pool.query(query, [jobId]);
 		return result.rows.map(
 			(row) =>
@@ -131,14 +131,12 @@ export class PaymentRepository {
 	}
 
 	async getPaymentsByUser(userId: string): Promise<Payment[]> {
+		// payments table already has user_id and provider_id — no cross-service JOIN needed
 		const query = `
-      SELECT p.*
-      FROM payments p
-      INNER JOIN jobs j ON p.job_id = j.id
-      INNER JOIN service_requests sr ON j.request_id = sr.id
-      LEFT JOIN providers prov ON j.provider_id = prov.id
-      WHERE sr.user_id = $1 OR prov.user_id = $1
-      ORDER BY p.created_at DESC
+      SELECT * FROM payments
+      WHERE user_id = $1 OR provider_id = $1
+      ORDER BY created_at DESC
+      LIMIT 100
     `;
 		const result = await this.pool.query(query, [userId]);
 		return result.rows.map(
@@ -146,11 +144,18 @@ export class PaymentRepository {
 				new Payment({
 					id: row.id,
 					job_id: row.job_id,
+					user_id: row.user_id,
+					provider_id: row.provider_id,
 					amount: parseFloat(row.amount),
+					platform_fee: row.platform_fee ? parseFloat(row.platform_fee) : undefined,
+					provider_amount: row.provider_amount ? parseFloat(row.provider_amount) : undefined,
 					currency: row.currency,
+					payment_method: row.payment_method,
 					status: row.status,
 					transaction_id: row.transaction_id,
+					failed_reason: row.failed_reason,
 					created_at: row.created_at,
+					paid_at: row.paid_at,
 				}),
 		);
 	}
@@ -168,13 +173,11 @@ export class PaymentRepository {
 			sortOrder = SortOrder.DESC,
 		} = queryDto;
 
+		// payments table has user_id and provider_id — no cross-service JOIN needed
 		let query = `
-      SELECT DISTINCT p.*
+      SELECT p.*
       FROM payments p
-      INNER JOIN jobs j ON p.job_id = j.id
-      INNER JOIN service_requests sr ON j.request_id = sr.id
-      LEFT JOIN providers prov ON j.provider_id = prov.id
-      WHERE sr.user_id = $1 OR prov.user_id = $1
+      WHERE p.user_id = $1 OR p.provider_id = $1
     `;
 
 		const values: any[] = [userId];
@@ -247,13 +250,11 @@ export class PaymentRepository {
 
 	async countPaymentsByUser(userId: string, queryDto: TransactionQueryDto): Promise<number> {
 		const { status, payment_method, created_from, created_to } = queryDto;
+		// payments table has user_id and provider_id — no cross-service JOIN needed
 		let query = `
-      SELECT COUNT(DISTINCT p.id)::int AS total
-      FROM payments p
-      INNER JOIN jobs j ON p.job_id = j.id
-      INNER JOIN service_requests sr ON j.request_id = sr.id
-      LEFT JOIN providers prov ON j.provider_id = prov.id
-      WHERE sr.user_id = $1 OR prov.user_id = $1
+      SELECT COUNT(*)::int AS total
+      FROM payments
+      WHERE user_id = $1 OR provider_id = $1
     `;
 
 		const values: any[] = [userId];
