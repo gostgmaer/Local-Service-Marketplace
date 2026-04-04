@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { Providers } from './providers';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { WebVitals } from '@/components/performance/WebVitals';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -41,6 +42,7 @@ export default function RootLayout({
 			<body className={inter.className}>
 				<ThemeProvider>
 					<Providers>
+						<WebVitals />
 						<main id='main-content'>{children}</main>
 						<Toaster position='top-right' />
 					</Providers>

@@ -1,13 +1,19 @@
 'use client';
 
 import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES, getDashboardHomeByRole } from "@/config/constants";
 import { Loading } from '@/components/ui/Loading';
 import { analytics } from "@/utils/analytics";
-import CustomerDashboard from "@/components/dashboard/CustomerDashboard";
-import ProviderDashboard from "@/components/dashboard/ProviderDashboard";
+
+const CustomerDashboard = dynamic(() => import("@/components/dashboard/CustomerDashboard"), {
+  loading: () => <Loading />,
+});
+const ProviderDashboard = dynamic(() => import("@/components/dashboard/ProviderDashboard"), {
+  loading: () => <Loading />,
+});
 
 export default function DashboardPage() {
   const router = useRouter();

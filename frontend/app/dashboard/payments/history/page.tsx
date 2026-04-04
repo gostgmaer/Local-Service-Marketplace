@@ -213,10 +213,26 @@ export default function PaymentHistoryPage() {
 										<div className='flex flex-col items-end gap-2'>
 											<button
 												className='text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1'
-												onClick={() => {
+												onClick={async () => {
 													analytics.event({ action: "download_receipt", category: "engagement", label: payment.id });
-													// Implement receipt download
-													console.log("Download receipt for payment:", payment.id);
+													try {
+														const response = await fetch(`/api/v1/payments/${payment.id}/invoice/download`, {
+															credentials: 'include',
+														});
+														if (!response.ok) throw new Error('Failed to download');
+														const blob = await response.blob();
+														const url = window.URL.createObjectURL(blob);
+														const a = document.createElement('a');
+														a.href = url;
+														a.download = `invoice-${payment.id.slice(0, 8)}.html`;
+														document.body.appendChild(a);
+														a.click();
+														window.URL.revokeObjectURL(url);
+														document.body.removeChild(a);
+														toast.success('Invoice downloaded');
+													} catch {
+														toast.error('Failed to download invoice');
+													}
 												}}>
 												<Download className='h-4 w-4' />
 												Receipt

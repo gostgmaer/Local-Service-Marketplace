@@ -12,6 +12,7 @@ import { CouponService } from './services/coupon.service';
 import { SavedPaymentMethodService } from './services/saved-payment-method.service';
 import { PricingPlanService } from './services/pricing-plan.service';
 import { SubscriptionService } from './services/subscription.service';
+import { InvoiceService } from './services/invoice.service';
 import { PaymentRepository } from './repositories/payment.repository';
 import { RefundRepository } from './repositories/refund.repository';
 import { WebhookRepository } from './repositories/webhook.repository';
@@ -47,6 +48,7 @@ import { PaymentGatewayModule } from "./gateway/payment-gateway.module";
 		SavedPaymentMethodService,
 		PricingPlanService,
 		SubscriptionService,
+		InvoiceService,
 		PaymentRepository,
 		RefundRepository,
 		WebhookRepository,

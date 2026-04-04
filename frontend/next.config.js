@@ -59,6 +59,15 @@ const nextConfig = {
 	webpack: (config, { isServer, dev }) => {
 		if (!isServer) {
 			config.resolve.fallback = { ...config.resolve.fallback, fs: false, net: false, tls: false };
+
+			// Performance budgets: warn if chunks exceed size limits
+			if (!dev) {
+				config.performance = {
+					hints: 'warning',
+					maxAssetSize: 256 * 1024,        // 256 KB per asset
+					maxEntrypointSize: 512 * 1024,    // 512 KB per entry point
+				};
+			}
 		}
 		// Enable polling for file watching on Windows (fixes HMR not reflecting changes)
 		if (dev) {
