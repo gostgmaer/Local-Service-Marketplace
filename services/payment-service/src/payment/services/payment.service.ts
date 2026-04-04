@@ -50,21 +50,23 @@ export class PaymentService {
 			this.logger.log(`Coupon ${couponCode} applied. Original: ${amount}, Final: ${finalAmount}`, "PaymentService");
 		}
 
+		// Pre-fetch user info — needed by PayUbiz (firstname/email) and Instamojo (buyer_name/email).
+		// Non-blocking: charge proceeds with defaults if identity-service is temporarily unavailable.
+		const user = await this.userClient.getUserById(userId).catch(() => null);
+
 		// Charge via payment gateway — per-request override via X-Payment-Gateway header
+		const chargeParams = {
+			amount: finalAmount,
+			currency,
+			description: `Job ${jobId} payment`,
+			customerEmail: user?.email,
+			customerName: user?.name,
+			metadata: { job_id: jobId, user_id: userId, provider_id: providerId },
+		};
 		const chargeResult =
 			gateway ?
-				await this.paymentGateway.chargeWith(gateway, {
-					amount: finalAmount,
-					currency,
-					description: `Job ${jobId} payment`,
-					metadata: { job_id: jobId, user_id: userId, provider_id: providerId },
-				})
-			:	await this.paymentGateway.charge({
-					amount: finalAmount,
-					currency,
-					description: `Job ${jobId} payment`,
-					metadata: { job_id: jobId, user_id: userId, provider_id: providerId },
-				});
+				await this.paymentGateway.chargeWith(gateway, chargeParams)
+			:	await this.paymentGateway.charge(chargeParams);
 
 		const activeGatewayName = gateway ?? this.paymentGateway.getActiveGatewayName();
 
@@ -86,8 +88,8 @@ export class PaymentService {
 
 		this.logger.log(`Payment created: ${payment.id}, gateway status: ${chargeResult.status}`, "PaymentService");
 
-		// Send payment confirmation email
-		const userEmail = await this.userClient.getUserEmail(userId);
+		// Send payment confirmation email (reuse pre-fetched user — avoids a second HTTP call)
+		const userEmail = user?.email ?? null;
 		if (userEmail) {
 			this.notificationClient
 				.sendEmail({
@@ -117,6 +119,7 @@ export class PaymentService {
 				currency: payment.currency,
 				status: "completed",
 				transactionId: payment.transaction_id,
+				gateway: activeGatewayName,
 			},
 		});
 

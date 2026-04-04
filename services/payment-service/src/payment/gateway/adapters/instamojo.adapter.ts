@@ -60,7 +60,7 @@ export class InstamojoAdapter implements IGatewayAdapter {
 			purpose: params.description ?? params.metadata?.job_id ?? "Service Payment",
 			amount: params.amount.toFixed(2),
 			currency: (params.currency ?? "INR").toUpperCase(),
-			buyer_name: params.metadata?.user_id ?? "Customer",
+			buyer_name: params.customerName ?? "Customer",
 			email: params.customerEmail ?? "",
 			phone: "", // optional — can be added to metadata if needed
 			send_email: false,

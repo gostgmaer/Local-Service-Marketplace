@@ -78,7 +78,14 @@ describe("PaymentService.createPayment", () => {
 			validateAndUseCoupon: jest.fn().mockResolvedValue(10), // 10% discount
 		};
 		const notificationClient = overrides.notificationClient ?? { sendEmail: jest.fn().mockResolvedValue(undefined) };
-		const userClient = overrides.userClient ?? { getUserEmail: jest.fn().mockResolvedValue("user@test.com") };
+		const userClient =
+			overrides.userClient ??
+			({
+				getUserById: jest
+					.fn()
+					.mockResolvedValue({ id: "user-1", email: "user@test.com", name: "Test User", role: "customer" }),
+				getUserEmail: jest.fn().mockResolvedValue("user@test.com"),
+			} as any);
 		const gateway = overrides.gateway ?? makeGateway();
 		const kafka = makeKafka();
 		const analytics = makeAnalytics();

@@ -61,7 +61,7 @@ export class PayUbizAdapter implements IGatewayAdapter {
 		const txnid = `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 		const amount = params.amount.toFixed(2);
 		const productinfo = params.description ?? params.metadata?.job_id ?? "Service Payment";
-		const firstname = params.metadata?.user_id ?? "Customer";
+		const firstname = params.customerName ?? "Customer";
 		const email = params.customerEmail ?? "";
 
 		// Build hash: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT

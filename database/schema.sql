@@ -403,6 +403,7 @@ CREATE TABLE payments (
   provider_amount BIGINT,
   currency TEXT NOT NULL,
   payment_method TEXT,
+  gateway TEXT NOT NULL DEFAULT 'mock',
   status TEXT NOT NULL CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
   transaction_id TEXT,
   failed_reason TEXT,
@@ -416,6 +417,7 @@ CREATE INDEX idx_payments_provider_id ON payments(provider_id);
 CREATE INDEX idx_payments_status ON payments(status);
 CREATE INDEX idx_payments_created_at ON payments(created_at DESC);
 CREATE INDEX idx_payments_transaction_id ON payments(transaction_id);
+CREATE INDEX idx_payments_gateway ON payments(gateway);
 CREATE INDEX idx_payments_provider_created ON payments(provider_id, created_at DESC);
 CREATE INDEX idx_payments_provider_status ON payments(provider_id, status);
 CREATE INDEX idx_payments_paid_at ON payments(paid_at DESC) WHERE paid_at IS NOT NULL;

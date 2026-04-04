@@ -68,6 +68,7 @@ import { PaymentGatewayModule } from "./gateway/payment-gateway.module";
 		SavedPaymentMethodRepository,
 		PricingPlanRepository,
 		SubscriptionRepository,
+		PaymentGatewayModule, // re-export so QueueModule can inject PaymentGatewayService
 	],
 })
 export class PaymentModule {}

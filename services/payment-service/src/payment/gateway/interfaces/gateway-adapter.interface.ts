@@ -23,6 +23,8 @@ export interface ChargeParams {
 	currency: string;
 	/** Customer email — used by Razorpay and PayPal. */
 	customerEmail?: string;
+	/** Customer full name — used by PayUbiz (firstname) and Instamojo (buyer_name). */
+	customerName?: string;
 	/** Human-readable description of the payment. */
 	description?: string;
 	/** Arbitrary metadata forwarded to the gateway (e.g. job_id, user_id). */

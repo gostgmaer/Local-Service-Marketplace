@@ -11,4 +11,4 @@ UPDATE payments SET gateway = 'stripe' WHERE gateway IS NULL OR gateway = '';
 CREATE INDEX IF NOT EXISTS idx_payments_gateway ON payments(gateway);
 
 -- Comment
-COMMENT ON COLUMN payments.gateway IS 'Payment gateway used: stripe | razorpay | paypal | mock';
+COMMENT ON COLUMN payments.gateway IS 'Payment gateway used: stripe | razorpay | paypal | payubiz | instamojo | mock';

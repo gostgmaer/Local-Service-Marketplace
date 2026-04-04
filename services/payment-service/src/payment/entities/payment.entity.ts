@@ -8,8 +8,8 @@ export class Payment {
 	provider_amount?: number;
 	currency: string;
 	payment_method?: string;
-	/** Payment gateway used: stripe | razorpay | paypal | mock */
-	gateway?: string;
+	/** Payment gateway used: stripe | razorpay | paypal | payubiz | instamojo | mock */
+	gateway: string;
 	status: "pending" | "completed" | "failed" | "refunded";
 	transaction_id?: string;
 	failed_reason?: string;
