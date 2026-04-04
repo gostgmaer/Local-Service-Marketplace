@@ -33,8 +33,8 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setIsSubmitting(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-      await axios.post(`${API_URL}/auth/forgot-password`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3700';
+      await axios.post(`${API_URL}/api/v1/user/auth/forgot-password`, {
         email: data.email,
       });
       

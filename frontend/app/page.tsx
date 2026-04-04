@@ -22,6 +22,8 @@ import {
 import { Metadata } from "next";
 
 // Advanced SEO metadata for homepage
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://localservicemarketplace.com";
+
 export const metadata: Metadata = {
 	title: "Local Service Marketplace | Find Trusted Local Providers",
 	description:
@@ -30,10 +32,10 @@ export const metadata: Metadata = {
 		title: "Local Service Marketplace",
 		description:
 			"Connect with verified, licensed professionals in your neighborhood. Post your request free, get multiple quotes, and hire with confidence.",
-		url: "https://yourdomain.com/",
+		url: SITE_URL,
 		siteName: "Local Service Marketplace",
 		images: [
-			{ url: "https://yourdomain.com/og-image.png", width: 1200, height: 630, alt: "Local Service Marketplace" },
+			{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: "Local Service Marketplace" },
 		],
 		locale: "en_US",
 		type: "website",
@@ -42,10 +44,9 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		title: "Local Service Marketplace",
 		description: "Connect with verified, licensed professionals in your neighborhood.",
-		images: ["https://yourdomain.com/og-image.png"],
-		site: "@yourtwitter",
+		images: [`${SITE_URL}/og-image.png`],
 	},
-	alternates: { canonical: "https://yourdomain.com/" },
+	alternates: { canonical: SITE_URL },
 };
 
 const serviceCategories = [
