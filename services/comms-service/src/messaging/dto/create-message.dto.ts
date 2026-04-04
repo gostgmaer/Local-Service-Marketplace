@@ -1,13 +1,14 @@
-import { IsUUID, IsString, IsNotEmpty } from 'class-validator';
+import { IsUUID, IsString, IsNotEmpty, IsOptional } from "class-validator";
 
 export class CreateMessageDto {
-  @IsUUID()
-  job_id: string;
+	@IsUUID()
+	job_id: string;
 
-  @IsUUID()
-  sender_id: string;
+	@IsOptional()
+	@IsUUID()
+	sender_id?: string;
 
-  @IsString()
-  @IsNotEmpty()
-  message: string;
+	@IsString()
+	@IsNotEmpty()
+	message: string;
 }

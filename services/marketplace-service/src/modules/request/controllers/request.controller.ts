@@ -21,6 +21,7 @@ import { RequestResponseDto, PaginatedRequestResponseDto } from "../dto/request-
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { RolesGuard } from "@/common/guards/roles.guard";
 import { Roles } from "@/common/decorators/roles.decorator";
+import { ForbiddenException } from "../../../common/exceptions/http.exceptions";
 
 @Controller("requests")
 export class RequestController {
@@ -96,7 +97,11 @@ export class RequestController {
 	@HttpCode(HttpStatus.OK)
 	async getRequestsByUser(
 		@Param("userId", ParseUUIDPipe) userId: string,
+		@Req() req: any,
 	): Promise<{ data: RequestResponseDto[]; total: number; page: number; limit: number }> {
+		if (req.user.role !== "admin" && req.user.userId !== userId) {
+			throw new ForbiddenException("Access denied");
+		}
 		const result = await this.requestService.getRequestsByUser(userId);
 		return { ...result, page: 1, limit: result.data.length || 1 };
 	}

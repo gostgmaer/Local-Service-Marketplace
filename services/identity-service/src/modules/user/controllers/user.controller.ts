@@ -103,7 +103,7 @@ export class UserController {
 	async suspendUser(@Param("id", ParseUUIDPipe) id: string, @Body() body: SuspendUserDto): Promise<UserResponseDto> {
 		this.logger.info("PATCH /users/:id/suspend", { context: "UserController", user_id: id, reason: body.reason });
 
-		return this.userService.suspendUser(id);
+		return this.userService.suspendUser(id, body.reason);
 	}
 
 	/**

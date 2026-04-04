@@ -48,15 +48,7 @@ export interface SendMessageData {
 
 class MessageService {
   async sendMessage(data: SendMessageData): Promise<Message> {
-    const formData = new FormData();
-    formData.append("job_id", data.job_id);
-    formData.append('message', data.message);
-
-    const response = await apiClient.post<Message>('/messages', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await apiClient.post<Message>("/messages", { job_id: data.job_id, message: data.message });
     return response.data;
   }
 

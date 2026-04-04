@@ -269,4 +269,60 @@ export class ProposalService {
 		const data = uniqueProposals.map(ProposalResponseDto.fromEntity);
 		return { data, total: data.length };
 	}
+
+	async withdrawProposal(id: string, userId: string): Promise<ProposalResponseDto> {
+		this.logger.log(`Withdrawing proposal: ${id}`, ProposalService.name);
+
+		const existingProposal = await this.proposalRepository.getProposalById(id);
+		if (!existingProposal) {
+			throw new NotFoundException("Proposal not found");
+		}
+
+		if (existingProposal.provider_id !== userId) {
+			throw new ForbiddenException("Only the provider who submitted this proposal can withdraw it");
+		}
+
+		if (existingProposal.status !== "pending") {
+			throw new BadRequestException(`Cannot withdraw proposal with status: ${existingProposal.status}`);
+		}
+
+		const proposal = await this.proposalRepository.withdrawProposal(id, userId);
+		if (!proposal) {
+			throw new NotFoundException("Proposal not found");
+		}
+
+		this.logger.log(`Proposal withdrawn successfully: ${id}`, ProposalService.name);
+
+		return ProposalResponseDto.fromEntity(proposal);
+	}
+
+	async updateProposal(
+		id: string,
+		userId: string,
+		fields: { price?: number; message?: string; estimated_hours?: number },
+	): Promise<ProposalResponseDto> {
+		this.logger.log(`Updating proposal: ${id}`, ProposalService.name);
+
+		const existingProposal = await this.proposalRepository.getProposalById(id);
+		if (!existingProposal) {
+			throw new NotFoundException("Proposal not found");
+		}
+
+		if (existingProposal.provider_id !== userId) {
+			throw new ForbiddenException("Only the provider who submitted this proposal can update it");
+		}
+
+		if (existingProposal.status !== "pending") {
+			throw new BadRequestException(`Cannot update proposal with status: ${existingProposal.status}`);
+		}
+
+		const proposal = await this.proposalRepository.updateProposal(id, userId, fields);
+		if (!proposal) {
+			throw new NotFoundException("Proposal not found");
+		}
+
+		this.logger.log(`Proposal updated successfully: ${id}`, ProposalService.name);
+
+		return ProposalResponseDto.fromEntity(proposal);
+	}
 }

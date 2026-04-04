@@ -65,7 +65,7 @@ export default function RequestsPage() {
   }
 
   return (
-		<ProtectedRoute requiredRoles={["customer"]}>
+		<ProtectedRoute requiredRoles={["customer", "provider"]}>
 			<Layout>
 				<div className='container-custom py-12'>
 					{error ?
@@ -154,13 +154,13 @@ export default function RequestsPage() {
 										))}
 									</div>
 
-									{data.hasMore && (
+									{data.total && data.total > limit ?
 										<Pagination
 											currentPage={page}
-											totalPages={page + 2}
+											totalPages={Math.ceil(data.total / limit)}
 											onPageChange={goToPage}
 										/>
-									)}
+									:	null}
 								</>
 							:	<Card>
 									<CardContent>

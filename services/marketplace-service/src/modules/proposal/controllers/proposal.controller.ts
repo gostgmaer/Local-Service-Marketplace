@@ -2,6 +2,7 @@ import {
 	Controller,
 	Post,
 	Get,
+	Patch,
 	Body,
 	Param,
 	Query,
@@ -69,6 +70,22 @@ export class ProposalController {
 	@HttpCode(HttpStatus.OK)
 	async rejectProposal(@Param("id", ParseUUIDPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
 		return this.proposalService.rejectProposal(id, req.user.userId, req.user.role);
+	}
+
+	@Post("proposals/:id([0-9a-fA-F-]{36})/withdraw")
+	@HttpCode(HttpStatus.OK)
+	async withdrawProposal(@Param("id", ParseUUIDPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
+		return this.proposalService.withdrawProposal(id, req.user.userId);
+	}
+
+	@Patch("proposals/:id([0-9a-fA-F-]{36})")
+	@HttpCode(HttpStatus.OK)
+	async updateProposal(
+		@Param("id", ParseUUIDPipe) id: string,
+		@Body() body: { price?: number; message?: string; estimated_hours?: number },
+		@Request() req: any,
+	): Promise<ProposalResponseDto> {
+		return this.proposalService.updateProposal(id, req.user.userId, body);
 	}
 
 	@Get("proposals/:id([0-9a-fA-F-]{36})")

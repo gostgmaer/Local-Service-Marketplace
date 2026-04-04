@@ -65,7 +65,7 @@ class ProposalService {
 	}
 
 	async withdrawProposal(id: string): Promise<Proposal> {
-		const response = await apiClient.patch<Proposal>(`/proposals/${id}`, { status: "withdrawn" });
+		const response = await apiClient.post<Proposal>(`/proposals/${id}/withdraw`, {});
 		return response.data;
 	}
 
