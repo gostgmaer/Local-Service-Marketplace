@@ -23,11 +23,15 @@ import { VerifyDocumentDto } from '../dto/verify-document.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { FileUploadService } from "../../../common/file-upload.service";
 
 @UseGuards(JwtAuthGuard)
 @Controller("provider-documents")
 export class ProviderDocumentController {
-	constructor(private readonly documentService: ProviderDocumentService) {}
+	constructor(
+		private readonly documentService: ProviderDocumentService,
+		private readonly fileUploadService: FileUploadService,
+	) {}
 
 	@Post("upload/:providerId")
 	@UseInterceptors(FileInterceptor("file"))
@@ -42,9 +46,7 @@ export class ProviderDocumentController {
 			throw new BadRequestException("File is required");
 		}
 
-		// TODO: Upload file to storage (S3 or local)
-		// For now, using a placeholder URL
-		const fileUrl = `/uploads/documents/${file.filename}`;
+		const fileUrl = await this.fileUploadService.uploadFile(file, "document");
 
 		const document = await this.documentService.uploadDocument(providerId, req.user.userId, dto, fileUrl);
 

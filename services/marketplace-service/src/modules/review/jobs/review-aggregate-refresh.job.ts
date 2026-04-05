@@ -35,10 +35,11 @@ export class ReviewAggregateRefreshJob {
     console.log('[ReviewAggregateRefreshJob] Starting quick refresh...');
 
     try {
-      // TODO: Implement quick refresh for providers with recent review activity
-      // For now, this is a placeholder for future optimization
-      
-      console.log('[ReviewAggregateRefreshJob] Quick refresh completed');
+      const refreshedCount = await this.aggregateRepository.refreshRecent(4);
+
+      console.log(
+				`[ReviewAggregateRefreshJob] Quick refresh completed. Refreshed ${refreshedCount} provider aggregates`,
+			);
     } catch (error) {
       console.error('[ReviewAggregateRefreshJob] Error in quick refresh:', error);
     }

@@ -22,11 +22,15 @@ import { ProviderPortfolioService } from '../services/provider-portfolio.service
 import { CreatePortfolioDto } from '../dto/create-portfolio.dto';
 import { UpdatePortfolioItemDto } from '../dto/update-portfolio-item.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { FileUploadService } from "../../../common/file-upload.service";
 
 @UseGuards(JwtAuthGuard)
 @Controller("provider-portfolio")
 export class ProviderPortfolioController {
-	constructor(private readonly portfolioService: ProviderPortfolioService) {}
+	constructor(
+		private readonly portfolioService: ProviderPortfolioService,
+		private readonly fileUploadService: FileUploadService,
+	) {}
 
 	@Post(":providerId")
 	@UseInterceptors(FilesInterceptor("images", 10)) // Max 10 images
@@ -41,9 +45,7 @@ export class ProviderPortfolioController {
 			throw new BadRequestException("At least one image is required");
 		}
 
-		// TODO: Upload images to storage (S3 or local)
-		// For now, using placeholder URLs
-		const imageUrls = files.map((file) => `/uploads/portfolio/${file.filename}`);
+		const imageUrls = await this.fileUploadService.uploadMultiple(files, "portfolio", 10);
 
 		const portfolioItem = await this.portfolioService.createPortfolioItem(providerId, req.user.userId, dto, imageUrls);
 

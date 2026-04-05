@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { extname } from 'path';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "fs";
 import { randomBytes } from 'crypto';
 
 @Injectable()
@@ -68,8 +68,8 @@ export class FileUploadService {
     // Save file
     writeFileSync(filePath, file.buffer);
 
-    // Return relative URL
-    return `/${subDir}/${fileName}`;
+    // Return relative URL exposed by static uploads route
+    return `/uploads/${subDir}/${fileName}`;
   }
 
   /**
@@ -117,8 +117,15 @@ export class FileUploadService {
    * Delete a file (for cleanup)
    */
   async deleteFile(fileUrl: string): Promise<void> {
-    // TODO: Implement file deletion
-    // For now, just a placeholder
-    console.log(`Delete file: ${fileUrl}`);
+    if (!fileUrl || !fileUrl.startsWith("/uploads/")) {
+			return;
+		}
+
+		const relativePath = fileUrl.replace("/uploads/", "");
+		const filePath = `${this.uploadDir}/${relativePath}`;
+
+		if (existsSync(filePath)) {
+			unlinkSync(filePath);
+		}
   }
 }
