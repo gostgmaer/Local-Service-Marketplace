@@ -21,7 +21,6 @@ import { RespondReviewDto } from "./dto/respond-review.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { ForbiddenException } from "@/common/exceptions/http.exceptions";
 
-@UseGuards(JwtAuthGuard)
 @Controller("reviews")
 export class ReviewController {
 	constructor(
@@ -29,6 +28,7 @@ export class ReviewController {
 		private readonly reviewRepository: ReviewRepository,
 	) {}
 
+	@UseGuards(JwtAuthGuard)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	async createReview(@Body() createReviewDto: CreateReviewDto, @Request() req: any) {
@@ -63,6 +63,7 @@ export class ReviewController {
 	 * Provider responds to a review
 	 * POST /reviews/:id/respond
 	 */
+	@UseGuards(JwtAuthGuard)
 	@Post(":id/respond")
 	@HttpCode(HttpStatus.OK)
 	async respondToReview(
@@ -83,6 +84,7 @@ export class ReviewController {
 	 * Mark review as helpful
 	 * POST /reviews/:id/helpful
 	 */
+	@UseGuards(JwtAuthGuard)
 	@Post(":id/helpful")
 	@HttpCode(HttpStatus.OK)
 	async markHelpful(@Param("id", StrictUuidPipe) id: string, @Request() req: any) {

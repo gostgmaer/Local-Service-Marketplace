@@ -6,6 +6,7 @@ import {
   Body,
   Query,
   Param,
+  Request,
   HttpCode,
   HttpStatus,
   Inject,
@@ -38,7 +39,8 @@ export class FavoriteController {
 
 	@Get()
 	@HttpCode(HttpStatus.OK)
-	async getFavorites(@Query("user_id") userId: string): Promise<any> {
+	async getFavorites(@Request() req: any): Promise<any> {
+		const userId = req.user.userId;
 		this.logger.info("GET /favorites", { context: "FavoriteController", user_id: userId });
 		return this.favoriteService.getFavorites(userId);
 	}

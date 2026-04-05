@@ -19,7 +19,6 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 
-@UseGuards(JwtAuthGuard)
 @Controller('pricing-plans')
 export class PricingPlanController {
   constructor(
@@ -27,7 +26,7 @@ export class PricingPlanController {
   ) {}
 
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createPlan(
@@ -76,7 +75,7 @@ export class PricingPlanController {
   }
 
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(':planId')
   async updatePlan(
     @Param('planId', ParseUUIDPipe) planId: string,
@@ -93,7 +92,7 @@ export class PricingPlanController {
   }
 
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(':planId/deactivate')
   async deactivatePlan(
     @Param('planId', ParseUUIDPipe) planId: string,

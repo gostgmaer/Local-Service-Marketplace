@@ -52,14 +52,6 @@ export class RequestController {
 		return this.requestService.getRequests(queryDto);
 	}
 
-	// Public — anyone can browse a single request
-	@UseGuards(JwtAuthGuard)
-	@Get(":id")
-	@HttpCode(HttpStatus.OK)
-	async getRequestById(@Param("id", FlexibleIdPipe) id: string): Promise<RequestResponseDto> {
-		return this.requestService.getRequestById(id);
-	}
-
 	// Authenticated — fetch only the calling user's requests
 	@UseGuards(JwtAuthGuard)
 	@Get("my")
@@ -69,6 +61,14 @@ export class RequestController {
 	): Promise<{ data: RequestResponseDto[]; total: number; page: number; limit: number }> {
 		const result = await this.requestService.getRequestsByUser(req.user.userId);
 		return { ...result, page: 1, limit: result.data.length || 1 };
+	}
+
+	// Public — anyone can browse a single request
+	@UseGuards(JwtAuthGuard)
+	@Get(":id")
+	@HttpCode(HttpStatus.OK)
+	async getRequestById(@Param("id", FlexibleIdPipe) id: string): Promise<RequestResponseDto> {
+		return this.requestService.getRequestById(id);
 	}
 
 	// Authenticated — owner can update their own request

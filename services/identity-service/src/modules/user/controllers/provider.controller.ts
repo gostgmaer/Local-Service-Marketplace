@@ -28,7 +28,6 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
-@UseGuards(JwtAuthGuard)
 @Controller("providers")
 export class ProviderController {
 	constructor(
@@ -36,6 +35,7 @@ export class ProviderController {
 		@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
 	) {}
 
+	@UseGuards(JwtAuthGuard)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	async createProvider(@Body() createProviderDto: CreateProviderDto): Promise<ProviderResponseDto> {

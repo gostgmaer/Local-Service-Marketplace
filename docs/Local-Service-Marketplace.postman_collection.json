@@ -1,4 +1,4 @@
-{
+﻿{
   "info": {
     "name": "Local Service Marketplace - All Services",
     "description": "Complete API documentation for all microservices including the API Gateway.\n\n**Base URL (via API Gateway):** `{{base_url}}` = `http://localhost:3700/api/v1`\n\n**Auth:** Most endpoints require a Bearer JWT token. Use the Login request and the collection will auto-save the token.\n\n**Services & Direct Ports:**\n- api-gateway: 3700\n- identity-service: 3001\n- marketplace-service: 3003\n- payment-service: 3006\n- comms-service: 3007\n- oversight-service: 3010",
@@ -178,8 +178,8 @@
   ],
   "item": [
     {
-      "name": "ðŸ”‘ Auth",
-      "description": "Authentication endpoints â€” all public (no JWT required)",
+      "name": "Ã°Å¸â€â€˜ Auth",
+      "description": "Authentication endpoints Ã¢â‚¬â€ all public (no JWT required)",
       "item": [
         {
           "name": "Signup",
@@ -206,7 +206,7 @@
                   "// Test 3: Response data contains required fields",
                   "pm.test('Response data contains access token, refresh token, and user', function () {",
                   "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.have.property('access_token');",
+                  "    pm.expect(jsonData.data).to.have.property('accessToken');",
                   "    pm.expect(jsonData.data).to.have.property('refresh_token');",
                   "    pm.expect(jsonData.data).to.have.property('user');",
                   "    pm.expect(jsonData.data.user).to.have.property('id');",
@@ -216,8 +216,8 @@
                   "// Test 4: Token is a non-empty string",
                   "pm.test('Access token is present and valid format', function () {",
                   "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data.access_token).to.be.a('string');",
-                  "    pm.expect(jsonData.data.access_token).to.not.be.empty;",
+                  "    pm.expect(jsonData.data.accessToken).to.be.a('string');",
+                  "    pm.expect(jsonData.data.accessToken).to.not.be.empty;",
                   "});",
                   "",
                   "// Test 5: User object has expected fields",
@@ -226,14 +226,14 @@
                   "    const user = jsonData.data.user;",
                   "    pm.expect(user).to.have.property('id');",
                   "    pm.expect(user).to.have.property('email');",
-                  "    pm.expect(user).to.have.property('userType');",
+                  "    pm.expect(user).to.have.property('role');",
                   "    pm.expect(user).to.have.property('isVerified', false);",
                   "});",
                   "",
                   "// Extract variables for subsequent requests (only on success)",
                   "if (pm.response.code === 201) {",
                   "    const r = pm.response.json();",
-                  "    if (r.data && r.data.access_token) pm.collectionVariables.set('token', r.data.access_token);",
+                  "    if (r.data && r.data.accessToken) pm.collectionVariables.set('token', r.data.accessToken);",
                   "    if (r.data && r.data.refresh_token) pm.collectionVariables.set('refresh_token', r.data.refresh_token);",
                   "    if (r.data && r.data.user && r.data.user.id) pm.collectionVariables.set('user_id', r.data.user.id);",
                   "}"
@@ -291,7 +291,7 @@
                   "// Test 3: Response contains tokens and user",
                   "pm.test('Response includes access token, refresh token, and user', function () {",
                   "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.have.property('access_token');",
+                  "    pm.expect(jsonData.data).to.have.property('accessToken');",
                   "    pm.expect(jsonData.data).to.have.property('refresh_token');",
                   "    pm.expect(jsonData.data).to.have.property('user');",
                   "});",
@@ -299,7 +299,7 @@
                   "// Test 4: Token validation",
                   "pm.test('Access token is a valid JWT format (has 3 parts)', function () {",
                   "    const jsonData = pm.response.json();",
-                  "    const token = jsonData.data.access_token;",
+                  "    const token = jsonData.data.accessToken;",
                   "    const parts = token.split('.');",
                   "    pm.expect(parts).to.have.length(3);",
                   "});",
@@ -316,7 +316,7 @@
                   "// Extract variables for subsequent requests",
                   "if (pm.response.code === 200) {",
                   "    const r = pm.response.json();",
-                  "    if (r.data && r.data.access_token) pm.collectionVariables.set('token', r.data.access_token);",
+                  "    if (r.data && r.data.accessToken) pm.collectionVariables.set('token', r.data.accessToken);",
                   "    if (r.data && r.data.refresh_token) pm.collectionVariables.set('refresh_token', r.data.refresh_token);",
                   "    if (r.data && r.data.user && r.data.user.id) pm.collectionVariables.set('user_id', r.data.user.id);",
                   "}"
@@ -374,10 +374,10 @@
                   "// Test 3: Tokens present",
                   "pm.test('New tokens generated', function () {",
                   "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.have.property('access_token');",
+                  "    pm.expect(jsonData.data).to.have.property('accessToken');",
                   "    pm.expect(jsonData.data).to.have.property('refresh_token');",
-                  "    pm.expect(jsonData.data.access_token).to.be.a('string');",
-                  "    pm.expect(jsonData.data.access_token).to.not.be.empty;",
+                  "    pm.expect(jsonData.data.accessToken).to.be.a('string');",
+                  "    pm.expect(jsonData.data.accessToken).to.not.be.empty;",
                   "});",
                   "",
                   "// Test 4: Refresh token is different from before (token rotation)",
@@ -393,7 +393,7 @@
                   "// Extract new tokens",
                   "if (pm.response.code === 200) {",
                   "    const r = pm.response.json();",
-                  "    if (r.data && r.data.access_token) pm.collectionVariables.set('token', r.data.access_token);",
+                  "    if (r.data && r.data.accessToken) pm.collectionVariables.set('token', r.data.accessToken);",
                   "    if (r.data && r.data.refresh_token) pm.collectionVariables.set('refresh_token', r.data.refresh_token);",
                   "}"
                 ]
@@ -1015,8 +1015,8 @@
       ]
     },
     {
-      "name": "ï¿½ Auth â€” 2FA (Two-Factor Authentication)",
-      "description": "Two-factor authentication endpoints.\n\nâš ï¸ FUTURE FEATURE â€” Routes not yet implemented in auth-service. Add to AuthController when building 2FA support.\n\nRecommended library: `otplib` (TOTP) + `qrcode` for QR generation.",
+      "name": "Ã¯Â¿Â½ Auth Ã¢â‚¬â€ 2FA (Two-Factor Authentication)",
+      "description": "Two-factor authentication endpoints.\n\nÃ¢Å¡Â Ã¯Â¸Â FUTURE FEATURE Ã¢â‚¬â€ Routes not yet implemented in auth-service. Add to AuthController when building 2FA support.\n\nRecommended library: `otplib` (TOTP) + `qrcode` for QR generation.",
       "item": [
         {
           "name": "Enable 2FA (generate TOTP secret)",
@@ -1275,8 +1275,8 @@
       ]
     },
     {
-      "name": "ðŸ–¥ï¸ Auth â€” Session & Device Management",
-      "description": "Active session and trusted device management.\n\nâš ï¸ FUTURE FEATURE â€” Routes not yet implemented. Sessions table exists in auth-service DB schema.\n\nRequires reading from `sessions` table with user_id filter.",
+      "name": "Ã°Å¸â€“Â¥Ã¯Â¸Â Auth Ã¢â‚¬â€ Session & Device Management",
+      "description": "Active session and trusted device management.\n\nÃ¢Å¡Â Ã¯Â¸Â FUTURE FEATURE Ã¢â‚¬â€ Routes not yet implemented. Sessions table exists in auth-service DB schema.\n\nRequires reading from `sessions` table with user_id filter.",
       "item": [
         {
           "name": "List Active Sessions",
@@ -1494,8 +1494,8 @@
       ]
     },
     {
-      "name": "ðŸ’¼ Auth â€” Account Management",
-      "description": "Account security and lifecycle management.\n\nâš ï¸ FUTURE FEATURE â€” Routes not yet implemented.\n\n- Change password requires current password verification\n- Account deletion should be soft-delete with 30-day grace period",
+      "name": "Ã°Å¸â€™Â¼ Auth Ã¢â‚¬â€ Account Management",
+      "description": "Account security and lifecycle management.\n\nÃ¢Å¡Â Ã¯Â¸Â FUTURE FEATURE Ã¢â‚¬â€ Routes not yet implemented.\n\n- Change password requires current password verification\n- Account deletion should be soft-delete with 30-day grace period",
       "item": [
         {
           "name": "Change Password",
@@ -1769,8 +1769,8 @@
       ]
     },
     {
-      "name": "ðŸ”— Auth â€” Social Account Linking",
-      "description": "Link/unlink social providers to an existing account (separate from OAuth login).\n\nâš ï¸ FUTURE FEATURE â€” Routes not yet implemented. `social_accounts` table already exists in the DB schema.\n\nAllows one user to have both email/password AND Google/Facebook auth.",
+      "name": "Ã°Å¸â€â€” Auth Ã¢â‚¬â€ Social Account Linking",
+      "description": "Link/unlink social providers to an existing account (separate from OAuth login).\n\nÃ¢Å¡Â Ã¯Â¸Â FUTURE FEATURE Ã¢â‚¬â€ Routes not yet implemented. `social_accounts` table already exists in the DB schema.\n\nAllows one user to have both email/password AND Google/Facebook auth.",
       "item": [
         {
           "name": "Get Linked Social Accounts",
@@ -1957,8 +1957,8 @@
       ]
     },
     {
-      "name": "ðŸª„ Auth â€” Magic Link (Passwordless)",
-      "description": "Email-based passwordless login via one-time magic links.\n\nâš ï¸ FUTURE FEATURE â€” Routes not yet implemented.\n\nFlow: user enters email â†’ receives email with link â†’ clicks link â†’ gets JWT token.",
+      "name": "Ã°Å¸Âªâ€ž Auth Ã¢â‚¬â€ Magic Link (Passwordless)",
+      "description": "Email-based passwordless login via one-time magic links.\n\nÃ¢Å¡Â Ã¯Â¸Â FUTURE FEATURE Ã¢â‚¬â€ Routes not yet implemented.\n\nFlow: user enters email Ã¢â€ â€™ receives email with link Ã¢â€ â€™ clicks link Ã¢â€ â€™ gets JWT token.",
       "item": [
         {
           "name": "Request Magic Link",
@@ -2017,7 +2017,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 200) {\n  const r = pm.response.json();\n  if (r.data && r.data.access_token) pm.collectionVariables.set('token', r.data.access_token);\n  if (r.data && r.data.refresh_token) pm.collectionVariables.set('refresh_token', r.data.refresh_token);\n}"
+                  "if (pm.response.code === 200) {\n  const r = pm.response.json();\n  if (r.data && r.data.accessToken) pm.collectionVariables.set('token', r.data.accessToken);\n  if (r.data && r.data.refresh_token) pm.collectionVariables.set('refresh_token', r.data.refresh_token);\n}"
                 ]
               }
             },
@@ -2070,8 +2070,8 @@
       ]
     },
     {
-      "name": "ðŸŽ Auth â€” Apple Sign In",
-      "description": "Apple OAuth for web and mobile (required for iOS apps).\n\nâš ï¸ FUTURE FEATURE â€” Routes not yet implemented. Requires Apple Developer account and `passport-apple` or `apple-signin-auth` npm package.",
+      "name": "Ã°Å¸ÂÅ½ Auth Ã¢â‚¬â€ Apple Sign In",
+      "description": "Apple OAuth for web and mobile (required for iOS apps).\n\nÃ¢Å¡Â Ã¯Â¸Â FUTURE FEATURE Ã¢â‚¬â€ Routes not yet implemented. Requires Apple Developer account and `passport-apple` or `apple-signin-auth` npm package.",
       "item": [
         {
           "name": "Apple OAuth (browser redirect)",
@@ -2174,14 +2174,14 @@
           ]
         },
         {
-          "name": "Apple Sign In (mobile â€” token exchange)",
+          "name": "Apple Sign In (mobile Ã¢â‚¬â€ token exchange)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 200) {\n  const r = pm.response.json();\n  if (r.data && r.data.access_token) pm.collectionVariables.set('token', r.data.access_token);\n  if (r.data && r.data.refresh_token) pm.collectionVariables.set('refresh_token', r.data.refresh_token);\n}"
+                  "if (pm.response.code === 200) {\n  const r = pm.response.json();\n  if (r.data && r.data.accessToken) pm.collectionVariables.set('token', r.data.accessToken);\n  if (r.data && r.data.refresh_token) pm.collectionVariables.set('refresh_token', r.data.refresh_token);\n}"
                 ]
               }
             },
@@ -2234,8 +2234,8 @@
       ]
     },
     {
-      "name": "ï¿½ðŸ‘¤ Users",
-      "description": "User profile management â€” requires JWT",
+      "name": "Ã¯Â¿Â½Ã°Å¸â€˜Â¤ Users",
+      "description": "User profile management Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Get My Profile",
@@ -2257,7 +2257,7 @@
                   "    pm.expect(jsonData.data).to.be.an('object');",
                   "    pm.expect(jsonData.data).to.have.property('id');",
                   "    pm.expect(jsonData.data).to.have.property('email');",
-                  "    pm.expect(jsonData.data).to.have.property('userType');",
+                  "    pm.expect(jsonData.data).to.have.property('role');",
                   "});",
                   "",
                   "pm.test('User ID matches authenticated user', function () {",
@@ -2416,8 +2416,8 @@
       ]
     },
     {
-      "name": "ðŸ”§ Providers",
-      "description": "Provider profile management â€” requires JWT",
+      "name": "Ã°Å¸â€Â§ Providers",
+      "description": "Provider profile management Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Create Provider Profile",
@@ -2733,7 +2733,7 @@
       ]
     },
     {
-      "name": "ðŸ–¼ï¸ Provider Portfolio",
+      "name": "Ã°Å¸â€“Â¼Ã¯Â¸Â Provider Portfolio",
       "description": "Provider portfolio management",
       "item": [
         {
@@ -3009,7 +3009,7 @@
       ]
     },
     {
-      "name": "ðŸ“„ Provider Documents",
+      "name": "Ã°Å¸â€œâ€ž Provider Documents",
       "description": "Provider document/verification management",
       "item": [
         {
@@ -3315,8 +3315,8 @@
       ]
     },
     {
-      "name": "â¤ï¸ Favorites",
-      "description": "User favorites â€” requires JWT",
+      "name": "Ã¢ÂÂ¤Ã¯Â¸Â Favorites",
+      "description": "User favorites Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Add Favorite",
@@ -3452,7 +3452,7 @@
       ]
     },
     {
-      "name": "ðŸ“‹ Service Requests",
+      "name": "Ã°Å¸â€œâ€¹ Service Requests",
       "description": "Service request management",
       "item": [
         {
@@ -3803,8 +3803,8 @@
       ]
     },
     {
-      "name": "ðŸ—‚ï¸ Categories",
-      "description": "Service categories â€” GET is public",
+      "name": "Ã°Å¸â€”â€šÃ¯Â¸Â Categories",
+      "description": "Service categories Ã¢â‚¬â€ GET is public",
       "item": [
         {
           "name": "List Categories",
@@ -4009,8 +4009,8 @@
       ]
     },
     {
-      "name": "ðŸ“ Proposals",
-      "description": "Provider proposals for requests â€” requires JWT",
+      "name": "Ã°Å¸â€œÂ Proposals",
+      "description": "Provider proposals for requests Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Submit Proposal",
@@ -4277,8 +4277,8 @@
       ]
     },
     {
-      "name": "ðŸ’¼ Jobs",
-      "description": "Job management â€” requires JWT",
+      "name": "Ã°Å¸â€™Â¼ Jobs",
+      "description": "Job management Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Create Job",
@@ -4596,8 +4596,8 @@
       ]
     },
     {
-      "name": "â­ Reviews",
-      "description": "Review management â€” requires JWT",
+      "name": "Ã¢Â­Â Reviews",
+      "description": "Review management Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Submit Review",
@@ -5139,8 +5139,8 @@
       ]
     },
     {
-      "name": "ðŸ’³ Payments",
-      "description": "Payment management â€” requires JWT",
+      "name": "Ã°Å¸â€™Â³ Payments",
+      "description": "Payment management Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Create Payment",
@@ -5524,8 +5524,8 @@
       ]
     },
     {
-      "name": "ðŸ’³ Payment Methods",
-      "description": "Saved payment methods â€” requires JWT",
+      "name": "Ã°Å¸â€™Â³ Payment Methods",
+      "description": "Saved payment methods Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Save Payment Method",
@@ -5770,8 +5770,8 @@
       ]
     },
     {
-      "name": "ðŸ“¦ Subscriptions",
-      "description": "Provider subscription plans â€” requires JWT",
+      "name": "Ã°Å¸â€œÂ¦ Subscriptions",
+      "description": "Provider subscription plans Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Create Subscription",
@@ -6109,7 +6109,7 @@
       ]
     },
     {
-      "name": "ðŸ·ï¸ Pricing Plans",
+      "name": "Ã°Å¸ÂÂ·Ã¯Â¸Â Pricing Plans",
       "description": "Subscription pricing plans",
       "item": [
         {
@@ -6409,8 +6409,8 @@
       ]
     },
     {
-      "name": "ðŸ’¬ Messages",
-      "description": "Job messaging/conversations â€” requires JWT",
+      "name": "Ã°Å¸â€™Â¬ Messages",
+      "description": "Job messaging/conversations Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Send Message",
@@ -6735,8 +6735,8 @@
       ]
     },
     {
-      "name": "ðŸ”” Notifications",
-      "description": "Notification management â€” requires JWT",
+      "name": "Ã°Å¸â€â€ Notifications",
+      "description": "Notification management Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Get My Notifications",
@@ -7580,8 +7580,8 @@
       ]
     },
     {
-      "name": "ðŸ›¡ï¸ Admin",
-      "description": "Admin operations â€” requires JWT + admin role",
+      "name": "Ã°Å¸â€ºÂ¡Ã¯Â¸Â Admin",
+      "description": "Admin operations Ã¢â‚¬â€ requires JWT + admin role",
       "item": [
         {
           "name": "Get Platform Stats",
@@ -8455,8 +8455,8 @@
       ]
     },
     {
-      "name": "ðŸ“Š Analytics",
-      "description": "Analytics and metrics â€” requires JWT",
+      "name": "Ã°Å¸â€œÅ  Analytics",
+      "description": "Analytics and metrics Ã¢â‚¬â€ requires JWT",
       "item": [
         {
           "name": "Track User Activity",
@@ -8886,8 +8886,8 @@
       ]
     },
     {
-      "name": "âš™ï¸ Infrastructure",
-      "description": "Infrastructure service â€” events, background jobs, feature flags, rate limits. Routes: /api/v1/events, /background-jobs, /feature-flags, /rate-limits",
+      "name": "Ã¢Å¡â„¢Ã¯Â¸Â Infrastructure",
+      "description": "Infrastructure service Ã¢â‚¬â€ events, background jobs, feature flags, rate limits. Routes: /api/v1/events, /background-jobs, /feature-flags, /rate-limits",
       "item": [
         {
           "name": "Events",
@@ -9807,8 +9807,8 @@
       ]
     },
     {
-      "name": "ðŸ¥ Health",
-      "description": "Health check endpoints â€” no auth required",
+      "name": "Ã°Å¸ÂÂ¥ Health",
+      "description": "Health check endpoints Ã¢â‚¬â€ no auth required",
       "item": [
         {
           "name": "API Gateway Health",
@@ -9917,8 +9917,8 @@
       ]
     },
     {
-      "name": "ðŸ”— Direct Service Access",
-      "description": "Direct access to each microservice (bypassing API Gateway â€” for development only)",
+      "name": "Ã°Å¸â€â€” Direct Service Access",
+      "description": "Direct access to each microservice (bypassing API Gateway Ã¢â‚¬â€ for development only)",
       "item": [
         {
           "name": "Identity Service Health",

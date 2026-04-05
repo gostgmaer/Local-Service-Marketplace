@@ -12,6 +12,7 @@ import {
 	Inject,
 	LoggerService,
 	ParseIntPipe,
+	DefaultValuePipe,
 	BadRequestException,
 	ForbiddenException,
 	HttpCode,
@@ -49,7 +50,7 @@ export class NotificationController {
 	@Get()
 	async getNotifications(
 		@Headers("x-user-id") userId: string,
-		@Query("limit", new ParseIntPipe({ optional: true })) limit: number = 50,
+		@Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
 	) {
 		// Feature flag check: In-app notifications
 		if (!this.featureFlags.inAppNotificationsEnabled) {

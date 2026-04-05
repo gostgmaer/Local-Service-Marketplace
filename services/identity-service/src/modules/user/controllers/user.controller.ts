@@ -7,6 +7,7 @@ import {
 	Body,
 	Param,
 	Query,
+	Request,
 	HttpCode,
 	HttpStatus,
 	Inject,
@@ -77,6 +78,18 @@ export class UserController {
 		});
 
 		return this.userService.createUserByAdmin(createUserDto);
+	}
+
+	/**
+	 * Get current authenticated user's profile
+	 * GET /users/me
+	 */
+	@UseGuards(JwtAuthGuard)
+	@Get("me")
+	@HttpCode(HttpStatus.OK)
+	async getMyProfile(@Request() req: any): Promise<UserResponseDto> {
+		this.logger.info("GET /users/me", { context: "UserController", user_id: req.user.userId });
+		return this.userService.getUserById(req.user.userId);
 	}
 
 	/**
