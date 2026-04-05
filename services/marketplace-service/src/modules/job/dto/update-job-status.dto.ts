@@ -1,4 +1,4 @@
-import { IsString, IsEnum } from 'class-validator';
+import { IsString, IsEnum } from "class-validator";
 
 export enum JobStatus {
 	PENDING = "pending",
@@ -10,7 +10,7 @@ export enum JobStatus {
 }
 
 export class UpdateJobStatusDto {
-  @IsString()
-  @IsEnum(JobStatus)
-  status: JobStatus;
+	@IsString()
+	@IsEnum(JobStatus)
+	status: JobStatus;
 }
