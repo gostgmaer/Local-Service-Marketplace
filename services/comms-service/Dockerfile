@@ -10,11 +10,13 @@ RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-timeout 600000
 
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
 RUN npm run build
+
+RUN npm prune --omit=dev
 
 # Production stage
 FROM node:20-alpine
@@ -28,9 +30,8 @@ RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-timeout 600000
 
-RUN npm install --omit=dev
-
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 
 RUN mkdir -p logs
 
