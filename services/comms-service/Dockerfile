@@ -10,7 +10,7 @@ RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-timeout 600000
 
-RUN npm install --legacy-peer-deps
+RUN sh -c "for i in 1 2 3; do npm install --legacy-peer-deps && exit 0; echo 'npm install failed, retrying...'; sleep 5; done; exit 1"
 
 COPY . .
 
