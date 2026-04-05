@@ -16,6 +16,7 @@ import {
 	HttpStatus,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { MessageService } from "./services/message.service";
 import { AttachmentService } from "./services/attachment.service";
@@ -99,7 +100,7 @@ export class MessagingController {
 
 	@Patch(":id/read")
 	@HttpCode(HttpStatus.OK)
-	async markAsRead(@Param("id", FlexibleIdPipe) id: string) {
+	async markAsRead(@Param("id", StrictUuidPipe) id: string) {
 		this.logger.log(`PATCH /messages/${id}/read - Mark as read`, "MessagingController");
 		const item = await this.messageService.markMessageAsRead(id);
 		return { success: true, data: item, message: "Message marked as read" };

@@ -13,6 +13,7 @@ import {
 	HttpStatus,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { ReviewService } from "./services/review.service";
 import { ReviewRepository } from "./repositories/review.repository";
 import { CreateReviewDto } from "./dto/create-review.dto";
@@ -65,7 +66,7 @@ export class ReviewController {
 	@Post(":id/respond")
 	@HttpCode(HttpStatus.OK)
 	async respondToReview(
-		@Param("id", FlexibleIdPipe) id: string,
+		@Param("id", StrictUuidPipe) id: string,
 		@Body() respondReviewDto: RespondReviewDto,
 		@Request() req: any,
 	) {
@@ -84,7 +85,7 @@ export class ReviewController {
 	 */
 	@Post(":id/helpful")
 	@HttpCode(HttpStatus.OK)
-	async markHelpful(@Param("id", FlexibleIdPipe) id: string, @Request() req: any) {
+	async markHelpful(@Param("id", StrictUuidPipe) id: string, @Request() req: any) {
 		const review = await this.reviewRepository.incrementHelpfulCount(id);
 
 		return review;

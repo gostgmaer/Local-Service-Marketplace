@@ -13,6 +13,7 @@ import {
 	Request,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { ProposalService } from "../services/proposal.service";
 import { CreateProposalDto } from "../dto/create-proposal.dto";
 import { UpdateProposalDto } from "../dto/update-proposal.dto";
@@ -63,26 +64,26 @@ export class ProposalController {
 
 	@Post("proposals/:id/accept")
 	@HttpCode(HttpStatus.OK)
-	async acceptProposal(@Param("id", FlexibleIdPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
+	async acceptProposal(@Param("id", StrictUuidPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
 		return this.proposalService.acceptProposal(id, req.user.userId, req.user.role);
 	}
 
 	@Post("proposals/:id/reject")
 	@HttpCode(HttpStatus.OK)
-	async rejectProposal(@Param("id", FlexibleIdPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
+	async rejectProposal(@Param("id", StrictUuidPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
 		return this.proposalService.rejectProposal(id, req.user.userId, req.user.role);
 	}
 
 	@Post("proposals/:id/withdraw")
 	@HttpCode(HttpStatus.OK)
-	async withdrawProposal(@Param("id", FlexibleIdPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
+	async withdrawProposal(@Param("id", StrictUuidPipe) id: string, @Request() req: any): Promise<ProposalResponseDto> {
 		return this.proposalService.withdrawProposal(id, req.user.userId);
 	}
 
 	@Patch("proposals/:id")
 	@HttpCode(HttpStatus.OK)
 	async updateProposal(
-		@Param("id", FlexibleIdPipe) id: string,
+		@Param("id", StrictUuidPipe) id: string,
 		@Body() body: UpdateProposalDto,
 		@Request() req: any,
 	): Promise<ProposalResponseDto> {

@@ -16,6 +16,7 @@ import {
   HttpStatus
 } from '@nestjs/common';
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProviderPortfolioService } from '../services/provider-portfolio.service';
 import { CreatePortfolioDto } from '../dto/create-portfolio.dto';
@@ -31,7 +32,7 @@ export class ProviderPortfolioController {
 	@UseInterceptors(FilesInterceptor("images", 10)) // Max 10 images
 	@HttpCode(HttpStatus.CREATED)
 	async createPortfolioItem(
-		@Param("providerId", FlexibleIdPipe) providerId: string,
+		@Param("providerId", StrictUuidPipe) providerId: string,
 		@Body() dto: CreatePortfolioDto,
 		@UploadedFiles() files: any[],
 		@Request() req: any,
@@ -85,7 +86,7 @@ export class ProviderPortfolioController {
 
 	@Put(":providerId/reorder")
 	async reorderPortfolio(
-		@Param("providerId", FlexibleIdPipe) providerId: string,
+		@Param("providerId", StrictUuidPipe) providerId: string,
 		@Body("orderedIds") orderedIds: string[],
 		@Request() req: any,
 	) {

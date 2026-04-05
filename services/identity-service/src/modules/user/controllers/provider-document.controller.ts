@@ -15,6 +15,7 @@ import {
   HttpStatus
 } from '@nestjs/common';
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProviderDocumentService } from '../services/provider-document.service';
 import { UploadDocumentDto } from '../dto/upload-document.dto';
@@ -32,7 +33,7 @@ export class ProviderDocumentController {
 	@UseInterceptors(FileInterceptor("file"))
 	@HttpCode(HttpStatus.CREATED)
 	async uploadDocument(
-		@Param("providerId", FlexibleIdPipe) providerId: string,
+		@Param("providerId", StrictUuidPipe) providerId: string,
 		@Body() dto: UploadDocumentDto,
 		@UploadedFile() file: any,
 		@Request() req: any,

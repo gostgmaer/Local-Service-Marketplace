@@ -16,6 +16,7 @@ import {
 	HttpStatus,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { Request } from "express";
 import { DisputeService } from "./services/dispute.service";
 import { AuditLogService } from "./services/audit-log.service";
@@ -68,7 +69,7 @@ export class AdminController {
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Patch("disputes/:id")
 	async updateDispute(
-		@Param("id", FlexibleIdPipe) id: string,
+		@Param("id", StrictUuidPipe) id: string,
 		@Body() updateDisputeDto: UpdateDisputeDto,
 		@Headers("x-user-id") adminId: string,
 	) {

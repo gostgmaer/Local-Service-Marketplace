@@ -13,6 +13,7 @@ import {
 	HttpStatus,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { Response } from 'express';
 import { PaymentService } from '../services/payment.service';
 import { RefundService } from '../services/refund.service';
@@ -162,7 +163,7 @@ export class PaymentController {
 	@UseGuards(JwtAuthGuard)
 	@HttpCode(HttpStatus.CREATED)
 	async requestRefund(
-		@Param("id", FlexibleIdPipe) id: string,
+		@Param("id", StrictUuidPipe) id: string,
 		@Body() requestRefundDto: RequestRefundDto,
 		@Request() req: any,
 	) {

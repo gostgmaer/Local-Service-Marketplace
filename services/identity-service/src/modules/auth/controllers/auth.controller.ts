@@ -20,6 +20,7 @@ import {
 	ParseUUIDPipe,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { randomUUID } from "crypto";
 import { AuthGuard } from "@nestjs/passport";
 import { Request, Response } from "express";
@@ -468,7 +469,7 @@ export class AuthController {
 	@UseGuards(JwtAuthGuard)
 	async revokeSession(
 		@Req() req: Request,
-		@Param("sessionId", FlexibleIdPipe) sessionId: string,
+		@Param("sessionId", StrictUuidPipe) sessionId: string,
 	): Promise<{ result: string }> {
 		await this.authService.revokeSession(req.user["sub"], sessionId);
 		return { result: "Session revoked" };

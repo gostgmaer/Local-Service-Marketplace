@@ -20,6 +20,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { Throttle } from "@nestjs/throttler";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { NotificationService } from "./services/notification.service";
@@ -115,7 +116,7 @@ export class NotificationController {
 	}
 
 	@Patch(":id/read")
-	async markAsRead(@Param("id", FlexibleIdPipe) id: string, @Headers("x-user-id") userId: string) {
+	async markAsRead(@Param("id", StrictUuidPipe) id: string, @Headers("x-user-id") userId: string) {
 		// Feature flag check: In-app notifications
 		if (!this.featureFlags.inAppNotificationsEnabled) {
 			throw new BadRequestException(
@@ -130,7 +131,7 @@ export class NotificationController {
 
 	@Delete(":id")
 	@HttpCode(HttpStatus.NO_CONTENT)
-	async deleteNotification(@Param("id", FlexibleIdPipe) id: string, @Headers("x-user-id") userId: string) {
+	async deleteNotification(@Param("id", StrictUuidPipe) id: string, @Headers("x-user-id") userId: string) {
 		this.logger.log(`DELETE /notifications/${id} - Delete notification`, "NotificationController");
 		await this.notificationService.deleteNotification(id, userId);
 	}

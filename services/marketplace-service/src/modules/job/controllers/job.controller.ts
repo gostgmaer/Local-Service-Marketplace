@@ -13,6 +13,7 @@ import {
 	Request,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { JobService } from "../services/job.service";
 import { CreateJobDto } from "../dto/create-job.dto";
 import { UpdateJobStatusDto } from "../dto/update-job-status.dto";
@@ -68,7 +69,7 @@ export class JobController {
 	@Patch(":id/status")
 	@HttpCode(HttpStatus.OK)
 	async updateJobStatus(
-		@Param("id", FlexibleIdPipe) id: string,
+		@Param("id", StrictUuidPipe) id: string,
 		@Body() updateJobStatusDto: UpdateJobStatusDto,
 		@Request() req: any,
 	): Promise<JobResponseDto> {
@@ -77,7 +78,7 @@ export class JobController {
 
 	@Post(":id/complete")
 	@HttpCode(HttpStatus.OK)
-	async completeJob(@Param("id", FlexibleIdPipe) id: string, @Request() req: any): Promise<JobResponseDto> {
+	async completeJob(@Param("id", StrictUuidPipe) id: string, @Request() req: any): Promise<JobResponseDto> {
 		return this.jobService.completeJob(id, req.user.userId, req.user.role);
 	}
 

@@ -13,6 +13,7 @@ import {
 	Req,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { RequestService } from "../services/request.service";
 import { CreateRequestDto } from "../dto/create-request.dto";
 import { UpdateRequestDto } from "../dto/update-request.dto";
@@ -75,7 +76,7 @@ export class RequestController {
 	@Patch(":id")
 	@HttpCode(HttpStatus.OK)
 	async updateRequest(
-		@Param("id", FlexibleIdPipe) id: string,
+		@Param("id", StrictUuidPipe) id: string,
 		@Body() updateRequestDto: UpdateRequestDto,
 		@Req() req: any,
 	): Promise<RequestResponseDto> {
@@ -87,7 +88,7 @@ export class RequestController {
 	@Roles("admin")
 	@Delete(":id")
 	@HttpCode(HttpStatus.NO_CONTENT)
-	async deleteRequest(@Param("id", FlexibleIdPipe) id: string): Promise<void> {
+	async deleteRequest(@Param("id", StrictUuidPipe) id: string): Promise<void> {
 		return this.requestService.deleteRequest(id);
 	}
 

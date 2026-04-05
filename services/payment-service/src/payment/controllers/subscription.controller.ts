@@ -12,6 +12,7 @@ import {
 	HttpStatus,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { SubscriptionService } from '../services/subscription.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { UpgradeSubscriptionDto } from '../dto/upgrade-subscription.dto';
@@ -39,7 +40,7 @@ export class SubscriptionController {
 
 	@Post(":subscriptionId/activate")
 	@HttpCode(HttpStatus.OK)
-	async activateSubscription(@Param("subscriptionId", FlexibleIdPipe) subscriptionId: string, @Request() req: any) {
+	async activateSubscription(@Param("subscriptionId", StrictUuidPipe) subscriptionId: string, @Request() req: any) {
 		// Called after successful payment
 		const subscription = await this.subscriptionService.activateSubscription(subscriptionId);
 
@@ -62,7 +63,7 @@ export class SubscriptionController {
 	}
 
 	@Put(":subscriptionId/cancel")
-	async cancelSubscription(@Param("subscriptionId", FlexibleIdPipe) subscriptionId: string, @Request() req: any) {
+	async cancelSubscription(@Param("subscriptionId", StrictUuidPipe) subscriptionId: string, @Request() req: any) {
 		const subscription = await this.subscriptionService.cancelSubscription(subscriptionId, req.user.userId);
 
 		return {
@@ -75,7 +76,7 @@ export class SubscriptionController {
 	@Post("provider/:providerId/upgrade")
 	@HttpCode(HttpStatus.OK)
 	async upgradeSubscription(
-		@Param("providerId", FlexibleIdPipe) providerId: string,
+		@Param("providerId", StrictUuidPipe) providerId: string,
 		@Body() upgradeData: UpgradeSubscriptionDto,
 		@Request() req: any,
 	) {
