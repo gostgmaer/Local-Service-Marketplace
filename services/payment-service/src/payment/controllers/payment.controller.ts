@@ -118,6 +118,19 @@ export class PaymentController {
 		return this.paymentService.getProviderTransactions(providerId, queryDto);
 	}
 
+	@Get("provider/:providerId/payouts")
+	@UseGuards(JwtAuthGuard)
+	async getProviderPayouts(
+		@Param("providerId", FlexibleIdPipe) providerId: string,
+		@Request() req: any,
+	) {
+		if (req.user.role !== "admin" && req.user.providerId !== providerId) {
+			throw new ForbiddenException("Access denied");
+		}
+		const payouts = await this.paymentService.getProviderPayouts(providerId);
+		return { data: payouts, total: payouts.length, page: 1, limit: payouts.length || 1 };
+	}
+
 	@Get(":id")
 	@UseGuards(JwtAuthGuard)
 	async getPaymentById(@Param("id", FlexibleIdPipe) id: string, @Request() req: any) {

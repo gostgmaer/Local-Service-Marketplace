@@ -38,7 +38,12 @@ export default function AdminUserDetailPage() {
 	});
 
 	const suspendMutation = useMutation({
-		mutationFn: () => adminService.suspendUser(userId, suspendReason),
+		mutationFn: () => {
+			if (!user?.id) {
+				throw new Error("User UUID is not available");
+			}
+			return adminService.suspendUser(user.id, suspendReason);
+		},
 		onSuccess: () => {
 			toast.success("User suspended successfully");
 			queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });
@@ -50,7 +55,12 @@ export default function AdminUserDetailPage() {
 	});
 
 	const activateMutation = useMutation({
-		mutationFn: () => adminService.activateUser(userId),
+		mutationFn: () => {
+			if (!user?.id) {
+				throw new Error("User UUID is not available");
+			}
+			return adminService.activateUser(user.id);
+		},
 		onSuccess: () => {
 			toast.success("User activated successfully");
 			queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });

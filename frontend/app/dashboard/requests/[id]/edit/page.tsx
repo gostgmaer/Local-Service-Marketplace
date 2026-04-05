@@ -50,10 +50,19 @@ export default function EditRequestPage() {
 	} = useForm<UpdateRequestData>({ values: { description: request?.description ?? "", budget: request?.budget ?? 0 } });
 
 	const updateMutation = useMutation({
-		mutationFn: (data: UpdateRequestData) => requestService.updateRequest(requestId, data),
+		mutationFn: (data: UpdateRequestData) => {
+			if (!request?.id) {
+				throw new Error("Request UUID is not available");
+			}
+			return requestService.updateRequest(request.id, data);
+		},
 		onSuccess: () => {
 			toast.success("Request updated successfully!");
 			queryClient.invalidateQueries({ queryKey: ["request", requestId] });
+			if (request?.id) {
+				router.push(ROUTES.DASHBOARD_REQUEST_DETAIL(request.id));
+				return;
+			}
 			router.push(ROUTES.DASHBOARD_REQUEST_DETAIL(requestId));
 		},
 		onError: () => toast.error("Failed to update request"),

@@ -38,7 +38,12 @@ export default function JobDetailPage() {
   });
 
   const startJobMutation = useMutation({
-    mutationFn: () => jobService.startJob(jobId),
+		mutationFn: () => {
+			if (!job?.id) {
+				throw new Error('Job UUID is not available');
+			}
+			return jobService.startJob(job.id);
+		},
     onSuccess: () => {
       toast.success('Job started successfully!');
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });
@@ -49,7 +54,12 @@ export default function JobDetailPage() {
   });
 
   const completeJobMutation = useMutation({
-    mutationFn: () => jobService.completeJob(jobId),
+		mutationFn: () => {
+			if (!job?.id) {
+				throw new Error('Job UUID is not available');
+			}
+			return jobService.completeJob(job.id);
+		},
     onSuccess: () => {
       toast.success('Job marked as complete!');
       queryClient.invalidateQueries({ queryKey: ['job', jobId] });

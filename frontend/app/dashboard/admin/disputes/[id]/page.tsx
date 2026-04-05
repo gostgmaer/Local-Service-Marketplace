@@ -45,7 +45,12 @@ export default function AdminDisputeDetailPage() {
 	});
 
 	const updateMutation = useMutation({
-		mutationFn: () => adminService.updateDispute(disputeId, { status: newStatus, resolution: resolution || undefined }),
+		mutationFn: () => {
+			if (!dispute?.id) {
+				throw new Error("Dispute UUID is not available");
+			}
+			return adminService.updateDispute(dispute.id, { status: newStatus, resolution: resolution || undefined });
+		},
 		onSuccess: () => {
 			toast.success("Dispute updated successfully");
 			queryClient.invalidateQueries({ queryKey: ["admin-dispute", disputeId] });
