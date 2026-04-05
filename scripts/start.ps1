@@ -158,7 +158,7 @@ if ($LASTEXITCODE -eq 0) {
     }
     
     if ($API_GATEWAY_ENABLED) {
-        Write-Host "  API Gateway:     http://localhost:3500" -ForegroundColor White
+        Write-Host "  API Gateway:     http://localhost:3700" -ForegroundColor White
     } else {
         Write-Host "  API Gateway:     (disabled)" -ForegroundColor Gray
     }
@@ -262,7 +262,7 @@ if ($LASTEXITCODE -eq 0) {
             Start-Process "http://localhost:3000"
         }
     } elseif ($API_GATEWAY_ENABLED) {
-        Write-Host "[READY] Backend running - API Gateway: http://localhost:3500" -ForegroundColor Green
+        Write-Host "[READY] Backend running - API Gateway: http://localhost:3700" -ForegroundColor Green
     } else {
         Write-Host "[READY] Backend microservices running on ports 3001-3012" -ForegroundColor Green
     }

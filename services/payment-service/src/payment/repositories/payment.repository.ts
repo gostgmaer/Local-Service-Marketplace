@@ -549,9 +549,69 @@ export class PaymentRepository {
 	}
 
 	async getProviderPayouts(providerId: string): Promise<any[]> {
-		// For MVP, return empty array - payout system not yet implemented
-		// This can be expanded later when payout tracking is added
-		return [];
+		const query = `
+			SELECT
+				MD5(
+					p.provider_id
+					|| '|' || TO_CHAR(DATE(COALESCE(p.paid_at, p.created_at)), 'YYYY-MM-DD')
+					|| '|' || COALESCE(p.payment_method, 'card')
+					|| '|' || CASE
+						WHEN p.status = 'pending' THEN 'pending'
+						WHEN p.status = 'refunded' THEN 'adjusted'
+						ELSE 'available'
+					END
+				) AS id,
+				COALESCE(
+					SUM(
+						CASE
+							WHEN p.status = 'refunded' THEN -ABS(COALESCE(p.provider_amount, 0))
+							ELSE COALESCE(p.provider_amount, 0)
+						END
+					),
+					0
+				)::numeric AS amount,
+				CASE
+					WHEN p.status = 'pending' THEN 'pending'
+					WHEN p.status = 'refunded' THEN 'adjusted'
+					ELSE 'available'
+				END AS status,
+				COALESCE(p.payment_method, 'card') AS payout_method,
+				DATE(COALESCE(p.paid_at, p.created_at)) AS payout_date,
+				COUNT(*)::int AS transaction_count
+			FROM payments p
+			WHERE p.provider_id = $1
+				AND p.status IN ('pending', 'completed', 'refunded')
+			GROUP BY
+				p.provider_id,
+				DATE(COALESCE(p.paid_at, p.created_at)),
+				COALESCE(p.payment_method, 'card'),
+				CASE
+					WHEN p.status = 'pending' THEN 'pending'
+					WHEN p.status = 'refunded' THEN 'adjusted'
+					ELSE 'available'
+				END
+			HAVING COALESCE(
+				SUM(
+					CASE
+						WHEN p.status = 'refunded' THEN -ABS(COALESCE(p.provider_amount, 0))
+						ELSE COALESCE(p.provider_amount, 0)
+					END
+				),
+				0
+			) <> 0
+			ORDER BY payout_date DESC, payout_method ASC
+		`;
+
+		const result = await this.pool.query(query, [providerId]);
+
+		return result.rows.map((row) => ({
+			id: row.id,
+			amount: parseFloat(row.amount) || 0,
+			status: row.status,
+			payout_method: row.payout_method,
+			payout_date: row.payout_date,
+			transaction_count: parseInt(row.transaction_count, 10) || 0,
+		}));
 	}
 
 	async getPaymentStats(): Promise<{

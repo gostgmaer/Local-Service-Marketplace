@@ -54,6 +54,11 @@ export interface RefundData {
   amount?: number;
 }
 
+export interface CreateSubscriptionData {
+	provider_id: string;
+	plan_id: string;
+}
+
 class PaymentService {
 	async createPayment(data: CreatePaymentData): Promise<Payment> {
 		const { gateway, ...body } = data;
@@ -107,6 +112,11 @@ class PaymentService {
 	async getProviderSubscriptions(providerId: string): Promise<Subscription[]> {
 		const response = await apiClient.get<Subscription[]>(`/subscriptions/provider/${providerId}`);
 		return extractList<Subscription>(response.data);
+	}
+
+	async createSubscription(data: CreateSubscriptionData): Promise<Subscription> {
+		const response = await apiClient.post<Subscription>("/subscriptions", data);
+		return response.data;
 	}
 
 	async getActiveSubscription(providerId: string): Promise<Subscription | null> {

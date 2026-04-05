@@ -118,6 +118,24 @@ export const getProviderProfile = async (providerId: string): Promise<ProviderPr
 };
 
 /**
+ * Get provider profile for an authenticated user.
+ */
+export const getProviderProfileByUserId = async (userId: string): Promise<ProviderProfile | null> => {
+  const response = await apiClient.get<{ data: ProviderProfile[] } | ProviderProfile[]>(`/providers?user_id=${userId}`);
+  const payload = response.data as any;
+
+  if (Array.isArray(payload)) {
+    return payload[0] || null;
+  }
+
+  if (payload && Array.isArray(payload.data)) {
+    return payload.data[0] || null;
+  }
+
+  return null;
+};
+
+/**
  * List provider services
  */
 export const getProviderServices = async (providerId: string): Promise<ProviderService[]> => {

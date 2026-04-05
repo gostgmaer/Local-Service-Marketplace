@@ -12,7 +12,17 @@ export class SubscriptionService {
 		private readonly pricingPlanRepository: PricingPlanRepository,
 	) {}
 
-	async createSubscription(providerId: string, planId: string, userId: string): Promise<Subscription> {
+	async createSubscription(
+		providerId: string,
+		planId: string,
+		userId: string,
+		actorRole?: string,
+		actorProviderId?: string,
+	): Promise<Subscription> {
+		if (actorRole !== "admin" && actorProviderId !== providerId) {
+			throw new ForbiddenException("Access denied");
+		}
+
 		// Verify plan exists and is active
 		const plan = await this.pricingPlanRepository.findById(planId);
 
@@ -30,9 +40,6 @@ export class SubscriptionService {
 		if (activeSubscription) {
 			throw new BadRequestException("Provider already has an active subscription. Cancel or upgrade instead.");
 		}
-
-		// Authorization: verify user owns this provider profile
-		// This should be handled at controller level
 
 		// Calculate expiry date based on billing period
 		const startDate = new Date();
@@ -107,15 +114,21 @@ export class SubscriptionService {
 		return this.subscriptionRepository.findActiveByProvider(providerId);
 	}
 
-	async cancelSubscription(subscriptionId: string, userId: string): Promise<Subscription> {
+	async cancelSubscription(
+		subscriptionId: string,
+		userId: string,
+		actorRole?: string,
+		actorProviderId?: string,
+	): Promise<Subscription> {
 		const subscription = await this.subscriptionRepository.findById(subscriptionId);
 
 		if (!subscription) {
 			throw new NotFoundException("Subscription not found");
 		}
 
-		// Authorization: verify user owns the provider
-		// This should be handled at controller level
+		if (actorRole !== "admin" && actorProviderId !== subscription.provider_id) {
+			throw new ForbiddenException("Access denied");
+		}
 
 		if (subscription.status === "cancelled") {
 			throw new BadRequestException("Subscription is already cancelled");
@@ -129,7 +142,17 @@ export class SubscriptionService {
 		return this.subscriptionRepository.cancel(subscriptionId);
 	}
 
-	async upgradeSubscription(providerId: string, newPlanId: string, userId: string): Promise<Subscription> {
+	async upgradeSubscription(
+		providerId: string,
+		newPlanId: string,
+		userId: string,
+		actorRole?: string,
+		actorProviderId?: string,
+	): Promise<Subscription> {
+		if (actorRole !== "admin" && actorProviderId !== providerId) {
+			throw new ForbiddenException("Access denied");
+		}
+
 		// Get current subscription
 		const currentSubscription = await this.subscriptionRepository.findActiveByProvider(providerId);
 

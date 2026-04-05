@@ -33,6 +33,8 @@ param(
     [string]$DockerComposeFile = "docker-compose.yml"
 )
 
+$GatewayPort = $null
+
 # Set error action preference
 $ErrorActionPreference = "Stop"
 
@@ -75,6 +77,34 @@ function Test-DockerRunning {
     }
 }
 
+function Get-GatewayPort {
+    param([string]$ComposeFile = "docker-compose.yml")
+
+    try {
+        $mapping = docker port api-gateway 3000 2>$null | Select-Object -First 1
+        if ($LASTEXITCODE -eq 0 -and $mapping -match ':(\d+)$') {
+            return $matches[1]
+        }
+    } catch {
+        # Fall back to compose mapping
+    }
+
+    try {
+        $mapping = docker-compose -f $ComposeFile port api-gateway 3000 2>$null | Select-Object -First 1
+        if ($LASTEXITCODE -eq 0 -and $mapping -match ':(\d+)$') {
+            return $matches[1]
+        }
+    } catch {
+        # Fall back to default
+    }
+
+    if ($env:API_GATEWAY_PORT) {
+        return $env:API_GATEWAY_PORT
+    }
+
+    return "3700"
+}
+
 function Start-Services {
     Write-Info "Starting all services with docker-compose..."
     Write-Info "Using compose file: $DockerComposeFile"
@@ -94,6 +124,9 @@ function Start-Services {
         exit 1
     }
 
+    $script:GatewayPort = Get-GatewayPort -ComposeFile $DockerComposeFile
+    Write-Info "Detected API Gateway host port: $script:GatewayPort"
+
     Write-Success "All services started."
 }
 
@@ -109,7 +142,7 @@ function Seed-Database {
     Write-Warning "This may take a minute..."
 
     try {
-        & $SeederScript
+        & $SeederScript -Force
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Database seeded successfully."
         } else {
@@ -123,11 +156,16 @@ function Seed-Database {
 function Wait-ForServices {
     Write-Info "Waiting for services to be healthy..."
 
-    $gatewayHealthUrl = "http://localhost:3500/health"
-    $servicesHealthUrl = "http://localhost:3500/health/services"
+    if (-not $script:GatewayPort) {
+        $script:GatewayPort = Get-GatewayPort -ComposeFile $DockerComposeFile
+    }
+
+    $gatewayHealthUrl = "http://localhost:$GatewayPort/health"
+    $servicesHealthUrl = "http://localhost:$GatewayPort/health/services"
     $maxWait = 120
     $interval = 5
     $elapsed = 0
+    $gatewayHealthy = $false
 
     # First, wait for gateway to respond
     while ($elapsed -lt $maxWait) {
@@ -135,8 +173,13 @@ function Wait-ForServices {
             $response = Invoke-WebRequest -Uri $gatewayHealthUrl -UseBasicParsing -TimeoutSec 2
             if ($response.StatusCode -eq 200) {
                 $health = $response.Content | ConvertFrom-Json
-                if ($health.status -eq "healthy") {
+                $gatewayStatus = $health.status
+                if (-not $gatewayStatus -and $health.data) {
+                    $gatewayStatus = $health.data.status
+                }
+                if ($gatewayStatus -in @("healthy", "ok", "up", "UP")) {
                     Write-Success "API Gateway is healthy."
+                    $gatewayHealthy = $true
                     break
                 }
             }
@@ -144,31 +187,42 @@ function Wait-ForServices {
             # Not ready yet
         }
 
-        if ($elapsed -ge $maxWait) {
-            Write-ErrorMsg "API Gateway did not become healthy within $maxWait seconds."
-            Write-ErrorMsg "Check logs: docker-compose logs api-gateway"
-            exit 1
-        }
-
         Write-Info "Waiting for gateway... ($elapsed/$maxWait s)"
         Start-Sleep -Seconds $interval
         $elapsed += $interval
     }
 
+    if (-not $gatewayHealthy) {
+        Write-ErrorMsg "API Gateway did not become healthy within $maxWait seconds."
+        Write-ErrorMsg "Check logs: docker-compose logs api-gateway"
+        exit 1
+    }
+
     # Then wait for all services
     $elapsed = 0
+    $allServicesHealthy = $false
     while ($elapsed -lt $maxWait) {
         try {
             $response = Invoke-WebRequest -Uri $servicesHealthUrl -UseBasicParsing -TimeoutSec 2
             if ($response.StatusCode -eq 200) {
                 $health = $response.Content | ConvertFrom-Json
+                $services = $health.services
+                if (-not $services -and $health.data) {
+                    $services = $health.data.services
+                }
+                if (-not $services) {
+                    Write-Warning "Services health payload does not include 'services' yet."
+                    Start-Sleep -Seconds $interval
+                    $elapsed += $interval
+                    continue
+                }
                 $allHealthy = $true
                 $unhealthyServices = @()
 
-                foreach ($service in $health.services.PSObject.Properties) {
+                foreach ($service in $services.PSObject.Properties) {
                     $name = $service.Name
                     $status = $service.Value.status
-                    if ($status -ne "healthy") {
+                    if ($status -notin @("healthy", "ok", "up", "UP")) {
                         $allHealthy = $false
                         $unhealthyServices += "$name ($status)"
                     }
@@ -176,6 +230,7 @@ function Wait-ForServices {
 
                 if ($allHealthy) {
                     Write-Success "All services are healthy!"
+                    $allServicesHealthy = $true
                     return
                 } else {
                     Write-Warning "Unhealthy services: $($unhealthyServices -join ', ')"
@@ -185,16 +240,16 @@ function Wait-ForServices {
             # Not ready yet
         }
 
-        if ($elapsed -ge $maxWait) {
-            Write-ErrorMsg "Services did not become healthy within $maxWait seconds."
-            Write-ErrorMsg "Check health: $servicesHealthUrl"
-            Write-ErrorMsg "Check logs: docker-compose logs"
-            exit 1
-        }
-
         Write-Info "Waiting for all services... ($elapsed/$maxWait s)"
         Start-Sleep -Seconds $interval
         $elapsed += $interval
+    }
+
+    if (-not $allServicesHealthy) {
+        Write-ErrorMsg "Services did not become healthy within $maxWait seconds."
+        Write-ErrorMsg "Check health: $servicesHealthUrl"
+        Write-ErrorMsg "Check logs: docker-compose logs"
+        exit 1
     }
 }
 
@@ -209,8 +264,10 @@ function Run-Tests {
         exit 1
     }
 
-    & $testScript
-    $exitCode = $LASTEXITCODE
+    $baseUrl = "http://localhost:$GatewayPort/api/v1"
+    Write-Info "Using API base URL for Newman: $baseUrl"
+    $null = & $testScript -BaseUrl $baseUrl
+    $exitCode = [int]$LASTEXITCODE
 
     return $exitCode
 }
@@ -230,7 +287,7 @@ function Show-Summary {
         Write-Info "Platform is fully functional!"
         Write-Info "Next steps:"
         Write-Info "  - Open frontend: http://localhost:3000"
-        Write-Info "  - API Gateway: http://localhost:3500"
+        Write-Info "  - API Gateway: http://localhost:$GatewayPort"
         Write-Info "  - Test reports: test-reports/report_*.html"
     } else {
         Write-ErrorMsg "❌ SOME TESTS FAILED (Exit code: $ExitCode)"
@@ -268,6 +325,8 @@ try {
             Seed-Database
         }
     } else {
+        $script:GatewayPort = Get-GatewayPort -ComposeFile $DockerComposeFile
+        Write-Info "Detected API Gateway host port: $script:GatewayPort"
         Write-Warning "Skipping service startup. Assuming services are already running."
         Write-Warning "Verify with: docker-compose ps"
         Write-Info ""

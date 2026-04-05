@@ -55,7 +55,7 @@ if (-not $pgReady) {
 # Check API Gateway
 Write-Host "`nStep 3: Checking API Gateway..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3500/health" -UseBasicParsing -TimeoutSec 5
+    $response = Invoke-WebRequest -Uri "http://localhost:3700/health" -UseBasicParsing -TimeoutSec 5
     Write-Host "  ✅ API Gateway is responding (Status: $($response.StatusCode))" -ForegroundColor Green
 } catch {
     Write-Host "  ⚠️  API Gateway not ready yet" -ForegroundColor Yellow
@@ -83,7 +83,7 @@ Write-Host "ENVIRONMENT READY" -ForegroundColor Green
 Write-Host "========================================`n" -ForegroundColor Cyan
 
 Write-Host "Services running: $($running.Count)" -ForegroundColor White
-Write-Host "API Gateway: http://localhost:3500" -ForegroundColor Cyan
+Write-Host "API Gateway: http://localhost:3700" -ForegroundColor Cyan
 Write-Host "Database: localhost:5432" -ForegroundColor Cyan
 
 Write-Host "`nNext steps:" -ForegroundColor Yellow

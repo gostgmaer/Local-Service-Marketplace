@@ -10,6 +10,7 @@ import {
 	UseGuards,
 	HttpCode,
 	HttpStatus,
+	ForbiddenException,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
@@ -26,13 +27,23 @@ import { Roles } from '@/common/decorators/roles.decorator';
 export class SubscriptionController {
 	constructor(private readonly subscriptionService: SubscriptionService) {}
 
+	private assertProviderAccess(req: any, providerId: string) {
+		if (req.user.role !== "admin" && req.user.providerId !== providerId) {
+			throw new ForbiddenException("Access denied");
+		}
+	}
+
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
 	async createSubscription(@Body() data: CreateSubscriptionDto, @Request() req: any) {
+		this.assertProviderAccess(req, data.provider_id);
+
 		const subscription = await this.subscriptionService.createSubscription(
 			data.provider_id,
 			data.plan_id,
 			req.user.userId,
+			req.user.role,
+			req.user.providerId,
 		);
 
 		return { success: true, data: subscription, message: "Subscription created. Pending payment confirmation." };
@@ -50,13 +61,18 @@ export class SubscriptionController {
 	@Get("provider/:providerId")
 	async getProviderSubscriptions(
 		@Param("providerId", FlexibleIdPipe) providerId: string,
+		@Request() req: any,
 		@Query() queryDto: SubscriptionQueryDto,
 	) {
+		this.assertProviderAccess(req, providerId);
+
 		return this.subscriptionService.getProviderSubscriptionsPaginated(providerId, queryDto);
 	}
 
 	@Get("provider/:providerId/active")
 	async getActiveSubscription(@Param("providerId", FlexibleIdPipe) providerId: string, @Request() req: any) {
+		this.assertProviderAccess(req, providerId);
+
 		const subscription = await this.subscriptionService.getActiveSubscription(providerId);
 
 		return { success: true, data: subscription, message: "Active subscription retrieved successfully" };
@@ -64,7 +80,12 @@ export class SubscriptionController {
 
 	@Put(":subscriptionId/cancel")
 	async cancelSubscription(@Param("subscriptionId", StrictUuidPipe) subscriptionId: string, @Request() req: any) {
-		const subscription = await this.subscriptionService.cancelSubscription(subscriptionId, req.user.userId);
+		const subscription = await this.subscriptionService.cancelSubscription(
+			subscriptionId,
+			req.user.userId,
+			req.user.role,
+			req.user.providerId,
+		);
 
 		return {
 			success: true,
@@ -80,10 +101,14 @@ export class SubscriptionController {
 		@Body() upgradeData: UpgradeSubscriptionDto,
 		@Request() req: any,
 	) {
+		this.assertProviderAccess(req, providerId);
+
 		const subscription = await this.subscriptionService.upgradeSubscription(
 			providerId,
 			upgradeData.new_plan_id,
 			req.user.userId,
+			req.user.role,
+			req.user.providerId,
 		);
 
 		return { success: true, data: subscription, message: "Subscription upgrade initiated. Pending payment." };
@@ -97,7 +122,9 @@ export class SubscriptionController {
 	}
 
 	@Get("provider/:providerId/status")
-	async checkSubscriptionStatus(@Param("providerId", FlexibleIdPipe) providerId: string) {
+	async checkSubscriptionStatus(@Param("providerId", FlexibleIdPipe) providerId: string, @Request() req: any) {
+		this.assertProviderAccess(req, providerId);
+
 		const hasActive = await this.subscriptionService.checkProviderHasActiveSubscription(providerId);
 
 		return { success: true, data: { provider_id: providerId, has_active_subscription: hasActive } };

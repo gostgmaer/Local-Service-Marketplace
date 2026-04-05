@@ -3,12 +3,17 @@
 # Populates the database with sample data
 # ===============================================
 
+param(
+    [switch]$Force
+)
+
 Write-Host "Database Seeding Script" -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Get the script directory
-$rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Get the project root (script lives in scripts/)
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = Split-Path -Parent $scriptDir
 $databaseDir = Join-Path $rootDir "database"
 
 # Load environment variables from root .env
@@ -107,12 +112,16 @@ Write-Host "   - 80+ jobs with payments, reviews, messages" -ForegroundColor Whi
 Write-Host "   - And much more..." -ForegroundColor White
 Write-Host ""
 
-$confirmation = Read-Host "Do you want to continue? (yes/no)"
+if (-not $Force) {
+    $confirmation = Read-Host "Do you want to continue? (yes/no)"
 
-if ($confirmation -ne "yes") {
-    Write-Host "Seeding cancelled" -ForegroundColor Red
-    Set-Location -Path $rootDir
-    exit
+    if ($confirmation -ne "yes") {
+        Write-Host "Seeding cancelled" -ForegroundColor Red
+        Set-Location -Path $rootDir
+        exit
+    }
+} else {
+    Write-Host "Force mode enabled. Continuing without confirmation prompt." -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -169,6 +178,8 @@ try {
 # Return to root directory
 Set-Location -Path $rootDir
 
-Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+if (-not $Force) {
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+}
 

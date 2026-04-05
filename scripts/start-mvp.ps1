@@ -79,7 +79,7 @@ Write-Host ""
 
 Write-Host "Services running:" -ForegroundColor Cyan
 Write-Host "  (+) Database (PostgreSQL)" -ForegroundColor Green
-Write-Host "  (+) API Gateway (port 3500)" -ForegroundColor Green
+Write-Host "  (+) API Gateway (port 3700)" -ForegroundColor Green
 Write-Host "  (+) Auth Service (port 3001)" -ForegroundColor Green
 Write-Host "  (+) User Service (port 3002)" -ForegroundColor Green
 Write-Host "  (+) Request Service (port 3003)" -ForegroundColor Green
@@ -111,7 +111,7 @@ Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  1. Start frontend: cd frontend\nextjs-app ; npm run dev" -ForegroundColor White
 Write-Host "  2. Open browser: http://localhost:3000" -ForegroundColor White
 Write-Host "  3. Test contact form: http://localhost:3000/contact" -ForegroundColor White
-Write-Host "  4. Check API health: http://localhost:3500/health" -ForegroundColor White
+Write-Host "  4. Check API health: http://localhost:3700/health" -ForegroundColor White
 
 Write-Host ""
 Write-Host "To enable optional services later:" -ForegroundColor Cyan

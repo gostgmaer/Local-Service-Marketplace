@@ -45,9 +45,37 @@ param(
 # Set error action preference
 $ErrorActionPreference = "Stop"
 
+function Get-GatewayPort {
+    try {
+        $mapping = docker port api-gateway 3000 2>$null | Select-Object -First 1
+        if ($LASTEXITCODE -eq 0 -and $mapping -match ':(\d+)$') {
+            return $matches[1]
+        }
+    } catch {
+        # Fall back to compose mapping
+    }
+
+    try {
+        $mapping = docker-compose port api-gateway 3000 2>$null | Select-Object -First 1
+        if ($LASTEXITCODE -eq 0 -and $mapping -match ':(\d+)$') {
+            return $matches[1]
+        }
+    } catch {
+        # Fall back to default
+    }
+
+    if ($env:API_GATEWAY_PORT) {
+        return $env:API_GATEWAY_PORT
+    }
+
+    return "3700"
+}
+
+$GatewayPort = Get-GatewayPort
+
 # Constants
-$GATEWAY_HEALTH_URL = "http://localhost:3500/health"
-$SERVICES_HEALTH_URL = "http://localhost:3500/health/services"
+$GATEWAY_HEALTH_URL = "http://localhost:$GatewayPort/health"
+$SERVICES_HEALTH_URL = "http://localhost:$GatewayPort/health/services"
 $MAX_WAIT_SECONDS = 120
 $WAIT_INTERVAL = 5
 
@@ -132,11 +160,22 @@ function Wait-ForServices {
             $response = Invoke-WebRequest -Uri $SERVICES_HEALTH_URL -UseBasicParsing -TimeoutSec 2
             if ($response.StatusCode -eq 200) {
                 $health = $response.Content | ConvertFrom-Json
+                $services = $health.services
+                if (-not $services -and $health.data) {
+                    $services = $health.data.services
+                }
+                if (-not $services) {
+                    Write-Warning "Services health payload does not include 'services' yet."
+                    Start-Sleep -Seconds $WAIT_INTERVAL
+                    $elapsed += $WAIT_INTERVAL
+                    Write-Info "Still waiting... ($elapsed/$MAX_WAIT_SECONDS s)"
+                    continue
+                }
                 $allHealthy = $true
-                foreach ($service in $health.services.PSObject.Properties) {
+                foreach ($service in $services.PSObject.Properties) {
                     $name = $service.Name
                     $status = $service.Value.status
-                    if ($status -ne "healthy") {
+                    if ($status -notin @("healthy", "ok", "up", "UP")) {
                         Write-Warning "Service '$name' status: $status"
                         $allHealthy = $false
                     }
@@ -183,63 +222,62 @@ function Run-Newman {
     Ensure-OutputDir
     $htmlReport = Join-Path $OutputDir (Get-TimestampedFilename ".html")
     $jsonReport = Join-Path $OutputDir (Get-TimestampedFilename ".json")
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HHmmss"
+    $preparedCollection = Join-Path $OutputDir "collection_prepared_$timestamp.json"
+    $preparedEnvironment = Join-Path $OutputDir "environment_prepared_$timestamp.json"
+
+    # Build prepared artifacts so runtime fixes do not mutate source files.
+    & node "scripts/prepare-newman-collection.js" $CollectionPath $preparedCollection
+    if ($LASTEXITCODE -ne 0) {
+        Write-ErrorMsg "Failed to prepare collection for Newman run."
+        return 1
+    }
+
+    Copy-Item -Path $EnvironmentPath -Destination $preparedEnvironment -Force
 
     Write-Info "HTML Report: $htmlReport"
     Write-Info "JSON Report: $jsonReport"
+    Write-Info "Prepared Collection: $preparedCollection"
+    Write-Info "Prepared Environment: $preparedEnvironment"
     Write-Info ""
 
     # Build Newman arguments
     $newmanArgs = @(
-        "run", $CollectionPath,
-        "--environment", $EnvironmentPath,
+        "run", $preparedCollection,
+        "--environment", $preparedEnvironment,
         "--reporters", "cli,html,json",
         "--reporter-html-export", $htmlReport,
-        "--reporter-json-export", $jsonReport,
-        "--no-color"
+        "--reporter-json-export", $jsonReport
     )
 
     if ($BaseUrl) {
-        $newmanArgs += "--global-var"
+        $newmanArgs += "--env-var"
         $newmanArgs += "base_url=$BaseUrl"
         Write-Info "Using overridden base URL: $BaseUrl"
     }
 
-    Write-Info "Executing: pnpm newman $($newmanArgs -join ' ')"
+    Write-Info "Executing: newman $($newmanArgs -join ' ')"
     Write-Info "--------------------------------------------------"
     Write-Info ""
 
-    # Run Newman via pnpm
-    $env:PNPM_HOME = "$env:APPDATA\pnpm"  # Ensure pnpm is in PATH
-    $processInfo = Start-Process -FilePath "pnpm" -ArgumentList $newmanArgs -NoNewWindow -Wait -PassThru -RedirectStandardOutput "stdout.txt" -RedirectStandardError "stderr.txt"
-
-    # Capture and display output
-    $stdout = Get-Content "stdout.txt" -Raw
-    $stderr = Get-Content "stderr.txt" -Raw
-
-    if ($stdout) {
-        Write-Host $stdout
-    }
-    if ($stderr) {
-        Write-ErrorMsg $stderr
-    }
-
-    # Cleanup temp files
-    Remove-Item "stdout.txt","stderr.txt" -ErrorAction SilentlyContinue
+    # Run Newman directly to avoid pnpm proxy-related runtime issues.
+    & newman @newmanArgs | Out-Host
+    $exitCode = $LASTEXITCODE
 
     Write-Info ""
     Write-Info "--------------------------------------------------"
 
     # Check exit code
-    if ($processInfo.ExitCode -eq 0) {
+    if ($exitCode -eq 0) {
         Write-Success "✅ All tests passed!"
         Write-Success "HTML Report: $htmlReport"
         Write-Info "Open the HTML report in your browser to see detailed results."
         return 0
     } else {
-        Write-ErrorMsg "❌ Some tests failed. Exit code: $($processInfo.ExitCode)"
+        Write-ErrorMsg "❌ Some tests failed. Exit code: $exitCode"
         Write-ErrorMsg "HTML Report: $htmlReport"
         Write-Info "Review the report above or open the HTML file to see details."
-        return $processInfo.ExitCode
+        return $exitCode
     }
 }
 
@@ -263,13 +301,6 @@ try {
     # Optionally override base URL in environment file
     if ($BaseUrl) {
         Write-Info "Overriding base_url to: $BaseUrl"
-        $envContent = Get-Content $EnvironmentPath | ConvertFrom-Json
-        foreach ($value in $envContent.values) {
-            if ($value.key -eq "base_url") {
-                $value.value = $BaseUrl
-            }
-        }
-        $envContent | ConvertTo-Json -Depth 10 | Set-Content $EnvironmentPath
     }
 
     # Wait for services if requested

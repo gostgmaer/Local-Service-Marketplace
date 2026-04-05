@@ -2,7 +2,7 @@
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, master]
     types: [opened, synchronize, reopened]
 
 concurrency:
@@ -43,7 +43,7 @@ jobs:
         env:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret' }}
           NEXTAUTH_URL: http://localhost:3000
-          NEXT_PUBLIC_API_URL: http://localhost:3500
+          NEXT_PUBLIC_API_URL: http://localhost:3700
 
   backend:
     name: "Backend - Build (${{ matrix.service }})"

@@ -7,10 +7,10 @@
     "install:all": "pnpm install",
     "build:all": "pnpm -r build",
     "start:dev": "pnpm -r --parallel start:dev",
-    "test:api": "pnpm newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json",
-    "test:api:verbose": "pnpm newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json --verbose",
+    "test:api": "newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json",
+    "test:api:verbose": "newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json --verbose",
     "test:services": "powershell -ExecutionPolicy Bypass -File scripts/test-all-services.ps1",
-    "test:contracts": "pnpm newman run newman/contract-tests.postman_collection.json --environment newman/newman.env.json --reporters cli,json --reporter-json-export test-reports/contract-report.json"
+    "test:contracts": "newman run newman/contract-tests.postman_collection.json --environment newman/newman.env.json --reporters cli,json --reporter-json-export test-reports/contract-report.json"
   },
   "engines": {
     "node": ">=18.0.0",
