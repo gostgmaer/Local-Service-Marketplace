@@ -47,6 +47,9 @@ RUN pnpm install --prod
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Create logs directory with proper permissions
+RUN mkdir -p logs
+
 # Expose port
 EXPOSE 3012
 
@@ -54,4 +57,4 @@ EXPOSE 3012
 USER node
 
 # Start the application
-CMD ["node", "dist/src/main"]
+CMD ["node", "dist/main.js"]
