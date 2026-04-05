@@ -1,6 +1,7 @@
-import { IsString, IsEnum } from 'class-validator';
+import { IsString, IsEnum } from "class-validator";
 
 export enum JobStatus {
+	PENDING = "pending",
 	SCHEDULED = "scheduled",
 	IN_PROGRESS = "in_progress",
 	COMPLETED = "completed",
@@ -9,7 +10,7 @@ export enum JobStatus {
 }
 
 export class UpdateJobStatusDto {
-  @IsString()
-  @IsEnum(JobStatus)
-  status: JobStatus;
+	@IsString()
+	@IsEnum(JobStatus)
+	status: JobStatus;
 }

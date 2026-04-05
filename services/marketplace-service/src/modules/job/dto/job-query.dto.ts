@@ -13,6 +13,7 @@ export enum SortOrder {
 }
 
 export enum JobStatusQuery {
+	PENDING = "pending",
 	SCHEDULED = "scheduled",
 	IN_PROGRESS = "in_progress",
 	COMPLETED = "completed",

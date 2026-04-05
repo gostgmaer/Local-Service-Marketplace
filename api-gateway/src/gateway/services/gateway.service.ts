@@ -1,4 +1,4 @@
-import { Injectable, Inject, LoggerService } from '@nestjs/common';
+import { Injectable, Inject, LoggerService, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
@@ -40,8 +40,8 @@ export class GatewayService {
 			const serviceConfig = servicesConfig[serviceName];
 
 			if (!serviceConfig) {
-				this.logger.error(`No service configuration found for path: ${path}`, "GatewayService");
-				throw new ServiceUnavailableException("Service not available");
+				this.logger.warn(`No service configuration found for path: ${path}`, "GatewayService");
+				throw new NotFoundException(`No resource found at ${path}`);
 			}
 
 			// Strip /api/v1 prefix if present (microservices don't have this prefix)
@@ -52,7 +52,10 @@ export class GatewayService {
 
 			const targetUrl = `${serviceConfig.url}${rewrittenPath}`;
 
-			this.logger.log(`[${headers?.['x-request-id'] || 'no-rid'}] Forwarding ${method} ${path} to ${serviceConfig.name} (${targetUrl})`, "GatewayService");
+			this.logger.log(
+				`[${headers?.["x-request-id"] || "no-rid"}] Forwarding ${method} ${path} to ${serviceConfig.name} (${targetUrl})`,
+				"GatewayService",
+			);
 
 			// Prepare request config
 			const config: AxiosRequestConfig = {
@@ -81,8 +84,12 @@ export class GatewayService {
 		} catch (error) {
 			this.logger.error(`Error forwarding request: ${error.message}`, error.stack, "GatewayService");
 
-			// Preserve known gateway exceptions (e.g., unmapped route)
-			if (error instanceof ServiceUnavailableException || error instanceof GatewayTimeoutException) {
+			// Preserve known gateway exceptions (e.g., unmapped route, not found)
+			if (
+				error instanceof ServiceUnavailableException ||
+				error instanceof GatewayTimeoutException ||
+				error instanceof NotFoundException
+			) {
 				throw error;
 			}
 
