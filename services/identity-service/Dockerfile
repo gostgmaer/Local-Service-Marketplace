@@ -50,6 +50,9 @@ COPY --from=builder /app/dist ./dist
 # Create logs directory
 RUN mkdir -p logs
 
+# Create uploads directory with proper permissions
+RUN mkdir -p uploads && chown -R node:node uploads
+
 # Expose port
 EXPOSE 3001
 
@@ -57,4 +60,4 @@ EXPOSE 3001
 USER node
 
 # Start application
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/main.js"]
