@@ -1,9 +1,7 @@
-import { Controller, Get, Param, Query, ParseFloatPipe, ParseIntPipe, UseGuards } from "@nestjs/common";
+import { Controller, Get, Param, Query, ParseFloatPipe, ParseIntPipe } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
-import { ProviderReviewAggregateService } from '../services/provider-review-aggregate.service';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { ProviderReviewAggregateService } from "../services/provider-review-aggregate.service";
 
-@UseGuards(JwtAuthGuard)
 @Controller("review-aggregates")
 export class ProviderReviewAggregateController {
 	constructor(private readonly aggregateService: ProviderReviewAggregateService) {}
