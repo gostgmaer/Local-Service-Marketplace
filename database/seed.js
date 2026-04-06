@@ -24,6 +24,8 @@ const pool = new Pool({
 	idleTimeoutMillis: 30000,
 });
 
+const DEFAULT_SEED_PASSWORD = "password123";
+
 const uuid = () => {
 	return crypto.randomUUID();
 };
@@ -330,7 +332,7 @@ class DatabaseSeeder {
 
 	async seedUsers() {
 		console.log("👥 Seeding users...");
-		const hashedPassword = await bcrypt.hash("password123", 10);
+		const hashedPassword = await bcrypt.hash(DEFAULT_SEED_PASSWORD, 10);
 		let created = 0;
 
 		// Create 1 admin
