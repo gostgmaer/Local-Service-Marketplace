@@ -1,0 +1,76 @@
+name: Create Release and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Create Release & Deploy
+    runs-on: ubuntu-latest
+    # These permissions are needed for semantic-release to create releases and for Vercel deployment
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # This is required for semantic-release to analyze the full commit history
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install semantic-release dependencies
+        # These packages handle version calculation, changelog generation, and release creation.
+        # They can also be added as dev dependencies in your root package.json.
+        run: pnpm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog conventional-changelog-conventionalcommits
+
+      - name: Create Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          branch: main
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+        env:
+          # The GITHUB_TOKEN is automatically provided by GitHub Actions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy Frontend to Vercel Production
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: vercel/action@v1
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+          prod: true # Promotes the deployment to production
+          cwd: frontend # Assumes your Next.js app is in the 'frontend' directory
+
+      - name: Trigger Render Deploy Hooks
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          echo "Triggering Render deploy hooks for backend services..."
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_API_GATEWAY }}"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_IDENTITY }}"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_MARKETPLACE }}"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PAYMENT }}"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_COMMS }}"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_OVERSIGHT }}"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_INFRASTRUCTURE }}"
+          echo "All Render deploy hooks triggered."
