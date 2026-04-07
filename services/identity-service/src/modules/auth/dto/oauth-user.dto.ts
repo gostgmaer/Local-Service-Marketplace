@@ -1,5 +1,5 @@
 export interface OAuthUserDto {
-  provider: 'google' | 'facebook';
+  provider: "google" | "facebook";
   providerId: string;
   email: string;
   name?: string;

@@ -1,16 +1,22 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { extname } from 'path';
+import { Injectable, BadRequestException } from "@nestjs/common";
+import { extname } from "path";
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "fs";
-import { randomBytes } from 'crypto';
+import { randomBytes } from "crypto";
 
 @Injectable()
 export class FileUploadService {
-  private readonly uploadDir = './uploads';
+  private readonly uploadDir = "./uploads";
   private readonly maxFileSize = 5 * 1024 * 1024; // 5MB
-  
+
   // Allowed file types
-  private readonly allowedImageTypes = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-  private readonly allowedDocumentTypes = ['.pdf', '.jpg', '.jpeg', '.png'];
+  private readonly allowedImageTypes = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+  ];
+  private readonly allowedDocumentTypes = [".pdf", ".jpg", ".jpeg", ".png"];
 
   constructor() {
     // Ensure upload directories exist
@@ -30,17 +36,17 @@ export class FileUploadService {
    */
   async uploadFile(
     file: any,
-    category: 'document' | 'portfolio' | 'profile',
-    allowedTypes?: string[]
+    category: "document" | "portfolio" | "profile",
+    allowedTypes?: string[],
   ): Promise<string> {
     if (!file) {
-      throw new BadRequestException('No file provided');
+      throw new BadRequestException("No file provided");
     }
 
     // Validate file size
     if (file.size > this.maxFileSize) {
       throw new BadRequestException(
-        `File size exceeds maximum allowed size of ${this.maxFileSize / 1024 / 1024}MB`
+        `File size exceeds maximum allowed size of ${this.maxFileSize / 1024 / 1024}MB`,
       );
     }
 
@@ -50,18 +56,21 @@ export class FileUploadService {
 
     if (!validTypes.includes(fileExtension)) {
       throw new BadRequestException(
-        `Invalid file type. Allowed types: ${validTypes.join(', ')}`
+        `Invalid file type. Allowed types: ${validTypes.join(", ")}`,
       );
     }
 
     // Generate unique filename
-    const randomName = randomBytes(16).toString('hex');
+    const randomName = randomBytes(16).toString("hex");
     const fileName = `${randomName}${fileExtension}`;
-    
+
     // Determine subdirectory
-    const subDir = category === 'document' ? 'documents' : 
-                   category === 'portfolio' ? 'portfolio' : 
-                   'profile-pictures';
+    const subDir =
+      category === "document"
+        ? "documents"
+        : category === "portfolio"
+          ? "portfolio"
+          : "profile-pictures";
 
     const filePath = `${this.uploadDir}/${subDir}/${fileName}`;
 
@@ -77,11 +86,11 @@ export class FileUploadService {
    */
   async uploadMultiple(
     files: any[],
-    category: 'portfolio',
-    maxFiles: number = 10
+    category: "portfolio",
+    maxFiles: number = 10,
   ): Promise<string[]> {
     if (!files || files.length === 0) {
-      throw new BadRequestException('No files provided');
+      throw new BadRequestException("No files provided");
     }
 
     if (files.length > maxFiles) {
@@ -103,10 +112,10 @@ export class FileUploadService {
    */
   private getAllowedTypes(category: string): string[] {
     switch (category) {
-      case 'document':
+      case "document":
         return this.allowedDocumentTypes;
-      case 'portfolio':
-      case 'profile':
+      case "portfolio":
+      case "profile":
         return this.allowedImageTypes;
       default:
         return this.allowedImageTypes;
@@ -118,14 +127,14 @@ export class FileUploadService {
    */
   async deleteFile(fileUrl: string): Promise<void> {
     if (!fileUrl || !fileUrl.startsWith("/uploads/")) {
-			return;
-		}
+      return;
+    }
 
-		const relativePath = fileUrl.replace("/uploads/", "");
-		const filePath = `${this.uploadDir}/${relativePath}`;
+    const relativePath = fileUrl.replace("/uploads/", "");
+    const filePath = `${this.uploadDir}/${relativePath}`;
 
-		if (existsSync(filePath)) {
-			unlinkSync(filePath);
-		}
+    if (existsSync(filePath)) {
+      unlinkSync(filePath);
+    }
   }
 }

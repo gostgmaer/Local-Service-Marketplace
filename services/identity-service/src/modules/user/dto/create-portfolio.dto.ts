@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsUrl, IsNumber, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsUrl,
+  IsNumber,
+  MinLength,
+} from "class-validator";
 
 export class CreatePortfolioDto {
   @IsString()

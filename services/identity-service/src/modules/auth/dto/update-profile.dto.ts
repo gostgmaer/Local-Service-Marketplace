@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsUrl } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsUrl } from "class-validator";
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -18,6 +18,6 @@ export class UpdateProfileDto {
   timezone?: string;
 
   @IsOptional()
-  @IsEnum(['en', 'es', 'fr', 'de', 'zh', 'ar', 'hi'])
+  @IsEnum(["en", "es", "fr", "de", "zh", "ar", "hi"])
   language?: string;
 }

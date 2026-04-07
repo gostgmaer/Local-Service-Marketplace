@@ -1,8 +1,8 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { DATABASE_POOL } from '@/common/database/database.module';
-import { ProviderDocument } from '../entities/provider-document.entity';
-import { UploadDocumentDto } from '../dto/upload-document.dto';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { DATABASE_POOL } from "@/common/database/database.module";
+import { ProviderDocument } from "../entities/provider-document.entity";
+import { UploadDocumentDto } from "../dto/upload-document.dto";
 
 @Injectable()
 export class ProviderDocumentRepository {
@@ -23,7 +23,7 @@ export class ProviderDocumentRepository {
       data.document_url,
       data.document_name,
       data.document_number || null,
-      data.expiry_date || null  // Frontend sends expiry_date, store in expires_at
+      data.expiry_date || null, // Frontend sends expiry_date, store in expires_at
     ];
 
     const result = await this.pool.query(query, values);
@@ -46,7 +46,11 @@ export class ProviderDocumentRepository {
     return result.rows;
   }
 
-  async verify(documentId: string, verified: boolean, verifiedBy?: string): Promise<ProviderDocument> {
+  async verify(
+    documentId: string,
+    verified: boolean,
+    verifiedBy?: string,
+  ): Promise<ProviderDocument> {
     const query = `
       UPDATE provider_documents
       SET verified = $1,
@@ -56,7 +60,11 @@ export class ProviderDocumentRepository {
       RETURNING *
     `;
 
-    const result = await this.pool.query(query, [verified, verifiedBy, documentId]);
+    const result = await this.pool.query(query, [
+      verified,
+      verifiedBy,
+      documentId,
+    ]);
     return result.rows[0];
   }
 

@@ -1,6 +1,6 @@
-import { IsEnum } from 'class-validator';
+import { IsEnum } from "class-validator";
 
 export class UpdateVerificationStatusDto {
-  @IsEnum(['pending', 'verified', 'rejected'])
-  status: 'pending' | 'verified' | 'rejected';
+  @IsEnum(["pending", "verified", "rejected"])
+  status: "pending" | "verified" | "rejected";
 }

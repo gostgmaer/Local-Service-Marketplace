@@ -1,36 +1,44 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsEnum,
+  IsOptional,
+} from "class-validator";
 
 export enum UserRole {
-  CUSTOMER = 'customer',
-  PROVIDER = 'provider',
-  ADMIN = 'admin',
+  CUSTOMER = "customer",
+  PROVIDER = "provider",
+  ADMIN = "admin",
 }
 
 export class SignupDto {
-	@IsEmail()
-	email: string;
+  @IsEmail()
+  email: string;
 
-	@IsString()
-	@MinLength(8, { message: "Password must be at least 8 characters long" })
-	password: string;
+  @IsString()
+  @MinLength(8, { message: "Password must be at least 8 characters long" })
+  password: string;
 
-	@IsOptional()
-	@IsString()
-	name?: string;
+  @IsOptional()
+  @IsString()
+  name?: string;
 
-	@IsEnum(UserRole, { message: "User type must be customer, provider, or admin" })
-	@IsOptional()
-	userType?: UserRole = UserRole.CUSTOMER;
+  @IsEnum(UserRole, {
+    message: "User type must be customer, provider, or admin",
+  })
+  @IsOptional()
+  userType?: UserRole = UserRole.CUSTOMER;
 
-	@IsOptional()
-	@IsString()
-	phone?: string;
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
-	@IsOptional() // ✅ NEW
-	@IsString()
-	timezone?: string;
+  @IsOptional() // ✅ NEW
+  @IsString()
+  timezone?: string;
 
-	@IsOptional() // ✅ NEW
-	@IsString()
-	language?: string;
+  @IsOptional() // ✅ NEW
+  @IsString()
+  language?: string;
 }

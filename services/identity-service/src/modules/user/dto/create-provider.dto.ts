@@ -1,5 +1,13 @@
-import { IsString, IsOptional, IsArray, IsNumber, Min, Max, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsNumber,
+  Min,
+  Max,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 class AvailabilitySlotDto {
   @IsNumber()

@@ -9,15 +9,15 @@ import { NotificationModule } from "./common/notification/notification.module";
 import { HealthController } from "./common/health/health.controller";
 
 @Module({
-	imports: [
-		ConfigModule.forRoot({ isGlobal: true, envFilePath: ".env" }),
-		LoggerModule,
-		DatabaseModule,
-		RedisModule,
-		NotificationModule,
-		AuthModule,
-		UserModule,
-	],
-	controllers: [HealthController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ".env" }),
+    LoggerModule,
+    DatabaseModule,
+    RedisModule,
+    NotificationModule,
+    AuthModule,
+    UserModule,
+  ],
+  controllers: [HealthController],
 })
 export class AppModule {}
