@@ -80,7 +80,6 @@ export class ProviderDocumentService {
 
   async getDocumentById(
     documentId: string,
-    userId: string,
   ): Promise<ProviderDocument> {
     const document = await this.documentRepository.findById(documentId);
 
@@ -163,4 +162,6 @@ export class ProviderDocumentService {
       missing_required_documents: missingTypes,
     };
   }
+}
+}
 }

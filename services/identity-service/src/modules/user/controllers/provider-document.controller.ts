@@ -95,7 +95,7 @@ export class ProviderDocumentController {
   @Roles("admin")
   @UseGuards(RolesGuard)
   @Get("pending")
-  async getPendingDocuments(@Request() req: any) {
+  async getPendingDocuments() {
     return this.documentService.getPendingDocuments();
   }
 

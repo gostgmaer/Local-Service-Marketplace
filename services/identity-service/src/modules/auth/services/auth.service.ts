@@ -2072,6 +2072,7 @@ export class AuthService {
   ): Promise<string | null> {
     // Verify JWT signature using Apple's public keys via apple-signin-auth
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { verify } = require("apple-signin-auth");
       const appleClientId = this.configService.get<string>("APPLE_CLIENT_ID");
       const payload = await verify(identityToken, { clientId: appleClientId });

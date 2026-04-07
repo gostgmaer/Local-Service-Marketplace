@@ -81,7 +81,8 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
           typeof rawData.message === "string"
         ) {
           customMessage = rawData.message;
-          const { message: _msg, ...rest } = rawData;
+          const rest = { ...rawData };
+          delete rest.message;
           rawData = rest;
         }
 

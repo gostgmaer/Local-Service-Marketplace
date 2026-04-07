@@ -70,7 +70,12 @@ export const redactFormat = winston.format((info) => {
   }
 
   // Redact any extra metadata fields
-  const { level, message, timestamp, context, ...meta } = info;
+  const meta = { ...info };
+  delete meta.level;
+  delete meta.message;
+  delete meta.timestamp;
+  delete meta.context;
+
   if (Object.keys(meta).length > 0) {
     const redactedMeta = redactObject(meta);
     Object.assign(info, redactedMeta);

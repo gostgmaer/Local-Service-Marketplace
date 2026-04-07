@@ -60,7 +60,6 @@ export class ProviderPortfolioService {
 
   async getPortfolioItemById(
     itemId: string,
-    userId?: string,
   ): Promise<ProviderPortfolio> {
     const item = await this.portfolioRepository.findById(itemId);
 
@@ -135,4 +134,6 @@ export class ProviderPortfolioService {
 
     return this.portfolioRepository.findByProvider(providerId);
   }
+}
+ }
 }

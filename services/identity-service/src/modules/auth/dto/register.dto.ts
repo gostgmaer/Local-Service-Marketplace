@@ -8,7 +8,6 @@ import {
   ValidateIf,
   IsMobilePhone,
   Matches,
-  IsNotEmpty,
 } from "class-validator";
 import { Transform } from "class-transformer";
 import { UserRole } from "./signup.dto";

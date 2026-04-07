@@ -474,7 +474,6 @@ export class AuthController {
   @Get("email/verify")
   async verifyEmail(
     @Query("token") token: string,
-    @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string }> {
     this.logger.info("GET /auth/email/verify", { context: "AuthController" });
     await this.authService.verifyEmail(token);
