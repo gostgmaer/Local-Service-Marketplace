@@ -9,3 +9,8 @@ logs
 *.log
 coverage
 .git
+
+# Ignore TypeScript cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+

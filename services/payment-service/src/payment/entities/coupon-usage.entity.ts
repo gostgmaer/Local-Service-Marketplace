@@ -8,3 +8,4 @@ export class CouponUsage {
     Object.assign(this, partial);
   }
 }
+console.log("CouponUsage loaded");

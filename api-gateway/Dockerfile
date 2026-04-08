@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate)
+RUN for i in 1 2 3 4 5; do npm install -g pnpm@10.33.0 && break || sleep 2; done
 
 # Copy package files
 COPY package*.json pnpm-lock.yaml* ./
@@ -30,7 +30,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate)
+RUN for i in 1 2 3 4 5; do npm install -g pnpm@10.33.0 && break || sleep 2; done
 
 # Copy package files
 COPY package*.json pnpm-lock.yaml* ./
@@ -51,8 +51,8 @@ COPY --from=builder /app/dist ./dist
 RUN mkdir -p logs
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
+RUN addgroup -g 1001 nodejs && \
+    adduser -D -u 1001 -G nodejs nestjs
 
 # Give ownership of logs directory to nestjs user
 RUN chown -R nestjs:nodejs logs

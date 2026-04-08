@@ -2,11 +2,11 @@
 
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+# RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || npm install -g pnpm@9.12.3 --force)
+RUN for i in 1 2 3 4 5; do npm install -g pnpm@10.33.0 && break || sleep 2; done
 
 COPY package.json pnpm-lock.yaml* ./
 
@@ -23,7 +23,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || npm install -g pnpm@9.12.3 --force)
+RUN for i in 1 2 3 4 5; do npm install -g pnpm@10.33.0 && break || sleep 2; done
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -43,8 +43,8 @@ WORKDIR /app
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup -g 1001 nodejs
+RUN adduser -D -u 1001 -G nodejs nextjs
 
 # Copy necessary files
 COPY --from=builder /app/public ./public
