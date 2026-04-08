@@ -4,7 +4,7 @@ import { BackgroundJob } from '../entities/background-job.entity';
 import { CreateBackgroundJobDto } from '../dto/create-background-job.dto';
 import { BackgroundJobQueryDto, BackgroundJobSortBy } from "../dto/background-job-query.dto";
 import { ResolvedPagination } from "../../common/pagination/list-query-validation.util";
-import { resolveId } from '@/common/utils/resolve-id.util';
+import { resolveId } from '../../common/utils/resolve-id.util';
 
 @Injectable()
 export class BackgroundJobRepository {

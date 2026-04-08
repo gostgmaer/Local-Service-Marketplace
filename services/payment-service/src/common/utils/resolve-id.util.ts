@@ -6,9 +6,9 @@ import { NotFoundException } from "@nestjs/common";
  * returns the internal UUID from the specified table.
  *
  * Usage:
- *   const uuid = await resolveId(pool, 'payments', paymentId);
+ *   const uuid = await resolveId(pool, 'jobs', jobId);
  */
-// SECURITY: table name must be validated against a known whitelist — never pass raw user input
+// SECURITY: table name must be validated against a known whitelist - never pass raw user input
 const ALLOWED_TABLES = new Set([
   "users",
   "providers",
@@ -49,7 +49,7 @@ export async function resolveId(
     return idOrDisplayId;
   }
 
-  // lookup by display_id — table name is safe because it passed the whitelist above
+  // lookup by display_id - table name is safe because it passed the whitelist above
   const result = await pool.query(
     `SELECT id FROM ${table} WHERE display_id = $1`,
     [idOrDisplayId.toUpperCase()],

@@ -7,7 +7,7 @@ import {
   TransactionSortBy,
   SortOrder,
 } from "../dto/transaction-query.dto";
-import { resolveId } from "@/common/utils/resolve-id.util";
+import { resolveId } from "../../common/utils/resolve-id.util";
 
 @Injectable()
 export class PaymentRepository {
