@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || npm install -g pnpm@9.12.3 --force)
+RUN for i in 1 2 3 4 5; do npm install -g pnpm@10.33.0 && break || sleep 2; done
 
 COPY package*.json pnpm-lock.yaml* ./
 
@@ -23,7 +23,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || npm install -g pnpm@9.12.3 --force)
+RUN for i in 1 2 3 4 5; do npm install -g pnpm@10.33.0 && break || sleep 2; done
 
 COPY package*.json pnpm-lock.yaml* ./
 

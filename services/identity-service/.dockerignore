@@ -11,3 +11,7 @@ logs/
 Thumbs.db
 coverage/
 .nyc_output/
+# Ignore TypeScript cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
