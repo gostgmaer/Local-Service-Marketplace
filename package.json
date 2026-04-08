@@ -4,13 +4,22 @@
   "private": true,
   "description": "Microservices-based Local Service Marketplace",
   "scripts": {
+    "dev": "pnpm start:dev",
     "install:all": "pnpm install",
     "build:all": "pnpm -r build",
     "start:dev": "pnpm -r --parallel start:dev",
-    "test:api": "pnpm newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json",
-    "test:api:verbose": "pnpm newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json --verbose",
+    "docker:up": "docker-compose up -d && echo 'Waiting for services to initialize...' && powershell -Command \"Start-Sleep -Seconds 20\" && cd database && pnpm install && pnpm run seed",
+    "docker:up:quick": "docker-compose up -d",
+    "docker:up:l1": "docker-compose up -d postgres identity-service marketplace-service payment-service comms-service oversight-service api-gateway && echo 'Waiting for services to initialize...' && powershell -Command \"Start-Sleep -Seconds 15\" && cd database && pnpm install && pnpm run seed",
+    "docker:up:l2": "docker-compose --profile cache up -d && echo 'Waiting for services to initialize...' && powershell -Command \"Start-Sleep -Seconds 15\" && cd database && pnpm install && pnpm run seed",
+    "docker:up:l3": "docker-compose --profile cache --profile infrastructure up -d && echo 'Waiting for services to initialize...' && powershell -Command \"Start-Sleep -Seconds 15\" && cd database && pnpm install && pnpm run seed",
+    "docker:up:l4": "docker-compose --profile cache --profile infrastructure --profile events --profile email up -d && echo 'Waiting for services to initialize...' && powershell -Command \"Start-Sleep -Seconds 15\" && cd database && pnpm install && pnpm run seed",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "test:api": "newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json",
+    "test:api:verbose": "newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json --verbose",
     "test:services": "powershell -ExecutionPolicy Bypass -File scripts/test-all-services.ps1",
-    "test:contracts": "pnpm newman run newman/contract-tests.postman_collection.json --environment newman/newman.env.json --reporters cli,json --reporter-json-export test-reports/contract-report.json"
+    "test:contracts": "newman run newman/contract-tests.postman_collection.json --environment newman/newman.env.json --reporters cli,json --reporter-json-export test-reports/contract-report.json"
   },
   "engines": {
     "node": ">=18.0.0",

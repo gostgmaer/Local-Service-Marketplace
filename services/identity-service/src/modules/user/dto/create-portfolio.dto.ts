@@ -1,7 +1,13 @@
-import { IsString, IsOptional, IsUrl, IsNumber, IsUUID, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsUrl,
+  IsNumber,
+  MinLength,
+} from "class-validator";
 
 export class CreatePortfolioDto {
-  @IsUUID()
+  @IsString()
   provider_id: string;
 
   @IsString()

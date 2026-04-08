@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { SavedPaymentMethodRepository } from '../repositories/saved-payment-method.repository';
-import { NotificationClient } from '../../common/notification/notification.client';
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { SavedPaymentMethodRepository } from "../repositories/saved-payment-method.repository";
+import { NotificationClient } from "../../common/notification/notification.client";
 
 @Injectable()
 export class PaymentMethodExpiryJob {
+  private readonly logger = new Logger(PaymentMethodExpiryJob.name);
+
   constructor(
     private readonly paymentMethodRepository: SavedPaymentMethodRepository,
-    private readonly notificationClient: NotificationClient
+    private readonly notificationClient: NotificationClient,
   ) {}
 
   /**
@@ -15,22 +17,66 @@ export class PaymentMethodExpiryJob {
    */
   @Cron(CronExpression.EVERY_DAY_AT_11AM)
   async checkExpiringPaymentMethods(): Promise<void> {
-    console.log('[PaymentMethodExpiryJob] Checking for expiring payment methods...');
+    this.logger.log("Checking for expiring payment methods");
 
     try {
-      // Get all payment methods
-      // Note: This would need to be optimized to query users in batches
-      // For now, this is a simplified implementation
+      const expiringMethods =
+        await this.paymentMethodRepository.findExpiringWithinMonths(1);
 
-      // TODO: Implement batch processing of users
-      // const users = await this.userRepository.getAllUsers();
-      
-      // For each user, check for expiring cards
-      // This is a placeholder - actual implementation would query more efficiently
+      if (expiringMethods.length === 0) {
+        this.logger.log("No expiring payment methods found");
+        return;
+      }
 
-      console.log('[PaymentMethodExpiryJob] Payment method expiry check completed');
+      const methodsByUser = new Map<string, typeof expiringMethods>();
+      for (const method of expiringMethods) {
+        const current = methodsByUser.get(method.user_id) || [];
+        current.push(method);
+        methodsByUser.set(method.user_id, current);
+      }
+
+      let notifiedUsers = 0;
+      for (const [userId, methods] of methodsByUser.entries()) {
+        const destinationEmail = methods.find(
+          (method) => !!method.billing_email,
+        )?.billing_email;
+        if (!destinationEmail) {
+          this.logger.warn(
+            `Skipping expiry notification for user ${userId}: no billing email available`,
+          );
+          continue;
+        }
+
+        const maskedMethods = methods.map(
+          (method) =>
+            `${method.card_brand || "card"} ****${method.last_four || "----"}`,
+        );
+        const earliest = methods[0];
+
+        const sent = await this.notificationClient.sendEmail({
+          to: destinationEmail,
+          template: "paymentMethodExpiryReminder",
+          variables: {
+            cardSummary: maskedMethods.join(", "),
+            expiryMonth: earliest.expiry_month,
+            expiryYear: earliest.expiry_year,
+            methodsCount: methods.length,
+          },
+        });
+
+        if (sent) {
+          notifiedUsers += 1;
+        }
+      }
+
+      this.logger.log(
+        `Payment method expiry check completed. Expiring methods: ${expiringMethods.length}, users notified: ${notifiedUsers}`,
+      );
     } catch (error) {
-      console.error('[PaymentMethodExpiryJob] Error checking expiring payment methods:', error);
+      this.logger.error(
+        `Error checking expiring payment methods: ${error.message}`,
+        error.stack,
+      );
     }
   }
 }

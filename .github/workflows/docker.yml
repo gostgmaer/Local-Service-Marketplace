@@ -2,14 +2,14 @@ name: Docker Build & Security Scan
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
     paths:
       - 'services/**'
       - 'api-gateway/**'
       - 'docker-compose.yml'
       - 'docker-compose.prod.yml'
   pull_request:
-    branches: [main]
+    branches: [main, master]
     paths:
       - 'services/**'
       - 'api-gateway/**'
@@ -75,7 +75,7 @@ jobs:
         continue-on-error: true
 
       - name: Login to Container Registry
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.DOCKER_REGISTRY || 'ghcr.io' }}
@@ -83,7 +83,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push to Registry
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         run: |
           REGISTRY="${{ secrets.DOCKER_REGISTRY || 'ghcr.io' }}"
           IMAGE_BASE="${REGISTRY}/${{ github.repository_owner }}/lsmp-${{ matrix.service }}"
@@ -161,7 +161,7 @@ jobs:
   security-scan:
     name: "OWASP ZAP Baseline Scan"
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     needs: [docker-build, compose-validation]
     steps:
       - uses: actions/checkout@v4

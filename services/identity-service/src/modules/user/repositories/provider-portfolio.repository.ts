@@ -1,8 +1,8 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { DATABASE_POOL } from '@/common/database/database.module';
-import { ProviderPortfolio } from '../entities/provider-portfolio.entity';
-import { CreatePortfolioDto } from '../dto/create-portfolio.dto';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { DATABASE_POOL } from "@/common/database/database.module";
+import { ProviderPortfolio } from "../entities/provider-portfolio.entity";
+import { CreatePortfolioDto } from "../dto/create-portfolio.dto";
 
 @Injectable()
 export class ProviderPortfolioRepository {
@@ -22,7 +22,7 @@ export class ProviderPortfolioRepository {
       data.title,
       data.description || null,
       data.image_url,
-      data.display_order || 0
+      data.display_order || 0,
     ];
 
     const result = await this.pool.query(query, values);
@@ -45,7 +45,10 @@ export class ProviderPortfolioRepository {
     return result.rows;
   }
 
-  async update(id: string, data: Partial<CreatePortfolioDto>): Promise<ProviderPortfolio> {
+  async update(
+    id: string,
+    data: Partial<CreatePortfolioDto>,
+  ): Promise<ProviderPortfolio> {
     const updates: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
@@ -77,7 +80,7 @@ export class ProviderPortfolioRepository {
     values.push(id);
     const query = `
       UPDATE provider_portfolio
-      SET ${updates.join(', ')}
+      SET ${updates.join(", ")}
       WHERE id = $${paramIndex}
       RETURNING *
     `;
@@ -91,21 +94,24 @@ export class ProviderPortfolioRepository {
     await this.pool.query(query, [id]);
   }
 
-  async reorderPortfolio(providerId: string, itemOrders: Array<{id: string, order: number}>): Promise<void> {
+  async reorderPortfolio(
+    providerId: string,
+    itemOrders: Array<{ id: string; order: number }>,
+  ): Promise<void> {
     const client = await this.pool.connect();
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       for (const item of itemOrders) {
         await client.query(
-          'UPDATE provider_portfolio SET display_order = $1 WHERE id = $2 AND provider_id = $3',
-          [item.order, item.id, providerId]
+          "UPDATE provider_portfolio SET display_order = $1 WHERE id = $2 AND provider_id = $3",
+          [item.order, item.id, providerId],
         );
       }
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
     } catch (e) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw e;
     } finally {
       client.release();

@@ -1,11 +1,22 @@
-import { IsString, IsEnum, IsOptional, IsDateString, IsUrl, IsUUID } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsUrl } from "class-validator";
 
 export class UploadDocumentDto {
-  @IsUUID()
+  @IsString()
   provider_id: string;
 
-  @IsEnum(['government_id', 'business_license', 'insurance_certificate', 'certification', 'tax_document'])
-  document_type: 'government_id' | 'business_license' | 'insurance_certificate' | 'certification' | 'tax_document';
+  @IsEnum([
+    "government_id",
+    "business_license",
+    "insurance_certificate",
+    "certification",
+    "tax_document",
+  ])
+  document_type:
+    | "government_id"
+    | "business_license"
+    | "insurance_certificate"
+    | "certification"
+    | "tax_document";
 
   @IsUrl()
   document_url: string;

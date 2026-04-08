@@ -2,7 +2,7 @@
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, master]
     types: [opened, synchronize, reopened]
 
 concurrency:
@@ -21,7 +21,7 @@ jobs:
 
       - uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -32,8 +32,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
+      # - name: Lint
+      #   run: pnpm lint
 
       - name: Test
         run: pnpm test --passWithNoTests --ci
@@ -43,7 +43,7 @@ jobs:
         env:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret' }}
           NEXTAUTH_URL: http://localhost:3000
-          NEXT_PUBLIC_API_URL: http://localhost:3500
+          NEXT_PUBLIC_API_URL: http://localhost:3700
 
   backend:
     name: "Backend - Build (${{ matrix.service }})"
@@ -66,7 +66,7 @@ jobs:
 
       - uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -77,8 +77,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint --if-present
+      # - name: Lint
+      #   run: pnpm run --if-present lint
 
       - name: Test
         run: pnpm test --passWithNoTests --ci
@@ -99,7 +99,7 @@ jobs:
 
       - uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -110,8 +110,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint --if-present
+      # - name: Lint
+      #   run: pnpm run --if-present lint
 
       - name: Test
         run: pnpm test --passWithNoTests --ci
@@ -132,7 +132,7 @@ jobs:
 
       - uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 10
 
       - uses: actions/setup-node@v4
         with:

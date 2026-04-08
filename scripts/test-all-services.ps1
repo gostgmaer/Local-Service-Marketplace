@@ -33,6 +33,8 @@ param(
     [string]$DockerComposeFile = "docker-compose.yml"
 )
 
+$GatewayPort = $null
+
 # Set error action preference
 $ErrorActionPreference = "Stop"
 
@@ -75,6 +77,127 @@ function Test-DockerRunning {
     }
 }
 
+function Get-GatewayPort {
+    param([string]$ComposeFile = "docker-compose.yml")
+
+    try {
+        $mapping = docker port api-gateway 3000 2>$null | Select-Object -First 1
+        if ($LASTEXITCODE -eq 0 -and $mapping -match ':(\d+)$') {
+            return $matches[1]
+        }
+    } catch {
+        # Fall back to compose mapping
+    }
+
+    try {
+        $mapping = docker-compose -f $ComposeFile port api-gateway 3000 2>$null | Select-Object -First 1
+        if ($LASTEXITCODE -eq 0 -and $mapping -match ':(\d+)$') {
+            return $matches[1]
+        }
+    } catch {
+        # Fall back to default
+    }
+
+    if ($env:API_GATEWAY_PORT) {
+        return $env:API_GATEWAY_PORT
+    }
+
+    # Read .env file for API_GATEWAY_PORT
+    if (Test-Path ".env") {
+        $envLine = Get-Content ".env" | Select-String -Pattern '^API_GATEWAY_PORT=(.+)' | Select-Object -First 1
+        if ($envLine -and $envLine.Matches.Groups[1].Value) {
+            return $envLine.Matches.Groups[1].Value.Trim()
+        }
+    }
+
+    return "3800"
+}
+
+function Get-RunningComposeServices {
+    param([string]$ComposeFile = "docker-compose.yml")
+
+    $overrideFile = [System.IO.Path]::ChangeExtension($ComposeFile, $null).TrimEnd('.') + ".override.yml"
+    $composeArgs = @("-f", $ComposeFile)
+
+    if (Test-Path $overrideFile) {
+        $composeArgs += @("-f", $overrideFile)
+    }
+
+    $composeArgs += @("ps", "--services", "--status", "running")
+
+    try {
+        $services = & docker-compose @composeArgs 2>$null |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        return @($services)
+    } catch {
+        return @()
+    }
+}
+
+function Invoke-HealthRequest {
+    param(
+        [string]$Uri,
+        [int]$TimeoutSec = 8
+    )
+
+    try {
+        $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec $TimeoutSec
+        $json = $null
+        try {
+            $json = $response.Content | ConvertFrom-Json
+        } catch {
+            # Ignore JSON parsing issues and return raw content
+        }
+
+        return [PSCustomObject]@{
+            StatusCode = [int]$response.StatusCode
+            Json       = $json
+            Raw        = $response.Content
+            Error      = $null
+        }
+    } catch {
+        $statusCode = $null
+        $rawBody = $null
+
+        if ($_.Exception.Response) {
+            try {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+            } catch {
+                $statusCode = $null
+            }
+
+            try {
+                $stream = $_.Exception.Response.GetResponseStream()
+                if ($stream) {
+                    $reader = New-Object System.IO.StreamReader($stream)
+                    $rawBody = $reader.ReadToEnd()
+                    $reader.Close()
+                    $stream.Close()
+                }
+            } catch {
+                $rawBody = $null
+            }
+        }
+
+        $json = $null
+        if ($rawBody) {
+            try {
+                $json = $rawBody | ConvertFrom-Json
+            } catch {
+                # Ignore JSON parsing issues and return raw content
+            }
+        }
+
+        return [PSCustomObject]@{
+            StatusCode = $statusCode
+            Json       = $json
+            Raw        = $rawBody
+            Error      = $_.Exception.Message
+        }
+    }
+}
+
 function Start-Services {
     Write-Info "Starting all services with docker-compose..."
     Write-Info "Using compose file: $DockerComposeFile"
@@ -85,14 +208,23 @@ function Start-Services {
         exit 1
     }
 
-    # Start services detached
-    docker-compose -f $DockerComposeFile up -d
+    # Start services detached — always include the override file so local DB is used
+    $overrideFile = [System.IO.Path]::ChangeExtension($DockerComposeFile, $null).TrimEnd('.') + ".override.yml"
+    if (Test-Path $overrideFile) {
+        Write-Info "Including override file: $overrideFile"
+        docker-compose -f $DockerComposeFile -f $overrideFile up -d
+    } else {
+        docker-compose -f $DockerComposeFile up -d
+    }
 
     # Check if services started
     if ($LASTEXITCODE -ne 0) {
         Write-ErrorMsg "Failed to start services with docker-compose."
         exit 1
     }
+
+    $script:GatewayPort = Get-GatewayPort -ComposeFile $DockerComposeFile
+    Write-Info "Detected API Gateway host port: $script:GatewayPort"
 
     Write-Success "All services started."
 }
@@ -109,7 +241,7 @@ function Seed-Database {
     Write-Warning "This may take a minute..."
 
     try {
-        & $SeederScript
+        & $SeederScript -Force
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Database seeded successfully."
         } else {
@@ -123,31 +255,44 @@ function Seed-Database {
 function Wait-ForServices {
     Write-Info "Waiting for services to be healthy..."
 
-    $gatewayHealthUrl = "http://localhost:3500/health"
-    $servicesHealthUrl = "http://localhost:3500/health/services"
+    if (-not $script:GatewayPort) {
+        $script:GatewayPort = Get-GatewayPort -ComposeFile $DockerComposeFile
+    }
+
+    $gatewayHealthUrl = "http://127.0.0.1:$GatewayPort/health"
+    $servicesHealthUrl = "http://127.0.0.1:$GatewayPort/health/services"
     $maxWait = 120
     $interval = 5
     $elapsed = 0
+    $gatewayHealthy = $false
+    $runningComposeServices = Get-RunningComposeServices -ComposeFile $DockerComposeFile
+    $runningServiceSet = @{}
+    foreach ($svc in $runningComposeServices) {
+        $runningServiceSet[$svc] = $true
+    }
+
+    if ($runningComposeServices.Count -gt 0) {
+        Write-Info "Running compose services: $($runningComposeServices -join ', ')"
+    }
 
     # First, wait for gateway to respond
     while ($elapsed -lt $maxWait) {
-        try {
-            $response = Invoke-WebRequest -Uri $gatewayHealthUrl -UseBasicParsing -TimeoutSec 2
-            if ($response.StatusCode -eq 200) {
-                $health = $response.Content | ConvertFrom-Json
-                if ($health.status -eq "healthy") {
-                    Write-Success "API Gateway is healthy."
-                    break
-                }
+        $gatewayResult = Invoke-HealthRequest -Uri $gatewayHealthUrl -TimeoutSec 8
+        if ($gatewayResult.Json) {
+            $health = $gatewayResult.Json
+            $gatewayStatus = $health.status
+            if (-not $gatewayStatus -and $health.data) {
+                $gatewayStatus = $health.data.status
             }
-        } catch {
-            # Not ready yet
-        }
-
-        if ($elapsed -ge $maxWait) {
-            Write-ErrorMsg "API Gateway did not become healthy within $maxWait seconds."
-            Write-ErrorMsg "Check logs: docker-compose logs api-gateway"
-            exit 1
+            if ($gatewayStatus -in @("healthy", "ok", "up", "UP", "degraded", "DEGRADED")) {
+                if ($gatewayStatus -in @("degraded", "DEGRADED")) {
+                    Write-Warning "API Gateway is reachable with degraded status; continuing to validate downstream services."
+                } else {
+                    Write-Success "API Gateway is healthy."
+                }
+                $gatewayHealthy = $true
+                break
+            }
         }
 
         Write-Info "Waiting for gateway... ($elapsed/$maxWait s)"
@@ -155,46 +300,77 @@ function Wait-ForServices {
         $elapsed += $interval
     }
 
+    if (-not $gatewayHealthy) {
+        Write-ErrorMsg "API Gateway did not become healthy within $maxWait seconds."
+        Write-ErrorMsg "Check logs: docker-compose logs api-gateway"
+        exit 1
+    }
+
     # Then wait for all services
     $elapsed = 0
+    $allServicesHealthy = $false
     while ($elapsed -lt $maxWait) {
-        try {
-            $response = Invoke-WebRequest -Uri $servicesHealthUrl -UseBasicParsing -TimeoutSec 2
-            if ($response.StatusCode -eq 200) {
-                $health = $response.Content | ConvertFrom-Json
-                $allHealthy = $true
-                $unhealthyServices = @()
+        $servicesResult = Invoke-HealthRequest -Uri $servicesHealthUrl -TimeoutSec 8
+        if ($servicesResult.Json) {
+            $health = $servicesResult.Json
+            $services = $health.services
+            if (-not $services -and $health.data) {
+                $services = $health.data.services
+            }
+            if (-not $services) {
+                Write-Warning "Services health payload does not include 'services' yet."
+                Start-Sleep -Seconds $interval
+                $elapsed += $interval
+                continue
+            }
 
-                foreach ($service in $health.services.PSObject.Properties) {
-                    $name = $service.Name
-                    $status = $service.Value.status
-                    if ($status -ne "healthy") {
-                        $allHealthy = $false
-                        $unhealthyServices += "$name ($status)"
+            $allHealthy = $true
+            $unhealthyServices = @()
+
+            foreach ($service in $services.PSObject.Properties) {
+                $name = $service.Name
+                $status = $service.Value.status
+                if ($status -notin @("healthy", "ok", "up", "UP")) {
+                    $serviceUrl = [string]$service.Value.url
+                    $serviceError = [string]$service.Value.error
+                    $serviceHost = $null
+
+                    if ($serviceUrl -match '^https?://([^/:]+)') {
+                        $serviceHost = $matches[1]
                     }
-                }
 
-                if ($allHealthy) {
-                    Write-Success "All services are healthy!"
-                    return
-                } else {
-                    Write-Warning "Unhealthy services: $($unhealthyServices -join ', ')"
+                    $isHostNotInCompose = $serviceHost -and (-not $runningServiceSet.ContainsKey($serviceHost))
+                    $isDnsLookupError = $serviceError -match 'ENOTFOUND|EAI_AGAIN|getaddrinfo'
+
+                    if ($isHostNotInCompose -and $isDnsLookupError) {
+                        Write-Warning "Skipping health gate for '$name' because '$serviceHost' is not running in current compose stack."
+                        continue
+                    }
+
+                    $allHealthy = $false
+                    $unhealthyServices += "$name ($status)"
                 }
             }
-        } catch {
-            # Not ready yet
-        }
 
-        if ($elapsed -ge $maxWait) {
-            Write-ErrorMsg "Services did not become healthy within $maxWait seconds."
-            Write-ErrorMsg "Check health: $servicesHealthUrl"
-            Write-ErrorMsg "Check logs: docker-compose logs"
-            exit 1
+            if ($allHealthy) {
+                Write-Success "All services are healthy!"
+                $allServicesHealthy = $true
+                return
+            } else {
+                Write-Warning "Unhealthy services: $($unhealthyServices -join ', ')"
+            }
         }
 
         Write-Info "Waiting for all services... ($elapsed/$maxWait s)"
         Start-Sleep -Seconds $interval
         $elapsed += $interval
+    }
+
+    if (-not $allServicesHealthy) {
+        Write-ErrorMsg "Services did not become healthy within $maxWait seconds."
+        Write-ErrorMsg "Check health: $servicesHealthUrl"
+        Write-ErrorMsg "Check logs: docker-compose logs"
+        exit 1
     }
 }
 
@@ -209,8 +385,10 @@ function Run-Tests {
         exit 1
     }
 
-    & $testScript
-    $exitCode = $LASTEXITCODE
+    $baseUrl = "http://127.0.0.1:$GatewayPort/api/v1"
+    Write-Info "Using API base URL for Newman: $baseUrl"
+    $null = & $testScript -BaseUrl $baseUrl
+    $exitCode = [int]$LASTEXITCODE
 
     return $exitCode
 }
@@ -230,7 +408,7 @@ function Show-Summary {
         Write-Info "Platform is fully functional!"
         Write-Info "Next steps:"
         Write-Info "  - Open frontend: http://localhost:3000"
-        Write-Info "  - API Gateway: http://localhost:3500"
+        Write-Info "  - API Gateway: http://localhost:$GatewayPort"
         Write-Info "  - Test reports: test-reports/report_*.html"
     } else {
         Write-ErrorMsg "❌ SOME TESTS FAILED (Exit code: $ExitCode)"
@@ -268,6 +446,8 @@ try {
             Seed-Database
         }
     } else {
+        $script:GatewayPort = Get-GatewayPort -ComposeFile $DockerComposeFile
+        Write-Info "Detected API Gateway host port: $script:GatewayPort"
         Write-Warning "Skipping service startup. Assuming services are already running."
         Write-Warning "Verify with: docker-compose ps"
         Write-Info ""

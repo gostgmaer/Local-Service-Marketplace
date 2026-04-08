@@ -3,12 +3,14 @@ import { Pool } from 'pg';
 import { Dispute } from '../entities/dispute.entity';
 import { DisputeListQueryDto, DisputeSortBy } from "../dto/dispute-list-query.dto";
 import { ResolvedPagination } from "../../common/pagination/list-query-validation.util";
+import { resolveId } from '@/common/utils/resolve-id.util';
 
 @Injectable()
 export class DisputeRepository {
 	constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
 	async getDisputeById(id: string): Promise<Dispute | null> {
+		id = await resolveId(this.pool, 'disputes', id);
 		const query = `
       SELECT id, job_id, opened_by, reason, status, 
              resolution, resolved_by, resolved_at, created_at
@@ -93,7 +95,12 @@ export class DisputeRepository {
 	}
 
 	async findDisputes(queryDto: DisputeListQueryDto, pagination: ResolvedPagination): Promise<Dispute[]> {
-		const { whereClause, values, nextIndex } = this.buildWhereClause(queryDto);
+		const resolvedQuery = {
+			...queryDto,
+			jobId: queryDto.jobId ? await resolveId(this.pool, 'jobs', queryDto.jobId) : undefined,
+			openedBy: queryDto.openedBy ? await resolveId(this.pool, 'users', queryDto.openedBy) : undefined,
+		};
+		const { whereClause, values, nextIndex } = this.buildWhereClause(resolvedQuery);
 		const sortColumn = this.getSortColumn(queryDto.sortBy);
 		const sortOrder = queryDto.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
@@ -111,7 +118,12 @@ export class DisputeRepository {
 	}
 
 	async countDisputes(queryDto: DisputeListQueryDto): Promise<number> {
-		const { whereClause, values } = this.buildWhereClause(queryDto);
+		const resolvedQuery = {
+			...queryDto,
+			jobId: queryDto.jobId ? await resolveId(this.pool, 'jobs', queryDto.jobId) : undefined,
+			openedBy: queryDto.openedBy ? await resolveId(this.pool, 'users', queryDto.openedBy) : undefined,
+		};
+		const { whereClause, values } = this.buildWhereClause(resolvedQuery);
 		const query = `SELECT COUNT(*)::int AS total FROM disputes ${whereClause}`;
 		const result = await this.pool.query(query, values);
 		return result.rows[0]?.total || 0;

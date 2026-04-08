@@ -130,6 +130,10 @@ class AuthService {
 		return response.data;
 	}
 
+	async resendVerificationEmail(email: string): Promise<void> {
+		await apiClient.post<void>("/user/auth/email/resend-verification", { email });
+	}
+
 	async exchangeOAuthCode(code: string): Promise<OAuthCodeExchangeResponse> {
 		const response = await apiClient.post<OAuthCodeExchangeResponse>("/user/auth/oauth/exchange", { code });
 		return response.data;

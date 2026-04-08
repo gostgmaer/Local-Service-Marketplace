@@ -16,7 +16,7 @@ import { getProviderReviews, getProviderReviewAggregates, ReviewWithDetails, Rev
 import { requestService, ServiceCategory } from '@/services/request-service';
 import { favoriteService } from '@/services/favorite-service';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDate } from '@/utils/helpers';
+import { formatDate, parseRating } from "@/utils/helpers";
 import { ArrowLeft, Star, MapPin, Calendar, Briefcase, Heart, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/config/constants';
@@ -36,6 +36,8 @@ export default function ProviderDetailPage() {
     queryFn: () => getProviderProfile(providerId),
     enabled: !!providerId,
   });
+
+  const providerRating = parseRating(provider?.rating);
 
   const { data: reviews } = useQuery({
     queryKey: ['provider-reviews', providerId],
@@ -172,11 +174,11 @@ export default function ProviderDetailPage() {
 									/>
 									<div className='flex-1'>
 										<h1 className='text-3xl font-bold text-gray-900 mb-2'>{provider.business_name}</h1>
-										{provider.rating && (
+										{providerRating !== undefined && (
 											<div className='flex items-center gap-2 mb-3'>
 												<div className='flex items-center gap-1'>
 													<Star className='h-5 w-5 fill-yellow-400 text-yellow-400' />
-													<span className='text-lg font-semibold text-gray-900'>{provider.rating.toFixed(1)}</span>
+													<span className='text-lg font-semibold text-gray-900'>{providerRating.toFixed(1)}</span>
 												</div>
 												<span className='text-gray-500'>Rating</span>
 											</div>
@@ -216,9 +218,7 @@ export default function ProviderDetailPage() {
 												<div
 													key={service.id}
 													className='p-4 border border-gray-200 rounded-lg'>
-													<p className='font-medium text-gray-900'>
-														{category?.name || 'Service'}
-													</p>
+													<p className='font-medium text-gray-900'>{category?.name || "Service"}</p>
 													{category?.description && (
 														<p className='text-sm text-gray-500 mt-1'>{category.description}</p>
 													)}
@@ -238,9 +238,7 @@ export default function ProviderDetailPage() {
 										<MessageSquare className='h-5 w-5' />
 										Reviews
 										{reviewAggregates && (
-											<span className='text-sm font-normal text-gray-500'>
-												({reviewAggregates.total_reviews})
-											</span>
+											<span className='text-sm font-normal text-gray-500'>({reviewAggregates.total_reviews})</span>
 										)}
 									</h3>
 									{reviewAggregates && reviewAggregates.total_reviews > 0 && (
@@ -262,11 +260,14 @@ export default function ProviderDetailPage() {
 											{ stars: 2, count: reviewAggregates.two_star_count },
 											{ stars: 1, count: reviewAggregates.one_star_count },
 										].map(({ stars, count }) => {
-											const pct = reviewAggregates.total_reviews > 0
-												? Math.round((count / reviewAggregates.total_reviews) * 100)
-												: 0;
+											const pct =
+												reviewAggregates.total_reviews > 0 ?
+													Math.round((count / reviewAggregates.total_reviews) * 100)
+												:	0;
 											return (
-												<div key={stars} className='flex items-center gap-2 text-sm'>
+												<div
+													key={stars}
+													className='flex items-center gap-2 text-sm'>
 													<span className='w-8 text-right text-gray-600'>{stars}★</span>
 													<div className='flex-1 h-2 bg-gray-200 rounded-full overflow-hidden'>
 														<div
@@ -282,21 +283,21 @@ export default function ProviderDetailPage() {
 								)}
 
 								{/* Individual Reviews */}
-								{reviews && reviews.length > 0 ? (
+								{reviews && reviews.length > 0 ?
 									<div className='space-y-4'>
 										{reviews.map((review) => (
-											<div key={review.id} className='border-t border-gray-100 pt-4 first:border-0 first:pt-0'>
+											<div
+												key={review.id}
+												className='border-t border-gray-100 pt-4 first:border-0 first:pt-0'>
 												<div className='flex items-center justify-between mb-1'>
-													<span className='font-medium text-gray-900'>
-														{review.customer_name || 'Anonymous'}
-													</span>
+													<span className='font-medium text-gray-900'>{review.customer_name || "Anonymous"}</span>
 													<span className='text-xs text-gray-400'>{formatDate(review.created_at)}</span>
 												</div>
 												<div className='flex items-center gap-0.5 mb-2'>
 													{Array.from({ length: 5 }).map((_, i) => (
 														<Star
 															key={i}
-															className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+															className={`h-4 w-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
 														/>
 													))}
 												</div>
@@ -310,9 +311,7 @@ export default function ProviderDetailPage() {
 											</div>
 										))}
 									</div>
-								) : (
-									<p className='text-gray-500 text-sm'>No reviews yet.</p>
-								)}
+								:	<p className='text-gray-500 text-sm'>No reviews yet.</p>}
 							</CardContent>
 						</Card>
 					</div>

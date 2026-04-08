@@ -1,5 +1,16 @@
-import { IsString, IsOptional, IsArray, IsUUID, IsNumber, Min, Max, ValidateNested, IsUrl, IsDateString } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsUUID,
+  IsNumber,
+  Min,
+  Max,
+  ValidateNested,
+  IsUrl,
+  IsDateString,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 class AvailabilitySlotDto {
   @IsNumber()
@@ -43,7 +54,7 @@ export class UpdateProviderDto {
   description?: string;
 
   @IsArray()
-  @IsUUID('4', { each: true })
+  @IsUUID("4", { each: true })
   @IsOptional()
   service_categories?: string[];
 

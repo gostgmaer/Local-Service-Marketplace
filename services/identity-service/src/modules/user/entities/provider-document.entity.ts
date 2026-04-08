@@ -1,7 +1,12 @@
 export class ProviderDocument {
   id: string;
   provider_id: string;
-  document_type: 'government_id' | 'business_license' | 'insurance_certificate' | 'certification' | 'tax_document';
+  document_type:
+    | "government_id"
+    | "business_license"
+    | "insurance_certificate"
+    | "certification"
+    | "tax_document";
   document_url: string;
   document_name: string;
   document_number?: string;

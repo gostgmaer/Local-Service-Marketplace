@@ -26,27 +26,23 @@ export interface UpdateProfileData {
 }
 
 export interface ProviderProfile {
-  id: string;
-  user_id: string;
-  business_name: string;
-  description: string;
-  rating?: number;
-  created_at: string;
-  services?: Array<{ id: string; category_id: string }>;
-  availability?: Array<{
-    id: string;
-    day_of_week: number;
-    start_time: string;
-    end_time: string;
-  }>;
-  verification_status?: 'pending' | 'verified' | 'rejected';
-  certifications?: any;
-  years_of_experience?: number;
-  service_area_radius?: number;
-  response_time_avg?: number;
-  total_jobs_completed?: number;
-  profile_picture_url?: string;
-  deleted_at?: string;
+	id: string;
+	display_id?: string;
+	user_id: string;
+	business_name: string;
+	description: string;
+	rating?: number | string | null;
+	created_at: string;
+	services?: Array<{ id: string; category_id: string }>;
+	availability?: Array<{ id: string; day_of_week: number; start_time: string; end_time: string }>;
+	verification_status?: "pending" | "verified" | "rejected";
+	certifications?: any;
+	years_of_experience?: number;
+	service_area_radius?: number;
+	response_time_avg?: number;
+	total_jobs_completed?: number;
+	profile_picture_url?: string;
+	deleted_at?: string;
 }
 
 export interface CreateProviderData {
@@ -117,6 +113,24 @@ export const getProviderProfile = async (providerId: string): Promise<ProviderPr
 };
 
 /**
+ * Get provider profile for an authenticated user.
+ */
+export const getProviderProfileByUserId = async (userId: string): Promise<ProviderProfile | null> => {
+  const response = await apiClient.get<{ data: ProviderProfile[] } | ProviderProfile[]>(`/providers?user_id=${userId}`);
+  const payload = response.data as any;
+
+  if (Array.isArray(payload)) {
+    return payload[0] || null;
+  }
+
+  if (payload && Array.isArray(payload.data)) {
+    return payload.data[0] || null;
+  }
+
+  return null;
+};
+
+/**
  * List provider services
  */
 export const getProviderServices = async (providerId: string): Promise<ProviderService[]> => {
@@ -141,24 +155,49 @@ export const updateProviderServices = async (
  * Get all providers with pagination and filters
  */
 export const getProviders = async (params?: {
-  limit?: number;
-  cursor?: string;
-  category_id?: string;
-  search?: string;
-  location_id?: string;
-}): Promise<{ data: ProviderProfile[]; hasMore: boolean; nextCursor?: string }> => {
-  const queryParams = new URLSearchParams();
+	limit?: number;
+	page?: number;
+	cursor?: string;
+	category_id?: string;
+	search?: string;
+	location_id?: string;
+}): Promise<{
+	data: ProviderProfile[];
+	total?: number;
+	page?: number;
+	limit?: number;
+	totalPages?: number;
+	hasMore: boolean;
+	nextCursor?: string;
+}> => {
+	const queryParams = new URLSearchParams();
 
-  if (params?.limit) queryParams.append('limit', params.limit.toString());
-  if (params?.cursor) queryParams.append('cursor', params.cursor);
-  if (params?.category_id) queryParams.append('category_id', params.category_id);
-  if (params?.search) queryParams.append('search', params.search);
-  if (params?.location_id) queryParams.append('location_id', params.location_id);
+	if (params?.limit) queryParams.append("limit", params.limit.toString());
+	if (params?.page) queryParams.append("page", params.page.toString());
+	if (params?.cursor) queryParams.append("cursor", params.cursor);
+	if (params?.category_id) queryParams.append("category_id", params.category_id);
+	if (params?.search) queryParams.append("search", params.search);
+	if (params?.location_id) queryParams.append("location_id", params.location_id);
 
-  const response = await apiClient.get<{ data: ProviderProfile[]; hasMore: boolean; nextCursor?: string }>(
-    `/providers?${queryParams.toString()}`
-  );
-  return response.data;
+	const response = await apiClient.get<{
+		data: ProviderProfile[];
+		total?: number;
+		page?: number;
+		limit?: number;
+		totalPages?: number;
+		hasMore?: boolean;
+		nextCursor?: string;
+	}>(`/providers?${queryParams.toString()}`);
+
+	const payload = response.data;
+	const page = payload.page;
+	const totalPages = payload.totalPages;
+	const hasMore = payload.hasMore ?? (page !== undefined && totalPages !== undefined ? page < totalPages : false);
+	const nextCursor =
+		payload.nextCursor ??
+		(page !== undefined && totalPages !== undefined && page < totalPages ? String(page + 1) : undefined);
+
+	return { ...payload, hasMore, nextCursor };
 };
 
 // ------------------ Provider Documents ------------------

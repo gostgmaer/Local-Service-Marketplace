@@ -12,120 +12,117 @@ import {
   BadRequestException,
   ParseUUIDPipe,
   HttpCode,
-  HttpStatus
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ProviderDocumentService } from '../services/provider-document.service';
-import { UploadDocumentDto } from '../dto/upload-document.dto';
-import { VerifyDocumentDto } from '../dto/verify-document.dto';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../common/guards/roles.guard';
-import { Roles } from '../../../common/decorators/roles.decorator';
+  HttpStatus,
+} from "@nestjs/common";
+import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ProviderDocumentService } from "../services/provider-document.service";
+import { UploadDocumentDto } from "../dto/upload-document.dto";
+import { VerifyDocumentDto } from "../dto/verify-document.dto";
+import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../../../common/guards/roles.guard";
+import { Roles } from "../../../common/decorators/roles.decorator";
+import { FileUploadService } from "../../../common/file-upload.service";
 
 @UseGuards(JwtAuthGuard)
-@Controller('provider-documents')
+@Controller("provider-documents")
 export class ProviderDocumentController {
   constructor(
-    private readonly documentService: ProviderDocumentService
-  ) { }
+    private readonly documentService: ProviderDocumentService,
+    private readonly fileUploadService: FileUploadService,
+  ) {}
 
-  @Post('upload/:providerId')
-  @UseInterceptors(FileInterceptor('file'))
+  @Post("upload/:providerId")
+  @UseInterceptors(FileInterceptor("file"))
   @HttpCode(HttpStatus.CREATED)
   async uploadDocument(
-    @Param('providerId', ParseUUIDPipe) providerId: string,
+    @Param("providerId", StrictUuidPipe) providerId: string,
     @Body() dto: UploadDocumentDto,
     @UploadedFile() file: any,
-    @Request() req: any
+    @Request() req: any,
   ) {
     if (!file) {
-      throw new BadRequestException('File is required');
+      throw new BadRequestException("File is required");
     }
 
-    // TODO: Upload file to storage (S3 or local)
-    // For now, using a placeholder URL
-    const fileUrl = `/uploads/documents/${file.filename}`;
+    const fileUrl = await this.fileUploadService.uploadFile(file, "document");
 
     const document = await this.documentService.uploadDocument(
       providerId,
       req.user.userId,
       dto,
-      fileUrl
+      fileUrl,
     );
 
     return {
       success: true,
       data: document,
-      message: 'Document uploaded successfully. Pending verification.'
+      message: "Document uploaded successfully. Pending verification.",
     };
   }
 
-  @Roles('admin')
+  @Roles("admin")
   @UseGuards(RolesGuard)
-  @Post('verify/:documentId')
+  @Post("verify/:documentId")
   @HttpCode(HttpStatus.OK)
   async verifyDocument(
-    @Param('documentId', ParseUUIDPipe) documentId: string,
+    @Param("documentId", ParseUUIDPipe) documentId: string,
     @Body() dto: VerifyDocumentDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     const document = await this.documentService.verifyDocument(
       documentId,
       req.user.userId,
-      dto
+      dto,
     );
 
     return {
       success: true,
       data: document,
-      message: 'Document verified successfully'
+      message: "Document verified successfully",
     };
   }
 
-  @Get('provider/:providerId')
+  @Get("provider/:providerId")
   async getProviderDocuments(
-    @Param('providerId', ParseUUIDPipe) providerId: string,
-    @Request() req: any
+    @Param("providerId", FlexibleIdPipe) providerId: string,
+    @Request() req: any,
   ) {
     return this.documentService.getProviderDocuments(providerId);
   }
 
-  @Roles('admin')
+  @Roles("admin")
   @UseGuards(RolesGuard)
-  @Get('pending')
-  async getPendingDocuments(@Request() req: any) {
+  @Get("pending")
+  async getPendingDocuments() {
     return this.documentService.getPendingDocuments();
   }
 
-  @Roles('admin')
+  @Roles("admin")
   @UseGuards(RolesGuard)
-  @Get('expiring')
+  @Get("expiring")
   async getExpiringDocuments(@Request() req: any) {
     return this.documentService.getExpiringDocuments(30);
   }
 
-  @Get('verification-status/:providerId')
+  @Get("verification-status/:providerId")
   async getVerificationStatus(
-    @Param('providerId', ParseUUIDPipe) providerId: string
+    @Param("providerId", FlexibleIdPipe) providerId: string,
   ) {
-    const status = await this.documentService.checkProviderVerificationStatus(providerId);
+    const status =
+      await this.documentService.checkProviderVerificationStatus(providerId);
 
-    return {
-      success: true,
-      data: status
-    };
+    return { success: true, data: status };
   }
 
-  @Delete(':documentId')
+  @Delete(":documentId")
   async deleteDocument(
-    @Param('documentId', ParseUUIDPipe) documentId: string,
-    @Request() req: any
+    @Param("documentId", ParseUUIDPipe) documentId: string,
+    @Request() req: any,
   ) {
     await this.documentService.deleteDocument(documentId, req.user.userId);
 
-    return {
-      success: true,
-      message: 'Document deleted successfully'
-    };
+    return { success: true, message: "Document deleted successfully" };
   }
 }

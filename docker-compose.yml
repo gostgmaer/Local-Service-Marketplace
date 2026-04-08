@@ -134,7 +134,7 @@ services:
     networks:
       - marketplace-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -480,6 +480,10 @@ services:
       - EMAIL_SECURE=${EMAIL_SECURE:-false}
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
+      - FALLBACK_EMAIL_HOST=${FALLBACK_EMAIL_HOST:-smtp.gmail.com}
+      - FALLBACK_EMAIL_PORT=${FALLBACK_EMAIL_PORT:-587}
+      - FALLBACK_EMAIL_USER=${FALLBACK_EMAIL_USER:-}
+      - FALLBACK_EMAIL_PASS=${FALLBACK_EMAIL_PASS:-}
     depends_on:
       mongo:
         condition: service_healthy

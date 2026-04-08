@@ -10,7 +10,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate)
+RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || npm install -g pnpm@9.12.3 --force)
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -24,7 +24,7 @@ COPY package.json pnpm-lock.yaml* package-lock.json* ./
 RUN if [ -f pnpm-lock.yaml ]; then \
       pnpm install --prod --frozen-lockfile; \
     else \
-      npm ci --omit=dev; \
+      npm install --omit=dev; \
     fi
 
 # Copy source code (JavaScript, no compilation needed)

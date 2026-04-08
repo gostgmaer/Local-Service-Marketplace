@@ -8,6 +8,7 @@ function extractList<T>(payload: any): T[] {
 
 export interface Payment {
 	id: string;
+	display_id?: string;
 	job_id: string;
 	amount: number;
 	currency: string;
@@ -51,6 +52,11 @@ export interface CreatePaymentData {
 export interface RefundData {
   reason: string;
   amount?: number;
+}
+
+export interface CreateSubscriptionData {
+	provider_id: string;
+	plan_id: string;
 }
 
 class PaymentService {
@@ -106,6 +112,17 @@ class PaymentService {
 	async getProviderSubscriptions(providerId: string): Promise<Subscription[]> {
 		const response = await apiClient.get<Subscription[]>(`/subscriptions/provider/${providerId}`);
 		return extractList<Subscription>(response.data);
+	}
+
+	async createSubscription(data: CreateSubscriptionData): Promise<Subscription> {
+		const response = await apiClient.post<Subscription>("/subscriptions", data);
+		return response.data;
+	}
+
+	async activateSubscription(subscriptionId: string): Promise<Subscription> {
+		const response = await apiClient.post<Subscription>(`/subscriptions/${subscriptionId}/activate`);
+		const payload: any = response.data;
+		return (payload?.data ?? payload) as Subscription;
 	}
 
 	async getActiveSubscription(providerId: string): Promise<Subscription | null> {

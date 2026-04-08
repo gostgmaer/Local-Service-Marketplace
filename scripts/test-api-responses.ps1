@@ -6,7 +6,7 @@ Write-Host "  API Response Structure Test Suite" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-$baseUrl = "http://localhost:3500/api/v1"
+$baseUrl = "http://localhost:3700/api/v1"
 $testResults = @()
 
 # Function to test an endpoint

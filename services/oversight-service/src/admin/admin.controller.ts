@@ -15,6 +15,8 @@ import {
 	HttpCode,
 	HttpStatus,
 } from "@nestjs/common";
+import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { Request } from "express";
 import { DisputeService } from "./services/dispute.service";
 import { AuditLogService } from "./services/audit-log.service";
@@ -59,7 +61,7 @@ export class AdminController {
 	@Roles("admin")
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("disputes/:id")
-	async getDisputeById(@Param("id", ParseUUIDPipe) id: string) {
+	async getDisputeById(@Param("id", FlexibleIdPipe) id: string) {
 		return this.disputeService.getDisputeById(id);
 	}
 
@@ -67,7 +69,7 @@ export class AdminController {
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Patch("disputes/:id")
 	async updateDispute(
-		@Param("id", ParseUUIDPipe) id: string,
+		@Param("id", StrictUuidPipe) id: string,
 		@Body() updateDisputeDto: UpdateDisputeDto,
 		@Headers("x-user-id") adminId: string,
 	) {
@@ -148,7 +150,7 @@ export class AdminController {
 	@Roles("admin")
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Get("contact/user/:userId")
-	async getContactMessagesByUserId(@Param("userId", ParseUUIDPipe) userId: string) {
+	async getContactMessagesByUserId(@Param("userId", FlexibleIdPipe) userId: string) {
 		return this.contactMessageService.getContactMessagesByUserId(userId);
 	}
 

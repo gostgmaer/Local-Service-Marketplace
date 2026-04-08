@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate)
+RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || npm install -g pnpm@9.12.3 --force)
 
 # Copy package files
 COPY package*.json pnpm-lock.yaml* ./
@@ -30,7 +30,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate)
+RUN corepack enable ; (corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || corepack prepare pnpm@9.12.3 --activate || npm install -g pnpm@9.12.3 --force)
 
 # Copy package files
 COPY package*.json pnpm-lock.yaml* ./
@@ -50,6 +50,9 @@ COPY --from=builder /app/dist ./dist
 # Create logs directory
 RUN mkdir -p logs
 
+# Create uploads directory with proper permissions
+RUN mkdir -p uploads && chown -R node:node uploads
+
 # Expose port
 EXPOSE 3001
 
@@ -57,4 +60,4 @@ EXPOSE 3001
 USER node
 
 # Start application
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/main.js"]

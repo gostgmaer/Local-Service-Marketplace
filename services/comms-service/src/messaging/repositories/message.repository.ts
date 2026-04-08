@@ -1,7 +1,8 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { Message } from '../entities/message.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { Message } from "../entities/message.entity";
+import { v4 as uuidv4 } from "uuid";
+import { resolveId } from "@/common/utils/resolve-id.util";
 
 export interface PaginatedMessages {
   data: Message[];
@@ -13,9 +14,14 @@ export interface PaginatedMessages {
 
 @Injectable()
 export class MessageRepository {
-  constructor(@Inject('DATABASE_POOL') private pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private pool: Pool) {}
 
-  async createMessage(jobId: string, senderId: string, message: string): Promise<Message> {
+  async createMessage(
+    jobId: string,
+    senderId: string,
+    message: string,
+  ): Promise<Message> {
+    jobId = await resolveId(this.pool, "jobs", jobId);
     const id = uuidv4();
     const query = `
       INSERT INTO messages (id, job_id, sender_id, message, created_at)
@@ -26,6 +32,7 @@ export class MessageRepository {
     const result = await this.pool.query(query, values);
     return new Message({
       id: result.rows[0].id,
+      display_id: result.rows[0].display_id,
       job_id: result.rows[0].job_id,
       sender_id: result.rows[0].sender_id,
       message: result.rows[0].message,
@@ -34,13 +41,15 @@ export class MessageRepository {
   }
 
   async getMessageById(id: string): Promise<Message | null> {
-    const query = 'SELECT * FROM messages WHERE id = $1';
+    id = await resolveId(this.pool, "messages", id);
+    const query = "SELECT * FROM messages WHERE id = $1";
     const result = await this.pool.query(query, [id]);
     if (result.rows.length === 0) {
       return null;
     }
     return new Message({
       id: result.rows[0].id,
+      display_id: result.rows[0].display_id,
       job_id: result.rows[0].job_id,
       sender_id: result.rows[0].sender_id,
       message: result.rows[0].message,
@@ -53,43 +62,52 @@ export class MessageRepository {
     page: number = 1,
     limit: number = 20,
   ): Promise<PaginatedMessages> {
-		const offset = (page - 1) * limit;
+    jobId = await resolveId(this.pool, "jobs", jobId);
+    const offset = (page - 1) * limit;
 
-		// Single query: COUNT(*) OVER() avoids a separate COUNT round-trip
-		const query = `
+    // Single query: COUNT(*) OVER() avoids a separate COUNT round-trip
+    const query = `
       SELECT *, COUNT(*) OVER() AS total_count
       FROM messages 
       WHERE job_id = $1 
       ORDER BY created_at ASC 
       LIMIT $2 OFFSET $3
     `;
-		const result = await this.pool.query(query, [jobId, limit, offset]);
+    const result = await this.pool.query(query, [jobId, limit, offset]);
 
-		const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
-		const messages = result.rows.map(
-			(row) =>
-				new Message({
-					id: row.id,
-					job_id: row.job_id,
-					sender_id: row.sender_id,
-					message: row.message,
-					created_at: row.created_at,
-				}),
-		);
+    const total =
+      result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    const messages = result.rows.map(
+      (row) =>
+        new Message({
+          id: row.id,
+          display_id: row.display_id,
+          job_id: row.job_id,
+          sender_id: row.sender_id,
+          message: row.message,
+          created_at: row.created_at,
+        }),
+    );
 
-		return { data: messages, total, page, limit, hasMore: offset + messages.length < total };
-	}
+    return {
+      data: messages,
+      total,
+      page,
+      limit,
+      hasMore: offset + messages.length < total,
+    };
+  }
 
   async deleteMessage(id: string): Promise<void> {
-    const query = 'DELETE FROM messages WHERE id = $1';
+    const query = "DELETE FROM messages WHERE id = $1";
     await this.pool.query(query, [id]);
   }
 
   async getUserConversations(userId: string): Promise<any[]> {
-		// Uses CTEs + DISTINCT ON to avoid 3 correlated subqueries per row (O(3N) problem).
-		// conversations CTE scopes all relevant job_ids first, then last_messages uses
-		// DISTINCT ON for an efficient index scan, and unread_counts aggregates once per job.
-		const query = `
+    // Uses CTEs + DISTINCT ON to avoid 3 correlated subqueries per row (O(3N) problem).
+    // conversations CTE scopes all relevant job_ids first, then last_messages uses
+    // DISTINCT ON for an efficient index scan, and unread_counts aggregates once per job.
+    const query = `
       WITH conversations AS (
         SELECT DISTINCT m.job_id
         FROM messages m
@@ -129,9 +147,9 @@ export class MessageRepository {
       ORDER BY lm.last_message_at DESC
       LIMIT 50
     `;
-		const result = await this.pool.query(query, [userId]);
-		return result.rows;
-	}
+    const result = await this.pool.query(query, [userId]);
+    return result.rows;
+  }
 
   // ✅ NEW: Advanced query methods for new fields
   async markAsRead(messageId: string): Promise<Message> {
@@ -144,6 +162,7 @@ export class MessageRepository {
     const result = await this.pool.query(query, [messageId]);
     return new Message({
       id: result.rows[0].id,
+      display_id: result.rows[0].display_id,
       job_id: result.rows[0].job_id,
       sender_id: result.rows[0].sender_id,
       message: result.rows[0].message,
@@ -174,6 +193,7 @@ export class MessageRepository {
     const result = await this.pool.query(query, [newMessage, messageId]);
     return new Message({
       id: result.rows[0].id,
+      display_id: result.rows[0].display_id,
       job_id: result.rows[0].job_id,
       sender_id: result.rows[0].sender_id,
       message: result.rows[0].message,
@@ -194,17 +214,21 @@ export class MessageRepository {
       ORDER BY created_at ASC
     `;
     const result = await this.pool.query(query, [jobId, userId]);
-    return result.rows.map(row => new Message({
-      id: row.id,
-      job_id: row.job_id,
-      sender_id: row.sender_id,
-      message: row.message,
-      read: row.read,
-      read_at: row.read_at,
-      edited: row.edited,
-      edited_at: row.edited_at,
-      created_at: row.created_at,
-    }));
+    return result.rows.map(
+      (row) =>
+        new Message({
+          id: row.id,
+          display_id: row.display_id,
+          job_id: row.job_id,
+          sender_id: row.sender_id,
+          message: row.message,
+          read: row.read,
+          read_at: row.read_at,
+          edited: row.edited,
+          edited_at: row.edited_at,
+          created_at: row.created_at,
+        }),
+    );
   }
 
   async getUnreadCount(jobId: string, userId: string): Promise<number> {
@@ -227,17 +251,21 @@ export class MessageRepository {
       ORDER BY edited_at DESC
     `;
     const result = await this.pool.query(query, [jobId]);
-    return result.rows.map(row => new Message({
-      id: row.id,
-      job_id: row.job_id,
-      sender_id: row.sender_id,
-      message: row.message,
-      read: row.read,
-      read_at: row.read_at,
-      edited: row.edited,
-      edited_at: row.edited_at,
-      created_at: row.created_at,
-    }));
+    return result.rows.map(
+      (row) =>
+        new Message({
+          id: row.id,
+          display_id: row.display_id,
+          job_id: row.job_id,
+          sender_id: row.sender_id,
+          message: row.message,
+          read: row.read,
+          read_at: row.read_at,
+          edited: row.edited,
+          edited_at: row.edited_at,
+          created_at: row.created_at,
+        }),
+    );
   }
 
   async getConversationStats(jobId: string): Promise<any> {
@@ -254,4 +282,3 @@ export class MessageRepository {
     return result.rows[0];
   }
 }
-

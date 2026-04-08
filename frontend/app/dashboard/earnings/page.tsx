@@ -13,6 +13,7 @@ import { SkeletonTable } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from "@/components/ui/Pagination";
 import { paymentService } from '@/services/payment-service';
+import { getProviderProfileByUserId } from "@/services/user-service";
 import { formatDate, formatCurrency } from '@/utils/helpers';
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, DollarSign, Download, TrendingUp } from "lucide-react";
@@ -27,6 +28,19 @@ export default function EarningsPage() {
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 	const { page, limit, setLimit, goToPage } = usePagination({ initialLimit: 10 });
 	const router = useRouter();
+
+	const {
+		data: provider,
+		isLoading: providerLoading,
+		error: providerError,
+		refetch: refetchProvider,
+	} = useQuery({
+		queryKey: ["provider-profile-by-user", user?.id],
+		queryFn: () => getProviderProfileByUserId(user!.id),
+		enabled: isAuthenticated && user?.role === "provider" && !!user?.id,
+	});
+
+	const providerId = provider?.id ?? "";
 
 	// Fetch provider's earnings from payment service
 	const {
@@ -53,9 +67,9 @@ export default function EarningsPage() {
 				endDate = now;
 			}
 
-			return paymentService.getProviderEarnings(user?.id ?? '', startDate, endDate);
+			return paymentService.getProviderEarnings(providerId, startDate, endDate);
 		},
-		enabled: isAuthenticated && user?.role === "provider",
+		enabled: isAuthenticated && user?.role === "provider" && !!providerId,
 	});
 
 	// Fetch transaction history
@@ -63,13 +77,25 @@ export default function EarningsPage() {
 		data: transactions,
 		isLoading: transactionsLoading,
 		error: transactionsError,
+		refetch: refetchTransactions,
 	} = useQuery({
-		queryKey: ["provider-transactions"],
-		queryFn: () => paymentService.getProviderTransactions(user?.id ?? '', 50),
-		enabled: isAuthenticated && user?.role === "provider",
+		queryKey: ["provider-transactions", providerId],
+		queryFn: () => paymentService.getProviderTransactions(providerId, 50),
+		enabled: isAuthenticated && user?.role === "provider" && !!providerId,
 	});
 
-	const isLoading = earningsLoading || transactionsLoading;
+	const {
+		data: payouts,
+		isLoading: payoutsLoading,
+		error: payoutsError,
+		refetch: refetchPayouts,
+	} = useQuery({
+		queryKey: ["provider-payouts", providerId],
+		queryFn: () => paymentService.getProviderPayouts(providerId),
+		enabled: isAuthenticated && user?.role === "provider" && !!providerId,
+	});
+
+	const isLoading = providerLoading || earningsLoading || transactionsLoading || payoutsLoading;
 
 	const sortedTransactions = useMemo(() => {
 		const source = transactions?.data || [];
@@ -112,6 +138,12 @@ export default function EarningsPage() {
 	const startRow = sortedTransactions.length === 0 ? 0 : (page - 1) * limit + 1;
 	const endRow = sortedTransactions.length === 0 ? 0 : Math.min(page * limit, sortedTransactions.length);
 
+	const payoutStatusStyles: Record<string, string> = {
+		available: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
+		pending: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
+		adjusted: "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
+	};
+
 	useEffect(() => {
 		goToPage(1);
 	}, [dateRange, sortField, sortDirection, limit, goToPage]);
@@ -146,12 +178,27 @@ export default function EarningsPage() {
 		<ProtectedRoute requiredRoles={["provider"]}>
 			<Layout>
 				<div className='container-custom py-12'>
-					{earningsError || transactionsError ?
+					{providerError || earningsError || transactionsError || payoutsError ?
 						<ErrorState
 							title='Failed to load earnings'
 							message="We couldn't load your earnings data. Please try again."
-							retry={() => refetchEarnings()}
+							retry={() => {
+								refetchProvider();
+								refetchEarnings();
+								refetchTransactions();
+								refetchPayouts();
+							}}
 						/>
+					: !providerId ?
+						<Card>
+							<CardContent className='p-10 text-center'>
+								<DollarSign className='h-12 w-12 text-gray-400 mx-auto mb-4' />
+								<h2 className='text-xl font-semibold text-gray-900 dark:text-white mb-2'>Provider profile required</h2>
+								<p className='text-gray-600 dark:text-gray-400'>
+									Create or restore your provider profile to access earnings.
+								</p>
+							</CardContent>
+						</Card>
 					:	<>
 							{/* Header */}
 							<div className='mb-8'>
@@ -273,6 +320,75 @@ export default function EarningsPage() {
 									</CardContent>
 								</Card>
 							)}
+
+							{/* Payout Ledger */}
+							<Card className='mb-6'>
+								<CardHeader>
+									<div className='flex items-center justify-between gap-4'>
+										<div>
+											<h2 className='text-lg font-semibold text-gray-900 dark:text-white'>Payout Ledger</h2>
+											<p className='text-sm text-gray-600 dark:text-gray-400'>
+												Derived from completed, pending, and refunded payment records
+											</p>
+										</div>
+										<p className='text-sm text-gray-500 dark:text-gray-400'>{payouts?.length || 0} entries</p>
+									</div>
+								</CardHeader>
+								<CardContent>
+									{payouts && payouts.length > 0 ?
+										<div className='overflow-x-auto'>
+											<table className='w-full'>
+												<thead>
+													<tr className='border-b border-gray-200 dark:border-gray-700'>
+														<th className='py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300'>
+															Date
+														</th>
+														<th className='py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300'>
+															Method
+														</th>
+														<th className='py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-300'>
+															Status
+														</th>
+														<th className='py-3 px-4 text-right text-sm font-medium text-gray-700 dark:text-gray-300'>
+															Transactions
+														</th>
+														<th className='py-3 px-4 text-right text-sm font-medium text-gray-700 dark:text-gray-300'>
+															Amount
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													{payouts.map((payout) => (
+														<tr
+															key={payout.id}
+															className='border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'>
+															<td className='py-3 px-4 text-sm text-gray-900 dark:text-white'>
+																{formatDate(payout.payout_date)}
+															</td>
+															<td className='py-3 px-4 text-sm capitalize text-gray-600 dark:text-gray-400'>
+																{String(payout.payout_method || "card").replace("_", " ")}
+															</td>
+															<td className='py-3 px-4 text-sm'>
+																<span
+																	className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${payoutStatusStyles[payout.status] || "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200"}`}>
+																	{payout.status}
+																</span>
+															</td>
+															<td className='py-3 px-4 text-right text-sm text-gray-900 dark:text-white'>
+																{numberFormatter.format(payout.transaction_count)}
+															</td>
+															<td
+																className={`py-3 px-4 text-right text-sm font-semibold ${payout.amount < 0 ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}`}>
+																{formatCurrency(payout.amount)}
+															</td>
+														</tr>
+													))}
+												</tbody>
+											</table>
+										</div>
+									:	<div className='text-center py-8 text-gray-500 dark:text-gray-400'>No payout entries yet.</div>}
+								</CardContent>
+							</Card>
 
 							{/* Earnings History */}
 							<Card>

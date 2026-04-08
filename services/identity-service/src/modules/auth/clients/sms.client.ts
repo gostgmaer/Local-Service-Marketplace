@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios, { AxiosInstance } from 'axios';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import axios, { AxiosInstance } from "axios";
 
 interface OtpSendResponse {
   success: boolean;
@@ -31,20 +31,22 @@ export class SmsClient {
 
   constructor(private configService: ConfigService) {
     const notificationServiceUrl = this.configService.get<string>(
-      'NOTIFICATION_SERVICE_URL',
-      'http://comms-service:3007'
+      "NOTIFICATION_SERVICE_URL",
+      "http://comms-service:3007",
     );
-    this.enabled = this.configService.get<string>('SMS_ENABLED') === 'true';
+    this.enabled = this.configService.get<string>("SMS_ENABLED") === "true";
 
     if (this.enabled && !notificationServiceUrl) {
-      this.logger.warn('SMS_ENABLED=true but NOTIFICATION_SERVICE_URL not configured');
+      this.logger.warn(
+        "SMS_ENABLED=true but NOTIFICATION_SERVICE_URL not configured",
+      );
     }
 
     this.client = axios.create({
       baseURL: notificationServiceUrl,
       timeout: 15000,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -53,57 +55,78 @@ export class SmsClient {
     );
   }
 
-  async sendOtp(phone: string, purpose: string = 'login'): Promise<OtpSendResponse> {
+  async sendOtp(
+    phone: string,
+    purpose: string = "login",
+  ): Promise<OtpSendResponse> {
     if (!this.enabled) {
-      this.logger.debug('SMS service is disabled, skipping OTP send');
+      this.logger.debug("SMS service is disabled, skipping OTP send");
       return {
         success: false,
-        message: 'SMS service is disabled',
+        message: "SMS service is disabled",
       };
     }
 
     try {
-      this.logger.log(`Sending OTP to ${phone} via comms-service (purpose: ${purpose})`);
-      
-      const response = await this.client.post<OtpSendResponse>('/notifications/otp/send', {
-        phone,
-        purpose,
-      });
-      
-      this.logger.log('OTP sent successfully');
+      this.logger.log(
+        `Sending OTP to ${phone} via comms-service (purpose: ${purpose})`,
+      );
+
+      const response = await this.client.post<OtpSendResponse>(
+        "/notifications/otp/send",
+        {
+          phone,
+          purpose,
+        },
+      );
+
+      this.logger.log("OTP sent successfully");
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to send OTP', error.response?.data || error.message);
+      this.logger.error(
+        "Failed to send OTP",
+        error.response?.data || error.message,
+      );
       throw new Error(`Notification service error: ${error.message}`);
     }
   }
 
-  async verifyOtp(phone: string, code: string, purpose: string = 'login'): Promise<OtpVerifyResponse> {
+  async verifyOtp(
+    phone: string,
+    code: string,
+    purpose: string = "login",
+  ): Promise<OtpVerifyResponse> {
     if (!this.enabled) {
-      this.logger.debug('SMS service is disabled, skipping OTP verification');
+      this.logger.debug("SMS service is disabled, skipping OTP verification");
       return {
         success: false,
         valid: false,
-        message: 'SMS service is disabled',
+        message: "SMS service is disabled",
       };
     }
 
     try {
       this.logger.log(`Verifying OTP for ${phone} via comms-service`);
-      
-      const response = await this.client.post<OtpVerifyResponse>('/notifications/otp/verify', {
-        phone,
-        code,
-        purpose,
-      });
-      
+
+      const response = await this.client.post<OtpVerifyResponse>(
+        "/notifications/otp/verify",
+        {
+          phone,
+          code,
+          purpose,
+        },
+      );
+
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to verify OTP', error.response?.data || error.message);
+      this.logger.error(
+        "Failed to verify OTP",
+        error.response?.data || error.message,
+      );
       return {
         success: false,
         valid: false,
-        message: error.response?.data?.message || 'Verification failed',
+        message: error.response?.data?.message || "Verification failed",
       };
     }
   }

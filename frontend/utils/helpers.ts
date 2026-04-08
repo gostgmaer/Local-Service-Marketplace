@@ -11,6 +11,15 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
   }).format(amount);
 }
 
+export function parseRating(value: number | string | null | undefined): number | undefined {
+	if (value === null || value === undefined || value === "") {
+		return undefined;
+	}
+
+	const rating = typeof value === "string" ? Number(value) : value;
+	return typeof rating === "number" && !Number.isNaN(rating) ? rating : undefined;
+}
+
 export function formatDate(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return new Intl.DateTimeFormat('en-US', {

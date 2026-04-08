@@ -1,18 +1,18 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { DATABASE_POOL } from '@/common/database/database.module';
-import { LoginAttempt } from '../entities/login-attempt.entity';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { DATABASE_POOL } from "@/common/database/database.module";
+import { LoginAttempt } from "../entities/login-attempt.entity";
 
 @Injectable()
 export class LoginAttemptRepository {
   constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
 
   async create(
-    email: string, 
-    success: boolean, 
+    email: string,
+    success: boolean,
     ipAddress?: string,
     userAgent?: string,
-    location?: string
+    location?: string,
   ): Promise<LoginAttempt> {
     const query = `
       INSERT INTO login_attempts (
@@ -22,16 +22,19 @@ export class LoginAttemptRepository {
       RETURNING *
     `;
     const result = await this.pool.query(query, [
-      email, 
-      success, 
+      email,
+      success,
       ipAddress,
       userAgent,
-      location
+      location,
     ]);
     return result.rows[0];
   }
 
-  async countRecentFailedAttempts(email: string, windowMinutes: number = 15): Promise<number> {
+  async countRecentFailedAttempts(
+    email: string,
+    windowMinutes: number = 15,
+  ): Promise<number> {
     const query = `
       SELECT COUNT(*) as count
       FROM login_attempts
@@ -53,8 +56,8 @@ export class LoginAttemptRepository {
 
   // ✅ NEW: Advanced query methods
   async getFailedAttemptsByLocation(
-    location: string, 
-    minutes: number = 15
+    location: string,
+    minutes: number = 15,
   ): Promise<number> {
     const query = `
       SELECT COUNT(*) as count
@@ -68,8 +71,8 @@ export class LoginAttemptRepository {
   }
 
   async getAttemptsByUserAgent(
-    userAgent: string, 
-    minutes: number = 60
+    userAgent: string,
+    minutes: number = 60,
   ): Promise<number> {
     const query = `
       SELECT COUNT(*) as count
@@ -81,7 +84,10 @@ export class LoginAttemptRepository {
     return parseInt(result.rows[0].count, 10);
   }
 
-  async getSuspiciousAttempts(minutes: number = 60, minAttempts: number = 10): Promise<LoginAttempt[]> {
+  async getSuspiciousAttempts(
+    minutes: number = 60,
+    minAttempts: number = 10,
+  ): Promise<LoginAttempt[]> {
     const query = `
       SELECT ip_address, COUNT(*) as attempt_count, 
              MAX(created_at) as last_attempt

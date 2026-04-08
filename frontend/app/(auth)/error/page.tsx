@@ -1,10 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from "next/navigation";
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/config/constants';
+import { authService } from "@/services/auth-service";
 import {
   AlertTriangle,
   ShieldAlert,
@@ -184,30 +185,34 @@ export default function AuthErrorPage() {
 
 function AuthErrorContent() {
 	const searchParams = useSearchParams();
-	const router = useRouter();
 	const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+	const [resendError, setResendError] = useState<string | null>(null);
 
 	// Get error type from URL query parameter
 	const errorType = (searchParams.get("error") || "Default") as ErrorType;
 	const config = ERROR_CONFIGS[errorType] || ERROR_CONFIGS.Default;
+  const email = searchParams.get("email")?.trim() || "";
 
 	const Icon = config.icon;
 
 	// Handle resend verification email
 	const handleResendVerification = async () => {
+    setResendMessage(null);
+		setResendError(null);
+
+		if (!email) {
+			setResendError("Missing email address. Please log in again and retry.");
+			return;
+		}
+
 		setIsResending(true);
 		try {
-			// TODO: Implement resend verification email API call
-			const response = await fetch("/api/auth/resend-verification", { method: "POST" });
-
-			if (response.ok) {
-				alert("Verification email sent! Please check your inbox.");
-			} else {
-				alert("Failed to send verification email. Please try again.");
-			}
+      await authService.resendVerificationEmail(email);
+			setResendMessage("Verification email sent. Please check your inbox.");
 		} catch (error) {
 			console.error("Resend verification error:", error);
-			alert("An error occurred. Please try again later.");
+      setResendError("Failed to send verification email. Please try again later.");
 		} finally {
 			setIsResending(false);
 		}
@@ -277,6 +282,8 @@ function AuthErrorContent() {
 						<div className='flex flex-col sm:flex-row gap-3 justify-center'>
 							{config.actions.map((actionKey, index) => renderActionButton(actionKey, index))}
 						</div>
+						{resendMessage && <p className='mt-3 text-sm text-green-700 text-center'>{resendMessage}</p>}
+						{resendError && <p className='mt-3 text-sm text-red-600 text-center'>{resendError}</p>}
 					</div>
 
 					{/* Additional Help */}
