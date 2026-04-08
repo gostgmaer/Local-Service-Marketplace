@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Bell, Mail, MessageSquare, Star, DollarSign, Briefcase, AlertTriangle } from 'lucide-react';
-import { notificationService, type NotificationPreferences } from '@/services/notification-service';
+import { notificationService, type NotificationPreferences as NotificationPreferencesType } from '@/services/notification-service';
 
 interface PreferenceSetting {
-  key: keyof Omit<NotificationPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+  key: keyof Omit<NotificationPreferencesType, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
   label: string;
   description: string;
   icon: React.ReactNode;
@@ -88,10 +88,10 @@ const PREFERENCE_SETTINGS: PreferenceSetting[] = [
 ];
 
 export function NotificationPreferences() {
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
+  const [preferences, setPreferences] = useState<NotificationPreferencesType | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [localPreferences, setLocalPreferences] = useState<Partial<NotificationPreferences>>({});
+  const [localPreferences, setLocalPreferences] = useState<Partial<NotificationPreferencesType>>({});
 
   useEffect(() => {
     loadPreferences();
@@ -109,8 +109,8 @@ export function NotificationPreferences() {
     }
   };
 
-  const updatePreference = (key: keyof NotificationPreferences, value: boolean) => {
-    setLocalPreferences(prev => ({
+  const updatePreference = (key: keyof NotificationPreferencesType, value: boolean) => {
+    setLocalPreferences((prev: Partial<NotificationPreferencesType>) => ({
       ...prev,
       [key]: value
     }));
