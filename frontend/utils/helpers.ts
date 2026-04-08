@@ -100,9 +100,9 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
 }
@@ -113,7 +113,7 @@ export function validateEmail(email: string): boolean {
 }
 
 export function validatePhone(phone: string): boolean {
-  const re = /^\+?[\d\s\-()]+$/;
+  const re = /^\+?[\d\s-()]+$/;
   return re.test(phone) && phone.replace(/\D/g, '').length >= 10;
 }
 

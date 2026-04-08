@@ -113,7 +113,7 @@ function LoginContent() {
 	const [identifierExists, setIdentifierExists] = useState<boolean | null>(null);
 	const [otpAvailable, setOtpAvailable] = useState<boolean>(false);
 	const [availableMethods, setAvailableMethods] = useState<("password" | "otp")[]>([]);
-	const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Unified form - one field for email OR phone
 	const {
@@ -136,7 +136,7 @@ function LoginContent() {
 		const value = e.target.value;
 
 		// Check if it looks like a phone number (starts with digit or +)
-		if (value && /^[\d\+]/.test(value)) {
+		if (value && /^[\d+]/.test(value)) {
 			// If it's a phone number (no @), apply formatting
 			if (!value.includes("@")) {
 				const formatted = formatPhoneNumber(value);
