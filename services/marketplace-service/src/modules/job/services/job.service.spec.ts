@@ -111,6 +111,8 @@ describe("JobService.createJob", () => {
     const userClient = {
       getUserEmail: jest.fn().mockResolvedValue(null),
       getProviderEmail: jest.fn().mockResolvedValue(null),
+      getUserById: jest.fn().mockResolvedValue({ name: "Test Customer" }),
+      getProviderById: jest.fn().mockResolvedValue({ name: "Test Provider" }),
     } as any;
 
     const service = new JobService(

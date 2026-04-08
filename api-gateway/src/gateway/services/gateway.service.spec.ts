@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { HttpService } from "@nestjs/axios";
+import { ConfigService } from "@nestjs/config";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { of, throwError } from "rxjs";
 import { GatewayService } from "../services/gateway.service";
@@ -24,6 +25,17 @@ describe("GatewayService", () => {
     warn: jest.fn(),
   };
 
+  const mockConfigService = {
+    get: jest.fn((key) => {
+      switch (key) {
+        case "GATEWAY_TIMEOUT":
+          return 30000;
+        default:
+          return "http://localhost:3000";
+      }
+    }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -31,6 +43,10 @@ describe("GatewayService", () => {
         {
           provide: HttpService,
           useValue: mockHttpService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
         {
           provide: WINSTON_MODULE_NEST_PROVIDER,

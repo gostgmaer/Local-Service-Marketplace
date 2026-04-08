@@ -11,7 +11,14 @@ describe("FeatureFlagService", () => {
   function createService(
     envOverrides: Record<string, string> = {},
   ): FeatureFlagService {
-    process.env = { ...originalEnv, ...envOverrides };
+    const cleanEnv = { ...originalEnv };
+		delete cleanEnv.EMAIL_ENABLED;
+		delete cleanEnv.SMS_ENABLED;
+		delete cleanEnv.IN_APP_NOTIFICATIONS_ENABLED;
+		delete cleanEnv.PUSH_NOTIFICATIONS_ENABLED;
+		delete cleanEnv.NOTIFICATION_PREFERENCES_ENABLED;
+		delete cleanEnv.DEVICE_TRACKING_ENABLED;
+		process.env = { ...cleanEnv, ...envOverrides };
     return new FeatureFlagService();
   }
 
