@@ -38,3 +38,8 @@ logs/
 # Documentation
 *.md
 !README.md
+
+# Ignore TypeScript cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
