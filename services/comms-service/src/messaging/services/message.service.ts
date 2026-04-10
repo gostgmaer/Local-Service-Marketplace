@@ -5,11 +5,10 @@ import {
   PaginatedMessages,
 } from "../repositories/message.repository";
 import { Message } from "../entities/message.entity";
-import { NotFoundException } from "../../common/exceptions/http.exceptions";
-
-@Injectable()
-export class MessageService {
-  constructor(
+import {
+  NotFoundException,
+  ForbiddenException,
+} from "../../common/exceptions/http.exceptions";
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     private readonly messageRepository: MessageRepository,
@@ -89,7 +88,14 @@ export class MessageService {
     }
     return this.messageRepository.markAsRead(message.id);
   }
-
+  async updateMessage(id: string, newMessage: string): Promise<Message> {
+    this.logger.log(`Updating message ${id}`, "MessageService");
+    const message = await this.messageRepository.editMessage(id, newMessage);
+    if (!message) {
+      throw new NotFoundException("Message not found");
+    }
+    return message;
+  }
   async deleteMessage(id: string): Promise<void> {
     this.logger.log(`Deleting message ${id}`, "MessageService");
     const message = await this.getMessageById(id);

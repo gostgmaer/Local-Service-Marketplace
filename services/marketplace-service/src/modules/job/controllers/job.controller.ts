@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -201,5 +202,18 @@ export class JobController {
   }> {
     const result = await this.jobService.getJobsByStatus(status, req.user);
     return { ...result, page: 1, limit: result.data.length || 1 };
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.OK)
+  async deleteJob(
+    @Param("id", StrictUuidPipe) id: string,
+    @Request() req: any,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.jobService.deleteJob(id, req.user.userId, req.user.role);
+    return {
+      success: true,
+      message: "Job cancelled successfully",
+    };
   }
 }

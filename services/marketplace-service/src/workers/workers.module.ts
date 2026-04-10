@@ -9,14 +9,24 @@ import { UserModule } from '../common/user/user.module';
 import { AnalyticsModule } from '../common/analytics/analytics.module';
 import { ProviderReviewAggregateRepository } from '../modules/review/repositories/provider-review-aggregate.repository';
 import { RequestRepository } from '../modules/request/repositories/request.repository';
+import { getQueueRegistrationOptions } from '../../../../config/queue-config';
 
+/**
+ * Marketplace Workers Module
+ * 
+ * Queue Configuration:
+ *   - marketplace.notification: 10s timeout, NORMAL priority, 3 attempts
+ *   - marketplace.analytics:    60s timeout, NORMAL priority, 2 attempts
+ *   - marketplace.rating:       60s timeout, NORMAL priority, 2 attempts
+ *   - marketplace.cleanup:      120s timeout, LOW priority,   2 attempts
+ */
 @Module({
   imports: [
     BullModule.registerQueue(
-      { name: 'marketplace.notification' },
-      { name: 'marketplace.analytics' },
-      { name: 'marketplace.rating' },
-      { name: 'marketplace.cleanup' },
+      getQueueRegistrationOptions('marketplace.notification'),
+      getQueueRegistrationOptions('marketplace.analytics'),
+      { name: 'marketplace.rating', defaultJobOptions: { timeout: 60000, attempts: 2, priority: 3 } },
+      { name: 'marketplace.cleanup', defaultJobOptions: { timeout: 120000, attempts: 2, priority: 4 } },
     ),
     NotificationModule,
     UserModule,
