@@ -25,6 +25,9 @@ export class RateLimitRepository {
     const query = `
       INSERT INTO rate_limits (key, request_count, window_start)
       VALUES ($1, $2, $3)
+      ON CONFLICT (key) DO UPDATE
+        SET request_count = EXCLUDED.request_count,
+            window_start  = EXCLUDED.window_start
       RETURNING id, key, request_count, window_start
     `;
 

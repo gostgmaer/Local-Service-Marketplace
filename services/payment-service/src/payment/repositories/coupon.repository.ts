@@ -44,6 +44,7 @@ export class CouponRepository {
     const query = `
       INSERT INTO coupon_usage (id, coupon_id, user_id, used_at)
       VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (coupon_id, user_id) DO NOTHING
       RETURNING *
     `;
     const values = [id, couponId, userId];
