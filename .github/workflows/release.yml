@@ -112,6 +112,7 @@ jobs:
 
       - name: Deploy to Vercel (production)
         if: env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID != ''
+        working-directory: api-gateway
         run: |
           npm install -g vercel@latest
           vercel pull --yes --environment=production --token=$VERCEL_TOKEN
@@ -138,8 +139,6 @@ jobs:
             secret: RENDER_DEPLOY_HOOK_OVERSIGHT
           - service: infrastructure-service
             secret: RENDER_DEPLOY_HOOK_INFRASTRUCTURE
-          - service: api-gateway
-            secret: RENDER_DEPLOY_HOOK_API_GATEWAY
     steps:
       - name: Trigger Render deploy for ${{ matrix.service }}
         env:
