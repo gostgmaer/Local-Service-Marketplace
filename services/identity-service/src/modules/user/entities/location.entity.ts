@@ -1,5 +1,6 @@
 export class Location {
   id: string;
+  display_id: string;
   user_id?: string;
   latitude: number;
   longitude: number;
@@ -7,6 +8,6 @@ export class Location {
   city?: string;
   state?: string;
   zip_code?: string;
-  country: string;
+  country?: string;
   created_at: Date;
 }

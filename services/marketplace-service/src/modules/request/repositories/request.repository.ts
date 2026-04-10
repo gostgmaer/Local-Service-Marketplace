@@ -49,7 +49,7 @@ export class RequestRepository {
         images, preferred_date, urgency, expiry_date, view_count, status,
         guest_name, guest_email, guest_phone
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'pending', $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'open', $10, $11, $12)
       RETURNING *
     `;
 
@@ -438,6 +438,16 @@ export class RequestRepository {
     const query = `UPDATE service_requests SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`;
     const result = await this.pool.query(query, [id]);
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async expireStaleRequests(cutoff: Date): Promise<number> {
+    const query = `
+      UPDATE service_requests
+      SET status = 'expired', updated_at = NOW()
+      WHERE status = 'open' AND created_at < $1 AND deleted_at IS NULL
+    `;
+    const result = await this.pool.query(query, [cutoff]);
+    return result.rowCount ?? 0;
   }
 
   async getRequestsByUser(userId: string): Promise<ServiceRequest[]> {
