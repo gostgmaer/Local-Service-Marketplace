@@ -11,7 +11,7 @@ import { resolveId } from "@/common/utils/resolve-id.util";
 
 @Injectable()
 export class ProposalRepository {
-  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
 
   async createProposal(dto: CreateProposalDto): Promise<Proposal> {
     const requestId = await resolveId(

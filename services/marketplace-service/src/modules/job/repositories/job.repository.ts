@@ -8,7 +8,7 @@ import { resolveId } from "@/common/utils/resolve-id.util";
 
 @Injectable()
 export class JobRepository {
-  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
 
   async createJob(dto: CreateJobDto): Promise<Job> {
     const [requestId, providerId, proposalId] = await Promise.all([

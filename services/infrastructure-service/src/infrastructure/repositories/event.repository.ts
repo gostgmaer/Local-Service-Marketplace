@@ -8,7 +8,7 @@ import { resolveId } from '@/common/utils/resolve-id.util';
 
 @Injectable()
 export class EventRepository {
-	constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
+	constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
 
 	async createEvent(createEventDto: CreateEventDto): Promise<Event> {
 		const query = `

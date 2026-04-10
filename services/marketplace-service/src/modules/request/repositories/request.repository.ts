@@ -13,7 +13,7 @@ import { resolveId } from "@/common/utils/resolve-id.util";
 
 @Injectable()
 export class RequestRepository {
-  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
 
   async createRequest(dto: CreateRequestDto): Promise<ServiceRequest> {
     const [userId, categoryId] = await Promise.all([
