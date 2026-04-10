@@ -91,44 +91,79 @@ export class JwtAuthMiddleware implements NestMiddleware {
     const isPublicContactSubmission =
       method === "POST" && normalizedPath === "/api/v1/admin/contact";
 
+    /**
+     * Helper to match path against public route list
+     * Exact match by default; prefix match if route ends with '/'
+     */
+    const matchRoute = (routeList: string[], path: string) => {
+      return routeList.some((route) => {
+        if (route.endsWith("/")) {
+          return path.startsWith(route);
+        }
+        return path === route;
+      });
+    };
+
     // Check if route is fully public (all methods)
     const isPublicRoute =
       isPublicContactSubmission ||
-      publicRoutes
-        .filter((route) => route !== "/api/v1/admin/contact")
-        .some((route) => normalizedPath.startsWith(route));
+      matchRoute(
+        publicRoutes.filter((route) => route !== "/api/v1/admin/contact"),
+        normalizedPath,
+      );
 
     // Check if route is public for GET requests only
     const isPublicGetRoute =
-      method === "GET" &&
-      publicGetRoutes.some((route) => normalizedPath.startsWith(route));
+      method === "GET" && matchRoute(publicGetRoutes, normalizedPath);
 
     if (isPublicRoute || isPublicGetRoute) {
       return next();
     }
 
-    // Extract JWT token from Authorization header
-    const authHeader = req.headers.authorization;
+    // 1. Identify public status
+    const isPublic = isPublicRoute || isPublicGetRoute;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      this.logger.error(
-        `Missing or invalid Authorization header for ${method} ${path}`,
-        "JwtAuthMiddleware",
-      );
-      throw new UnauthorizedException(`Missing or invalid authorization token`);
+    // 2. Extract JWT token from Authorization header (if present)
+    const authHeader = req.headers.authorization;
+    const hasToken = authHeader && authHeader.startsWith("Bearer ");
+
+    // 3. Case A: Token is present — we MUST validate it (even for public routes)
+    if (hasToken) {
+      const token = authHeader.substring(7);
+      this.validateToken(token, req, next).catch((error) => {
+        // If it's a public route and the token just happened to be expired/invalid,
+        // we allow it as anonymous instead of blocking the user.
+        if (isPublic) {
+          this.logger.warn(
+            `Invalid token on public route ${method} ${path} — falling back to anonymous. Error: ${error.message}`,
+            "JwtAuthMiddleware",
+          );
+          return next();
+        }
+
+        // For private routes, invalid token is a hard failure.
+        this.logger.error(
+          `Token validation error for ${method} ${path}: ${error.message}`,
+          error.stack,
+          "JwtAuthMiddleware",
+        );
+        next(error);
+      });
+      return;
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    // 4. Case B: No token present
+    if (isPublic) {
+      // It's a public route and user is anonymous — allow.
+      return next();
+    }
 
-    // Handle async validation — pass errors to Express error handler
-    this.validateToken(token, req, next).catch((error) => {
-      this.logger.error(
-        `Token validation error: ${error.message}`,
-        error.stack,
-        "JwtAuthMiddleware",
-      );
-      next(error);
-    });
+    // It's a private route and no token provided — block.
+    this.logger.error(
+      `Missing Authorization header for private route ${method} ${path}`,
+      "JwtAuthMiddleware",
+    );
+    throw new UnauthorizedException(`Missing or invalid authorization token`);
   }
 
   /**

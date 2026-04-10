@@ -125,8 +125,8 @@ Write-Info "           STEP 3: Starting New Database          "
 Write-Info "=================================================="
 Write-Host ""
 
-# Check if docker compose.yml exists
-if (Test-Path "docker compose.yml") {
+# Check if docker-compose.yml exists
+if (Test-Path "docker-compose.yml") {
     Write-Info "Starting database with docker compose..."
     docker compose up -d postgres
     

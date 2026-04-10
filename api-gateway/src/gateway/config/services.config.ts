@@ -135,7 +135,7 @@ export const publicRoutes = [
   // ============================================
   // Payment Webhooks (external services — no JWT)
   // ============================================
-  "/api/v1/webhooks", // All payment gateway webhooks: /webhooks/:gateway
+  "/api/v1/webhooks/", // All payment gateway webhooks: /webhooks/:gateway
 
   // ============================================
   // Public Information Endpoints

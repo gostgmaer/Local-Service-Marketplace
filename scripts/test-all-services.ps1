@@ -30,7 +30,7 @@
 param(
     [switch]$SkipStart,
     [switch]$SkipSeed,
-    [string]$DockerComposeFile = "docker compose.yml"
+    [string]$DockerComposeFile = "docker-compose.yml"
 )
 
 $GatewayPort = $null
@@ -78,7 +78,7 @@ function Test-DockerRunning {
 }
 
 function Get-GatewayPort {
-    param([string]$ComposeFile = "docker compose.yml")
+    param([string]$ComposeFile = "docker-compose.yml")
 
     try {
         $mapping = docker port api-gateway 3000 2>$null | Select-Object -First 1
@@ -114,7 +114,7 @@ function Get-GatewayPort {
 }
 
 function Get-RunningComposeServices {
-    param([string]$ComposeFile = "docker compose.yml")
+    param([string]$ComposeFile = "docker-compose.yml")
 
     $overrideFile = [System.IO.Path]::ChangeExtension($ComposeFile, $null).TrimEnd('.') + ".override.yml"
     $composeArgs = @("-f", $ComposeFile)
