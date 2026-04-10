@@ -20,6 +20,9 @@ const path = require('path');
 const crypto = require('crypto');
 
 // Load environment variables
+// Load local database/.env first so it takes precedence over docker.env
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+// docker.env fills in any remaining variables not set above (used inside Docker)
 require('dotenv').config({ path: path.resolve(__dirname, '../docker.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 

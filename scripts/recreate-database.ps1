@@ -147,7 +147,7 @@ else {
         -e POSTGRES_DB=$dbName `
         -p "${dbPort}:5432" `
         -v postgres_data:/var/lib/postgresql/data `
-        postgres:15-alpine
+        postgres:17-alpine
     
     if ($LASTEXITCODE -eq 0) {
         Write-Success "   Database container started"
