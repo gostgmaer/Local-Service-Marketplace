@@ -1,20 +1,14 @@
 name: Docker Build & Security Scan
 
 on:
-  push:
-    branches: [main, master]
-    paths:
-      - 'services/**'
-      - 'api-gateway/**'
-      - 'docker-compose.yml'
-      - 'docker-compose.prod.yml'
-  pull_request:
-    branches: [main, master]
-    paths:
-      - 'services/**'
-      - 'api-gateway/**'
-      - 'docker-compose.yml'
-      - 'docker-compose.prod.yml'
+  workflow_dispatch:   # manual trigger only — run when registry secrets are configured
+    inputs:
+      push_image:
+        description: 'Push image to registry after build?'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
 
 concurrency:
   group: docker-${{ github.ref }}
@@ -75,7 +69,7 @@ jobs:
         continue-on-error: true
 
       - name: Login to Container Registry
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        if: inputs.push_image == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.DOCKER_REGISTRY || 'ghcr.io' }}
@@ -83,7 +77,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push to Registry
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        if: inputs.push_image == 'true'
         run: |
           REGISTRY="${{ secrets.DOCKER_REGISTRY || 'ghcr.io' }}"
           IMAGE_BASE="${REGISTRY}/${{ github.repository_owner }}/lsmp-${{ matrix.service }}"

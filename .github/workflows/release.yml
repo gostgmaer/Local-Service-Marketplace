@@ -51,6 +51,7 @@ jobs:
     name: Vercel - Production Deploy
     runs-on: ubuntu-latest
     needs: [auto-tag]
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
