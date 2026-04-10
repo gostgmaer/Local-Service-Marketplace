@@ -540,7 +540,8 @@ CREATE TABLE notification_deliveries (
   channel TEXT NOT NULL,
   status TEXT NOT NULL,
   delivered_at TIMESTAMP,
-  error_message TEXT
+  error_message TEXT,
+  created_at TIMESTAMP DEFAULT now() NOT NULL
 );
 
 CREATE INDEX idx_notification_deliveries_notification_id ON notification_deliveries(notification_id);
@@ -607,6 +608,7 @@ CREATE TABLE coupon_usage (
   used_at TIMESTAMP DEFAULT now() NOT NULL
 );
 
+CREATE UNIQUE INDEX idx_coupon_usage_unique ON coupon_usage(coupon_id, user_id);
 CREATE INDEX idx_coupon_usage_user_id ON coupon_usage(user_id);
 CREATE INDEX idx_coupon_usage_coupon_id ON coupon_usage(coupon_id);
 
@@ -718,7 +720,7 @@ CREATE TABLE rate_limits (
   window_start TIMESTAMP NOT NULL
 );
 
-CREATE INDEX idx_rate_limits_key ON rate_limits(key);
+CREATE UNIQUE INDEX idx_rate_limits_key_unique ON rate_limits(key);
 CREATE INDEX idx_rate_limits_window_start ON rate_limits(window_start);
 CREATE INDEX idx_rate_limits_key_window ON rate_limits(key, window_start DESC);
 
@@ -1300,6 +1302,85 @@ CREATE INDEX idx_provider_review_aggregates_total ON provider_review_aggregates(
 --    SELECT * FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;
 
 -- =====================================================
+-- AUTOVACUUM TUNING (high-traffic tables)
+-- =====================================================
+
+ALTER TABLE service_requests SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE jobs SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE payments SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE messages SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE disputes SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE admin_actions SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE pricing_plans SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE saved_payment_methods SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE notification_preferences SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE subscriptions SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE provider_documents SET (
+  autovacuum_vacuum_scale_factor = 0.1,
+  autovacuum_analyze_scale_factor = 0.05
+);
+ALTER TABLE provider_portfolio SET (
+  autovacuum_vacuum_scale_factor = 0.1,
+  autovacuum_analyze_scale_factor = 0.05
+);
+-- append-only audit log: higher threshold to avoid excessive vacuums
+ALTER TABLE audit_logs SET (
+  autovacuum_vacuum_scale_factor = 0.1,
+  autovacuum_analyze_scale_factor = 0.05
+);
+
+-- =====================================================
+-- STATISTICS TARGETS (query planner tuning)
+-- =====================================================
+
+ALTER TABLE service_requests ALTER COLUMN status SET STATISTICS 1000;
+ALTER TABLE service_requests ALTER COLUMN category_id SET STATISTICS 1000;
+ALTER TABLE providers ALTER COLUMN rating SET STATISTICS 1000;
+ALTER TABLE providers ALTER COLUMN verification_status SET STATISTICS 500;
+ALTER TABLE providers ALTER COLUMN response_time_avg SET STATISTICS 500;
+ALTER TABLE jobs ALTER COLUMN status SET STATISTICS 1000;
+ALTER TABLE payments ALTER COLUMN status SET STATISTICS 1000;
+ALTER TABLE payments ALTER COLUMN payment_method SET STATISTICS 500;
+ALTER TABLE payments ALTER COLUMN gateway SET STATISTICS 200;
+ALTER TABLE disputes ALTER COLUMN status SET STATISTICS 500;
+ALTER TABLE notifications ALTER COLUMN type SET STATISTICS 500;
+ALTER TABLE pricing_plans ALTER COLUMN billing_period SET STATISTICS 100;
+ALTER TABLE pricing_plans ALTER COLUMN active SET STATISTICS 100;
+ALTER TABLE audit_logs ALTER COLUMN action SET STATISTICS 500;
+ALTER TABLE audit_logs ALTER COLUMN entity SET STATISTICS 500;
+ALTER TABLE background_jobs ALTER COLUMN job_type SET STATISTICS 500;
+
+-- =====================================================
 -- PERFORMANCE INDEXES (Gap fills identified in audit)
 -- =====================================================
 
@@ -1325,6 +1406,102 @@ CREATE INDEX IF NOT EXISTS idx_users_name_trgm
 DROP INDEX IF EXISTS idx_messages_job_created;
 CREATE INDEX idx_messages_job_created
   ON messages(job_id, created_at ASC) INCLUDE (message, sender_id);
+
+-- =====================================================
+-- PERFORMANCE INDEXES (Query audit — all services)
+-- =====================================================
+
+-- PROVIDERS: GIN trigram for ILIKE '%search%' on business_name and description
+CREATE INDEX IF NOT EXISTS idx_providers_business_name_trgm
+  ON providers USING GIN (business_name gin_trgm_ops) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_providers_description_trgm
+  ON providers USING GIN (description gin_trgm_ops) WHERE deleted_at IS NULL;
+
+-- PROVIDERS: numeric range filters
+CREATE INDEX IF NOT EXISTS idx_providers_response_time_avg
+  ON providers(response_time_avg ASC)
+  WHERE deleted_at IS NULL AND response_time_avg IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_providers_years_experience
+  ON providers(years_of_experience DESC)
+  WHERE deleted_at IS NULL AND years_of_experience IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_providers_service_area_radius
+  ON providers(service_area_radius)
+  WHERE deleted_at IS NULL AND service_area_radius IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_providers_verified_rating
+  ON providers(verification_status, rating DESC)
+  WHERE deleted_at IS NULL AND verification_status = 'verified';
+
+-- PAYMENTS: payment_method equality filter + composite status+date paths
+CREATE INDEX IF NOT EXISTS idx_payments_payment_method
+  ON payments(payment_method) WHERE payment_method IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_payments_user_status_created
+  ON payments(user_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payments_provider_status_created
+  ON payments(provider_id, status, created_at DESC);
+
+-- PRICING PLANS: no indexes existed; add covering indexes
+CREATE INDEX IF NOT EXISTS idx_pricing_plans_active
+  ON pricing_plans(active) WHERE active = true;
+CREATE INDEX IF NOT EXISTS idx_pricing_plans_billing_period
+  ON pricing_plans(billing_period, active);
+CREATE INDEX IF NOT EXISTS idx_pricing_plans_price
+  ON pricing_plans(price ASC);
+
+-- SAVED PAYMENT METHODS: functional index for arithmetic expiry expression
+CREATE INDEX IF NOT EXISTS idx_saved_payment_methods_expiry_expr
+  ON saved_payment_methods((expiry_year * 12 + expiry_month))
+  WHERE expiry_year IS NOT NULL AND expiry_month IS NOT NULL;
+
+-- REVIEWS: partial/composite for response and verified filters
+CREATE INDEX IF NOT EXISTS idx_reviews_provider_response
+  ON reviews(provider_id, response_at DESC) WHERE response IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_reviews_provider_rating_eq
+  ON reviews(provider_id, rating, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_provider_verified
+  ON reviews(provider_id, created_at DESC) WHERE verified_purchase = true;
+
+-- DISPUTES: composite for paginated status list with date sort
+CREATE INDEX IF NOT EXISTS idx_disputes_status_created_at
+  ON disputes(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_disputes_resolved_at
+  ON disputes(resolved_at DESC) WHERE resolved_at IS NOT NULL;
+
+-- ADMIN ACTIONS: composite for entity-level lookups
+CREATE INDEX IF NOT EXISTS idx_admin_actions_target
+  ON admin_actions(target_type, target_id, created_at DESC);
+
+-- USERS: GIN trigram on email for admin ILIKE '%search%' queries
+CREATE INDEX IF NOT EXISTS idx_users_email_trgm
+  ON users USING GIN (email gin_trgm_ops) WHERE deleted_at IS NULL;
+
+-- AUDIT LOGS: composites for multi-column dynamic filters
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action_entity_created
+  ON audit_logs(action, entity, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_action_created
+  ON audit_logs(user_id, action, created_at DESC) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_audit_logs_brin
+  ON audit_logs USING BRIN(created_at) WITH (pages_per_range = 32);
+
+-- NOTIFICATION PREFERENCES: partial indexes for dynamic column filter
+CREATE INDEX IF NOT EXISTS idx_notif_prefs_email
+  ON notification_preferences(email_notifications) WHERE email_notifications = true;
+CREATE INDEX IF NOT EXISTS idx_notif_prefs_sms
+  ON notification_preferences(sms_notifications) WHERE sms_notifications = true;
+CREATE INDEX IF NOT EXISTS idx_notif_prefs_push
+  ON notification_preferences(push_notifications) WHERE push_notifications = true;
+
+-- SUBSCRIPTIONS: ascending expiry index for expiring-soon queries
+CREATE INDEX IF NOT EXISTS idx_subscriptions_active_expires
+  ON subscriptions(expires_at ASC)
+  WHERE status = 'active' AND expires_at IS NOT NULL;
+
+-- PROVIDER DOCUMENTS: pending review and expiry queries
+CREATE INDEX IF NOT EXISTS idx_provider_documents_pending
+  ON provider_documents(provider_id, created_at ASC)
+  WHERE verified = false AND rejected = false;
+CREATE INDEX IF NOT EXISTS idx_provider_documents_expiring
+  ON provider_documents(expires_at ASC)
+  WHERE verified = true AND expires_at IS NOT NULL;
 
 -- =====================================================
 -- DISPLAY ID SYSTEM

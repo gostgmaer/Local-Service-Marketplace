@@ -64,6 +64,7 @@ export type UserRole = 'customer' | 'provider' | 'admin';
 export type RequestStatus = 'open' | 'assigned' | 'completed' | 'cancelled';
 
 export type JobStatus =
+  | 'pending'
   | 'scheduled'
   | 'in_progress'
   | 'completed'
@@ -74,7 +75,6 @@ export type ProposalStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn';
 
 export type PaymentStatus =
   | 'pending'
-  | 'processing'
   | 'completed'
   | 'failed'
   | 'refunded';
