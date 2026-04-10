@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Inject, LoggerService, OnModuleInit } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { AnalyticsClient } from '../../common/analytics/analytics.client';
+import { AnalyticsClient } from '../common/analytics/analytics.client';
 
 @Processor('marketplace.analytics', {
   concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),

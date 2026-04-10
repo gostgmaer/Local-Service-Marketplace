@@ -121,7 +121,7 @@ export class BackgroundJobService {
 
 	async getQueueStats(): Promise<any> {
 		try {
-			const counts = await this.redisService.getJobCounts("background-jobs");
+			const counts = await this.jobQueue.getJobCounts();
 
 			this.logger.log("Retrieved queue statistics", "BackgroundJobService");
 

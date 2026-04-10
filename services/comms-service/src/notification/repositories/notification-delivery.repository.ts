@@ -92,4 +92,11 @@ export class NotificationDeliveryRepository {
         }),
     );
   }
+
+  async deleteFailedOlderThan(cutoff: Date): Promise<number> {
+    const query =
+      "DELETE FROM notification_deliveries WHERE status = 'failed' AND created_at < $1";
+    const result = await this.pool.query(query, [cutoff]);
+    return result.rowCount ?? 0;
+  }
 }
