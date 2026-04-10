@@ -9,6 +9,10 @@ import {
   NotFoundException,
   ForbiddenException,
 } from "../../common/exceptions/http.exceptions";
+
+@Injectable()
+export class MessageService {
+  constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     private readonly messageRepository: MessageRepository,

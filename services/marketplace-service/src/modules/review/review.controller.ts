@@ -15,9 +15,7 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
-import { StrictU
-
-uidPipe } from "@/common/pipes/strict-uuid.pipe";
+import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { ReviewService } from "./services/review.service";
 import { ReviewRepository } from "./repositories/review.repository";
 import { CreateReviewDto } from "./dto/create-review.dto";

@@ -440,16 +440,4 @@ export class JobRepository {
     return result.rows[0] || null;
   }
 
-  async cancelJob(jobId: string, cancelledBy: string): Promise<Job | null> {
-    const query = `
-      UPDATE jobs
-      SET status = 'cancelled',
-          cancelled_by = $2,
-          updated_at = NOW()
-      WHERE id = $1
-      RETURNING *
-    `;
-    const result = await this.pool.query(query, [jobId, cancelledBy]);
-    return result.rows[0] || null;
-  }
 }
