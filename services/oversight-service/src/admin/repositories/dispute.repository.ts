@@ -105,7 +105,7 @@ export class DisputeRepository {
 		const sortOrder = queryDto.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
 		const query = `
-      SELECT id, job_id, opened_by, reason, status,
+      SELECT id, display_id, job_id, opened_by, reason, status,
              resolution, resolved_by, resolved_at, created_at
       FROM disputes
       ${whereClause}

@@ -49,7 +49,7 @@ export class RequestRepository {
         images, preferred_date, urgency, expiry_date, view_count, status,
         guest_name, guest_email, guest_phone
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'pending', $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 'open', $10, $11, $12)
       RETURNING *
     `;
 

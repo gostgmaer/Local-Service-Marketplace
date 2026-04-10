@@ -75,7 +75,6 @@ export type ProposalStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn';
 
 export type PaymentStatus =
   | 'pending'
-  | 'processing'
   | 'completed'
   | 'failed'
   | 'refunded';

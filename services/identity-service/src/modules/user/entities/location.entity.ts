@@ -8,6 +8,6 @@ export class Location {
   city?: string;
   state?: string;
   zip_code?: string;
-  country: string;
+  country?: string;
   created_at: Date;
 }
