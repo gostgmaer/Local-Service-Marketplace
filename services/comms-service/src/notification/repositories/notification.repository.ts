@@ -111,4 +111,31 @@ export class NotificationRepository {
     const query = "DELETE FROM notifications WHERE id = $1";
     await this.pool.query(query, [id]);
   }
+
+  async deleteOlderThan(cutoff: Date): Promise<number> {
+    const query = "DELETE FROM notifications WHERE created_at < $1";
+    const result = await this.pool.query(query, [cutoff]);
+    return result.rowCount ?? 0;
+  }
+
+  async getUsersWithUnreadNotifications(
+    limit: number,
+  ): Promise<{ userId: string; count: number; notifications: any[] }[]> {
+    const query = `
+      SELECT user_id, COUNT(*) AS count,
+             json_agg(json_build_object('id', id, 'type', type, 'message', message, 'created_at', created_at)
+               ORDER BY created_at DESC) AS notifications
+      FROM notifications
+      WHERE read = false
+      GROUP BY user_id
+      ORDER BY count DESC
+      LIMIT $1
+    `;
+    const result = await this.pool.query(query, [limit]);
+    return result.rows.map((row) => ({
+      userId: row.user_id,
+      count: parseInt(row.count, 10),
+      notifications: row.notifications ?? [],
+    }));
+  }
 }

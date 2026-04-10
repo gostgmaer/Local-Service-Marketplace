@@ -7,7 +7,7 @@ import { EmailClient } from "../clients/email.client";
 import { SmsClient } from "../clients/sms.client";
 import { FeatureFlagService } from "./feature-flag.service";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
-import { getQueueToken } from "@nestjs/bull";
+import { getQueueToken } from "@nestjs/bullmq";
 import { NotFoundException } from "../../common/exceptions/http.exceptions";
 import { ForbiddenException, BadRequestException } from "@nestjs/common";
 import { NotificationChannel } from "../dto/send-notification.dto";
@@ -60,7 +60,7 @@ describe("NotificationService", () => {
       providers: [
         NotificationService,
         { provide: WINSTON_MODULE_NEST_PROVIDER, useValue: mockLogger },
-        { provide: getQueueToken("email-queue"), useValue: mockEmailQueue },
+        { provide: getQueueToken("comms.email"), useValue: mockEmailQueue },
         { provide: NotificationRepository, useValue: mockNotifRepo },
         { provide: NotificationDeliveryRepository, useValue: mockDeliveryRepo },
         { provide: UnsubscribeRepository, useValue: mockUnsubscribeRepo },

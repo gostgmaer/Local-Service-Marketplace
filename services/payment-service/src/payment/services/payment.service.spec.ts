@@ -32,6 +32,8 @@ describe("PaymentService list validation", () => {
 
     const service = new PaymentService(
       makeLogger(),
+      { add: jest.fn() } as any, // notificationQueue
+      { add: jest.fn() } as any, // analyticsQueue
       paymentRepository,
       {} as any,
       makeKafka(),
@@ -111,6 +113,8 @@ describe("PaymentService.createPayment", () => {
 
     const service = new PaymentService(
       makeLogger(),
+      { add: jest.fn() } as any, // notificationQueue
+      { add: jest.fn() } as any, // analyticsQueue
       paymentRepository,
       couponService,
       kafka,

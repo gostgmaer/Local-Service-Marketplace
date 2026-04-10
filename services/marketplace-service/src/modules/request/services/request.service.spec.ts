@@ -19,6 +19,7 @@ describe("RequestService list validation", () => {
       {} as any,
       {} as any,
       { log: jest.fn(), warn: jest.fn() } as any,
+      { add: jest.fn() } as any, // notificationQueue
     );
 
     return { service };

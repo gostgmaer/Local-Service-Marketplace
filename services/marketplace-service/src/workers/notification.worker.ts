@@ -2,8 +2,8 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Inject, LoggerService, OnModuleInit } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { NotificationClient } from '../../common/notification/notification.client';
-import { UserClient } from '../../common/user/user.client';
+import { NotificationClient } from '../common/notification/notification.client';
+import { UserClient } from '../common/user/user.client';
 
 @Processor('marketplace.notification', {
   concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),

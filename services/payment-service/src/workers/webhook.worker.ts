@@ -50,20 +50,20 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
 
     try {
       const event = this.paymentGateway.parseWebhookEvent(gateway, webhook.payload);
-      this.logger.log(`Parsed webhook event: ${event.type}`, 'WebhookWorker');
+      this.logger.log(`Parsed webhook event: ${event.eventType}`, 'WebhookWorker');
 
-      switch (event.type) {
+      switch (event.eventType) {
         case 'payment.succeeded':
           await this.paymentRepository.updatePaymentStatus(event.paymentId, 'completed', event.transactionId);
           break;
         case 'payment.failed':
           await this.paymentRepository.updatePaymentStatus(event.paymentId, 'failed', null);
           break;
-        case 'refund.succeeded':
+        case 'refund.created':
           await this.paymentRepository.updatePaymentStatus(event.paymentId, 'refunded', null);
           break;
         default:
-          this.logger.log(`Unhandled webhook event type: ${event.type}`, 'WebhookWorker');
+          this.logger.log(`Unhandled webhook event type: ${event.eventType}`, 'WebhookWorker');
       }
 
       await this.webhookRepository.markProcessed(webhookId);
