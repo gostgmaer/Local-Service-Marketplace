@@ -11,7 +11,7 @@ import { resolveId } from "../../common/utils/resolve-id.util";
 
 @Injectable()
 export class PaymentRepository {
-  constructor(@Inject("DATABASE_POOL") private pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private pool: Pool) { }
 
   async createPayment(
     jobId: string,

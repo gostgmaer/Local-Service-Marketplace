@@ -1,14 +1,15 @@
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
+const path = require('path');
 
-// Load environment variables
-dotenv.config({ path: '../.env' });
+// Load environment variables from root .env
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const pool = new Pool({
   host: process.env.POSTGRES_HOST || 'localhost',
   port: parseInt(process.env.POSTGRES_PORT || '5432'),
   user: process.env.POSTGRES_USER || 'postgres',
-  password: process.env.POSTGRES_PASSWORD || 'postgres',
+  password: process.env.POSTGRES_PASSWORD || 'postgres_dev_only',
   database: process.env.POSTGRES_DB || 'marketplace',
 });
 
@@ -112,6 +113,70 @@ async function verifySchema() {
       console.log('');
     }
 
+    // Intensive Column Check
+    console.log('📋 Checking Critical Columns and Types...\n');
+    
+    const columnQuery = await pool.query(`
+      SELECT table_name, column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+      ORDER BY table_name, ordinal_position
+    `);
+
+    const tableColumns = columnQuery.rows.reduce((acc, col) => {
+      if (!acc[col.table_name]) acc[col.table_name] = [];
+      acc[col.table_name].push(col);
+      return acc;
+    }, {});
+
+    let columnIssues = 0;
+
+    // Check for display_id in user-facing tables
+    const TABLES_NEEDING_DISPLAY_ID = [
+      "users", "sessions", "providers", "service_categories", "locations",
+      "service_requests", "proposals", "jobs", "payments", "refunds",
+      "reviews", "messages", "notifications", "coupons", "disputes",
+      "events", "background_jobs", "admin_actions", "subscriptions"
+    ];
+
+    TABLES_NEEDING_DISPLAY_ID.forEach(table => {
+      if (existingTables.includes(table)) {
+        const cols = tableColumns[table] || [];
+        const hasDisplayId = cols.find(c => c.column_name === 'display_id');
+        if (!hasDisplayId) {
+          console.log(`   ❌ Table '${table}' is missing 'display_id'`);
+          columnIssues++;
+        }
+      }
+    });
+
+    // Check for BIGINT in currency fields
+    const CURRENCY_FIELDS = [
+      { table: 'service_requests', column: 'budget' },
+      { table: 'payments', column: 'amount' },
+      { table: 'payments', column: 'platform_fee' },
+      { table: 'payments', column: 'provider_amount' },
+      { table: 'refunds', column: 'amount' },
+      { table: 'pricing_plans', column: 'price' }
+    ];
+
+    CURRENCY_FIELDS.forEach(field => {
+      if (existingTables.includes(field.table)) {
+        const cols = tableColumns[field.table] || [];
+        const col = cols.find(c => c.column_name === field.column);
+        if (col && col.data_type !== 'bigint') {
+          console.log(`   ❌ Field '${field.table}.${field.column}' should be 'bigint' but found '${col.data_type}'`);
+          columnIssues++;
+        }
+      }
+    });
+
+    if (columnIssues === 0) {
+      console.log('✅ All critical columns and types verified!\n');
+    } else {
+      console.log(`\n❌ Found ${columnIssues} column/type discrepancies\n`);
+    }
+
     // Check foreign key constraints
     console.log('🔗 Checking Foreign Key Constraints...\n');
     
@@ -179,6 +244,7 @@ async function verifySchema() {
         console.log(`   ✅ ${ext} (v${version})`);
       } else {
         console.log(`   ❌ ${ext} - MISSING`);
+        columnIssues++;
       }
     });
     console.log('');
@@ -186,13 +252,13 @@ async function verifySchema() {
     // Final verdict
     console.log('═══════════════════════════════════════════════════');
     
-    if (missingTables.length === 0 && existingExts.length === requiredExts.length) {
+    if (missingTables.length === 0 && columnIssues === 0) {
       console.log('✅ SCHEMA IS COMPLETE AND READY FOR SEEDING');
       console.log('═══════════════════════════════════════════════════\n');
       console.log('You can now run: npm run seed\n');
       process.exit(0);
     } else {
-      console.log('❌ SCHEMA IS INCOMPLETE');
+      console.log('❌ SCHEMA IS INCOMPLETE OR HAS DISCREPANCIES');
       console.log('═══════════════════════════════════════════════════\n');
       console.log('To fix this, run:');
       console.log('  psql -U postgres -d marketplace -f schema.sql');

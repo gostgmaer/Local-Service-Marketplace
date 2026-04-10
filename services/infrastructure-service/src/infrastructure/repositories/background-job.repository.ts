@@ -8,7 +8,7 @@ import { resolveId } from '../../common/utils/resolve-id.util';
 
 @Injectable()
 export class BackgroundJobRepository {
-	constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
+	constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
 
 	async createJob(createJobDto: CreateBackgroundJobDto): Promise<BackgroundJob> {
 		const query = `
