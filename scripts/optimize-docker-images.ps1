@@ -147,7 +147,7 @@ coverage
 
 # Docker
 Dockerfile
-docker compose.yml
+docker-compose.yml
 .dockerignore
 
 # Logs

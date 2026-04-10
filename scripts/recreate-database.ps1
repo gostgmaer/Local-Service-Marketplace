@@ -125,8 +125,8 @@ Write-Info "           STEP 3: Starting New Database          "
 Write-Info "=================================================="
 Write-Host ""
 
-# Check if docker compose.yml exists
-if (Test-Path "docker compose.yml") {
+# Check if docker-compose.yml exists
+if (Test-Path "docker-compose.yml") {
     Write-Info "Starting database with docker compose..."
     docker compose up -d postgres
     
@@ -147,7 +147,7 @@ else {
         -e POSTGRES_DB=$dbName `
         -p "${dbPort}:5432" `
         -v postgres_data:/var/lib/postgresql/data `
-        postgres:15-alpine
+        postgres:17-alpine
     
     if ($LASTEXITCODE -eq 0) {
         Write-Success "   Database container started"

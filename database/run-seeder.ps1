@@ -109,7 +109,7 @@ try {
         Write-Warning "Troubleshooting tips:"
         Write-Host "  1. Ensure PostgreSQL is running"
         Write-Host "  2. Check .env file has correct credentials"
-        Write-Host "  3. Run: docker-compose up -d postgres"
+        Write-Host "  3. Run: docker compose up -d postgres"
         Write-Host ""
         exit 1
     }

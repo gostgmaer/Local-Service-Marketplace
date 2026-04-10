@@ -7,31 +7,37 @@
     "install:all": "pnpm install",
     "build:all": "pnpm -r build",
     "start:dev": "pnpm -r --parallel start:dev",
-
     "docker:up": "docker compose up -d",
     "docker:l1": "docker compose up -d",
     "docker:l2": "docker compose -f docker-compose.yml -f docker-compose.level2.yml --profile cache up -d",
     "docker:l3": "docker compose -f docker-compose.yml -f docker-compose.level3.yml --profile workers up -d",
     "docker:l4": "docker compose -f docker-compose.yml -f docker-compose.level4.yml --profile events up -d",
     "docker:l5": "docker compose -f docker-compose.yml -f docker-compose.level5.yml --profile full up -d",
-
     "docker:down": "docker compose down",
     "docker:down:l2": "docker compose -f docker-compose.yml -f docker-compose.level2.yml --profile cache down",
     "docker:down:l3": "docker compose -f docker-compose.yml -f docker-compose.level3.yml --profile workers down",
     "docker:down:l4": "docker compose -f docker-compose.yml -f docker-compose.level4.yml --profile events down",
     "docker:down:l5": "docker compose -f docker-compose.yml -f docker-compose.level5.yml --profile full down",
-
     "docker:restart": "docker compose restart",
     "docker:build": "docker compose build",
     "docker:build:nc": "docker compose build --no-cache",
     "docker:logs": "docker compose logs -f",
     "docker:ps": "docker compose ps",
     "docker:clean": "docker compose down -v",
-
     "test:api": "newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json",
     "test:api:verbose": "newman run docs/Local-Service-Marketplace.postman_collection.json --environment newman/newman.env.json --reporters cli,html,json --reporter-html-export test-reports/report.html --reporter-json-export test-reports/report.json --verbose",
     "test:services": "powershell -ExecutionPolicy Bypass -File scripts/test-all-services.ps1",
-    "test:contracts": "newman run newman/contract-tests.postman_collection.json --environment newman/newman.env.json --reporters cli,json --reporter-json-export test-reports/contract-report.json"
+    "test:contracts": "newman run newman/contract-tests.postman_collection.json --environment newman/newman.env.json --reporters cli,json --reporter-json-export test-reports/contract-report.json",
+    "db:migrate": "cd database && node migrate.js up",
+    "db:migrate:down": "cd database && node migrate.js down",
+    "db:migrate:status": "cd database && node migrate.js status",
+    "db:seed": "cd database && node seed.js",
+    "db:verify": "cd database && node verify-seed.js",
+    "db:verify:schema": "cd database && node verify-schema.js",
+    "db:clean": "docker compose down -v && docker compose up -d marketplace-postgres",
+    "db:recreate": "powershell -ExecutionPolicy Bypass -File scripts/recreate-database.ps1 -Force",
+    "db:recreate:seed": "powershell -ExecutionPolicy Bypass -File scripts/recreate-database.ps1 -Force && cd database && node seed.js",
+    "db:reset": "pnpm db:clean && pnpm db:migrate && pnpm db:seed"
   },
   "engines": {
     "node": ">=18.0.0",

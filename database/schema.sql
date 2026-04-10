@@ -4,7 +4,7 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "postgis";
+-- PostGIS removed to simplify setup
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
 
 -- =====================================================
@@ -56,7 +56,7 @@ CREATE TABLE sessions (
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 CREATE UNIQUE INDEX idx_sessions_refresh_token ON sessions(refresh_token) WHERE refresh_token IS NOT NULL;
-CREATE INDEX idx_sessions_active ON sessions(user_id, expires_at) WHERE expires_at > now();
+CREATE INDEX idx_sessions_active ON sessions(user_id, expires_at);
 
 CREATE TABLE email_verification_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -285,7 +285,7 @@ CREATE TABLE locations (
 
 CREATE INDEX idx_locations_coordinates ON locations(latitude, longitude);
 CREATE INDEX idx_locations_user_id ON locations(user_id) WHERE user_id IS NOT NULL;
-CREATE INDEX idx_locations_geo ON locations USING GIST(ST_MakePoint(longitude, latitude)::geography);
+-- Spatial index removed to simplify setup
 
 -- =====================================================
 -- SERVICE REQUESTS
@@ -1071,15 +1071,7 @@ CREATE INDEX IF NOT EXISTS idx_background_jobs_scheduled_pending
 -- SECURITY & AUDIT
 -- =====================================================
 
--- Index for security monitoring
-CREATE INDEX idx_login_attempts_failed 
-  ON login_attempts(email, created_at DESC) 
-  WHERE success = false;
-
--- Index for suspicious activity detection
-CREATE INDEX idx_login_attempts_ip_failed 
-  ON login_attempts(ip_address, created_at DESC) 
-  WHERE success = false;
+-- Duplicate security indexes removed (already defined at Line 102)
 
 -- =====================================================
 -- DATABASE COMMENTS (DOCUMENTATION)
@@ -1792,3 +1784,40 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_events_display_id             ON events(di
 CREATE UNIQUE INDEX IF NOT EXISTS idx_background_jobs_display_id    ON background_jobs(display_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_actions_display_id      ON admin_actions(display_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_display_id      ON subscriptions(display_id);
+
+-- =====================================================
+-- MIGRATION TRACKING
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  id SERIAL PRIMARY KEY,
+  version VARCHAR(255) NOT NULL UNIQUE,
+  name VARCHAR(500) NOT NULL,
+  applied_at TIMESTAMP DEFAULT now() NOT NULL,
+  checksum VARCHAR(64),
+  execution_time_ms INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
+
+-- Pre-seed integrated migrations (001-016)
+INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
+VALUES
+  ('001', 'add_user_name', 'integrated_in_schema', 0),
+  ('002', 'production_readiness_fixes', 'integrated_in_schema', 0),
+  ('006', 'create_unsubscribe_table', 'integrated_in_schema', 0),
+  ('007', 'add_anonymous_requests_support', 'integrated_in_schema', 0),
+  ('008', 'add_payments_paid_at_field', 'integrated_in_schema', 0),
+  ('009', 'add_favorites_created_at', 'integrated_in_schema', 0),
+  ('010', 'critical_performance_optimizations', 'integrated_in_schema', 0),
+  ('011', 'critical_production_fixes', 'integrated_in_schema', 0),
+  ('012', 'add_providers_updated_at', 'integrated_in_schema', 0),
+  ('013', 'future_auth_features', 'integrated_in_schema', 0),
+  ('014', 'list_query_performance_indexes', 'integrated_in_schema', 0),
+  ('015', 'add_gateway_to_payments', 'integrated_in_schema', 0),
+  ('016', 'add_display_ids', 'integrated_in_schema', 0),
+  ('017', 'add_missing_tables', 'integrated_in_schema', 0),
+  ('018', 'query_performance_indexes', 'integrated_in_schema', 0),
+  ('019', 'unique_constraints_dedup', 'integrated_in_schema', 0)
+ON CONFLICT (version) DO NOTHING;
+
