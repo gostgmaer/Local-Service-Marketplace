@@ -42,10 +42,16 @@ export const createReview = async (data: CreateReviewData): Promise<Review> => {
 
 /**
  * Get reviews for a provider
+ * Backend returns: { success, data: { reviews[], averageRating }, meta }
  */
 export const getProviderReviews = async (providerId: string): Promise<ReviewWithDetails[]> => {
-  const response = await apiClient.get<ReviewWithDetails[]>(`/reviews/provider/${providerId}`);
-  return apiClient.extractList<ReviewWithDetails>(response.data);
+  const response = await apiClient.get<any>(`/reviews/provider/${providerId}`);
+  // After apiClient unwraps the standard envelope, data is { reviews: [], averageRating: N }
+  const payload = response.data;
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.reviews)) return payload.reviews;
+  if (Array.isArray(payload?.data?.reviews)) return payload.data.reviews;
+  return [];
 };
 
 /**

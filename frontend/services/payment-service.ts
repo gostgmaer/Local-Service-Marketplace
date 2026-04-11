@@ -72,7 +72,8 @@ class PaymentService {
 	}
 
 	async requestRefund(paymentId: string, data: RefundData): Promise<Payment> {
-		const response = await apiClient.post<Payment>(`/payments/${paymentId}/refund`, data);
+		// Backend: POST /refunds/:paymentId
+		const response = await apiClient.post<Payment>(`/refunds/${paymentId}`, data);
 		return response.data;
 	}
 
@@ -82,7 +83,8 @@ class PaymentService {
 	}
 
 	async getPaymentStatus(id: string): Promise<Payment> {
-		const response = await apiClient.get<Payment>(`/payments/${id}/status`);
+		// No separate /status route — GET /payments/:id returns status
+		const response = await apiClient.get<Payment>(`/payments/${id}`);
 		return response.data;
 	}
 
@@ -182,9 +184,9 @@ class PaymentService {
 		if (!providerId) {
 			throw new Error("User not authenticated");
 		}
-	
-		const response = await apiClient.get<Payout[]>(`/payments/provider/${providerId}/payouts`);
-		return apiClient.extractList<Payout>(response.data);
+		// No dedicated payouts endpoint — use transactions with completed status
+		const result = await this.getProviderTransactions(providerId, 50, undefined, 'completed');
+		return (result.data as unknown as Payout[]) ?? [];
 	}
 }
 

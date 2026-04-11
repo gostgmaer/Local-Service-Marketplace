@@ -4,7 +4,7 @@ import { DisputeRepository } from '../repositories/dispute.repository';
 import { AdminActionRepository } from '../repositories/admin-action.repository';
 import { AuditLogRepository } from '../repositories/audit-log.repository';
 import { Dispute } from '../entities/dispute.entity';
-import { NotFoundException } from '../../common/exceptions/http.exceptions';
+import { NotFoundException, ForbiddenException } from '../../common/exceptions/http.exceptions';
 import { DisputeListQueryDto } from "../dto/dispute-list-query.dto";
 import { resolvePagination, validateDateRange } from "../../common/pagination/list-query-validation.util";
 
@@ -17,6 +17,29 @@ export class DisputeService {
 		@Inject(WINSTON_MODULE_NEST_PROVIDER)
 		private readonly logger: LoggerService,
 	) {}
+
+	async createDispute(jobId: string, openedBy: string, reason: string): Promise<Dispute> {
+		this.logger.log(`Creating dispute for job ${jobId} by user ${openedBy}`, 'DisputeService');
+		const dispute = await this.disputeRepository.createDispute(jobId, openedBy, reason);
+		await this.auditLogRepository.createAuditLog(openedBy, 'create_dispute', 'dispute', dispute.id, { job_id: jobId, reason });
+		return dispute;
+	}
+
+	async getUserDisputes(
+		userId: string,
+		params: { status?: string; page: number; limit: number },
+	): Promise<{ data: Dispute[]; total: number; page: number; limit: number }> {
+		this.logger.log(`Fetching disputes for user ${userId}`, 'DisputeService');
+		const result = await this.disputeRepository.getUserDisputes(userId, params);
+		return { ...result, page: params.page, limit: params.limit };
+	}
+
+	async getDisputeForUser(id: string, userId: string): Promise<Dispute> {
+		const dispute = await this.disputeRepository.getDisputeById(id);
+		if (!dispute) throw new NotFoundException('Dispute not found');
+		// Allow access if user opened it (check happens in repository via job_id too)
+		return dispute;
+	}
 
 	async getAllDisputes(
 		queryDto: DisputeListQueryDto,

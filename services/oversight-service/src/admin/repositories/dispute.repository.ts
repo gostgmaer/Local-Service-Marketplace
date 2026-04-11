@@ -9,6 +9,51 @@ import { resolveId } from '@/common/utils/resolve-id.util';
 export class DisputeRepository {
 	constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
+	async createDispute(jobId: string, openedBy: string, reason: string): Promise<Dispute> {
+		const query = `
+      INSERT INTO disputes (id, display_id, job_id, opened_by, reason, status, created_at)
+      VALUES (
+        uuid_generate_v4(),
+        UPPER(SUBSTRING(REPLACE(uuid_generate_v4()::text, '-', ''), 1, 11)),
+        $1, $2, $3, 'open', NOW()
+      )
+      RETURNING id, display_id, job_id, opened_by, reason, status,
+                resolution, resolved_by, resolved_at, created_at, updated_at
+    `;
+		const result = await this.pool.query(query, [jobId, openedBy, reason]);
+		return result.rows[0];
+	}
+
+	async getUserDisputes(
+		userId: string,
+		params: { status?: string; page: number; limit: number },
+	): Promise<{ data: Dispute[]; total: number }> {
+		const conditions: string[] = ['(opened_by = $1 OR job_id IN (SELECT id FROM jobs WHERE customer_id = $1 OR provider_id IN (SELECT id FROM providers WHERE user_id = $1)))'];
+		const values: unknown[] = [userId];
+
+		if (params.status) {
+			values.push(params.status);
+			conditions.push(`status = $${values.length}`);
+		}
+
+		const where = `WHERE ${conditions.join(' AND ')}`;
+		const offset = (params.page - 1) * params.limit;
+
+		const [dataResult, countResult] = await Promise.all([
+			this.pool.query(
+				`SELECT id, display_id, job_id, opened_by, reason, status,
+                resolution, resolved_by, resolved_at, created_at, updated_at
+         FROM disputes ${where}
+         ORDER BY created_at DESC
+         LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+				[...values, params.limit, offset],
+			),
+			this.pool.query(`SELECT COUNT(*)::int AS total FROM disputes ${where}`, values),
+		]);
+
+		return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
+	}
+
 	async getDisputeById(id: string): Promise<Dispute | null> {
 		id = await resolveId(this.pool, 'disputes', id);
 		const query = `

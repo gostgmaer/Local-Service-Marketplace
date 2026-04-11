@@ -78,9 +78,10 @@ export const routingConfig = {
   "/notifications": "comms-service",
   "/notification-preferences": "comms-service",
   "/devices": "comms-service",
-  // oversight-service (admin + analytics)
+  // oversight-service (admin + analytics + user disputes)
   "/admin": "oversight-service",
   "/analytics": "oversight-service",
+  "/disputes": "oversight-service",
   // infrastructure-service
   "/events": "infrastructure-service",
   "/background-jobs": "infrastructure-service",

@@ -46,6 +46,29 @@ export class ReviewController {
     return review;
   }
 
+  /**
+   * Get current authenticated user's sent reviews
+   * GET /reviews/my
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get("my")
+  async getMyReviews(
+    @Request() req: any,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    const userId = req.user.userId;
+    const offset = (page - 1) * limit;
+    const result = await this.reviewService.getReviewsByUser(userId, limit, offset);
+    return {
+      success: true,
+      data: result.data ?? result,
+      total: result.total ?? (result as any).length ?? 0,
+      page,
+      limit,
+    };
+  }
+
   @Get(":id")
   async getReviewById(@Param("id", FlexibleIdPipe) id: string) {
     const review = await this.reviewService.getReviewById(id);
