@@ -68,6 +68,24 @@ export class ProviderDocumentRepository {
     return result.rows[0];
   }
 
+  async reject(
+    documentId: string,
+    reason: string,
+    rejectedBy?: string,
+  ): Promise<ProviderDocument> {
+    const query = `
+      UPDATE provider_documents
+      SET rejected = true,
+          rejection_reason = $1,
+          verified_by = $2,
+          verified_at = NOW()
+      WHERE id = $3
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [reason, rejectedBy, documentId]);
+    return result.rows[0];
+  }
+
   async getPendingDocuments(limit: number = 20): Promise<ProviderDocument[]> {
     const query = `
       SELECT pd.*, p.business_name

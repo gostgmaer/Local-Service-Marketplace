@@ -132,13 +132,17 @@ export const getProviderServices = async (providerId: string): Promise<ProviderS
 
 /**
  * Update provider services
+ * Backend expects: { service_categories: string[] } (array of category UUIDs)
  */
 export const updateProviderServices = async (
   providerId: string,
   data: UpdateProviderServicesData
 ): Promise<ProviderService[]> => {
-  const response = await apiClient.patch<any>(`/providers/${providerId}/services`, data);
-  return apiClient.extractList<ProviderService>(response.data);
+  // Transform frontend { services: [{ category_id }] } → backend { service_categories: [id] }
+  const payload = { service_categories: data.services.map(s => s.category_id) };
+  const response = await apiClient.patch<any>(`/providers/${providerId}/services`, payload);
+  const result = apiClient.extractList<ProviderService>(response.data);
+  return result.length ? result : (response.data?.services ?? []);
 };
 
 /**

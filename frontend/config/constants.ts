@@ -76,7 +76,13 @@ export const ROUTES = {
 	DASHBOARD_PAYMENT_HISTORY: "/dashboard/payments/history",
 
 	// Dashboard - Reviews
+	DASHBOARD_REVIEWS: "/dashboard/reviews",
 	DASHBOARD_REVIEW_SUBMIT: "/dashboard/reviews/submit",
+
+	// Dashboard - Disputes
+	DASHBOARD_DISPUTES: "/dashboard/disputes",
+	DASHBOARD_DISPUTE_FILE: "/dashboard/disputes/file",
+	DASHBOARD_DISPUTE_DETAIL: (id: string) => `/dashboard/disputes/${id}`,
 
 	// Dashboard - Provider Specific
 	DASHBOARD_BROWSE_REQUESTS: "/dashboard/browse-requests",
@@ -95,7 +101,11 @@ export const ROUTES = {
 	DASHBOARD_ADMIN: "/dashboard/admin",
 	DASHBOARD_ADMIN_USERS: "/dashboard/admin/users",
 	DASHBOARD_ADMIN_USERS_CREATE: "/dashboard/admin/users/create",
+	DASHBOARD_ADMIN_PROVIDERS: "/dashboard/admin/providers",
+	DASHBOARD_ADMIN_CATEGORIES: "/dashboard/admin/categories",
+	DASHBOARD_ADMIN_ANALYTICS: "/dashboard/admin/analytics",
 	DASHBOARD_ADMIN_DISPUTES: "/dashboard/admin/disputes",
+	DASHBOARD_ADMIN_AUDIT_LOGS: "/dashboard/admin/audit-logs",
 	DASHBOARD_ADMIN_SETTINGS: "/dashboard/admin/settings",
 
 	// Public Requests (only create is public - viewing requires authentication)

@@ -148,4 +148,13 @@ export class ReviewService {
 
     this.logger.log(`Review ${id} deleted successfully`, "ReviewService");
   }
+
+  async getReviewsByUser(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ data: Review[]; total: number }> {
+    this.logger.log(`Fetching reviews by user ${userId}`, "ReviewService");
+    return this.reviewRepository.getReviewsByUser(userId, limit, offset);
+  }
 }

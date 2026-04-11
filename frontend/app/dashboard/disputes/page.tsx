@@ -121,12 +121,19 @@ export default function MyDisputesPage() {
                             {dispute.resolved_at && ` · Resolved ${formatDate(dispute.resolved_at)}`}
                           </p>
                         </div>
-                        <Link href={`/dashboard/jobs/${dispute.job_id}`} className="ml-4">
-                          <Button variant="outline" size="sm" className="flex items-center gap-1">
-                            View Job
-                            <ArrowRight className="h-3 w-3" />
-                          </Button>
-                        </Link>
+                        <div className="ml-4 flex flex-col gap-2">
+                          <Link href={`/dashboard/disputes/${dispute.id}`}>
+                            <Button variant="primary" size="sm" className="flex items-center gap-1 w-full">
+                              View Details
+                              <ArrowRight className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                          <Link href={`/dashboard/jobs/${dispute.job_id}`}>
+                            <Button variant="outline" size="sm" className="flex items-center gap-1 w-full">
+                              View Job
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

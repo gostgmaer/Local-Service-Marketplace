@@ -24,7 +24,10 @@ export interface CreateDisputeData {
 
 class DisputeService {
   async createDispute(data: CreateDisputeData): Promise<Dispute> {
-    const response = await apiClient.post<Dispute>('/disputes', data);
+    const response = await apiClient.post<Dispute>('/disputes', {
+      job_id: data.job_id,
+      reason: data.description ? `${data.reason}: ${data.description}` : data.reason,
+    });
     return response.data;
   }
 

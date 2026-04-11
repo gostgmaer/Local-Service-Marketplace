@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { AdminController } from "./admin.controller";
+import { DisputeController } from "./dispute.controller";
 import { DisputeService } from './services/dispute.service';
 import { AuditLogService } from './services/audit-log.service';
 import { SystemSettingService } from './services/system-setting.service';
@@ -15,7 +16,7 @@ import { ContactMessageRepository } from './repositories/contact-message.reposit
 	imports: [
 		BullModule.registerQueue({ name: 'oversight.audit' }),
 	],
-	controllers: [AdminController],
+	controllers: [AdminController, DisputeController],
 	providers: [
 		DisputeService,
 		AuditLogService,

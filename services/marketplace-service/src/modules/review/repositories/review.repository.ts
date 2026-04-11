@@ -272,5 +272,28 @@ export class ReviewRepository {
     const query = `DELETE FROM reviews WHERE id = $1`;
     await this.pool.query(query, [id]);
   }
+
+  async getReviewsByUser(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ data: Review[]; total: number }> {
+    const [dataResult, countResult] = await Promise.all([
+      this.pool.query(
+        `SELECT id, display_id, job_id, user_id, provider_id, rating, comment,
+                response, response_at, helpful_count, verified_purchase, created_at
+         FROM reviews
+         WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [userId, limit, offset],
+      ),
+      this.pool.query(
+        `SELECT COUNT(*)::int AS total FROM reviews WHERE user_id = $1`,
+        [userId],
+      ),
+    ]);
+    return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
+  }
 }
 

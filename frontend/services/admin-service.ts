@@ -242,27 +242,32 @@ class AdminService {
 	}
 
 	async getProviderDocuments(providerId: string): Promise<any[]> {
-		const response = await apiClient.get<any>(`/providers/${providerId}/documents`);
+		// Backend: GET /provider-documents/provider/:providerId
+		const response = await apiClient.get<any>(`/provider-documents/provider/${providerId}`);
 		return apiClient.extractList<any>(response.data);
 	}
 
 	async verifyProvider(providerId: string): Promise<any> {
-		const response = await apiClient.patch<any>(`/providers/${providerId}/verify`, {});
+		// Backend: PATCH /providers/:id with verification_status
+		const response = await apiClient.patch<any>(`/providers/${providerId}`, { verification_status: 'verified' });
 		return response.data;
 	}
 
 	async rejectProvider(providerId: string, reason: string): Promise<any> {
-		const response = await apiClient.patch<any>(`/providers/${providerId}/reject`, { reason });
+		// Backend: PATCH /providers/:id with verification_status
+		const response = await apiClient.patch<any>(`/providers/${providerId}`, { verification_status: 'rejected', rejection_reason: reason });
 		return response.data;
 	}
 
 	async verifyDocument(documentId: string): Promise<any> {
-		const response = await apiClient.patch<any>(`/provider-documents/${documentId}/verify`, {});
+		// Backend: POST /provider-documents/verify/:documentId
+		const response = await apiClient.post<any>(`/provider-documents/verify/${documentId}`, { verified: true });
 		return response.data;
 	}
 
 	async rejectDocument(documentId: string, reason: string): Promise<any> {
-		const response = await apiClient.patch<any>(`/provider-documents/${documentId}/reject`, { reason });
+		// Backend: POST /provider-documents/reject/:documentId
+		const response = await apiClient.post<any>(`/provider-documents/reject/${documentId}`, { reason });
 		return response.data;
 	}
 
@@ -286,15 +291,29 @@ class AdminService {
 	}
 
 	async getDailyMetrics(params?: { days?: number }): Promise<any[]> {
+		// Backend: GET /analytics/metrics?limit=N (returns daily_metrics rows)
 		const qs = new URLSearchParams();
-		if (params?.days) qs.append('days', String(params.days));
-		const response = await apiClient.get<any>(`/analytics/daily-metrics?${qs.toString()}`);
+		qs.append('limit', String(params?.days ?? 30));
+		const response = await apiClient.get<any>(`/analytics/metrics?${qs.toString()}`);
 		return apiClient.extractList<any>(response.data);
 	}
 
 	async getAnalyticsSummary(): Promise<any> {
-		const response = await apiClient.get<any>('/analytics/summary');
-		return response.data;
+		// Backend: GET /analytics/metrics?limit=1 (latest day summary)
+		const response = await apiClient.get<any>('/analytics/metrics?limit=30');
+		const rows = apiClient.extractList<any>(response.data);
+		// Compute totals across all returned rows for a summary
+		const summary = rows.reduce(
+			(acc, row) => ({
+				total_users: Math.max(acc.total_users, row.total_users ?? 0),
+				total_requests: acc.total_requests + (row.total_requests ?? 0),
+				total_proposals: acc.total_proposals + (row.total_proposals ?? 0),
+				total_jobs: acc.total_jobs + (row.total_jobs ?? 0),
+				total_payments: acc.total_payments + (row.total_payments ?? 0),
+			}),
+			{ total_users: 0, total_requests: 0, total_proposals: 0, total_jobs: 0, total_payments: 0 },
+		);
+		return summary;
 	}
 
 	async updateSystemSetting(key: string, value: string): Promise<any> {

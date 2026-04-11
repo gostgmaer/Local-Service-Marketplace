@@ -71,6 +71,16 @@ export class ProviderDocumentService {
     );
   }
 
+  async rejectDocument(
+    documentId: string,
+    adminUserId: string,
+    reason: string,
+  ): Promise<ProviderDocument> {
+    const document = await this.documentRepository.findById(documentId);
+    if (!document) throw new NotFoundException("Document not found");
+    return this.documentRepository.reject(documentId, reason, adminUserId);
+  }
+
   async getProviderDocuments(
     providerId: string,
   ): Promise<{ data: ProviderDocument[]; total: number }> {

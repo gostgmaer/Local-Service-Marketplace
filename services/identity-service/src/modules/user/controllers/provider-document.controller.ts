@@ -109,6 +109,23 @@ export class ProviderDocumentController {
     };
   }
 
+  @Roles("admin")
+  @UseGuards(RolesGuard)
+  @Post("reject/:documentId")
+  @HttpCode(HttpStatus.OK)
+  async rejectDocument(
+    @Param("documentId", ParseUUIDPipe) documentId: string,
+    @Body("reason") reason: string,
+    @Request() req: any,
+  ) {
+    const document = await this.documentService.rejectDocument(
+      documentId,
+      req.user.userId,
+      reason || "Rejected by admin",
+    );
+    return { success: true, data: document, message: "Document rejected" };
+  }
+
   @Get("provider/:providerId")
   async getProviderDocuments(
     @Param("providerId", FlexibleIdPipe) providerId: string,
