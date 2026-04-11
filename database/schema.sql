@@ -1842,11 +1842,16 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 CREATE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
 
--- Pre-seed integrated migrations (001-016)
+-- Pre-seed all integrated migrations (001-021)
+-- Fresh installs use schema.sql which is already the complete state,
+-- so all migrations are marked as applied to prevent re-running.
 INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
 VALUES
   ('001', 'add_user_name', 'integrated_in_schema', 0),
   ('002', 'production_readiness_fixes', 'integrated_in_schema', 0),
+  ('003', 'add_provider_documents', 'integrated_in_schema', 0),
+  ('004', 'add_notification_preferences', 'integrated_in_schema', 0),
+  ('005', 'add_failed_jobs_table', 'integrated_in_schema', 0),
   ('006', 'create_unsubscribe_table', 'integrated_in_schema', 0),
   ('007', 'add_anonymous_requests_support', 'integrated_in_schema', 0),
   ('008', 'add_payments_paid_at_field', 'integrated_in_schema', 0),
@@ -1861,6 +1866,7 @@ VALUES
   ('017', 'add_missing_tables', 'integrated_in_schema', 0),
   ('018', 'query_performance_indexes', 'integrated_in_schema', 0),
   ('019', 'unique_constraints_dedup', 'integrated_in_schema', 0),
-  ('005', 'add_failed_jobs_table', 'integrated_in_schema', 0)
+  ('020', 'add_edit_capabilities', 'integrated_in_schema', 0),
+  ('021', 'schema_sync', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 
