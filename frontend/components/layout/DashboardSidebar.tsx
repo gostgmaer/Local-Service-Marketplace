@@ -25,6 +25,11 @@ import {
 	AlertTriangle,
 	SlidersHorizontal,
 	ChevronRight,
+	BarChart3,
+	Shield,
+	Tag,
+	Scroll,
+	MessagesSquare,
 } from "lucide-react";
 
 interface NavItem {
@@ -39,6 +44,8 @@ const customerLinks: NavItem[] = [
 	{ label: "My Jobs", href: ROUTES.DASHBOARD_JOBS, icon: Briefcase },
 	{ label: "Favorites", href: ROUTES.DASHBOARD_FAVORITES, icon: Heart },
 	{ label: "Payment History", href: ROUTES.DASHBOARD_PAYMENT_HISTORY, icon: CreditCard },
+	{ label: "My Reviews", href: ROUTES.DASHBOARD_REVIEWS, icon: Star },
+	{ label: "My Disputes", href: ROUTES.DASHBOARD_DISPUTES, icon: MessagesSquare },
 ];
 
 const providerLinks: NavItem[] = [
@@ -49,15 +56,21 @@ const providerLinks: NavItem[] = [
 	{ label: "Earnings", href: ROUTES.DASHBOARD_EARNINGS, icon: DollarSign },
 	{ label: "Availability", href: ROUTES.DASHBOARD_AVAILABILITY, icon: Clock },
 	{ label: "My Profile", href: ROUTES.DASHBOARD_PROVIDER_OVERVIEW, icon: Star },
+	{ label: "Services", href: ROUTES.DASHBOARD_PROVIDER_SERVICES, icon: Tag },
 	{ label: "Portfolio", href: ROUTES.DASHBOARD_PROVIDER_PORTFOLIO, icon: FolderOpen },
 	{ label: "Documents", href: ROUTES.DASHBOARD_PROVIDER_DOCUMENTS, icon: FileText },
 	{ label: "Reviews", href: ROUTES.DASHBOARD_PROVIDER_REVIEWS, icon: Star },
+	{ label: "My Disputes", href: ROUTES.DASHBOARD_DISPUTES, icon: MessagesSquare },
 ];
 
 const adminLinks: NavItem[] = [
 	{ label: "Admin Overview", href: ROUTES.DASHBOARD_ADMIN, icon: LayoutDashboard },
 	{ label: "Users", href: ROUTES.DASHBOARD_ADMIN_USERS, icon: Users },
+	{ label: "Providers", href: ROUTES.DASHBOARD_ADMIN_PROVIDERS, icon: Shield },
+	{ label: "Categories", href: ROUTES.DASHBOARD_ADMIN_CATEGORIES, icon: Tag },
 	{ label: "Disputes", href: ROUTES.DASHBOARD_ADMIN_DISPUTES, icon: AlertTriangle },
+	{ label: "Analytics", href: ROUTES.DASHBOARD_ADMIN_ANALYTICS, icon: BarChart3 },
+	{ label: "Audit Logs", href: ROUTES.DASHBOARD_ADMIN_AUDIT_LOGS, icon: Scroll },
 	{ label: "Settings", href: ROUTES.DASHBOARD_ADMIN_SETTINGS, icon: SlidersHorizontal },
 ];
 
