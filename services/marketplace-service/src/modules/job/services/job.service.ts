@@ -484,7 +484,7 @@ export class JobService {
     }
 
     // Cancel the job
-    await this.jobRepository.cancelJob(existingJob.id, userId);
+    await this.jobRepository.cancelJob(existingJob.id, userId, 'Cancelled by user');
 
     this.logger.log(
       `Job cancelled successfully: ${existingJob.id}`,
