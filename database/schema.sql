@@ -439,6 +439,7 @@ CREATE TABLE payment_webhooks (
   processed BOOLEAN DEFAULT false NOT NULL,
   event_type TEXT,
   external_id TEXT,
+  error_message TEXT,
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   processed_at TIMESTAMP
 );
@@ -735,6 +736,46 @@ CREATE TABLE feature_flags (
 );
 
 -- =====================================================
+-- DEAD LETTER QUEUE (DLQ)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS failed_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  queue_name VARCHAR(100) NOT NULL,
+  job_id VARCHAR(255) NOT NULL,
+  job_name VARCHAR(100) NOT NULL,
+  job_data JSONB NOT NULL,
+  error_message TEXT NOT NULL,
+  error_stack TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  failed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  replayed_at TIMESTAMP WITH TIME ZONE,
+  status VARCHAR(20) NOT NULL DEFAULT 'failed' CHECK (status IN ('failed', 'replayed', 'discarded')),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE (queue_name, job_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_failed_jobs_queue_name ON failed_jobs(queue_name);
+CREATE INDEX IF NOT EXISTS idx_failed_jobs_status ON failed_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_failed_jobs_failed_at ON failed_jobs(failed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_failed_jobs_queue_status ON failed_jobs(queue_name, status);
+
+CREATE OR REPLACE FUNCTION update_failed_jobs_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_failed_jobs_updated_at
+  BEFORE UPDATE ON failed_jobs
+  FOR EACH ROW EXECUTE FUNCTION update_failed_jobs_updated_at();
+
+COMMENT ON TABLE failed_jobs IS 'Dead Letter Queue for storing failed BullMQ jobs after max retries exceeded';
+
+-- =====================================================
 -- DAILY METRICS
 -- =====================================================
 
@@ -742,6 +783,7 @@ CREATE TABLE daily_metrics (
   date DATE PRIMARY KEY,
   total_users INT NOT NULL DEFAULT 0,
   total_requests INT NOT NULL DEFAULT 0,
+  total_proposals INT NOT NULL DEFAULT 0,
   total_jobs INT NOT NULL DEFAULT 0,
   total_payments INT NOT NULL DEFAULT 0
 );
@@ -1818,6 +1860,7 @@ VALUES
   ('016', 'add_display_ids', 'integrated_in_schema', 0),
   ('017', 'add_missing_tables', 'integrated_in_schema', 0),
   ('018', 'query_performance_indexes', 'integrated_in_schema', 0),
-  ('019', 'unique_constraints_dedup', 'integrated_in_schema', 0)
+  ('019', 'unique_constraints_dedup', 'integrated_in_schema', 0),
+  ('005', 'add_failed_jobs_table', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 
