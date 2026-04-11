@@ -30,6 +30,9 @@ const uuid = () => {
 	return crypto.randomUUID();
 };
 
+// Generates an 11-char uppercase hex display ID (matches VARCHAR(11) UNIQUE NOT NULL columns)
+const displayId = () => crypto.randomBytes(6).toString('hex').substring(0, 11).toUpperCase();
+
 const uniqueEmail = (firstName, lastName) => {
 	const timestamp = Date.now();
 	const random = crypto.randomBytes(4).toString("hex");
@@ -301,9 +304,9 @@ class DatabaseSeeder {
 				// Category doesn't exist, insert it
 				const id = uuid();
 				const success = await safeInsert(
-					`INSERT INTO service_categories (id, name, description, icon, active) 
-           VALUES ($1, $2, $3, $4, $5)`,
-					[id, category.name, category.description, category.icon, true],
+					`INSERT INTO service_categories (id, display_id, name, description, icon, active) 
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+					[id, displayId(), category.name, category.description, category.icon, true],
 				);
 
 				if (success) {
@@ -339,10 +342,10 @@ class DatabaseSeeder {
 		const adminId = uuid();
 		const adminEmail = "admin@marketplace.com";
 		await safeInsert(
-			`INSERT INTO users (id, email, name, phone, password_hash, role, email_verified, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, email_verified, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (email) DO NOTHING`,
-			[adminId, adminEmail, "Admin User", "+12345678900", hashedPassword, "admin", true, "active"],
+			[adminId, displayId(), adminEmail, "Admin User", "+12345678900", hashedPassword, "admin", true, "active"],
 		);
 		const existingAdmin = await safeQuery("SELECT id FROM users WHERE email = $1", [adminEmail]);
 		if (existingAdmin.rows.length > 0) {
@@ -357,11 +360,12 @@ class DatabaseSeeder {
 		const admin2Email = "admin2@marketplace.com";
 		const admin2Id = uuid();
 		await safeInsert(
-			`INSERT INTO users (id, email, name, phone, password_hash, role, email_verified, phone_verified, timezone, language, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, email_verified, phone_verified, timezone, language, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        ON CONFLICT (email) DO NOTHING`,
 			[
 				admin2Id,
+				displayId(),
 				admin2Email,
 				"Admin Support",
 				"+12345678901",
@@ -390,11 +394,12 @@ class DatabaseSeeder {
 			const email = uniqueEmail(firstName, lastName);
 
 			await safeInsert(
-				`INSERT INTO users (id, email, name, phone, password_hash, role, email_verified, phone_verified, profile_picture_url, timezone, language, last_login_at, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+				`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, email_verified, phone_verified, profile_picture_url, timezone, language, last_login_at, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          ON CONFLICT (email) DO NOTHING`,
 				[
 					id,
+					displayId(),
 					email,
 					`${firstName} ${lastName}`,
 					`+1${randomInt(2000000000, 9999999999)}`,
@@ -429,11 +434,12 @@ class DatabaseSeeder {
 			const email = uniqueEmail(firstName, lastName);
 
 			await safeInsert(
-				`INSERT INTO users (id, email, name, phone, password_hash, role, email_verified, phone_verified, profile_picture_url, timezone, language, last_login_at, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+				`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, email_verified, phone_verified, profile_picture_url, timezone, language, last_login_at, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          ON CONFLICT (email) DO NOTHING`,
 				[
 					id,
+					displayId(),
 					email,
 					`${firstName} ${lastName}`,
 					`+1${randomInt(2000000000, 9999999999)}`,
@@ -473,10 +479,12 @@ class DatabaseSeeder {
 			if (this.userIds.length === 0) break;
 
 			const success = await safeInsert(
-				`INSERT INTO sessions (id, user_id, refresh_token, ip_address, user_agent, device_type, location, expires_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+				`INSERT INTO sessions (id, display_id, user_id, refresh_token, ip_address, user_agent, device_type, location, expires_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (refresh_token) WHERE refresh_token IS NOT NULL DO UPDATE SET expires_at = EXCLUDED.expires_at`,
 				[
 					uuid(),
+					displayId(),
 					randomPick(this.userIds),
 					crypto.randomBytes(32).toString("hex"),
 					faker.internet.ip(),
@@ -529,7 +537,8 @@ class DatabaseSeeder {
 		const unverifiedUsers = await safeQuery(`SELECT id FROM users WHERE email_verified = false LIMIT 100`);
 		for (const user of unverifiedUsers.rows) {
 			const success = await safeInsert(
-				`INSERT INTO email_verification_tokens (id, user_id, token, expires_at) VALUES ($1, $2, $3, $4)`,
+				`INSERT INTO email_verification_tokens (id, user_id, token, expires_at) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (token) DO UPDATE SET expires_at = EXCLUDED.expires_at`,
 				[uuid(), user.id, crypto.randomBytes(32).toString("hex"), new Date(Date.now() + 24 * 60 * 60 * 1000)],
 			);
 			if (success) count++;
@@ -543,7 +552,8 @@ class DatabaseSeeder {
 		for (const userId of this.userIds.slice(0, 30)) {
 			if (randomInt(0, 3) === 0) {
 				const success = await safeInsert(
-					`INSERT INTO password_reset_tokens (id, user_id, token, expires_at) VALUES ($1, $2, $3, $4)`,
+					`INSERT INTO password_reset_tokens (id, user_id, token, expires_at) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (token) DO UPDATE SET expires_at = EXCLUDED.expires_at`,
 					[
 						uuid(),
 						userId,
@@ -637,11 +647,12 @@ class DatabaseSeeder {
 		for (const userId of this.providerIds) {
 			const id = uuid();
 			await safeInsert(
-				`INSERT INTO providers (id, user_id, business_name, description, profile_picture_url, rating, total_jobs_completed, years_of_experience, service_area_radius, response_time_avg, verification_status, certifications) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+				`INSERT INTO providers (id, display_id, user_id, business_name, description, profile_picture_url, rating, total_jobs_completed, years_of_experience, service_area_radius, response_time_avg, verification_status, certifications) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          ON CONFLICT (user_id) DO NOTHING`,
 				[
 					id,
+					displayId(),
 					userId,
 					faker.company.name() + " " + uuid().substring(0, 8),
 					faker.company.catchPhrase() + ". " + faker.lorem.paragraph(),
@@ -791,10 +802,11 @@ class DatabaseSeeder {
 			const userId = randomInt(0, 1) === 1 && this.userIds.length > 0 ? randomPick(this.userIds) : null;
 
 			const success = await safeInsert(
-				`INSERT INTO locations (id, user_id, latitude, longitude, address, city, state, zip_code, country) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+				`INSERT INTO locations (id, display_id, user_id, latitude, longitude, address, city, state, zip_code, country) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 				[
 					id,
+					displayId(),
 					userId,
 					city.lat + (Math.random() - 0.5) * 0.2,
 					city.lng + (Math.random() - 0.5) * 0.2,
@@ -826,16 +838,27 @@ class DatabaseSeeder {
 			if (this.categoryIds.length === 0 || this.locationIds.length === 0) break;
 
 			const id = uuid();
-			const isAnonymous = randomInt(0, 10) < 3;
-			const userId = isAnonymous || this.customerIds.length === 0 ? null : randomPick(this.customerIds);
+			// Enforce check_user_or_guest: either userId OR all 3 guest fields must be present
+			let userId = null;
+			let guestName = null;
+			let guestEmail = null;
+			let guestPhone = null;
+			if (isAnonymous || this.customerIds.length === 0) {
+				guestName = faker.person.fullName();
+				guestEmail = uniqueEmail(faker.person.firstName(), faker.person.lastName());
+				guestPhone = `+1${randomInt(2000000000, 9999999999)}`;
+			} else {
+				userId = randomPick(this.customerIds);
+			}
 			const categoryId = randomPick(this.categoryIds);
 			const locationId = randomPick(this.locationIds);
 
 			const success = await safeInsert(
-				`INSERT INTO service_requests (id, user_id, category_id, location_id, description, budget, images, preferred_date, urgency, expiry_date, view_count, status, guest_name, guest_email, guest_phone, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+				`INSERT INTO service_requests (id, display_id, user_id, category_id, location_id, description, budget, images, preferred_date, urgency, expiry_date, view_count, status, guest_name, guest_email, guest_phone, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
 				[
 					id,
+					displayId(),
 					userId,
 					categoryId,
 					locationId,
@@ -847,9 +870,9 @@ class DatabaseSeeder {
 					new Date(Date.now() + randomInt(7, 30) * 24 * 60 * 60 * 1000),
 					randomInt(0, 100),
 					randomPick(statuses),
-					isAnonymous ? faker.person.fullName() : null,
-					isAnonymous ? uniqueEmail(faker.person.firstName(), faker.person.lastName()) : null,
-					isAnonymous ? `+1${randomInt(2000000000, 9999999999)}` : null,
+					guestName,
+					guestEmail,
+					guestPhone,
 					randomDate(new Date(2024, 0, 1), new Date()),
 				],
 			);
@@ -890,10 +913,12 @@ class DatabaseSeeder {
 			const completionDate = randomDate(startDate, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
 			const success = await safeInsert(
-				`INSERT INTO proposals (id, request_id, provider_id, price, message, estimated_hours, start_date, completion_date, rejected_reason, status, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+				`INSERT INTO proposals (id, display_id, request_id, provider_id, price, message, estimated_hours, start_date, completion_date, rejected_reason, status, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         ON CONFLICT DO NOTHING`,
 				[
 					id,
+					displayId(),
 					requestId,
 					providerId,
 					randomInt(50, 5000) * 100,
@@ -935,10 +960,11 @@ class DatabaseSeeder {
 			const completedAt = status === "completed" && startedAt ? randomDate(startedAt, new Date()) : null;
 
 			const success = await safeInsert(
-				`INSERT INTO jobs (id, request_id, provider_id, customer_id, proposal_id, actual_amount, cancelled_by, cancellation_reason, status, started_at, completed_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+				`INSERT INTO jobs (id, display_id, request_id, provider_id, customer_id, proposal_id, actual_amount, cancelled_by, cancellation_reason, status, started_at, completed_at, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
 				[
 					id,
+					displayId(),
 					proposal.requestId,
 					proposal.providerId,
 					customerId,
@@ -954,46 +980,63 @@ class DatabaseSeeder {
 			);
 			if (success) {
 				this.jobIds.push(id);
-				this.jobDetailsMap.set(id, { customerId, providerUserId });
+				this.jobDetailsMap.set(id, { customerId, providerUserId, providerId: proposal.providerId });
 				count++;
 			}
 		}
 
 		const extraNeeded = Math.max(0, 400 - count);
-		for (let i = 0; i < extraNeeded; i++) {
-			if (this.requestIds.length === 0 || this.providerRecordIds.length === 0 || this.customerIds.length === 0) break;
-
-			const id = uuid();
-			const customerId = randomPick(this.customerIds);
-			const providerId = randomPick(this.providerRecordIds);
-			const providerUserId = this.providerUserMap.get(providerId) || null;
-			const status = randomPick(statuses);
-			const createdAt = randomDate(new Date(2024, 0, 1), new Date());
-			const startedAt = status !== "scheduled" ? randomDate(createdAt, new Date()) : null;
-			const completedAt = status === "completed" && startedAt ? randomDate(startedAt, new Date()) : null;
-
-			const success = await safeInsert(
-				`INSERT INTO jobs (id, request_id, provider_id, customer_id, actual_amount, cancelled_by, cancellation_reason, status, started_at, completed_at, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-				[
-					id,
-					randomPick(this.requestIds),
-					providerId,
-					customerId,
-					randomInt(50, 5000) * 100,
-					status === "cancelled" ? customerId : null,
-					status === "cancelled" ? faker.lorem.sentence() : null,
-					status,
-					startedAt,
-					completedAt,
-					createdAt,
-				],
+		if (extraNeeded > 0 && this.requestIds.length > 0 && this.providerRecordIds.length > 0 && this.customerIds.length > 0) {
+			// Only use requests that don't already have an active (non-cancelled/disputed) job
+			// to avoid violating idx_jobs_request_unique ON jobs(request_id) WHERE status NOT IN ('cancelled','disputed')
+			const availableReqs = await safeQuery(
+				`SELECT id FROM service_requests WHERE id NOT IN (
+					SELECT request_id FROM jobs WHERE status NOT IN ('cancelled','disputed')
+				) ORDER BY RANDOM() LIMIT $1`,
+				[extraNeeded * 3],
 			);
+			const reqPool = availableReqs.rows.map((r) => r.id);
+			// If all requests are occupied, we can still seed extra jobs with safe statuses
+			// that don't violate the partial unique index (cancelled/disputed are exempt)
+			const safeStatuses = ['cancelled', 'disputed'];
+			const useAnyRequest = reqPool.length === 0;
+			const effectivePool = useAnyRequest ? this.requestIds : reqPool;
 
-			if (success) {
-				this.jobIds.push(id);
-				this.jobDetailsMap.set(id, { customerId, providerUserId });
-				count++;
+			for (let i = 0; i < extraNeeded && i < effectivePool.length; i++) {
+				const id = uuid();
+				const customerId = randomPick(this.customerIds);
+				const providerId = randomPick(this.providerRecordIds);
+				const providerUserId = this.providerUserMap.get(providerId) || null;
+				// If forced to reuse occupied requests, only use statuses exempt from the unique constraint
+				const status = useAnyRequest ? randomPick(safeStatuses) : randomPick(statuses);
+				const createdAt = randomDate(new Date(2024, 0, 1), new Date());
+				const startedAt = status !== "scheduled" ? randomDate(createdAt, new Date()) : null;
+				const completedAt = status === "completed" && startedAt ? randomDate(startedAt, new Date()) : null;
+
+				const success = await safeInsert(
+					`INSERT INTO jobs (id, display_id, request_id, provider_id, customer_id, actual_amount, cancelled_by, cancellation_reason, status, started_at, completed_at, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+					[
+						id,
+						displayId(),
+						effectivePool[i],
+						providerId,
+						customerId,
+						randomInt(50, 5000) * 100,
+						status === "cancelled" ? customerId : null,
+						status === "cancelled" ? faker.lorem.sentence() : null,
+						status,
+						startedAt,
+						completedAt,
+						createdAt,
+					],
+				);
+
+				if (success) {
+					this.jobIds.push(id);
+					this.jobDetailsMap.set(id, { customerId, providerUserId, providerId });
+					count++;
+				}
 			}
 		}
 
@@ -1032,25 +1075,29 @@ class DatabaseSeeder {
 		const statuses = ["pending", "completed", "failed"];
 		let count = 0;
 
-		for (const jobId of this.jobIds) {
-			if (this.customerIds.length === 0 || this.providerRecordIds.length === 0) break;
+		// Only create payments for jobs that don't already have one (re-run safety + consistent FK references)
+		const payableJobs = await safeQuery(
+			`SELECT j.id, j.customer_id, j.provider_id FROM jobs j
+			 WHERE j.status NOT IN ('cancelled', 'disputed')
+			 AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.job_id = j.id)`,
+		);
 
+		for (const job of payableJobs.rows) {
 			const id = uuid();
 			const amount = randomInt(50, 5000) * 100;
 			const platformFee = Math.floor(amount * 0.15);
 			const providerAmount = amount - platformFee;
-			const jobDetails = this.jobDetailsMap.get(jobId);
-			const customerId = jobDetails ? jobDetails.customerId : randomPick(this.customerIds);
 			const status = randomPick(statuses);
 
 			const success = await safeInsert(
-				`INSERT INTO payments (id, job_id, user_id, provider_id, amount, platform_fee, provider_amount, currency, payment_method, gateway, status, transaction_id, created_at, paid_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+				`INSERT INTO payments (id, display_id, job_id, user_id, provider_id, amount, platform_fee, provider_amount, currency, payment_method, gateway, status, transaction_id, created_at, paid_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
 				[
 					id,
-					jobId,
-					customerId,
-					randomPick(this.providerRecordIds),
+					displayId(),
+					job.id,
+					job.customer_id,
+					job.provider_id,
 					amount,
 					platformFee,
 					providerAmount,
@@ -1087,10 +1134,11 @@ class DatabaseSeeder {
 				const refundMultiplier = randomPick([0.5, 0.75, 1.0]);
 				const refundAmount = Math.max(1, Math.floor(payment.amount * refundMultiplier));
 				const success = await safeInsert(
-					`INSERT INTO refunds (id, payment_id, amount, status, reason) 
-           VALUES ($1, $2, $3, $4, $5)`,
+					`INSERT INTO refunds (id, display_id, payment_id, amount, status, reason) 
+           VALUES ($1, $2, $3, $4, $5, $6)`,
 					[
 						uuid(),
+						displayId(),
 						payment.id,
 						refundAmount,
 						randomPick(["pending", "completed", "failed"]),
@@ -1124,11 +1172,12 @@ class DatabaseSeeder {
 				const hasResponse = rating >= 4 && randomInt(0, 1) === 1;
 				const reviewCreatedAt = randomDate(new Date(2024, 0, 1), new Date());
 				const success = await safeInsert(
-					`INSERT INTO reviews (id, job_id, user_id, provider_id, rating, comment, response, response_at, helpful_count, verified_purchase, created_at) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+					`INSERT INTO reviews (id, display_id, job_id, user_id, provider_id, rating, comment, response, response_at, helpful_count, verified_purchase, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
            ON CONFLICT (job_id, user_id) DO NOTHING`,
 					[
 						uuid(),
+						displayId(),
 						job.id,
 						job.customer_id,
 						job.provider_id,
@@ -1166,10 +1215,11 @@ class DatabaseSeeder {
 				const isRead = randomInt(0, 1) === 1;
 
 				const success = await safeInsert(
-					`INSERT INTO messages (id, job_id, sender_id, message, read, read_at, created_at) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+					`INSERT INTO messages (id, display_id, job_id, sender_id, message, read, read_at, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 					[
 						id,
+						displayId(),
 						jobId,
 						randomPick(participants),
 						faker.lorem.sentences(randomInt(1, 3)),
@@ -1233,10 +1283,11 @@ class DatabaseSeeder {
 			if (this.userIds.length === 0) break;
 
 			const success = await safeInsert(
-				`INSERT INTO notifications (id, user_id, type, message, read, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+				`INSERT INTO notifications (id, display_id, user_id, type, message, read, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 				[
 					uuid(),
+					displayId(),
 					randomPick(this.userIds),
 					randomPick(types),
 					faker.lorem.sentence(),
@@ -1312,11 +1363,12 @@ class DatabaseSeeder {
 			const code = crypto.randomBytes(4).toString("hex").toUpperCase();
 
 			await safeInsert(
-				`INSERT INTO coupons (id, code, discount_percent, max_uses, max_uses_per_user, min_purchase_amount, active, created_by, expires_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+				`INSERT INTO coupons (id, display_id, code, discount_percent, max_uses, max_uses_per_user, min_purchase_amount, active, created_by, expires_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (code) DO NOTHING`,
 				[
 					id,
+					displayId(),
 					code,
 					randomInt(5, 50),
 					randomInt(10, 1000),
@@ -1349,7 +1401,8 @@ class DatabaseSeeder {
 
 			const success = await safeInsert(
 				`INSERT INTO coupon_usage (id, coupon_id, user_id, used_at) 
-         VALUES ($1, $2, $3, $4)`,
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (coupon_id, user_id) DO NOTHING`,
 				[uuid(), randomPick(this.couponIds), randomPick(this.userIds), randomDate(new Date(2024, 0, 1), new Date())],
 			);
 
@@ -1371,10 +1424,11 @@ class DatabaseSeeder {
 			const status = randomPick(["open", "investigating", "resolved", "closed"]);
 			const isResolved = status === "resolved" || status === "closed";
 			const success = await safeInsert(
-				`INSERT INTO disputes (id, job_id, opened_by, reason, status, resolution, resolved_by, resolved_at, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+				`INSERT INTO disputes (id, display_id, job_id, opened_by, reason, status, resolution, resolved_by, resolved_at, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 				[
 					uuid(),
+					displayId(),
 					job.id,
 					job.customer_id,
 					faker.lorem.paragraph(),
@@ -1459,10 +1513,11 @@ class DatabaseSeeder {
 
 		for (let i = 0; i < 1200; i++) {
 			const success = await safeInsert(
-				`INSERT INTO events (id, event_type, payload, created_at) 
-         VALUES ($1, $2, $3, $4)`,
+				`INSERT INTO events (id, display_id, event_type, payload, created_at) 
+         VALUES ($1, $2, $3, $4, $5)`,
 				[
 					uuid(),
+					displayId(),
 					randomPick(eventTypes),
 					JSON.stringify({
 						entity_id: uuid(),
@@ -1495,10 +1550,11 @@ class DatabaseSeeder {
 		for (let i = 0; i < 600; i++) {
 			const status = randomPick(statuses);
 			const success = await safeInsert(
-				`INSERT INTO background_jobs (id, job_type, payload, status, attempts, last_error, scheduled_for, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+				`INSERT INTO background_jobs (id, display_id, job_type, payload, status, attempts, last_error, scheduled_for, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 				[
 					uuid(),
+					displayId(),
 					randomPick(jobTypes),
 					JSON.stringify({ data: "sample", retryable: true }),
 					status,
@@ -1637,10 +1693,11 @@ class DatabaseSeeder {
 			else if (targetType === "request" && this.requestIds.length > 0) targetId = randomPick(this.requestIds);
 
 			const success = await safeInsert(
-				`INSERT INTO admin_actions (id, admin_id, action, target_type, target_id, reason, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+				`INSERT INTO admin_actions (id, display_id, admin_id, action, target_type, target_id, reason, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 				[
 					uuid(),
+					displayId(),
 					randomPick(this.adminIds),
 					randomPick(actions),
 					targetType,
@@ -1705,13 +1762,14 @@ class DatabaseSeeder {
 			date.setDate(date.getDate() + i);
 
 			const success = await safeInsert(
-				`INSERT INTO daily_metrics (date, total_users, total_requests, total_jobs, total_payments) 
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (date) DO UPDATE SET total_users = EXCLUDED.total_users`,
+				`INSERT INTO daily_metrics (date, total_users, total_requests, total_proposals, total_jobs, total_payments) 
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (date) DO UPDATE SET total_users = EXCLUDED.total_users, total_proposals = EXCLUDED.total_proposals`,
 				[
 					date.toISOString().split("T")[0],
 					randomInt(100, 200) + i,
 					randomInt(50, 150),
+					randomInt(40, 120),
 					randomInt(30, 100),
 					randomInt(20, 80),
 				],
@@ -1820,10 +1878,11 @@ class DatabaseSeeder {
 			const daysToAdd = status === "active" ? randomInt(30, 365) : randomInt(-30, 0); // Active: future expiry, Others: past expiry
 
 			const success = await safeInsert(
-				`INSERT INTO subscriptions (id, provider_id, plan_id, status, started_at, expires_at) 
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+				`INSERT INTO subscriptions (id, display_id, provider_id, plan_id, status, started_at, expires_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 				[
 					uuid(),
+					displayId(),
 					providerId,
 					planId,
 					status,
@@ -1972,7 +2031,8 @@ class DatabaseSeeder {
 
 			const success = await safeInsert(
 				`INSERT INTO magic_link_tokens (id, user_id, email, token, expires_at, used_at, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (token) DO UPDATE SET expires_at = EXCLUDED.expires_at`,
 				[
 					uuid(),
 					userId,
