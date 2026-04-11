@@ -162,7 +162,7 @@ export class AuthService {
             },
           })
           .then(() => { emailSent = true; })
-          .catch((err) => {
+          .catch((err: any) => {
             this.logger.error("Failed to enqueue generated password email", {
               context: "AuthService",
               error: err.message,
@@ -182,7 +182,7 @@ export class AuthService {
           },
         })
         .then(() => { verificationEmailSent = true; })
-        .catch((err) => {
+        .catch((err: any) => {
           this.logger.error("Failed to enqueue verification email", {
             context: "AuthService",
             error: err.message,
@@ -273,7 +273,7 @@ export class AuthService {
           dashboardUrl: `${this.configService.get<string>("FRONTEND_URL", "http://localhost:3000")}/dashboard`,
         },
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.logger.error("Failed to send welcome email", {
           context: "AuthService",
           error: err.message,
@@ -295,7 +295,7 @@ export class AuthService {
           verificationUrl: `${frontendUrl}/verify-email?token=${verificationToken}`,
         },
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.logger.error("Failed to send verification email", {
           context: "AuthService",
           error: err.message,
@@ -535,7 +535,7 @@ export class AuthService {
           resetUrl: `${frontendUrl}/reset-password?token=${resetToken}`,
         },
       })
-      .catch((err) =>
+      .catch((err: any) =>
         this.logger.error("Failed to enqueue password reset email", {
           context: "AuthService",
           error: err.message,
@@ -1144,7 +1144,7 @@ export class AuthService {
           });
         }
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.logger.error("Email OTP delivery failed", {
           context: "AuthService",
           userId: user.id,
@@ -1626,7 +1626,7 @@ export class AuthService {
           verificationUrl: `${frontendUrl}/verify-email?token=${token}`,
         },
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.logger.error("Failed to send verification email", {
           context: "AuthService",
           error: err.message,
@@ -1718,7 +1718,7 @@ export class AuthService {
           gracePeriodDays: 30,
         },
       })
-      .catch((err) =>
+      .catch((err: any) =>
         this.logger.error("Failed to enqueue deletion email", {
           error: err.message,
         }),
@@ -1845,7 +1845,7 @@ export class AuthService {
         template: "magicLink",
         variables: { name: user?.name || email.split("@")[0], magicLink },
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.logger.error("Failed to send magic link email", {
           error: err.message,
         });

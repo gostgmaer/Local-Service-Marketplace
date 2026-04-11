@@ -38,7 +38,7 @@ export class ProposalService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     @InjectQueue('marketplace.notification') private readonly notificationQueue: Queue,
-  ) {}
+  ) { }
 
   async createProposal(dto: CreateProposalDto): Promise<ProposalResponseDto> {
     this.logger.log(
@@ -96,7 +96,7 @@ export class ProposalService {
           proposalId: proposal.id,
           price: proposal.price,
         })
-        .catch((err) => {
+        .catch((error: any) => {
           this.logger.warn(
             `Failed to enqueue proposal notification: ${err.message}`,
             ProposalService.name,
@@ -219,7 +219,7 @@ export class ProposalService {
           requestId: proposal.request_id,
           proposalId: proposal.id,
         })
-        .catch((err) => {
+        .catch((error: any) => {
           this.logger.warn(
             `Failed to enqueue acceptance notification: ${err.message}`,
             ProposalService.name,
