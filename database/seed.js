@@ -164,76 +164,84 @@ class DatabaseSeeder {
 		try {
 			await this.testConnection();
 
+			const runStep = async (name, fn) => {
+				try {
+					await fn();
+				} catch (err) {
+					console.error(`   ❌ ${name} failed: ${err.message}`);
+				}
+			};
+
 			// Identity / Auth
-			await this.seedServiceCategories();
-			await this.seedUsers();
-			await this.seedEmailVerificationTokens();
-			await this.seedPasswordResetTokens();
-			await this.seedSessions();
-			await this.seedLoginAttempts();
-			await this.seedLoginHistory();
-			await this.seedSocialAccounts();
-			await this.seedUserDevices();
-			await this.seedTwoFactorSecrets();
-			await this.seedMagicLinkTokens();
-			await this.seedAccountDeletionRequests();
+			await runStep('seedServiceCategories', () => this.seedServiceCategories());
+			await runStep('seedUsers', () => this.seedUsers());
+			await runStep('seedEmailVerificationTokens', () => this.seedEmailVerificationTokens());
+			await runStep('seedPasswordResetTokens', () => this.seedPasswordResetTokens());
+			await runStep('seedSessions', () => this.seedSessions());
+			await runStep('seedLoginAttempts', () => this.seedLoginAttempts());
+			await runStep('seedLoginHistory', () => this.seedLoginHistory());
+			await runStep('seedSocialAccounts', () => this.seedSocialAccounts());
+			await runStep('seedUserDevices', () => this.seedUserDevices());
+			await runStep('seedTwoFactorSecrets', () => this.seedTwoFactorSecrets());
+			await runStep('seedMagicLinkTokens', () => this.seedMagicLinkTokens());
+			await runStep('seedAccountDeletionRequests', () => this.seedAccountDeletionRequests());
 
 			// Providers
-			await this.seedProviders();
-			await this.seedProviderServices();
-			await this.seedProviderAvailability();
-			await this.seedProviderPortfolio();
-			await this.seedProviderDocuments();
+			await runStep('seedProviders', () => this.seedProviders());
+			await runStep('seedProviderServices', () => this.seedProviderServices());
+			await runStep('seedProviderAvailability', () => this.seedProviderAvailability());
+			await runStep('seedProviderPortfolio', () => this.seedProviderPortfolio());
+			await runStep('seedProviderDocuments', () => this.seedProviderDocuments());
 
 			// Marketplace
-			await this.seedLocations();
-			await this.seedServiceRequests();
-			await this.seedProposals();
-			await this.seedJobs();
+			await runStep('seedLocations', () => this.seedLocations());
+			await runStep('seedServiceRequests', () => this.seedServiceRequests());
+			await runStep('seedProposals', () => this.seedProposals());
+			await runStep('seedJobs', () => this.seedJobs());
 
 			// Payments
-			await this.seedPaymentWebhooks();
-			await this.seedPayments();
-			await this.seedRefunds();
+			await runStep('seedPaymentWebhooks', () => this.seedPaymentWebhooks());
+			await runStep('seedPayments', () => this.seedPayments());
+			await runStep('seedRefunds', () => this.seedRefunds());
 
 			// Reviews & Messaging
-			await this.seedReviews();
-			await this.seedMessages();
-			await this.seedAttachments();
+			await runStep('seedReviews', () => this.seedReviews());
+			await runStep('seedMessages', () => this.seedMessages());
+			await runStep('seedAttachments', () => this.seedAttachments());
 
 			// Comms
-			await this.seedNotifications();
-			await this.seedNotificationDeliveries();
+			await runStep('seedNotifications', () => this.seedNotifications());
+			await runStep('seedNotificationDeliveries', () => this.seedNotificationDeliveries());
 
 			// Marketplace extras
-			await this.seedFavorites();
-			await this.seedCoupons();
-			await this.seedCouponUsage();
-			await this.seedDisputes();
+			await runStep('seedFavorites', () => this.seedFavorites());
+			await runStep('seedCoupons', () => this.seedCoupons());
+			await runStep('seedCouponUsage', () => this.seedCouponUsage());
+			await runStep('seedDisputes', () => this.seedDisputes());
 
 			// Oversight
-			await this.seedAuditLogs();
-			await this.seedUserActivityLogs();
-			await this.seedAdminActions();
-			await this.seedContactMessages();
-			await this.seedDailyMetrics();
+			await runStep('seedAuditLogs', () => this.seedAuditLogs());
+			await runStep('seedUserActivityLogs', () => this.seedUserActivityLogs());
+			await runStep('seedAdminActions', () => this.seedAdminActions());
+			await runStep('seedContactMessages', () => this.seedContactMessages());
+			await runStep('seedDailyMetrics', () => this.seedDailyMetrics());
 
 			// Infrastructure
-			await this.seedEvents();
-			await this.seedBackgroundJobs();
-			await this.seedRateLimits();
-			await this.seedFeatureFlags();
-			await this.seedSystemSettings();
+			await runStep('seedEvents', () => this.seedEvents());
+			await runStep('seedBackgroundJobs', () => this.seedBackgroundJobs());
+			await runStep('seedRateLimits', () => this.seedRateLimits());
+			await runStep('seedFeatureFlags', () => this.seedFeatureFlags());
+			await runStep('seedSystemSettings', () => this.seedSystemSettings());
 
 			// Subscriptions
-			await this.seedPricingPlans();
-			await this.seedSubscriptions();
+			await runStep('seedPricingPlans', () => this.seedPricingPlans());
+			await runStep('seedSubscriptions', () => this.seedSubscriptions());
 
 			// User preferences
-			await this.seedSavedPaymentMethods();
-			await this.seedNotificationPreferences();
-			await this.seedUnsubscribes();
-			await this.seedProviderReviewAggregates();
+			await runStep('seedSavedPaymentMethods', () => this.seedSavedPaymentMethods());
+			await runStep('seedNotificationPreferences', () => this.seedNotificationPreferences());
+			await runStep('seedUnsubscribes', () => this.seedUnsubscribes());
+			await runStep('seedProviderReviewAggregates', () => this.seedProviderReviewAggregates());
 
 			console.log("\n✅ Database seeding completed successfully!");
 			console.log("\n📊 Summary:");
@@ -832,6 +840,7 @@ class DatabaseSeeder {
 		console.log("📝 Seeding service requests...");
 		const statuses = ["open", "assigned", "completed", "cancelled"];
 		const urgencies = ["low", "medium", "high", "urgent"];
+		const isAnonymous = false; // set true to seed guest/anonymous requests instead
 		let count = 0;
 
 		for (let i = 0; i < 500; i++) {
