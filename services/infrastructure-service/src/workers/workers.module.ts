@@ -17,7 +17,7 @@ import { getQueueRegistrationOptions } from '../config/queue-config';
   imports: [
     BullModule.registerQueue(
       getQueueRegistrationOptions('infra.background-jobs'),
-      { name: 'infra.cleanup', defaultJobOptions: { timeout: 120000, attempts: 2, priority: 4 } },
+      getQueueRegistrationOptions('infra.cleanup'),
     ),
   ],
   providers: [

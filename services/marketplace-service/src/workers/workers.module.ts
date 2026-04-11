@@ -25,8 +25,8 @@ import { getQueueRegistrationOptions } from '../config/queue-config';
     BullModule.registerQueue(
       getQueueRegistrationOptions('marketplace.notification'),
       getQueueRegistrationOptions('marketplace.analytics'),
-      { name: 'marketplace.rating', defaultJobOptions: { timeout: 60000, attempts: 2, priority: 3 } },
-      { name: 'marketplace.cleanup', defaultJobOptions: { timeout: 120000, attempts: 2, priority: 4 } },
+      getQueueRegistrationOptions('marketplace.rating'),
+      getQueueRegistrationOptions('marketplace.cleanup'),
     ),
     NotificationModule,
     UserModule,
