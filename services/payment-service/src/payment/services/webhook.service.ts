@@ -143,7 +143,7 @@ export class WebhookService {
                 serviceName: "Service",
               },
             })
-            .catch((err) => {
+            .catch((err: any) => {
               this.logger.warn(
                 `Failed to send payment confirmation email: ${err.message}`,
                 "WebhookService",
@@ -177,7 +177,7 @@ export class WebhookService {
                   "Your payment could not be processed. Please check your payment method and try again.",
               },
             })
-            .catch((err) => {
+            .catch((err: any) => {
               this.logger.warn(
                 `Failed to send payment failure notification: ${err.message}`,
                 "WebhookService",

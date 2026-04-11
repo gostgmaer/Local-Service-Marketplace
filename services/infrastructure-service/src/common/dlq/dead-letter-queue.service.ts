@@ -75,7 +75,7 @@ export class DeadLetterQueueService {
         `Captured failed job in DLQ: ${queueName}/${job.name}/${job.id} - ${error.message}`,
         "DeadLetterQueueService",
       );
-    } catch (dbError) {
+    } catch (dbError: any) {
       this.logger.error(
         `Failed to store job in DLQ: ${dbError.message}`,
         dbError.stack,

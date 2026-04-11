@@ -60,7 +60,7 @@ const databasePoolFactory = async () => {
   }
 
   // Handle runtime pool errors (e.g. lost connections) to prevent crashes
-  pool.on("error", (err) => {
+  pool.on("error", (err: any) => {
     logger.error("Unexpected database pool error", err);
   });
 
