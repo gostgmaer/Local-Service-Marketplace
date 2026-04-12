@@ -230,12 +230,18 @@ describe("JobService.completeJob", () => {
     } as any;
     const kafka = makeKafka();
     const analytics = makeAnalytics();
+    const notificationClient = {
+      sendEmail: jest.fn().mockResolvedValue(undefined),
+    } as any;
+    const userClient = {
+      getUserEmail: jest.fn().mockResolvedValue(null),
+    } as any;
     const service = new JobService(
       jobRepository,
       kafka,
       makeRedis(),
-      {} as any,
-      {} as any,
+      notificationClient,
+      userClient,
       analytics,
       makeLogger(),
       makeQueue(),

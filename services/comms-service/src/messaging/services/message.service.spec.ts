@@ -76,6 +76,7 @@ describe("MessageService", () => {
     it("should return paginated messages", async () => {
       const paginated = { data: [mockMessage], total: 1, page: 1, limit: 20 };
       mockMessageRepo.getMessagesForJob.mockResolvedValue(paginated);
+      mockMessageRepo.getUserConversations.mockResolvedValue([{ job_id: "job-uuid-1" }]);
       const result = await service.getMessagesForJob("job-uuid-1", { userId: "user-uuid-1", role: "admin" }, 1, 20);
       expect(result).toEqual(paginated);
       expect(mockMessageRepo.getMessagesForJob).toHaveBeenCalledWith(
@@ -88,6 +89,7 @@ describe("MessageService", () => {
     it("should use default page and limit values", async () => {
       const paginated = { data: [], total: 0, page: 1, limit: 20 };
       mockMessageRepo.getMessagesForJob.mockResolvedValue(paginated);
+      mockMessageRepo.getUserConversations.mockResolvedValue([{ job_id: "job-uuid-1" }]);
       await service.getMessagesForJob("job-uuid-1", { userId: "user-uuid-1", role: "admin" });
       expect(mockMessageRepo.getMessagesForJob).toHaveBeenCalledWith(
         "job-uuid-1",
