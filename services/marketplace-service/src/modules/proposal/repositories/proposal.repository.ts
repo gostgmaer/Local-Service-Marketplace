@@ -8,6 +8,7 @@ import {
   SortOrder,
 } from "../dto/proposal-query.dto";
 import { resolveId } from "@/common/utils/resolve-id.util";
+import { BadRequestException } from "@/common/exceptions/http.exceptions";
 
 @Injectable()
 export class ProposalRepository {
@@ -78,12 +79,15 @@ export class ProposalRepository {
     const query = `
       UPDATE proposals
       SET status = 'accepted', updated_at = NOW()
-      WHERE id = $1
+      WHERE id = $1 AND status = 'pending'
       RETURNING id, display_id, request_id, provider_id, price, message, estimated_hours, start_date, completion_date, rejected_reason, status, created_at, updated_at
     `;
 
     const result = await this.pool.query(query, [id]);
-    return result.rows[0] || null;
+    if (result.rowCount === 0) {
+      throw new BadRequestException("Proposal is no longer pending or does not exist");
+    }
+    return result.rows[0];
   }
 
   /**

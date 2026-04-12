@@ -14,6 +14,7 @@ import { TwoFactorSecretRepository } from "../repositories/two-factor-secret.rep
 import { MagicLinkTokenRepository } from "../repositories/magic-link-token.repository";
 import { LoginHistoryRepository } from "../repositories/login-history.repository";
 import { AccountDeletionRequestRepository } from "../repositories/account-deletion-request.repository";
+import { ProviderRepository } from "../../user/repositories/provider.repository";
 import { JwtService } from "./jwt.service";
 import { TokenService } from "./token.service";
 import { SmsClient } from "../clients/sms.client";
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly magicLinkTokenRepo: MagicLinkTokenRepository,
     private readonly loginHistoryRepo: LoginHistoryRepository,
     private readonly accountDeletionRequestRepo: AccountDeletionRequestRepository,
+    private readonly providerRepo: ProviderRepository,
     private readonly jwtService: JwtService,
     private readonly tokenService: TokenService,
     private readonly smsClient: SmsClient,
@@ -58,6 +60,16 @@ export class AuthService {
       this.configService.get<string>("MAX_LOGIN_ATTEMPTS", "5"),
       10,
     );
+  }
+
+  /**
+   * Resolves the provider entity ID for a user whose role is 'provider'.
+   * Returns undefined for non-providers or when no provider record exists yet.
+   */
+  private async resolveProviderId(userId: string, role: string): Promise<string | undefined> {
+    if (role !== "provider") return undefined;
+    const provider = await this.providerRepo.findByUserId(userId).catch(() => null);
+    return provider?.id ?? undefined;
   }
 
   private generatePassword(length = 12): string {
@@ -304,15 +316,18 @@ export class AuthService {
       });
 
     // Generate tokens
+    const signupProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      signupProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      signupProviderId,
     );
 
     // Store refresh token in session
@@ -419,15 +434,18 @@ export class AuthService {
     });
 
     // Generate tokens
+    const loginProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      loginProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      loginProviderId,
     );
 
     // Store refresh token in session
@@ -492,10 +510,12 @@ export class AuthService {
       }
 
       // Generate new access token
+      const refreshProviderId = payload.providerId ?? await this.resolveProviderId(user.id, user.role);
       const accessToken = this.jwtService.generateAccessToken(
         user.id,
         user.email,
         user.role,
+        refreshProviderId,
       );
 
       return { accessToken };
@@ -768,15 +788,18 @@ export class AuthService {
     }
 
     // Generate JWT tokens
+    const oauthProviderId = await this.resolveProviderId(user.id, user.role);
     const jwtAccessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      oauthProviderId,
     );
     const jwtRefreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      oauthProviderId,
     );
 
     // Store refresh token in session
@@ -893,15 +916,18 @@ export class AuthService {
     });
 
     // Generate tokens
+    const phoneLoginProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      phoneLoginProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      phoneLoginProviderId,
     );
 
     // Store refresh token in session
@@ -1071,15 +1097,18 @@ export class AuthService {
       });
 
       // Generate tokens
+      const phoneOtpProviderId = await this.resolveProviderId(user.id, user.role);
       const accessToken = this.jwtService.generateAccessToken(
         user.id,
         user.email,
         user.role,
+        phoneOtpProviderId,
       );
       const refreshToken = this.jwtService.generateRefreshToken(
         user.id,
         user.email,
         user.role,
+        phoneOtpProviderId,
       );
 
       // Store refresh token in session
@@ -1240,15 +1269,18 @@ export class AuthService {
       throw new UnauthorizedException("Invalid or expired OTP");
     }
 
+    const emailOtpProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      emailOtpProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      emailOtpProviderId,
     );
 
     const expiresAt = new Date();
@@ -1943,15 +1975,18 @@ export class AuthService {
     }
 
     // Generate tokens
+    const magicLinkProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      magicLinkProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      magicLinkProviderId,
     );
 
     await this.sessionRepo.create(
@@ -2052,15 +2087,18 @@ export class AuthService {
     }
 
     // Generate tokens
+    const appleProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      appleProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      appleProviderId,
     );
 
     await this.sessionRepo.create(

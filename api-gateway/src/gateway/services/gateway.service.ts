@@ -206,7 +206,8 @@ export class GatewayService {
 
       // Sign user context headers with HMAC to prevent tampering
       if (this.gatewaySecret) {
-        const hmacPayload = `${sanitized["x-user-id"]}:${sanitized["x-user-email"]}:${sanitized["x-user-role"]}`;
+        const providerId = sanitized["x-provider-id"] || "none";
+        const hmacPayload = `${sanitized["x-user-id"]}:${sanitized["x-user-email"]}:${sanitized["x-user-role"]}:${providerId}`;
         sanitized["x-gateway-hmac"] = crypto
           .createHmac("sha256", this.gatewaySecret)
           .update(hmacPayload)
@@ -225,7 +226,7 @@ export class GatewayService {
 
       // Sign anonymous user context headers
       if (this.gatewaySecret) {
-        const hmacPayload = `anonymous:anonymous@example.com:anonymous`;
+        const hmacPayload = `anonymous:anonymous@example.com:anonymous:none`;
         sanitized["x-gateway-hmac"] = crypto
           .createHmac("sha256", this.gatewaySecret)
           .update(hmacPayload)
