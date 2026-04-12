@@ -232,9 +232,9 @@ describe("NotificationService", () => {
         message: "Hello",
       });
       expect(result.success).toBe(true);
-      expect(mockSmsQueue.add).toHaveBeenCalledWith(
-        "deliver-sms",
-        expect.objectContaining({ phone: "+1234567890" }),
+      expect(mockSmsClient.sendSms).toHaveBeenCalledWith(
+        "+1234567890",
+        "Hello",
       );
     });
 
@@ -248,9 +248,9 @@ describe("NotificationService", () => {
       });
       expect(result.success).toBe(true);
       expect(mockEmailClient.sendEmail).toHaveBeenCalled();
-      expect(mockSmsQueue.add).toHaveBeenCalledWith(
-        "deliver-sms",
-        expect.objectContaining({ message: "Hello" }),
+      expect(mockSmsClient.sendSms).toHaveBeenCalledWith(
+        "user@example.com",
+        "Hello",
       );
     });
 
