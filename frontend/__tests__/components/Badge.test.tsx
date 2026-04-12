@@ -41,7 +41,7 @@ describe("Badge Component", () => {
 	it("applies success variant", () => {
 		const { container } = render(<Badge variant='success'>Success</Badge>);
 		const badge = container.querySelector("span");
-		expect(badge?.className).toContain("bg-green-50");
+		expect(badge?.className).toContain("bg-accent-50");
 	});
 
 	it("applies danger variant", () => {
