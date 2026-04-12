@@ -86,6 +86,7 @@ export interface RequestFilters {
 	cursor?: string;
 	limit?: number;
 	page?: number;
+	search?: string;
 }
 
 class RequestService {
@@ -103,6 +104,7 @@ class RequestService {
 		if (filters?.cursor) params.append("cursor", filters.cursor);
 		if (filters?.limit) params.append("limit", filters.limit.toString());
 		if (filters?.page) params.append("page", filters.page.toString());
+		if (filters?.search) params.append("search", filters.search);
 
 		const response = await apiClient.get<PaginatedResponse<ServiceRequest>>(`/requests?${params.toString()}`);
 		// API client unwraps to { data, total } for responses with total
