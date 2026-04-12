@@ -1,12 +1,47 @@
-'use client';
-
-import React from 'react';
+import type { Metadata } from 'next';
 import { Layout } from '@/components/layout/Layout';
 import { Search, UserCheck, MessageCircle, CheckCircle, Star, Shield } from 'lucide-react';
+
+export const metadata: Metadata = {
+	title: 'How It Works',
+	description:
+		'Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.',
+	alternates: { canonical: '/how-it-works' },
+	openGraph: {
+		title: 'How It Works',
+		description:
+			'Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.',
+		url: '/how-it-works',
+		images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'How It Works',
+		description:
+			'Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.',
+	},
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+
+const howToJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'HowTo',
+	name: 'How to Hire a Local Service Provider',
+	description: 'Find and hire trusted local service providers in four simple steps.',
+	url: `${SITE_URL}/how-it-works`,
+	step: [
+		{ '@type': 'HowToStep', position: 1, name: 'Post Your Request', text: 'Describe the service you need and set your budget.' },
+		{ '@type': 'HowToStep', position: 2, name: 'Receive Proposals', text: 'Get quotes from verified service providers in your area.' },
+		{ '@type': 'HowToStep', position: 3, name: 'Compare & Hire', text: 'Review profiles, ratings, and choose the best fit for your needs.' },
+		{ '@type': 'HowToStep', position: 4, name: 'Get It Done', text: 'Work gets completed and you pay securely through our platform.' },
+	],
+};
 
 export default function HowItWorksPage() {
   return (
     <Layout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }} />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">

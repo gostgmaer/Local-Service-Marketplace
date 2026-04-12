@@ -8,7 +8,27 @@ import { resolveId } from "@/common/utils/resolve-id.util";
 export class ReviewRepository {
   constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
-  async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
+  /** Returns the job row so the service can validate status and resolve provider_id. */
+  async getJobForReview(jobId: string): Promise<{ id: string; provider_id: string; status: string; customer_id: string } | null> {
+    const id = await resolveId(this.pool, "jobs", jobId).catch(() => null);
+    if (!id) return null;
+    const result = await this.pool.query(
+      `SELECT id, provider_id, status, customer_id FROM jobs WHERE id = $1`,
+      [id],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  /** Returns true if a review already exists for the given (job, user) pair. */
+  async existsForJobAndUser(jobId: string, userId: string): Promise<boolean> {
+    const result = await this.pool.query(
+      `SELECT 1 FROM reviews WHERE job_id = $1 AND user_id = $2 LIMIT 1`,
+      [jobId, userId],
+    );
+    return result.rows.length > 0;
+  }
+
+  async createReview(createReviewDto: CreateReviewDto): Promise<Review | null> {
     const jobId = await resolveId(this.pool, "jobs", createReviewDto.job_id);
     const providerId = await resolveId(
       this.pool,
@@ -18,6 +38,7 @@ export class ReviewRepository {
     const query = `
       INSERT INTO reviews (job_id, user_id, provider_id, rating, comment)
       VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (job_id, user_id) DO NOTHING
       RETURNING id, display_id, job_id, user_id, provider_id, rating, comment, response, response_at, helpful_count, verified_purchase, created_at
     `;
 
@@ -30,7 +51,7 @@ export class ReviewRepository {
     ];
 
     const result = await this.pool.query(query, values);
-    return result.rows[0];
+    return result.rows[0] ?? null;
   }
 
   async getReviewById(id: string): Promise<Review | null> {
@@ -157,15 +178,23 @@ export class ReviewRepository {
     return result.rows[0];
   }
 
-  async incrementHelpfulCount(reviewId: string): Promise<Review> {
+  async incrementHelpfulCount(reviewId: string, userId: string): Promise<Review | null> {
+    // Atomically insert vote and increment count; DO NOTHING on duplicate
     const query = `
-      UPDATE reviews 
+      WITH vote AS (
+        INSERT INTO review_helpful_votes (review_id, user_id)
+        VALUES ($1, $2)
+        ON CONFLICT (review_id, user_id) DO NOTHING
+        RETURNING review_id
+      )
+      UPDATE reviews
       SET helpful_count = helpful_count + 1
       WHERE id = $1
+        AND EXISTS (SELECT 1 FROM vote)
       RETURNING *
     `;
-    const result = await this.pool.query(query, [reviewId]);
-    return result.rows[0];
+    const result = await this.pool.query(query, [reviewId, userId]);
+    return result.rows[0] ?? null;
   }
 
   async getVerifiedPurchaseReviews(

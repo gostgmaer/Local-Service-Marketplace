@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { Layout } from '@/components/layout/Layout';
-import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Loading } from '@/components/ui/Loading';
-import { ErrorState } from '@/components/ui/ErrorState';
-import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
-import { AvailabilitySchedule } from '@/components/features/providers/AvailabilitySchedule';
-import { getProviderProfile } from '@/services/user-service';
-import { getProviderReviews, getProviderReviewAggregates } from '@/services/review-service';
-import { requestService, ServiceCategory } from '@/services/request-service';
-import { favoriteService } from '@/services/favorite-service';
-import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Layout } from "@/components/layout/Layout";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Loading } from "@/components/ui/Loading";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
+import { AvailabilitySchedule } from "@/components/features/providers/AvailabilitySchedule";
+import { getProviderProfile } from "@/services/user-service";
+import { getProviderReviews, getProviderReviewAggregates } from "@/services/review-service";
+import { requestService, ServiceCategory } from "@/services/request-service";
+import { favoriteService } from "@/services/favorite-service";
+import { useAuth } from "@/hooks/useAuth";
 import { formatDate, parseRating } from "@/utils/helpers";
-import { ArrowLeft, Star, Calendar, Briefcase, MessageSquare, Heart } from 'lucide-react';
-import Link from 'next/link';
-import { ROUTES } from '@/config/constants';
-import { toast } from 'react-hot-toast';
+import { ArrowLeft, Star, Calendar, Briefcase, MessageSquare, Heart } from "lucide-react";
+import Link from "next/link";
+import { ROUTES } from "@/config/constants";
+import { toast } from "react-hot-toast";
 
 export default function ProviderDetailPage() {
 	const params = useParams();
@@ -31,8 +31,13 @@ export default function ProviderDetailPage() {
 	const [isFavorited, setIsFavorited] = useState(false);
 	const [checkingFavorite, setCheckingFavorite] = useState(true);
 
-	const { data: provider, isLoading, error, refetch } = useQuery({
-		queryKey: ['provider', providerId],
+	const {
+		data: provider,
+		isLoading,
+		error,
+		refetch,
+	} = useQuery({
+		queryKey: ["provider", providerId],
 		queryFn: () => getProviderProfile(providerId),
 		enabled: !!providerId,
 	});
@@ -40,19 +45,19 @@ export default function ProviderDetailPage() {
 	const providerRating = parseRating(provider?.rating);
 
 	const { data: reviews } = useQuery({
-		queryKey: ['provider-reviews', providerId],
+		queryKey: ["provider-reviews", providerId],
 		queryFn: () => getProviderReviews(providerId),
 		enabled: !!providerId,
 	});
 
 	const { data: reviewAggregates } = useQuery({
-		queryKey: ['provider-review-aggregates', providerId],
+		queryKey: ["provider-review-aggregates", providerId],
 		queryFn: () => getProviderReviewAggregates(providerId),
 		enabled: !!providerId,
 	});
 
 	const { data: categories } = useQuery({
-		queryKey: ['service-categories'],
+		queryKey: ["service-categories"],
 		queryFn: () => requestService.getCategories(),
 	});
 
@@ -69,7 +74,7 @@ export default function ProviderDetailPage() {
 					const favorited = await favoriteService.isFavorite(user.id, providerId);
 					setIsFavorited(favorited);
 				} catch (error) {
-					console.error('Error checking favorite:', error);
+					console.error("Error checking favorite:", error);
 				} finally {
 					setCheckingFavorite(false);
 				}
@@ -84,15 +89,12 @@ export default function ProviderDetailPage() {
 	const toggleFavoriteMutation = useMutation({
 		mutationFn: async () => {
 			if (!user?.id) {
-				throw new Error('Please login to save favorites');
+				throw new Error("Please login to save favorites");
 			}
 			if (isFavorited) {
 				await favoriteService.removeFavorite(user.id, providerId);
 			} else {
-				await favoriteService.addFavorite({
-					user_id: user.id,
-					provider_id: providerId,
-				});
+				await favoriteService.addFavorite({ user_id: user.id, provider_id: providerId });
 			}
 		},
 		onMutate: async () => {
@@ -100,22 +102,20 @@ export default function ProviderDetailPage() {
 			setIsFavorited(!isFavorited);
 		},
 		onSuccess: () => {
-			toast.success(
-				isFavorited ? 'Removed from favorites' : 'Added to favorites'
-			);
+			toast.success(isFavorited ? "Removed from favorites" : "Added to favorites");
 			// Invalidate favorites query if on favorites page
-			queryClient.invalidateQueries({ queryKey: ['favorites'] });
+			queryClient.invalidateQueries({ queryKey: ["favorites"] });
 		},
 		onError: (error: any) => {
 			// Revert optimistic update on error
 			setIsFavorited(!isFavorited);
-			toast.error(error.message || 'Failed to update favorite');
+			toast.error(error.message || "Failed to update favorite");
 		},
 	});
 
 	const handleToggleFavorite = () => {
 		if (!user) {
-			toast.error('Please login to save favorites');
+			toast.error("Please login to save favorites");
 			router.push(ROUTES.LOGIN);
 			return;
 		}
@@ -125,7 +125,7 @@ export default function ProviderDetailPage() {
 	if (isLoading) {
 		return (
 			<Layout>
-				<div className="container-custom py-8">
+				<div className='container-custom py-8'>
 					<Loading />
 				</div>
 			</Layout>
@@ -135,9 +135,9 @@ export default function ProviderDetailPage() {
 	if (error || !provider) {
 		return (
 			<Layout>
-				<div className="container-custom py-8">
+				<div className='container-custom py-8'>
 					<ErrorState
-						title="Provider not found"
+						title='Provider not found'
 						message="We couldn't find the provider you're looking for."
 						retry={() => refetch()}
 					/>
@@ -263,7 +263,7 @@ export default function ProviderDetailPage() {
 											const pct =
 												reviewAggregates.total_reviews > 0 ?
 													Math.round((count / reviewAggregates.total_reviews) * 100)
-													: 0;
+												:	0;
 											return (
 												<div
 													key={stars}
@@ -311,7 +311,7 @@ export default function ProviderDetailPage() {
 											</div>
 										))}
 									</div>
-									: <p className='text-gray-500 text-sm'>No reviews yet.</p>}
+								:	<p className='text-gray-500 text-sm'>No reviews yet.</p>}
 							</CardContent>
 						</Card>
 					</div>
@@ -345,9 +345,9 @@ export default function ProviderDetailPage() {
 										<Heart className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`} />
 										{checkingFavorite ?
 											"Loading..."
-											: isFavorited ?
-												"Remove from Favorites"
-												: "Save to Favorites"}
+										: isFavorited ?
+											"Remove from Favorites"
+										:	"Save to Favorites"}
 									</Button>
 								</div>
 							</CardContent>

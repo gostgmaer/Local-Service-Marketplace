@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		"/contact",
 		"/how-it-works",
 		"/providers",
+		"/categories",
 		"/pricing",
 		"/help",
 		"/faq",
@@ -28,6 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		priority:
 			route === "" ? 1
 			: route === "/providers" || route === "/search" ? 0.9
+			: route === "/categories" ? 0.8
 			: 0.7,
 	}));
 }

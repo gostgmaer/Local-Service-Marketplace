@@ -14,6 +14,16 @@ async function bootstrap() {
 
   app.use(helmet());
 
+  // Reject oversized request bodies early (before body parsing)
+  // This limits DoS risk from large JSON payloads; Express default is 100kb
+  app.use((req: any, res: any, next: any) => {
+    const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+    if (contentLength > 5 * 1024 * 1024) {
+      return res.status(413).json({ statusCode: 413, message: 'Payload too large' });
+    }
+    next();
+  });
+
   // Use Winston logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 

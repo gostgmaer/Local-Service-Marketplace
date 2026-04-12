@@ -3,6 +3,8 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { ProposalRepository } from "../repositories/proposal.repository";
+import { JobRepository } from "../../job/repositories/job.repository";
+import { RequestRepository } from "../../request/repositories/request.repository";
 import { CreateProposalDto } from "../dto/create-proposal.dto";
 import {
   ProposalQueryDto,
@@ -32,6 +34,8 @@ import { UserClient } from "../../../common/user/user.client";
 export class ProposalService {
   constructor(
     private readonly proposalRepository: ProposalRepository,
+    private readonly jobRepository: JobRepository,
+    private readonly requestRepository: RequestRepository,
     private readonly kafkaService: KafkaService,
     private readonly notificationClient: NotificationClient,
     private readonly userClient: UserClient,
@@ -51,6 +55,17 @@ export class ProposalService {
       throw new BadRequestException("Price must be a positive number");
     }
 
+    // Validate that the request exists and is still open
+    const requestStatus = await this.proposalRepository.getRequestStatus(dto.request_id);
+    if (!requestStatus) {
+      throw new NotFoundException("Service request not found");
+    }
+    if (requestStatus !== "open") {
+      throw new BadRequestException(
+        "Proposals can only be submitted for open service requests",
+      );
+    }
+
     // Check if provider already submitted a proposal for this request
     const hasExisting = await this.proposalRepository.hasExistingProposal(
       dto.request_id,
@@ -59,6 +74,18 @@ export class ProposalService {
     if (hasExisting) {
       throw new ConflictException(
         "Provider has already submitted a proposal for this request",
+      );
+    }
+
+    // Cap total lifetime submissions per (provider, request) to prevent spam re-proposals
+    const MAX_PROPOSALS_PER_REQUEST = 3;
+    const totalAttempts = await this.proposalRepository.countProposalsByProviderForRequest(
+      dto.request_id,
+      dto.provider_id,
+    );
+    if (totalAttempts >= MAX_PROPOSALS_PER_REQUEST) {
+      throw new ConflictException(
+        `You have reached the maximum number of proposals (${MAX_PROPOSALS_PER_REQUEST}) for this request`,
       );
     }
 
@@ -113,6 +140,7 @@ export class ProposalService {
         proposalId: proposal.id,
         requestId: proposal.request_id,
         providerId: proposal.provider_id,
+        customerId: fullProposal?.customer_id,
         price: proposal.price,
         status: proposal.status,
       },
@@ -198,8 +226,32 @@ export class ProposalService {
       existingProposal.id,
     );
 
+    // Reject all other pending proposals on this request so no request has
+    // multiple accepted proposals simultaneously (non-blocking, best-effort)
+    this.proposalRepository
+      .rejectSiblingProposals(existingProposal.request_id, existingProposal.id)
+      .catch((err: any) => {
+        this.logger.warn(
+          `Failed to reject sibling proposals for request ${existingProposal.request_id}: ${err.message}`,
+          ProposalService.name,
+        );
+      });
+
+    // Create job record — this is the central handoff from proposal → job lifecycle
+    const job = await this.jobRepository.createJob({
+      request_id: existingProposal.request_id,
+      provider_id: existingProposal.provider_id,
+      customer_id: existingProposal.customer_id,
+      proposal_id: existingProposal.id,
+    });
+
+    // Transition the service request to 'assigned'
+    await this.requestRepository.updateRequest(existingProposal.request_id, {
+      status: 'assigned',
+    } as any);
+
     this.logger.log(
-      `Proposal accepted successfully: ${id}`,
+      `Job ${job.id} created and request ${existingProposal.request_id} set to assigned`,
       ProposalService.name,
     );
 
@@ -247,6 +299,7 @@ export class ProposalService {
     id: string,
     userId: string,
     userRole: string,
+    reason?: string,
   ): Promise<ProposalResponseDto> {
     this.logger.log(`Rejecting proposal: ${id}`, ProposalService.name);
 
@@ -272,6 +325,7 @@ export class ProposalService {
 
     const proposal = await this.proposalRepository.rejectProposal(
       existingProposal.id,
+      reason,
     );
 
     this.logger.log(
@@ -435,6 +489,19 @@ export class ProposalService {
       `Proposal withdrawn successfully: ${id}`,
       ProposalService.name,
     );
+
+    // Publish withdrawal event to Kafka
+    await this.kafkaService.publishEvent("proposal-events", {
+      eventType: "proposal_withdrawn",
+      eventId: `${proposal.id}-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      data: {
+        proposalId: proposal.id,
+        requestId: proposal.request_id,
+        providerId: proposal.provider_id,
+        status: proposal.status,
+      },
+    });
 
     return ProposalResponseDto.fromEntity(proposal);
   }

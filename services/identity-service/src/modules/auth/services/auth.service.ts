@@ -14,6 +14,7 @@ import { TwoFactorSecretRepository } from "../repositories/two-factor-secret.rep
 import { MagicLinkTokenRepository } from "../repositories/magic-link-token.repository";
 import { LoginHistoryRepository } from "../repositories/login-history.repository";
 import { AccountDeletionRequestRepository } from "../repositories/account-deletion-request.repository";
+import { ProviderRepository } from "../../user/repositories/provider.repository";
 import { JwtService } from "./jwt.service";
 import { TokenService } from "./token.service";
 import { SmsClient } from "../clients/sms.client";
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly magicLinkTokenRepo: MagicLinkTokenRepository,
     private readonly loginHistoryRepo: LoginHistoryRepository,
     private readonly accountDeletionRequestRepo: AccountDeletionRequestRepository,
+    private readonly providerRepo: ProviderRepository,
     private readonly jwtService: JwtService,
     private readonly tokenService: TokenService,
     private readonly smsClient: SmsClient,
@@ -58,6 +60,16 @@ export class AuthService {
       this.configService.get<string>("MAX_LOGIN_ATTEMPTS", "5"),
       10,
     );
+  }
+
+  /**
+   * Resolves the provider entity ID for a user whose role is 'provider'.
+   * Returns undefined for non-providers or when no provider record exists yet.
+   */
+  private async resolveProviderId(userId: string, role: string): Promise<string | undefined> {
+    if (role !== "provider") return undefined;
+    const provider = await this.providerRepo.findByUserId(userId).catch(() => null);
+    return provider?.id ?? undefined;
   }
 
   private generatePassword(length = 12): string {
@@ -260,7 +272,7 @@ export class AuthService {
       context: "AuthService",
       userId: user.id,
       email: user.email,
-      verificationToken, // In production, this would be sent via email
+      // verificationToken intentionally omitted — sent via email only
     });
 
     // Send welcome email
@@ -303,21 +315,38 @@ export class AuthService {
         });
       });
 
+    // Auto-create a minimal provider profile so the JWT contains a valid providerId
+    if (role === 'provider') {
+      await this.providerRepo.create(
+        user.id,
+        name || user.email.split('@')[0],
+      ).catch((err: any) => {
+        this.logger.error('Failed to auto-create provider profile during signup', {
+          context: 'AuthService',
+          error: err.message,
+          userId: user.id,
+        });
+      });
+    }
+
     // Generate tokens
+    const signupProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      signupProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      signupProviderId,
     );
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -397,6 +426,15 @@ export class AuthService {
       throw new UnauthorizedException("Account is not active");
     }
 
+    // Check email verification
+    if (!user.email_verified) {
+      this.logger.warn("Login failed: Email not verified", {
+        context: "AuthService",
+        email,
+      });
+      throw new UnauthorizedException("Please verify your email before logging in");
+    }
+
     // Record successful login
     await this.loginAttemptRepo.create(email, true, ipAddress);
 
@@ -410,20 +448,23 @@ export class AuthService {
     });
 
     // Generate tokens
+    const loginProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      loginProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      loginProviderId,
     );
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -483,10 +524,12 @@ export class AuthService {
       }
 
       // Generate new access token
+      const refreshProviderId = payload.providerId ?? await this.resolveProviderId(user.id, user.role);
       const accessToken = this.jwtService.generateAccessToken(
         user.id,
         user.email,
         user.role,
+        refreshProviderId,
       );
 
       return { accessToken };
@@ -609,6 +652,14 @@ export class AuthService {
   ): Promise<any> {
     if (!userId) {
       throw new UnauthorizedException("User ID is required to update profile");
+    }
+
+    // If email is being changed, verify the new address is not already taken
+    if (updateUserDto.email) {
+      const existingUser = await this.userRepo.findByEmail(updateUserDto.email);
+      if (existingUser && existingUser.id !== userId) {
+        throw new ConflictException("Email address is already in use by another account");
+      }
     }
 
     const updatedUser = await this.userRepo.update(
@@ -759,20 +810,23 @@ export class AuthService {
     }
 
     // Generate JWT tokens
+    const oauthProviderId = await this.resolveProviderId(user.id, user.role);
     const jwtAccessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      oauthProviderId,
     );
     const jwtRefreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      oauthProviderId,
     );
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(
       user.id,
       jwtRefreshToken,
@@ -865,6 +919,15 @@ export class AuthService {
       throw new UnauthorizedException("Account is not active");
     }
 
+    // Check email verification
+    if (!user.email_verified) {
+      this.logger.warn("Phone login failed: Email not verified", {
+        context: "AuthService",
+        phone,
+      });
+      throw new UnauthorizedException("Please verify your email before logging in");
+    }
+
     // Record successful login
     await this.loginAttemptRepo.create(phone, true, ipAddress);
 
@@ -875,20 +938,23 @@ export class AuthService {
     });
 
     // Generate tokens
+    const phoneLoginProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      phoneLoginProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      phoneLoginProviderId,
     );
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -918,6 +984,17 @@ export class AuthService {
       context: "AuthService",
       phone,
     });
+
+    // Rate limit: max 5 OTP requests per 15-minute window per phone number
+    const recentRequests = await this.loginAttemptRepo.countRecentFailedAttempts(phone);
+    if (recentRequests >= 5) {
+      this.logger.warn("Phone OTP rate limit exceeded", { context: "AuthService", phone });
+      throw new TooManyRequestsException(
+        "Too many OTP requests. Please wait before requesting another OTP.",
+      );
+    }
+    // Record this request for rate limiting purposes
+    await this.loginAttemptRepo.create(phone, false, null);
 
     // Check if SMS service is enabled
     if (!this.isOtpServiceAvailable("phone")) {
@@ -1042,20 +1119,23 @@ export class AuthService {
       });
 
       // Generate tokens
+      const phoneOtpProviderId = await this.resolveProviderId(user.id, user.role);
       const accessToken = this.jwtService.generateAccessToken(
         user.id,
         user.email,
         user.role,
+        phoneOtpProviderId,
       );
       const refreshToken = this.jwtService.generateRefreshToken(
         user.id,
         user.email,
         user.role,
+        phoneOtpProviderId,
       );
 
       // Store refresh token in session
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+      expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
       await this.sessionRepo.create(
         user.id,
         refreshToken,
@@ -1107,6 +1187,17 @@ export class AuthService {
       context: "AuthService",
       email: normalizedEmail,
     });
+
+    // Rate limit: max 5 OTP requests per 15-minute window per email
+    const recentRequests = await this.loginAttemptRepo.countRecentFailedAttempts(normalizedEmail);
+    if (recentRequests >= 5) {
+      this.logger.warn("Email OTP rate limit exceeded", { context: "AuthService", email: normalizedEmail });
+      throw new TooManyRequestsException(
+        "Too many OTP requests. Please wait before requesting another OTP.",
+      );
+    }
+    // Record this request for rate limiting purposes
+    await this.loginAttemptRepo.create(normalizedEmail, false, null);
 
     if (!this.notificationClient.isEmailEnabled()) {
       this.logger.warn("Email OTP request but email service is disabled", {
@@ -1200,19 +1291,22 @@ export class AuthService {
       throw new UnauthorizedException("Invalid or expired OTP");
     }
 
+    const emailOtpProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      emailOtpProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      emailOtpProviderId,
     );
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     this.logger.info("Email OTP login successful", {
@@ -1369,6 +1463,21 @@ export class AuthService {
 
   async get2FAStatus(userId: string): Promise<boolean> {
     return this.twoFactorSecretRepo.is2FAEnabled(userId);
+  }
+
+  /**
+   * Returns the existing pending 2FA QR code without regenerating the secret.
+   * If no setup exists yet, delegates to enable2FA() to create one.
+   */
+  async get2FAQRCode(userId: string): Promise<{ qrCodeUrl: string }> {
+    const existing = await this.twoFactorSecretRepo.findByUserId(userId);
+    if (existing?.secret) {
+      const qrCodeUrl = `otpauth://totp/LocalServiceMarketplace:${userId}?secret=${existing.secret}&issuer=LocalServiceMarketplace`;
+      return { qrCodeUrl };
+    }
+    // No setup yet — create one
+    const result = await this.enable2FA(userId);
+    return { qrCodeUrl: result.qrCodeUrl };
   }
 
   async enable2FA(
@@ -1888,15 +1997,18 @@ export class AuthService {
     }
 
     // Generate tokens
+    const magicLinkProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      magicLinkProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      magicLinkProviderId,
     );
 
     await this.sessionRepo.create(
@@ -1997,15 +2109,18 @@ export class AuthService {
     }
 
     // Generate tokens
+    const appleProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
+      appleProviderId,
     );
     const refreshToken = this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
+      appleProviderId,
     );
 
     await this.sessionRepo.create(
@@ -2038,23 +2153,18 @@ export class AuthService {
   // ==========================================
 
   private generateRandomSecret(): string {
-    // 32-character base32 secret for TOTP
+    // 32-character base32 secret for TOTP — uses CSPRNG
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    const bytes = require("crypto").randomBytes(32);
     let result = "";
     for (let i = 0; i < 32; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      result += chars[bytes[i] % chars.length];
     }
     return result;
   }
 
   private verifyTOTP(secret: string, code: string): boolean {
-    // Use otplib for TOTP verification
-    const result = verifySync({
-      secret,
-      token: code,
-      period: 30, // 30-second time step
-    });
-    return result.valid;
+    return verifySync({ secret, token: code }).valid;
   }
 
   private _generateRandomBackupCodes(count: number): string[] {
@@ -2066,31 +2176,20 @@ export class AuthService {
   }
 
   private _generateRandomBackupCode(): string {
-    // Format: XXXX-XXXX-XXXX (12 digits)
-    const digits = Array.from({ length: 12 }, () =>
-      Math.floor(Math.random() * 10),
-    ).join("");
+    // Format: XXXX-XXXX-XXXX (12 digits) — uses CSPRNG
+    const bytes = require("crypto").randomBytes(6);
+    const digits = Array.from(bytes as Uint8Array).map((b) => b % 10).join("");
     return digits.replace(/(.{4})/g, "$1-").slice(0, -1);
   }
 
   private generateSecureToken(length: number): string {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+    // Uses CSPRNG — safe for email verification tokens and magic links
+    return require("crypto").randomBytes(length).toString("hex").slice(0, length);
   }
 
   private generateRandomPassword(): string {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let result = "";
-    for (let i = 0; i < 16; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+    // Uses CSPRNG — safe for auto-generated temporary passwords
+    return require("crypto").randomBytes(16).toString("base64").slice(0, 16);
   }
 
   private async verifyAppleIdentityToken(

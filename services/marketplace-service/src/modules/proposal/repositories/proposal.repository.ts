@@ -8,10 +8,33 @@ import {
   SortOrder,
 } from "../dto/proposal-query.dto";
 import { resolveId } from "@/common/utils/resolve-id.util";
+import { BadRequestException } from "@/common/exceptions/http.exceptions";
 
 @Injectable()
 export class ProposalRepository {
   constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
+
+  async getRequestStatus(requestId: string): Promise<string | null> {
+    const query = `SELECT status FROM service_requests WHERE id = $1 AND deleted_at IS NULL`;
+    const result = await this.pool.query(query, [requestId]);
+    return result.rows[0]?.status ?? null;
+  }
+
+  /** Returns the total number of proposals ever submitted by a provider for a request (all statuses). */
+  async countProposalsByProviderForRequest(
+    requestId: string,
+    providerId: string,
+  ): Promise<number> {
+    const [resolvedRequestId, resolvedProviderId] = await Promise.all([
+      resolveId(this.pool, "service_requests", requestId),
+      resolveId(this.pool, "providers", providerId),
+    ]);
+    const { rows } = await this.pool.query(
+      `SELECT COUNT(*) FROM proposals WHERE request_id = $1 AND provider_id = $2`,
+      [resolvedRequestId, resolvedProviderId],
+    );
+    return parseInt(rows[0].count, 10);
+  }
 
   async createProposal(dto: CreateProposalDto): Promise<Proposal> {
     const requestId = await resolveId(
@@ -77,13 +100,30 @@ export class ProposalRepository {
   async acceptProposal(id: string): Promise<Proposal | null> {
     const query = `
       UPDATE proposals
-      SET status = 'accepted'
-      WHERE id = $1
+      SET status = 'accepted', updated_at = NOW()
+      WHERE id = $1 AND status = 'pending'
       RETURNING id, display_id, request_id, provider_id, price, message, estimated_hours, start_date, completion_date, rejected_reason, status, created_at, updated_at
     `;
 
     const result = await this.pool.query(query, [id]);
-    return result.rows[0] || null;
+    if (result.rowCount === 0) {
+      throw new BadRequestException("Proposal is no longer pending or does not exist");
+    }
+    return result.rows[0];
+  }
+
+  /**
+   * Bulk-reject all pending proposals on a request except the one that was accepted.
+   * Called after acceptProposal so competing providers are notified and the request
+   * cannot appear to have multiple accepted proposals simultaneously.
+   */
+  async rejectSiblingProposals(requestId: string, acceptedProposalId: string): Promise<void> {
+    const query = `
+      UPDATE proposals
+      SET status = 'rejected', updated_at = NOW()
+      WHERE request_id = $1 AND id != $2 AND status = 'pending'
+    `;
+    await this.pool.query(query, [requestId, acceptedProposalId]);
   }
 
   async rejectProposal(id: string, reason?: string): Promise<Proposal | null> {
@@ -338,9 +378,12 @@ export class ProposalRepository {
       resolveId(this.pool, "service_requests", requestId),
       resolveId(this.pool, "providers", providerId),
     ]);
+    // Only block re-proposal if there is an active (pending or accepted) proposal.
+    // Rejected or withdrawn proposals allow re-submission.
     const query = `
       SELECT 1 FROM proposals
       WHERE request_id = $1 AND provider_id = $2
+        AND status NOT IN ('rejected', 'withdrawn')
     `;
 
     const result = await this.pool.query(query, [requestId, providerId]);

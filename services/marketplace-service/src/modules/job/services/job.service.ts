@@ -185,6 +185,41 @@ export class JobService {
       throw new BadRequestException("Cannot update status of cancelled job");
     }
 
+    // Role-based transition enforcement
+    const isCustomer = existingJob.customer_id === userId;
+    const isProvider = existingJob.provider_id === userId;
+
+    if (userRole !== "admin") {
+      const customerAllowed = ["completed", "disputed"];
+      const providerAllowed = ["in_progress", "completed"];
+
+      if (isCustomer && !customerAllowed.includes(dto.status)) {
+        throw new ForbiddenException(
+          `Customers can only set job status to: ${customerAllowed.join(", ")}`,
+        );
+      }
+
+      // Customer can only mark completed if the job is already in_progress
+      if (isCustomer && dto.status === "completed" && existingJob.status !== "in_progress") {
+        throw new BadRequestException(
+          "Job must be in progress before it can be marked as completed",
+        );
+      }
+
+      if (isProvider && !providerAllowed.includes(dto.status)) {
+        throw new ForbiddenException(
+          `Providers can only set job status to: ${providerAllowed.join(", ")}`,
+        );
+      }
+
+      // Provider must move to in_progress first before completing
+      if (isProvider && dto.status === "completed" && existingJob.status !== "in_progress") {
+        throw new BadRequestException(
+          "Job must be in progress before it can be marked as completed",
+        );
+      }
+    }
+
     const job = await this.jobRepository.updateJobStatus(
       existingJob.id,
       dto.status,

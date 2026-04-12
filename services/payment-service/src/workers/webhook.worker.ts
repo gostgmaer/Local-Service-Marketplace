@@ -6,6 +6,7 @@ import { WebhookRepository } from '../payment/repositories/webhook.repository';
 import { PaymentRepository } from '../payment/repositories/payment.repository';
 import { PaymentGatewayService } from '../payment/gateway/payment-gateway.service';
 import { DeadLetterQueueService } from '../common/dlq/dead-letter-queue.service';
+import { KafkaService } from '../kafka/kafka.service';
 
 export interface ProcessWebhookJobData {
   webhookId: string;
@@ -22,6 +23,7 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
     private readonly webhookRepository: WebhookRepository,
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentGateway: PaymentGatewayService,
+    private readonly kafkaService: KafkaService,
     @Optional() private readonly dlqService?: DeadLetterQueueService,
   ) {
     super();
@@ -55,15 +57,51 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
       this.logger.log(`Parsed webhook event: ${event.eventType}`, 'WebhookWorker');
 
       switch (event.eventType) {
-        case 'payment.succeeded':
-          await this.paymentRepository.updatePaymentStatus(event.paymentId, 'completed', event.transactionId);
+        case 'payment.succeeded': {
+          // Resolve internal payment ID: try transactionId first (reliable),
+          // then fall back to the paymentId embedded in gateway metadata.
+          let paymentId = event.paymentId;
+          if (!paymentId && event.transactionId) {
+            const p = await this.paymentRepository.getPaymentByTransactionId(event.transactionId);
+            paymentId = p?.id;
+          }
+          if (!paymentId) {
+            throw new Error(`Cannot resolve payment for transactionId=${event.transactionId}`);
+          }
+          await this.paymentRepository.updatePaymentStatus(paymentId, 'completed', event.transactionId);
+          // Publish event so marketplace-service can update job status
+          await this.kafkaService.publishEvent('payment-events', {
+            eventType: 'payment_completed',
+            eventId: `${paymentId}-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            data: { paymentId, transactionId: event.transactionId, source: 'webhook' },
+          });
           break;
-        case 'payment.failed':
-          await this.paymentRepository.updatePaymentStatus(event.paymentId, 'failed', null);
+        }
+        case 'payment.failed': {
+          let paymentId = event.paymentId;
+          if (!paymentId && event.transactionId) {
+            const p = await this.paymentRepository.getPaymentByTransactionId(event.transactionId);
+            paymentId = p?.id;
+          }
+          if (!paymentId) {
+            throw new Error(`Cannot resolve payment for transactionId=${event.transactionId}`);
+          }
+          await this.paymentRepository.updatePaymentStatus(paymentId, 'failed', null);
           break;
-        case 'refund.created':
-          await this.paymentRepository.updatePaymentStatus(event.paymentId, 'refunded', null);
+        }
+        case 'refund.created': {
+          let paymentId = event.paymentId;
+          if (!paymentId && event.transactionId) {
+            const p = await this.paymentRepository.getPaymentByTransactionId(event.transactionId);
+            paymentId = p?.id;
+          }
+          if (!paymentId) {
+            throw new Error(`Cannot resolve payment for transactionId=${event.transactionId}`);
+          }
+          await this.paymentRepository.updatePaymentStatus(paymentId, 'refunded', null);
           break;
+        }
         default:
           this.logger.log(`Unhandled webhook event type: ${event.eventType}`, 'WebhookWorker');
       }

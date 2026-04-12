@@ -8,6 +8,7 @@ import { Payment } from "../entities/payment.entity";
 import {
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from "../../common/exceptions/http.exceptions";
 import {
   validateCursorMode,
@@ -51,6 +52,15 @@ export class PaymentService {
     gateway?: string,
   ): Promise<Payment> {
     this.logger.log(`Creating payment for job ${jobId}`, "PaymentService");
+
+    // Idempotency guard: prevent double-charging for the same job
+    const existingPayments = await this.paymentRepository.getPaymentsByJobId(jobId);
+    const active = existingPayments.find(
+      (p) => p.status === "completed" || p.status === "pending",
+    );
+    if (active) {
+      throw new ConflictException(`A payment already exists for this job (status: ${active.status})`);
+    }
 
     let finalAmount = amount;
 
@@ -129,21 +139,40 @@ export class PaymentService {
         });
     }
 
-    // Publish event to Kafka if enabled
-    await this.kafkaService.publishEvent("payment-events", {
-      eventType: "payment_completed",
-      eventId: `${payment.id}-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      data: {
-        paymentId: payment.id,
-        jobId: payment.job_id,
-        amount: payment.amount,
-        currency: payment.currency,
-        status: "completed",
-        transactionId: payment.transaction_id,
-        gateway: activeGatewayName,
-      },
-    });
+    // Publish event to Kafka — only publish payment_completed when the gateway
+    // has actually confirmed the charge (synchronous gateways like Stripe).
+    // Async gateways (Razorpay, PayPal, PayUbiz, Instamojo) return 'pending';
+    // the webhook worker will publish the event when the webhook confirms success.
+    if (paymentStatus === "completed") {
+      await this.kafkaService.publishEvent("payment-events", {
+        eventType: "payment_completed",
+        eventId: `${payment.id}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        data: {
+          paymentId: payment.id,
+          jobId: payment.job_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: "completed",
+          transactionId: payment.transaction_id,
+          gateway: activeGatewayName,
+        },
+      });
+    } else {
+      await this.kafkaService.publishEvent("payment-events", {
+        eventType: "payment_pending",
+        eventId: `${payment.id}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        data: {
+          paymentId: payment.id,
+          jobId: payment.job_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: "pending",
+          gateway: activeGatewayName,
+        },
+      });
+    }
 
     // Track analytics via queue (non-blocking)
     this.analyticsQueue
@@ -192,6 +221,20 @@ export class PaymentService {
 
     if (payment.status === "refunded" && status !== "refunded") {
       throw new BadRequestException("Cannot change status of refunded payment");
+    }
+
+    // Enforce legal state transitions to prevent status regression
+    const allowedTransitions: Record<string, string[]> = {
+      pending: ["completed", "failed"],
+      completed: ["refunded"],
+      failed: [],
+      refunded: [],
+    };
+    const allowed = allowedTransitions[payment.status] ?? [];
+    if (status !== payment.status && !allowed.includes(status)) {
+      throw new BadRequestException(
+        `Cannot transition payment from '${payment.status}' to '${status}'`,
+      );
     }
 
     return this.paymentRepository.updatePaymentStatus(

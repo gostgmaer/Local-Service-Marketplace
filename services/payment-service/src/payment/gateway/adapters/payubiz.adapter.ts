@@ -198,8 +198,15 @@ export class PayUbizAdapter implements IGatewayAdapter {
   ): boolean {
     const salt = this.configService.get<string>("PAYU_SALT", "");
     if (!salt) {
+      const nodeEnv = this.configService.get<string>("NODE_ENV", "development");
+      if (nodeEnv === "production" || nodeEnv === "staging") {
+        this.logger.error(
+          "PAYU_SALT not set — rejecting PayU webhook in production",
+        );
+        return false;
+      }
       this.logger.warn(
-        "PAYU_SALT not set — skipping PayU webhook verification",
+        "PAYU_SALT not set — skipping PayU webhook verification in dev",
       );
       return true;
     }
@@ -235,7 +242,12 @@ export class PayUbizAdapter implements IGatewayAdapter {
         .digest("hex");
       const receivedHash = get("hash");
 
-      const isValid = expectedHash === receivedHash;
+      // Use timing-safe comparison to prevent HMAC timing attacks (CWE-208)
+      const expectedBuf = Buffer.from(expectedHash, "utf8");
+      const receivedBuf = Buffer.from(receivedHash ?? "", "utf8");
+      const isValid =
+        expectedBuf.length === receivedBuf.length &&
+        crypto.timingSafeEqual(expectedBuf, receivedBuf);
       if (!isValid) {
         this.logger.warn("PayU webhook reverse hash mismatch");
       }

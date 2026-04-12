@@ -1,13 +1,43 @@
-'use client';
-
-import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Layout } from '@/components/layout/Layout';
 import { Cookie, Settings, Eye, AlertCircle } from 'lucide-react';
 
+export const metadata: Metadata = {
+	title: 'Cookie Policy',
+	description:
+		'Learn how Local Service Marketplace uses cookies to improve your experience and what choices you have.',
+	alternates: { canonical: '/cookies' },
+	openGraph: {
+		title: 'Cookie Policy',
+		description:
+			'Learn how Local Service Marketplace uses cookies to improve your experience and what choices you have.',
+		url: '/cookies',
+		images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'Cookie Policy',
+		description:
+			'Learn how Local Service Marketplace uses cookies to improve your experience and what choices you have.',
+	},
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+
+const cookiesJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'WebPage',
+	name: 'Cookie Policy — Local Service Marketplace',
+	url: `${SITE_URL}/cookies`,
+	description: 'Learn how Local Service Marketplace uses cookies to improve your experience.',
+	isPartOf: { '@type': 'WebSite', name: 'Local Service Marketplace', url: SITE_URL },
+};
+
 export default function CookiesPage() {
   return (
     <Layout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(cookiesJsonLd) }} />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">

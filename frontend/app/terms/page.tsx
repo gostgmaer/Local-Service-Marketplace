@@ -1,13 +1,43 @@
-'use client';
-
-import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Layout } from '@/components/layout/Layout';
 import { FileText, AlertCircle, Shield, Scale } from 'lucide-react';
 
+export const metadata: Metadata = {
+	title: 'Terms of Service',
+	description:
+		'Review the terms of service for Local Service Marketplace — rules, policies, and legal agreements for using our platform.',
+	alternates: { canonical: '/terms' },
+	openGraph: {
+		title: 'Terms of Service',
+		description:
+			'Review the terms of service for Local Service Marketplace — rules, policies, and legal agreements for using our platform.',
+		url: '/terms',
+		images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'Terms of Service',
+		description:
+			'Review the terms of service for Local Service Marketplace — rules, policies, and legal agreements for using our platform.',
+	},
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+
+const termsJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'WebPage',
+	name: 'Terms of Service — Local Service Marketplace',
+	url: `${SITE_URL}/terms`,
+	description: 'Review the terms of service for Local Service Marketplace — rules, policies, and legal agreements.',
+	isPartOf: { '@type': 'WebSite', name: 'Local Service Marketplace', url: SITE_URL },
+};
+
 export default function TermsPage() {
   return (
     <Layout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(termsJsonLd) }} />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">

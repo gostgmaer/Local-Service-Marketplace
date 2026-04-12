@@ -59,6 +59,9 @@ export class EventConsumerService implements OnModuleInit {
         case "payment_completed":
           await this.handlePaymentCompleted(event);
           break;
+        case "review_submitted":
+          await this.handleReviewSubmitted(event);
+          break;
         default:
           this.logger.log(
             `Unhandled event type: ${event.eventType}`,
@@ -85,7 +88,7 @@ export class EventConsumerService implements OnModuleInit {
   }
 
   private async handleProposalSubmitted(event: any): Promise<void> {
-    // Notify request creator about new proposal
+    // Notify request creator (customer) about new proposal
     const requestRef = event.data.requestDisplayId || "";
     const proposalRef =
       event.data.proposalDisplayId || event.data.displayId || "";
@@ -94,8 +97,10 @@ export class EventConsumerService implements OnModuleInit {
       proposalRef && `Proposal: ${proposalRef}`,
     ].filter(Boolean);
     const refSuffix = refParts.length ? ` (${refParts.join(", ")})` : "";
+    // customerId is the customer who owns the request; fall back to userId for legacy events
+    const recipientId = event.data.customerId || event.data.userId;
     await this.notificationRepository.createNotification(
-      event.data.userId, // This should be the request creator's ID
+      recipientId,
       "proposal",
       `A provider has submitted a proposal for your request${refSuffix}`,
     );
@@ -177,6 +182,14 @@ export class EventConsumerService implements OnModuleInit {
       "job",
       `A job assigned to you has been cancelled${refSuffix}`,
     );
+    // Also notify the customer who placed the request
+    if (event.data.userId) {
+      await this.notificationRepository.createNotification(
+        event.data.userId,
+        "job",
+        `Your job has been cancelled${refSuffix}`,
+      );
+    }
   }
 
   private async handlePaymentCompleted(event: any): Promise<void> {
@@ -187,6 +200,18 @@ export class EventConsumerService implements OnModuleInit {
       event.data.userId, // Customer ID
       "payment",
       `Payment of ${event.data.amount} ${event.data.currency} completed successfully${refSuffix}`,
+    );
+  }
+
+  private async handleReviewSubmitted(event: any): Promise<void> {
+    // Notify provider that a review was submitted for their service
+    if (!event.data.providerId) return;
+    const ref = event.data.reviewDisplayId || event.data.displayId || "";
+    const refSuffix = ref ? ` (Ref: ${ref})` : "";
+    await this.notificationRepository.createNotification(
+      event.data.providerId,
+      "review",
+      `A customer has submitted a review for your service${refSuffix}`,
     );
   }
 }

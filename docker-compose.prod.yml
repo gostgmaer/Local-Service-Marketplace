@@ -84,30 +84,13 @@ services:
         max-size: "20m"
         max-file: "3"
 
-  mongo:
-    restart: always
-    ports: !override []
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "3"
-
   # ─── Core Microservices (no port exposure) ────────────────────────────────
   identity-service:
     restart: always
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - DB_POOL_MAX=20
       - DB_POOL_MIN=5
@@ -133,7 +116,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - DB_POOL_MAX=20
       - DB_POOL_MIN=5
@@ -159,7 +142,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - WORKERS_ENABLED=true
       - DB_POOL_MAX=20
@@ -186,7 +169,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - WORKERS_ENABLED=true
       - IN_APP_NOTIFICATIONS_ENABLED=true
@@ -216,7 +199,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - ANALYTICS_ENABLED=true
       - DB_POOL_MAX=20
@@ -244,7 +227,7 @@ services:
     profiles: []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - BACKGROUND_JOBS_ENABLED=true
       - RATE_LIMITING_ENABLED=true
