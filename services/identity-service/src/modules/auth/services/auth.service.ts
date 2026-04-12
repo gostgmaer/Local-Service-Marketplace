@@ -344,7 +344,7 @@ export class AuthService {
       user.role,
       signupProviderId,
     );
-    const refreshToken = this.jwtService.generateRefreshToken(
+    const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
@@ -462,7 +462,7 @@ export class AuthService {
       user.role,
       loginProviderId,
     );
-    const refreshToken = this.jwtService.generateRefreshToken(
+    const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
@@ -826,7 +826,7 @@ export class AuthService {
       user.role,
       oauthProviderId,
     );
-    const jwtRefreshToken = this.jwtService.generateRefreshToken(
+    const jwtRefreshToken = await this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
@@ -954,7 +954,7 @@ export class AuthService {
       user.role,
       phoneLoginProviderId,
     );
-    const refreshToken = this.jwtService.generateRefreshToken(
+    const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
@@ -1135,7 +1135,7 @@ export class AuthService {
         user.role,
         phoneOtpProviderId,
       );
-      const refreshToken = this.jwtService.generateRefreshToken(
+      const refreshToken = await this.jwtService.generateRefreshToken(
         user.id,
         user.email,
         user.role,
@@ -1307,7 +1307,7 @@ export class AuthService {
       user.role,
       emailOtpProviderId,
     );
-    const refreshToken = this.jwtService.generateRefreshToken(
+    const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
@@ -2013,7 +2013,7 @@ export class AuthService {
       user.role,
       magicLinkProviderId,
     );
-    const refreshToken = this.jwtService.generateRefreshToken(
+    const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,
@@ -2125,7 +2125,7 @@ export class AuthService {
       user.role,
       appleProviderId,
     );
-    const refreshToken = this.jwtService.generateRefreshToken(
+    const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
       user.email,
       user.role,

@@ -146,6 +146,7 @@ export class ProposalController {
       req.user.role,
       body,
       req.user.providerId,
+      req.user.permissions,
     );
   }
 
@@ -171,6 +172,7 @@ export class ProposalController {
       req.user.userId,
       req.user.role,
       req.user.providerId,
+      req.user.permissions,
     );
     return {
       success: true,

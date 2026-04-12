@@ -561,6 +561,7 @@ export class ProposalService {
     userRole: string,
     fields: { price?: number; message?: string; estimated_hours?: number },
     providerId?: string,
+    userPermissions?: string[],
   ): Promise<ProposalResponseDto> {
     this.logger.log(`Updating proposal: ${id}`, ProposalService.name);
 
@@ -606,6 +607,7 @@ export class ProposalService {
     userId: string,
     userRole: string,
     providerId?: string,
+    userPermissions?: string[],
   ): Promise<void> {
     this.logger.log(`Deleting proposal: ${id}`, ProposalService.name);
 
