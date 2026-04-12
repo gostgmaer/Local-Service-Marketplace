@@ -1,5 +1,8 @@
 import React from 'react';
+import Image from 'next/image';
 import { cn } from '@/utils/helpers';
+
+const sizePx = { sm: 32, md: 40, lg: 48, xl: 64 } as const;
 
 interface AvatarProps {
   src?: string;
@@ -35,7 +38,14 @@ export function Avatar({ src, alt, name, size = 'md', className }: AvatarProps) 
       )}
     >
       {src ? (
-        <img src={src} alt={alt || name || 'Avatar'} className="h-full w-full object-cover" />
+        <Image
+          src={src}
+          alt={alt || name || 'Avatar'}
+          width={sizePx[size]}
+          height={sizePx[size]}
+          className="h-full w-full object-cover"
+          unoptimized
+        />
       ) : (
         <span>{name ? getInitials(name) : '??'}</span>
       )}

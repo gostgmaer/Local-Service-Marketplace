@@ -169,7 +169,7 @@ export default function CareersPage() {
                       </div>
                     </div>
                     <a
-                      href={`/careers/apply?position=${encodeURIComponent(job.title)}`}
+                      href={`/contact?subject=${encodeURIComponent(`Job Application - ${job.title}`)}`}
                       className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-semibold transition whitespace-nowrap"
                     >
                       Apply Now

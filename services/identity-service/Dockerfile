@@ -48,7 +48,7 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/dist ./dist
 
 # Create logs directory
-RUN mkdir -p logs
+RUN mkdir -p logs && chown -R node:node logs
 
 # Create uploads directory with proper permissions
 RUN mkdir -p uploads && chown -R node:node uploads
