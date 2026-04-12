@@ -240,11 +240,12 @@ export class AuthController {
     );
 
     // Update access token cookie
+    const accessTokenMaxAge = this.parseJwtExpiry(process.env.JWT_EXPIRES_IN ?? '15m') * 1000;
     res.cookie("access_token", result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: accessTokenMaxAge,
     });
 
     return { message: "Token refreshed successfully", ...result };
@@ -917,12 +918,13 @@ export class AuthController {
   ): void {
     const isProduction = process.env.NODE_ENV === "production";
 
-    // Set access token cookie (15 minutes)
+    // Set access token cookie (JWT_EXPIRES_IN env, default 15m)
+    const accessTokenMaxAge = this.parseJwtExpiry(process.env.JWT_EXPIRES_IN ?? '15m') * 1000;
     res.cookie("access_token", accessToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? "strict" : "lax", // 'lax' allows cross-origin in development
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: accessTokenMaxAge,
       path: "/",
     });
 
