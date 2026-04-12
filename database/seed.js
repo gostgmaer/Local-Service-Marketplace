@@ -1242,6 +1242,18 @@ class DatabaseSeeder {
 			}
 		}
 
+		// Reconcile reviews.helpful_count to match actual vote rows (single-query update)
+		await safeQuery(`
+			UPDATE reviews r
+			SET helpful_count = v.vote_count
+			FROM (
+				SELECT review_id, COUNT(*)::INT AS vote_count
+				FROM review_helpful_votes
+				GROUP BY review_id
+			) v
+			WHERE r.id = v.review_id
+		`);
+
 		console.log(`   ✓ Created ${count} review helpful votes`);
 	}
 
@@ -1475,9 +1487,7 @@ class DatabaseSeeder {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 				[
 					uuid(),
-					displayId('REV'),
-					job.id,
-					job.customer_id,
+					displayId('DIS'),
 					faker.lorem.paragraph(),
 					status,
 					isResolved ? faker.lorem.sentence() : null,
@@ -1811,7 +1821,12 @@ class DatabaseSeeder {
 			const success = await safeInsert(
 				`INSERT INTO daily_metrics (date, total_users, total_requests, total_proposals, total_jobs, total_payments) 
          VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (date) DO UPDATE SET total_users = EXCLUDED.total_users, total_proposals = EXCLUDED.total_proposals`,
+         ON CONFLICT (date) DO UPDATE SET
+           total_users = EXCLUDED.total_users,
+           total_requests = EXCLUDED.total_requests,
+           total_proposals = EXCLUDED.total_proposals,
+           total_jobs = EXCLUDED.total_jobs,
+           total_payments = EXCLUDED.total_payments`,
 				[
 					date.toISOString().split("T")[0],
 					randomInt(100, 200) + i,
@@ -2142,60 +2157,39 @@ class DatabaseSeeder {
 			return;
 		}
 
-		let count = 0;
-		for (const providerId of this.providerRecordIds) {
-			// Compute realistic aggregates per provider
-			const totalReviews = randomInt(0, 120);
-			if (totalReviews === 0) continue;
+		// Recompute aggregates from actual seeded review data — do not use random values.
+		// The schema trigger handles real-time updates; this backfills the initial seed state.
+		const result = await safeQuery(`
+			INSERT INTO provider_review_aggregates
+				(provider_id, total_reviews, average_rating,
+				 rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count,
+				 last_review_at, updated_at)
+			SELECT
+				provider_id,
+				COUNT(*)::INT                                          AS total_reviews,
+				ROUND(AVG(rating)::NUMERIC, 2)                         AS average_rating,
+				COUNT(*) FILTER (WHERE rating = 1)::INT                AS rating_1_count,
+				COUNT(*) FILTER (WHERE rating = 2)::INT                AS rating_2_count,
+				COUNT(*) FILTER (WHERE rating = 3)::INT                AS rating_3_count,
+				COUNT(*) FILTER (WHERE rating = 4)::INT                AS rating_4_count,
+				COUNT(*) FILTER (WHERE rating = 5)::INT                AS rating_5_count,
+				MAX(created_at)                                        AS last_review_at,
+				NOW()                                                  AS updated_at
+			FROM reviews
+			GROUP BY provider_id
+			ON CONFLICT (provider_id) DO UPDATE SET
+				total_reviews   = EXCLUDED.total_reviews,
+				average_rating  = EXCLUDED.average_rating,
+				rating_1_count  = EXCLUDED.rating_1_count,
+				rating_2_count  = EXCLUDED.rating_2_count,
+				rating_3_count  = EXCLUDED.rating_3_count,
+				rating_4_count  = EXCLUDED.rating_4_count,
+				rating_5_count  = EXCLUDED.rating_5_count,
+				last_review_at  = EXCLUDED.last_review_at,
+				updated_at      = NOW()
+		`);
 
-			const counts = [0, 0, 0, 0, 0]; // index 0 = 1-star, 4 = 5-star
-			for (let i = 0; i < totalReviews; i++) {
-				// Weight toward 4-5 stars
-				const roll = randomInt(0, 9);
-				const star =
-					roll < 1 ? 0
-						: roll < 2 ? 1
-							: roll < 3 ? 2
-								: roll < 6 ? 3
-									: 4;
-				counts[star]++;
-			}
-
-			const totalWeighted = counts[0] * 1 + counts[1] * 2 + counts[2] * 3 + counts[3] * 4 + counts[4] * 5;
-			const avgRating = (totalWeighted / totalReviews).toFixed(2);
-
-			const success = await safeInsert(
-				`INSERT INTO provider_review_aggregates
-           (provider_id, total_reviews, average_rating, rating_1_count, rating_2_count,
-            rating_3_count, rating_4_count, rating_5_count, last_review_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-         ON CONFLICT (provider_id) DO UPDATE SET
-           total_reviews   = EXCLUDED.total_reviews,
-           average_rating  = EXCLUDED.average_rating,
-           rating_1_count  = EXCLUDED.rating_1_count,
-           rating_2_count  = EXCLUDED.rating_2_count,
-           rating_3_count  = EXCLUDED.rating_3_count,
-           rating_4_count  = EXCLUDED.rating_4_count,
-           rating_5_count  = EXCLUDED.rating_5_count,
-           last_review_at  = EXCLUDED.last_review_at,
-           updated_at      = NOW()`,
-				[
-					providerId,
-					totalReviews,
-					avgRating,
-					counts[0],
-					counts[1],
-					counts[2],
-					counts[3],
-					counts[4],
-					randomDate(new Date(2024, 0, 1), new Date()),
-				],
-			);
-
-			if (success) count++;
-		}
-
-		console.log(`   ✓ Created ${count} provider review aggregates`);
+		console.log(`   ✓ Synced provider review aggregates from actual review data`);
 	}
 }
 

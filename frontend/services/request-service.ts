@@ -102,6 +102,7 @@ class RequestService {
 		if (filters?.max_budget) params.append("max_budget", filters.max_budget.toString());
 		if (filters?.cursor) params.append("cursor", filters.cursor);
 		if (filters?.limit) params.append("limit", filters.limit.toString());
+		if (filters?.page) params.append("page", filters.page.toString());
 
 		const response = await apiClient.get<PaginatedResponse<ServiceRequest>>(`/requests?${params.toString()}`);
 		// API client unwraps to { data, total } for responses with total

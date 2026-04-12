@@ -259,6 +259,7 @@ CREATE TABLE provider_availability (
   end_time TIME NOT NULL CHECK (end_time > start_time)
 );
 
+CREATE UNIQUE INDEX idx_provider_availability_unique ON provider_availability(provider_id, day_of_week);
 CREATE INDEX idx_provider_availability_provider_id ON provider_availability(provider_id);
 CREATE INDEX idx_provider_availability_day ON provider_availability(day_of_week);
 CREATE INDEX idx_provider_availability_composite ON provider_availability(provider_id, day_of_week, start_time);
@@ -372,11 +373,11 @@ CREATE TABLE jobs (
   customer_id UUID NOT NULL REFERENCES users(id),
   proposal_id UUID REFERENCES proposals(id),
   actual_amount BIGINT,
-  cancelled_by UUID REFERENCES users(id),
+  cancelled_by UUID REFERENCES users(id) ON DELETE SET NULL,
   cancellation_reason TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'scheduled', 'in_progress', 'completed', 'cancelled', 'disputed')),
   started_at TIMESTAMP,
-  completed_at TIMESTAMP CHECK (completed_at IS NULL OR completed_at >= started_at),
+  completed_at TIMESTAMP CHECK (completed_at IS NULL OR (started_at IS NOT NULL AND completed_at >= started_at)),
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   updated_at TIMESTAMP
 );
@@ -494,6 +495,7 @@ CREATE TABLE IF NOT EXISTS review_helpful_votes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_review_helpful_votes_review ON review_helpful_votes(review_id);
+CREATE INDEX IF NOT EXISTS idx_review_helpful_votes_user ON review_helpful_votes(user_id);
 
 -- =====================================================
 -- MESSAGES
@@ -503,7 +505,7 @@ CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   display_id VARCHAR(11) UNIQUE NOT NULL,
   job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-  sender_id UUID NOT NULL REFERENCES users(id),
+  sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
   message TEXT NOT NULL,
   read BOOLEAN DEFAULT false,
   read_at TIMESTAMP,
@@ -630,7 +632,7 @@ CREATE TABLE disputes (
   reason TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('open', 'investigating', 'resolved', 'closed')),
   resolution TEXT,
-  resolved_by UUID REFERENCES users(id),
+  resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
   resolved_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   updated_at TIMESTAMP
@@ -712,8 +714,8 @@ CREATE TABLE background_jobs (
 
 CREATE INDEX idx_background_jobs_pending ON background_jobs(status) WHERE status != 'completed';
 CREATE INDEX idx_background_jobs_status_scheduled ON background_jobs(status, scheduled_for) WHERE status IN ('pending', 'processing');
-CREATE INDEX idx_background_jobs_type_status ON background_jobs(job_type, status);
-CREATE INDEX idx_background_jobs_attempts ON background_jobs(attempts) WHERE status != 'completed';
+CREATE INDEX IF NOT EXISTS idx_background_jobs_type_status ON background_jobs(job_type, status);
+CREATE INDEX IF NOT EXISTS idx_background_jobs_attempts ON background_jobs(attempts) WHERE status != 'completed';
 
 -- =====================================================
 -- RATE LIMITING
@@ -823,7 +825,7 @@ CREATE TABLE system_settings (
 CREATE TABLE admin_actions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   display_id VARCHAR(11) UNIQUE NOT NULL,
-  admin_id UUID NOT NULL REFERENCES users(id),
+  admin_id UUID REFERENCES users(id) ON DELETE SET NULL,
   action TEXT NOT NULL,
   target_type TEXT NOT NULL,
   target_id UUID NOT NULL,
@@ -1275,7 +1277,7 @@ CREATE TABLE pricing_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(100) NOT NULL,
   description TEXT,
-  price BIGINT NOT NULL,
+  price BIGINT NOT NULL CHECK (price >= 0),
   billing_period TEXT NOT NULL CHECK (billing_period IN ('monthly', 'yearly')),
   features JSONB,
   active BOOLEAN DEFAULT true,
@@ -1926,7 +1928,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 CREATE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
 
--- Pre-seed all integrated migrations (001-022)
+-- Pre-seed all integrated migrations (001-023)
 -- Fresh installs use schema.sql which is already the complete state,
 -- so all migrations are marked as applied to prevent re-running.
 INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
@@ -1952,6 +1954,7 @@ VALUES
   ('019', 'unique_constraints_dedup', 'integrated_in_schema', 0),
   ('020', 'add_edit_capabilities', 'integrated_in_schema', 0),
   ('021', 'schema_sync', 'integrated_in_schema', 0),
-  ('022', 'add_review_helpful_votes', 'integrated_in_schema', 0)
+  ('022', 'add_review_helpful_votes', 'integrated_in_schema', 0),
+  ('023', 'schema_integrity_fixes', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 
