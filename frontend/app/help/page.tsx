@@ -1,9 +1,38 @@
-'use client';
-
-import React from 'react';
+import type { Metadata } from 'next';
 import { Layout } from '@/components/layout/Layout';
 import Link from 'next/link';
 import { Search, MessageCircle, Book, HelpCircle, Mail, Phone } from 'lucide-react';
+
+export const metadata: Metadata = {
+	title: 'Help Center',
+	description:
+		'Find answers to common questions about Local Service Marketplace — guides, troubleshooting, and support resources.',
+	alternates: { canonical: '/help' },
+	openGraph: {
+		title: 'Help Center',
+		description:
+			'Find answers to common questions about Local Service Marketplace — guides, troubleshooting, and support resources.',
+		url: '/help',
+		images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'Help Center',
+		description:
+			'Find answers to common questions about Local Service Marketplace — guides, troubleshooting, and support resources.',
+	},
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+
+const helpJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'WebPage',
+	name: 'Help Center — Local Service Marketplace',
+	url: `${SITE_URL}/help`,
+	description: 'Find answers to common questions about Local Service Marketplace — guides, troubleshooting, and support resources.',
+	isPartOf: { '@type': 'WebSite', name: 'Local Service Marketplace', url: SITE_URL },
+};
 
 export default function HelpPage() {
   const helpTopics = [
@@ -55,6 +84,7 @@ export default function HelpPage() {
 
   return (
 		<Layout>
+			<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(helpJsonLd) }} />
 			<div className='bg-white dark:bg-gray-900'>
 				{/* Hero Section */}
 				<div className='bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16'>

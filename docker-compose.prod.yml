@@ -90,7 +90,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - DB_POOL_MAX=20
       - DB_POOL_MIN=5
@@ -116,7 +116,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - DB_POOL_MAX=20
       - DB_POOL_MIN=5
@@ -142,7 +142,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - WORKERS_ENABLED=true
       - DB_POOL_MAX=20
@@ -169,7 +169,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - WORKERS_ENABLED=true
       - IN_APP_NOTIFICATIONS_ENABLED=true
@@ -199,7 +199,7 @@ services:
     ports: !override []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - ANALYTICS_ENABLED=true
       - DB_POOL_MAX=20
@@ -227,7 +227,7 @@ services:
     profiles: []
     environment:
       - NODE_ENV=production
-      - DATABASE_SSL=true
+      - DATABASE_SSL=false
       - CACHE_ENABLED=true
       - BACKGROUND_JOBS_ENABLED=true
       - RATE_LIMITING_ENABLED=true

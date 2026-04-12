@@ -15,8 +15,8 @@ RUN pnpm config set network-timeout 600000 && \
     pnpm config set fetch-retry-mintimeout 20000 && \
     pnpm config set fetch-retry-maxtimeout 120000
 
-# Install dependencies (no --frozen-lockfile: @nestjs/axios added after initial lockfile was generated)
-RUN pnpm install --no-frozen-lockfile
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -42,13 +42,13 @@ RUN pnpm config set network-timeout 600000 && \
     pnpm config set fetch-retry-maxtimeout 120000
 
 # Install production dependencies only
-RUN pnpm install --prod --no-frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
 # Create logs directory with proper permissions
-RUN mkdir -p logs
+RUN mkdir -p logs && chown -R node:node logs
 
 # Expose port
 EXPOSE 3012

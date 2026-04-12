@@ -1,8 +1,73 @@
-'use client';
-
-import React from 'react';
+import type { Metadata } from 'next';
 import { Layout } from '@/components/layout/Layout';
 import { Briefcase, Users, TrendingUp, Heart, Globe, Award } from 'lucide-react';
+
+export const metadata: Metadata = {
+	title: 'Careers',
+	description:
+		'Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.',
+	alternates: { canonical: '/careers' },
+	openGraph: {
+		title: 'Careers at Local Service Marketplace',
+		description:
+			'Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.',
+		url: '/careers',
+		images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: 'Careers at Local Service Marketplace',
+		description:
+			'Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.',
+	},
+};
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+
+const careersJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'ItemList',
+	name: 'Open Positions at Local Service Marketplace',
+	url: `${SITE_URL}/careers`,
+	itemListElement: [
+		{
+			'@type': 'JobPosting',
+			title: 'Senior Full Stack Developer',
+			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
+			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'Remote' } },
+			employmentType: 'FULL_TIME',
+			datePosted: '2024-01-01',
+			description: 'Build and scale our microservices platform using NestJS, Next.js, and PostgreSQL.',
+		},
+		{
+			'@type': 'JobPosting',
+			title: 'Product Manager',
+			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
+			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'New York', addressRegion: 'NY' } },
+			employmentType: 'FULL_TIME',
+			datePosted: '2024-01-01',
+			description: 'Lead product strategy and roadmap for our local services marketplace platform.',
+		},
+		{
+			'@type': 'JobPosting',
+			title: 'Customer Success Manager',
+			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
+			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'Remote' } },
+			employmentType: 'FULL_TIME',
+			datePosted: '2024-01-01',
+			description: 'Help customers and service providers succeed on the Local Service Marketplace platform.',
+		},
+		{
+			'@type': 'JobPosting',
+			title: 'Marketing Specialist',
+			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
+			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'San Francisco', addressRegion: 'CA' } },
+			employmentType: 'FULL_TIME',
+			datePosted: '2024-01-01',
+			description: 'Drive user acquisition and brand awareness for our marketplace platform.',
+		},
+	],
+};
 
 export default function CareersPage() {
   const jobOpenings = [
@@ -34,6 +99,7 @@ export default function CareersPage() {
 
   return (
     <Layout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(careersJsonLd) }} />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
@@ -169,7 +235,7 @@ export default function CareersPage() {
                       </div>
                     </div>
                     <a
-                      href={`/careers/apply?position=${encodeURIComponent(job.title)}`}
+                      href={`/contact?subject=${encodeURIComponent(`Job Application - ${job.title}`)}`}
                       className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-semibold transition whitespace-nowrap"
                     >
                       Apply Now
