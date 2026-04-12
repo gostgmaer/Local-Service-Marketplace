@@ -153,7 +153,7 @@ export default function ProviderVerificationPage() {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-providers', statusFilter, page],
-    queryFn: () => adminService.getPendingProviders({ page, limit }),
+    queryFn: () => adminService.getProviders({ page, limit, status: statusFilter }),
     refetchOnWindowFocus: false,
   });
 

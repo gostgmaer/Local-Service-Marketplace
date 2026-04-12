@@ -251,11 +251,11 @@ class AdminService {
 		return response.data;
 	}
 
-	async getPendingProviders(params?: { page?: number; limit?: number }): Promise<{ data: any[]; total: number }> {
+	async getProviders(params?: { page?: number; limit?: number; status?: string }): Promise<{ data: any[]; total: number }> {
 		const qs = new URLSearchParams();
 		if (params?.page) qs.append('page', String(params.page));
 		if (params?.limit) qs.append('limit', String(params.limit));
-		qs.append('verification_status', 'pending');
+		qs.append('verification_status', params?.status || 'pending');
 		const response = await apiClient.get<any>(`/providers?${qs.toString()}`);
 		const raw = response.data;
 		return { data: raw?.data ?? [], total: raw?.total ?? 0 };

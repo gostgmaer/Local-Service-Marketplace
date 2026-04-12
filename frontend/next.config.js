@@ -19,6 +19,7 @@ const nextConfig = {
 		remotePatterns: [
 			{ protocol: "https", hostname: "**.cloudinary.com" },
 			{ protocol: "https", hostname: "**.amazonaws.com" },
+			{ protocol: "https", hostname: "cloudflare-ipfs.com" },
 			{ protocol: "http", hostname: "localhost" },
 		],
 		formats: ["image/avif", "image/webp"],
@@ -37,7 +38,7 @@ const nextConfig = {
 						value:
 							process.env.NODE_ENV === "production" ?
 								"default-src 'self'; script-src 'self' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.easydev.in https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
-							:	"default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.easydev.in https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com http://localhost:* ws://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
+								: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.easydev.in https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com http://localhost:* ws://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
 					},
 					{ key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 					{ key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
