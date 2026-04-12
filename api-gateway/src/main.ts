@@ -11,7 +11,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Security headers
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -49,11 +54,12 @@ async function bootstrap() {
       : []),
     // Env-based overrides
     process.env.FRONTEND_URL,
+    process.env.CORS_ORIGIN,
     // Support comma-separated list via CORS_ORIGINS
     ...(process.env.CORS_ORIGINS
       ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
       : []),
-  ].filter(Boolean) as string[];
+  ].filter((origin): origin is string => !!origin && origin.length > 0);
 
   app.enableCors({
     origin: (origin, callback) => {

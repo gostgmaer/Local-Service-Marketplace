@@ -13,7 +13,17 @@ async function bootstrap() {
     logger: WinstonModule.createLogger(winstonConfig),
   });
 
-  app.use(helmet());
+  app.enableCors({
+    origin: true, // In non-gateway services, we can be more lenient or follow FRONTEND_URL
+    credentials: true,
+  });
+
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>("PORT", 3001);

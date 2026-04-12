@@ -505,9 +505,14 @@ services:
     #   - gateway
     ports:
       - "${API_GATEWAY_PORT:-3700}:3000"
+    env_file:
+      - docker.env
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - JWT_SECRET=${JWT_SECRET}
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - TOKEN_VALIDATION_STRATEGY=${TOKEN_VALIDATION_STRATEGY:-local}
