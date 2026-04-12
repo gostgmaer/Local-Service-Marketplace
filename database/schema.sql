@@ -1111,12 +1111,9 @@ CREATE TRIGGER update_search_vector_trigger
 -- BACKGROUND JOB INDEXES
 -- =====================================================
 
-CREATE INDEX IF NOT EXISTS idx_background_jobs_type_status 
-  ON background_jobs(job_type, status);
-
-CREATE INDEX IF NOT EXISTS idx_background_jobs_attempts 
-  ON background_jobs(attempts) WHERE status != 'completed';
-
+-- idx_background_jobs_type_status and idx_background_jobs_attempts are already
+-- defined near the background_jobs table above (IF NOT EXISTS). Only the
+-- scheduled_pending index is unique to this section.
 CREATE INDEX IF NOT EXISTS idx_background_jobs_scheduled_pending
   ON background_jobs(scheduled_for ASC) WHERE status = 'pending';
 
@@ -1197,6 +1194,7 @@ CREATE TABLE provider_documents (
 CREATE INDEX idx_provider_documents_provider_id ON provider_documents(provider_id);
 CREATE INDEX idx_provider_documents_type ON provider_documents(document_type);
 CREATE INDEX idx_provider_documents_verified ON provider_documents(verified);
+CREATE INDEX idx_provider_documents_verified_by ON provider_documents(verified_by) WHERE verified_by IS NOT NULL;
 
 -- =====================================================
 -- PROVIDER PORTFOLIO
@@ -1297,6 +1295,7 @@ CREATE TABLE subscriptions (
 );
 
 CREATE INDEX idx_subscriptions_provider_id ON subscriptions(provider_id);
+CREATE INDEX idx_subscriptions_plan_id ON subscriptions(plan_id);
 CREATE INDEX idx_subscriptions_status ON subscriptions(status);
 CREATE INDEX idx_subscriptions_expires_at ON subscriptions(expires_at) WHERE status = 'active';
 CREATE INDEX idx_subscriptions_provider_status ON subscriptions(provider_id, status);

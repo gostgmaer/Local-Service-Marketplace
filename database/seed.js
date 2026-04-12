@@ -729,7 +729,8 @@ class DatabaseSeeder {
 			for (let day = 1; day <= 5; day++) {
 				const success = await safeInsert(
 					`INSERT INTO provider_availability (id, provider_id, day_of_week, start_time, end_time) 
-           VALUES ($1, $2, $3, $4, $5)`,
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (provider_id, day_of_week) DO NOTHING`,
 					[uuid(), providerId, day, "09:00:00", "17:00:00"],
 				);
 
@@ -740,7 +741,8 @@ class DatabaseSeeder {
 			if (randomInt(0, 1) === 1) {
 				const success = await safeInsert(
 					`INSERT INTO provider_availability (id, provider_id, day_of_week, start_time, end_time) 
-           VALUES ($1, $2, $3, $4, $5)`,
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (provider_id, day_of_week) DO NOTHING`,
 					[uuid(), providerId, 6, "10:00:00", "14:00:00"],
 				);
 

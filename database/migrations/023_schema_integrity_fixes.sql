@@ -47,3 +47,8 @@ ALTER TABLE pricing_plans ADD CONSTRAINT pricing_plans_price_check CHECK (price 
 -- 9. Idempotent background_jobs indexes (already IF NOT EXISTS in newer schema, guard here too)
 CREATE INDEX IF NOT EXISTS idx_background_jobs_type_status ON background_jobs(job_type, status);
 CREATE INDEX IF NOT EXISTS idx_background_jobs_attempts ON background_jobs(attempts) WHERE status != 'completed';
+CREATE INDEX IF NOT EXISTS idx_background_jobs_scheduled_pending ON background_jobs(scheduled_for ASC) WHERE status = 'pending';
+
+-- 10. Missing FK indexes
+CREATE INDEX IF NOT EXISTS idx_subscriptions_plan_id ON subscriptions(plan_id);
+CREATE INDEX IF NOT EXISTS idx_provider_documents_verified_by ON provider_documents(verified_by) WHERE verified_by IS NOT NULL;
