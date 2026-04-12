@@ -486,6 +486,15 @@ CREATE INDEX idx_reviews_provider_rating ON reviews(provider_id, rating DESC);
 CREATE INDEX idx_reviews_provider_covering ON reviews(provider_id, created_at DESC) INCLUDE (rating, comment, user_id);
 CREATE UNIQUE INDEX idx_reviews_job_user_unique ON reviews(job_id, user_id);
 
+CREATE TABLE IF NOT EXISTS review_helpful_votes (
+  review_id UUID NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+  user_id   UUID NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT now() NOT NULL,
+  PRIMARY KEY (review_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_helpful_votes_review ON review_helpful_votes(review_id);
+
 -- =====================================================
 -- MESSAGES
 -- =====================================================
@@ -1917,7 +1926,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 CREATE INDEX IF NOT EXISTS idx_schema_migrations_version ON schema_migrations(version);
 
--- Pre-seed all integrated migrations (001-021)
+-- Pre-seed all integrated migrations (001-022)
 -- Fresh installs use schema.sql which is already the complete state,
 -- so all migrations are marked as applied to prevent re-running.
 INSERT INTO schema_migrations (version, name, checksum, execution_time_ms)
@@ -1942,6 +1951,7 @@ VALUES
   ('018', 'query_performance_indexes', 'integrated_in_schema', 0),
   ('019', 'unique_constraints_dedup', 'integrated_in_schema', 0),
   ('020', 'add_edit_capabilities', 'integrated_in_schema', 0),
-  ('021', 'schema_sync', 'integrated_in_schema', 0)
+  ('021', 'schema_sync', 'integrated_in_schema', 0),
+  ('022', 'add_review_helpful_votes', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

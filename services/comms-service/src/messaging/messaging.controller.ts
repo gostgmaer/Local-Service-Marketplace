@@ -98,7 +98,25 @@ export class MessagingController {
 
   @Post("attachments")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", {
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max
+    fileFilter: (_req, file, cb) => {
+      const allowedMimeTypes = [
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain",
+        "video/mp4", "video/quicktime",
+      ];
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        return cb(new BadRequestException(`File type '${file.mimetype}' is not allowed`), false);
+      }
+      cb(null, true);
+    },
+  }))
   async createAttachment(
     @Body() createAttachmentDto: CreateAttachmentDto,
     @UploadedFile() file: Express.Multer.File,
