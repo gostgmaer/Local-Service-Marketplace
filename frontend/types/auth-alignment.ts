@@ -187,9 +187,9 @@ export function transformBackendUserToFrontend(backendUser: BackendAuthResponse[
  */
 export const TOKEN_CONFIG = {
   ACCESS_TOKEN_EXPIRATION: 15 * 60 * 1000, // 15 minutes in milliseconds
-  REFRESH_TOKEN_EXPIRATION: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  REFRESH_TOKEN_EXPIRATION: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
   ACCESS_TOKEN_EXPIRATION_STRING: '15m',
-  REFRESH_TOKEN_EXPIRATION_STRING: '7d',
+  REFRESH_TOKEN_EXPIRATION_STRING: '90d',
 } as const;
 
 /**

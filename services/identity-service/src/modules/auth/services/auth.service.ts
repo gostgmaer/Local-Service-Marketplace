@@ -332,7 +332,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -450,7 +450,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -804,7 +804,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(
       user.id,
       jwtRefreshToken,
@@ -932,7 +932,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -1113,7 +1113,7 @@ export class AuthService {
 
       // Store refresh token in session
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+      expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
       await this.sessionRepo.create(
         user.id,
         refreshToken,
@@ -1284,7 +1284,7 @@ export class AuthService {
     );
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setDate(expiresAt.getDate() + this.configService.get<number>('SESSION_TTL_DAYS', 90));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     this.logger.info("Email OTP login successful", {
