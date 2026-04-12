@@ -173,6 +173,8 @@ export default function AdminDisputesPage() {
 									serverColumnFilters={serverFilters}
 									onServerPageIndexChange={setServerPageIndex}
 									onServerPageSizeChange={setServerPageSize}
+									onServerSortingChange={setServerSorting}
+									onServerColumnFiltersChange={setServerFilters}
 									initialSortDirection='desc'
 									defaultPaginationMode={paginationMode}
 									onLoadMore={() => setPaginationMode("load-more")}

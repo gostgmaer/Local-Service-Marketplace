@@ -17,7 +17,7 @@ interface Location {
 
 interface LocationPickerProps {
   value?: Location;
-  onChange: (location: Location) => void;
+  onChange: (_l: Location) => void;
   label?: string;
   error?: string;
   required?: boolean;
@@ -36,7 +36,7 @@ export function LocationPicker({
   className,
 }: LocationPickerProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [_isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
@@ -49,7 +49,7 @@ export function LocationPicker({
   // Initialize map
   useEffect(() => {
     if (!mapRef.current || map) return;
-
+  
     // Check if Google Maps is loaded
     if (typeof window !== 'undefined' && window.google) {
       initializeMap();
@@ -57,9 +57,9 @@ export function LocationPicker({
       // Load Google Maps script
       loadGoogleMaps();
     }
-  }, []);
+  }, [map, initializeMap, loadGoogleMaps]);
 
-  const loadGoogleMaps = () => {
+  const loadGoogleMaps = useCallback(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 		if (!apiKey) {
 			setMapUnavailable(true);
@@ -71,9 +71,9 @@ export function LocationPicker({
     script.defer = true;
     script.onload = () => initializeMap();
     document.head.appendChild(script);
-  };
+  }, [initializeMap]);
 
-  const initializeMap = () => {
+  const initializeMap = useCallback(() => {
     if (!mapRef.current || typeof google === 'undefined') return;
 
     const defaultCenter = value 
@@ -121,9 +121,9 @@ export function LocationPicker({
         }
       );
     }
-  };
+  }, [value, handleMapClick, addMarker]);
 
-  const addMarker = (position: { lat: number; lng: number }, mapInstance?: any) => {
+  const addMarker = useCallback((position: { lat: number; lng: number }, mapInstance?: any) => {
     const targetMap = mapInstance || map;
     if (!targetMap || typeof google === 'undefined') return;
 
@@ -147,9 +147,9 @@ export function LocationPicker({
     });
 
     setMarker(newMarker);
-  };
+  }, [map, marker, handleMapClick]);
 
-  const handleMapClick = async (latLng: any) => {
+  const handleMapClick = useCallback(async (latLng: any) => {
     const lat = latLng.lat();
     const lng = latLng.lng();
 
@@ -193,7 +193,7 @@ export function LocationPicker({
     } else {
       onChange({ lat, lng });
     }
-  };
+  }, [addMarker, onChange]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
@@ -426,9 +426,9 @@ export function LocationMap({
       script.onload = () => initMap();
       document.head.appendChild(script);
     }
-  }, [location]);
+  }, [initMap, map]);
 
-  const initMap = () => {
+  const initMap = useCallback(() => {
     if (!mapRef.current || typeof google === 'undefined') return;
 
     const mapInstance = new google.maps.Map(mapRef.current, {
@@ -447,7 +447,7 @@ export function LocationMap({
     }
 
     setMap(mapInstance);
-  };
+  }, [location, showMarker]);
 
   return (
     <div className={cn('w-full', className)}>

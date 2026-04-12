@@ -76,8 +76,8 @@ export default function SearchPage() {
   });
 
   const providers = providersData?.data || [];
-  const requests = requestsData?.data || [];
-  const categories = categoriesData || [];
+  const requests = useMemo(() => requestsData?.data || [], [requestsData]);
+  const categories = useMemo(() => categoriesData || [], [categoriesData]);
 
   // Filter categories by search query client-side
   const filteredCategories = useMemo(() => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -100,7 +100,6 @@ function CategoryFormModal({
 }
 
 export default function AdminCategoriesPage() {
-  const queryClient = useQueryClient();
   const [modalCategory, setModalCategory] = useState<any | null | 'new'>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 

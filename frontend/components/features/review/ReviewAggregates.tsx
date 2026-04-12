@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Star, Award } from 'lucide-react';
 import reviewService, { type ReviewAggregate } from '@/services/review-service';
 
@@ -10,9 +10,9 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
 
   useEffect(() => {
     loadAggregate();
-  }, [providerId]);
+  }, [providerId, loadAggregate]);
 
-  const loadAggregate = async () => {
+  const loadAggregate = useCallback(async () => {
     try {
       const data = await reviewService.getProviderReviewAggregates(providerId);
       setAggregate(data || null);
@@ -21,7 +21,7 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [providerId]);
 
   const getRatingPercentage = (count: number, total: number) => {
     return total > 0 ? (count / total) * 100 : 0;

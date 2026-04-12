@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 
 type SettingRow = { key: string; value: string; description?: string };
 
-function SettingItem({ setting, onSave }: { setting: SettingRow; onSave: (_key: string, _value: string) => void }) {
+function SettingItem({ setting, onSave }: { setting: SettingRow; onSave: (_k: string, _v: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(setting.value);
 

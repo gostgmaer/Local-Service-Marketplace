@@ -10,8 +10,8 @@ interface FileUploadProps {
   maxSize?: number; // in bytes
   maxFiles?: number;
   multiple?: boolean;
-  onFilesSelected: (files: File[]) => void;
-  onError?: (error: string) => void;
+  onFilesSelected: (_f: File[]) => void;
+  onError?: (_e: string) => void;
   className?: string;
   disabled?: boolean;
 }

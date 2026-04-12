@@ -4,6 +4,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/layout/Layout';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from '@/config/constants';
 import { getUserProfile, getProviderProfile } from '@/services/user-service';
@@ -114,9 +115,11 @@ export default function ProfilePage() {
 									{/* Avatar */}
 									<div className='w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-4xl font-bold text-gray-600 dark:text-gray-300 overflow-hidden'>
 										{profile?.profile_picture_url ?
-											<img
+											<Image
 												src={profile.profile_picture_url}
 												alt={displayName}
+												width={128}
+												height={128}
 												className='w-full h-full object-cover'
 											/>
 										:	displayName.charAt(0).toUpperCase()}

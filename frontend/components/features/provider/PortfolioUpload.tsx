@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
@@ -176,10 +177,13 @@ export function PortfolioUpload({ providerId, onUploadSuccess }: PortfolioUpload
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {files.map((file, index) => (
               <div key={index} className="relative group">
-                <img
+                <Image
                   src={URL.createObjectURL(file)}
                   alt={`Preview ${index + 1}`}
+                  width={200}
+                  height={128}
                   className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                  unoptimized
                 />
                 <button
                   onClick={() => removeFile(index)}

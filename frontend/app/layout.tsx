@@ -1,5 +1,6 @@
 import '@/styles/globals.css';
 import { Inter } from 'next/font/google';
+import { Metadata } from 'next';
 import { Providers } from './providers';
 
 const inter = Inter({
@@ -7,6 +8,15 @@ const inter = Inter({
   variable: '--font-inter',
   display: 'swap',
 });
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  title: {
+    default: 'Local Service Marketplace',
+    template: '%s | Local Service Marketplace'
+  },
+  description: 'Connect with verified local service professionals in your neighborhood.',
+};
 
 export default function RootLayout({
   children,

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Image as ImageIcon, Edit, Trash2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -20,8 +21,8 @@ interface PortfolioItem {
 
 interface SortableItemProps {
   item: PortfolioItem;
-  onEdit: (item: PortfolioItem) => void;
-  onDelete?: (id: string) => void;
+  onEdit: (_item: PortfolioItem) => void;
+  onDelete?: (_id: string) => void;
 }
 
 function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
@@ -59,9 +60,11 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
     >
       {/* Image Carousel */}
       <div className="relative h-64 bg-gray-200 group">
-        <img
+        <Image
           src={item.image_urls[currentImageIndex]}
           alt={item.title}
+          width={600}
+          height={400}
           className="w-full h-full object-cover"
         />
 
@@ -88,8 +91,8 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
                   className={`w-2 h-2 rounded-full transition-all ${index === currentImageIndex
-                      ? 'bg-white w-6'
-                      : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+                    ? 'bg-white w-6'
+                    : 'bg-white bg-opacity-50 hover:bg-opacity-75'
                     }`}
                 />
               ))}
@@ -167,12 +170,7 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  useEffect(() => {
-    loadPortfolio();
-  }, [providerId]);
-
-  const loadPortfolio = async () => {
+  const loadPortfolio = useCallback(async () => {
     try {
       const data = await getProviderPortfolio(providerId);
       // Map backend response (images) to frontend interface (image_urls)
@@ -186,7 +184,12 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [providerId]);
+  useEffect(() => {
+    loadPortfolio();
+  }, [providerId, loadPortfolio]);
+
+
 
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;

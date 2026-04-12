@@ -9,7 +9,7 @@ import { X, Filter } from 'lucide-react';
 
 
 interface ProviderFiltersProps {
-  onFilterChange: (filters: Record<string, string>) => void;
+  onFilterChange: (_f: Record<string, string>) => void;
   onClear: () => void;
   activeFilters: Record<string, string>;
 }
