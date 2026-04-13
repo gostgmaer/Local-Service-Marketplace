@@ -201,7 +201,7 @@ export class NotificationService {
         // Send via email
         const emailResult = await this.emailClient.sendEmail({
           to: dto.recipient,
-          subject: dto.subject,
+          subject: dto.subject || (dto.template ? `Notification: ${dto.template}` : "New Notification"),
           text: dto.message,
           template: dto.template,
           variables: dto.variables,
@@ -287,7 +287,7 @@ export class NotificationService {
 
     const result = await this.emailClient.sendEmail({
       to: dto.to,
-      subject: dto.subject,
+      subject: dto.subject || (dto.template ? `Notification: ${dto.template}` : "New Notification"),
       text: dto.message,
       template: dto.template,
       variables: dto.variables,

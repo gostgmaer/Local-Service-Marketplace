@@ -286,9 +286,11 @@ export class AuthService {
     this.notificationClient
       .sendEmail({
         to: user.email,
-        template: "welcome",
+        template: "USER_WELCOME",
         variables: {
-          name: user.email.split("@")[0], // Use email username as name
+          userId: user.id,
+          username: name || user.email.split("@")[0],
+          email: user.email,
           dashboardUrl: `${this.configService.get<string>("FRONTEND_URL", "http://localhost:3000")}/dashboard`,
         },
       })
@@ -308,10 +310,12 @@ export class AuthService {
     this.notificationClient
       .sendEmail({
         to: user.email,
-        template: "emailVerification",
+        template: "USER_VERIFICATION",
         variables: {
-          name: user.email.split("@")[0],
-          verificationUrl: `${frontendUrl}/verify-email?token=${verificationToken}`,
+          userId: user.id,
+          username: name || user.email.split("@")[0],
+          email: user.email,
+          verifyLink: `${frontendUrl}/verify-email?token=${verificationToken}`,
         },
       })
       .catch((err: any) => {

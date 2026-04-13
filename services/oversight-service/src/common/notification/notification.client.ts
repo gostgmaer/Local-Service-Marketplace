@@ -50,6 +50,7 @@ export class NotificationClient {
     };
     const secret = process.env.GATEWAY_INTERNAL_SECRET;
     if (secret) {
+      headers["x-internal-secret"] = secret;
       headers["x-gateway-hmac"] = crypto
         .createHmac("sha256", secret)
         .update(`${userId}:${email}:${role}`)
