@@ -6,12 +6,22 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { ResponseTransformInterceptor } from "./common/interceptors/response-transform.interceptor";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
 import helmet from "helmet";
+import { json, urlencoded } from "express";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Request body size limits
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ extended: true, limit: '1mb' }));
+
   // Security headers
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -49,11 +59,12 @@ async function bootstrap() {
       : []),
     // Env-based overrides
     process.env.FRONTEND_URL,
+    process.env.CORS_ORIGIN,
     // Support comma-separated list via CORS_ORIGINS
     ...(process.env.CORS_ORIGINS
       ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
       : []),
-  ].filter(Boolean) as string[];
+  ].filter((origin): origin is string => !!origin && origin.length > 0);
 
   app.enableCors({
     origin: (origin, callback) => {

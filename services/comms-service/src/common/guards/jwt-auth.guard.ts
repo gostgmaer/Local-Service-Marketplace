@@ -1,5 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { UnauthorizedException } from "../exceptions/http.exceptions";
+import { IS_PUBLIC_KEY } from "../decorators/skip-auth.decorator";
 import * as crypto from "crypto";
 
 /**
@@ -15,16 +17,29 @@ import * as crypto from "crypto";
  * - x-user-name: User's name (optional)
  * - x-user-phone: User's phone (optional)
  * - x-provider-id: Provider ID if user is a provider (optional)
+ *
+ * Endpoints decorated with @SkipAuth() bypass this guard entirely.
+ * Those endpoints must use InternalServiceGuard instead.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Allow endpoints decorated with @SkipAuth() to bypass JWT validation
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const request = context.switchToHttp().getRequest();
 
     // Extract user context from headers (injected by API Gateway)
     const userId = request.headers["x-user-id"];
     const userEmail = request.headers["x-user-email"];
     const userRole = request.headers["x-user-role"];
+    const permissionsHeader = request.headers["x-user-permissions"];
 
     // If no user context headers, request didn't come through gateway or user not authenticated
     if (!userId || !userEmail) {
@@ -33,12 +48,24 @@ export class JwtAuthGuard implements CanActivate {
       );
     }
 
+    // Parse permissions from header
+    let permissions: string[] = [];
+    if (permissionsHeader) {
+      try {
+        const parsed = JSON.parse(permissionsHeader as string);
+        if (Array.isArray(parsed)) permissions = parsed;
+      } catch {
+        // ignore malformed permissions header
+      }
+    }
+
     // Verify HMAC signature to ensure headers were set by the gateway
     const gatewaySecret = process.env.GATEWAY_INTERNAL_SECRET;
     if (gatewaySecret) {
       const receivedHmac = request.headers["x-gateway-hmac"];
       const providerId = request.headers["x-provider-id"] || "none";
-      const hmacPayload = `${userId}:${userEmail}:${userRole || "user"}:${providerId}`;
+      const permissionsJson = permissionsHeader || "[]";
+      const hmacPayload = `${userId}:${userEmail}:${userRole || "user"}:${providerId}:${permissionsJson}`;
       const expectedHmac = crypto
         .createHmac("sha256", gatewaySecret)
         .update(hmacPayload)
@@ -62,6 +89,7 @@ export class JwtAuthGuard implements CanActivate {
       userId,
       email: userEmail,
       role: userRole || "customer",
+      permissions,
       name: request.headers["x-user-name"],
       phone: request.headers["x-user-phone"],
       providerId: request.headers["x-provider-id"],

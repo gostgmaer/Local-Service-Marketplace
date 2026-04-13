@@ -11,20 +11,20 @@ describe("Card Component", () => {
 	it("applies base styles", () => {
 		const { container } = render(<Card>Content</Card>);
 		const card = container.firstChild as HTMLElement;
-		expect(card.className).toContain("rounded-xl");
+		expect(card.className).toContain("rounded-2xl");
 		expect(card.className).toContain("border");
 	});
 
 	it("applies hover styles when hover prop is true", () => {
 		const { container } = render(<Card hover>Content</Card>);
 		const card = container.firstChild as HTMLElement;
-		expect(card.className).toContain("hover:shadow-md");
+		expect(card.className).toContain("card-hover");
 	});
 
 	it("does not apply hover styles by default", () => {
 		const { container } = render(<Card>Content</Card>);
 		const card = container.firstChild as HTMLElement;
-		expect(card.className).not.toContain("hover:shadow-md");
+		expect(card.className).not.toContain("card-hover");
 	});
 
 	it("applies custom className", () => {

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
+import { Permission } from '@/utils/permissions';
 import { adminService, AuditLog } from '@/services/admin-service';
 import { formatDate } from '@/utils/helpers';
 import { Scroll, Search, User, RefreshCw, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -79,7 +80,7 @@ export default function AuditLogsPage() {
     : logs;
 
   return (
-    <ProtectedRoute requiredRoles={['admin']}>
+    <ProtectedRoute requiredPermissions={[Permission.AUDIT_VIEW]}>
       <Layout>
         <div className="container-custom py-12">
           {/* Header */}

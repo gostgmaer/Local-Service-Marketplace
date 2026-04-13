@@ -21,12 +21,12 @@ export class SendNotificationDto {
   channel: NotificationChannel;
 
   @IsString()
-  @IsNotEmpty()
-  subject: string; // for email
+  @IsOptional()
+  subject?: string; // for email
 
   @IsString()
-  @IsNotEmpty()
-  message: string; // plain text message or SMS body
+  @IsOptional()
+  message?: string; // plain text message or SMS body
 
   @IsString()
   @IsOptional()

@@ -34,8 +34,8 @@ import { SendEmailDto } from "./dto/send-email.dto";
 import { SendSmsDto, SendOtpDto, VerifyOtpDto } from "./dto/send-sms.dto";
 import { UnsubscribeDto, CheckUnsubscribeDto } from "./dto/unsubscribe.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { RolesGuard } from "@/common/guards/roles.guard";
-import { Roles } from "@/common/decorators/roles.decorator";
+import { InternalServiceGuard } from "@/common/guards/internal-service.guard";
+import { SkipAuth } from "@/common/decorators/skip-auth.decorator";
 
 @UseGuards(JwtAuthGuard)
 @Controller("notifications")
@@ -216,8 +216,8 @@ export class NotificationController {
    * This is the main endpoint that other services should use
    * Rate limited to 20 notifications per minute
    */
-  @Roles("admin")
-  @UseGuards(RolesGuard)
+  @SkipAuth()
+  @UseGuards(InternalServiceGuard)
   @Post("send")
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
@@ -234,8 +234,8 @@ export class NotificationController {
    * Send email directly (legacy endpoint, use /send instead)
    * Rate limited to 10 emails per minute per IP
    */
-  @Roles("admin")
-  @UseGuards(RolesGuard)
+  @SkipAuth()
+  @UseGuards(InternalServiceGuard)
   @Post("email/send")
   @Throttle({ email: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
@@ -252,8 +252,8 @@ export class NotificationController {
    * Send SMS directly
    * Rate limited to 5 SMS per hour per IP
    */
-  @Roles("admin")
-  @UseGuards(RolesGuard)
+  @SkipAuth()
+  @UseGuards(InternalServiceGuard)
   @Post("sms/send")
   @Throttle({ sms: { limit: 5, ttl: 3600000 } })
   @HttpCode(HttpStatus.OK)
@@ -270,8 +270,8 @@ export class NotificationController {
    * Send OTP via SMS
    * Rate limited to 5 OTP per hour per IP
    */
-  @Roles("admin")
-  @UseGuards(RolesGuard)
+  @SkipAuth()
+  @UseGuards(InternalServiceGuard)
   @Post("otp/send")
   @Throttle({ sms: { limit: 5, ttl: 3600000 } })
   @HttpCode(HttpStatus.OK)
@@ -290,6 +290,8 @@ export class NotificationController {
   /**
    * Verify OTP
    */
+  @SkipAuth()
+  @UseGuards(InternalServiceGuard)
   @Post("otp/verify")
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() dto: VerifyOtpDto) {
@@ -307,8 +309,8 @@ export class NotificationController {
 
   // ========== Worker endpoints (for background job scheduler) ==========
 
-  @Roles("admin")
-  @UseGuards(RolesGuard)
+  @SkipAuth()
+  @UseGuards(InternalServiceGuard)
   @Post("workers/process-emails")
   @HttpCode(HttpStatus.OK)
   async processEmails() {
@@ -320,8 +322,8 @@ export class NotificationController {
     return {};
   }
 
-  @Roles("admin")
-  @UseGuards(RolesGuard)
+  @SkipAuth()
+  @UseGuards(InternalServiceGuard)
   @Post("workers/process-push")
   @HttpCode(HttpStatus.OK)
   async processPush() {

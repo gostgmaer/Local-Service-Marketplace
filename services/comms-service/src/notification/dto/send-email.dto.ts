@@ -12,12 +12,12 @@ export class SendEmailDto {
   to: string;
 
   @IsString()
-  @IsNotEmpty()
-  subject: string;
+  @IsOptional()
+  subject?: string;
 
   @IsString()
-  @IsNotEmpty()
-  message: string; // plain text or HTML
+  @IsOptional()
+  message?: string; // plain text or HTML
 
   @IsString()
   @IsOptional()

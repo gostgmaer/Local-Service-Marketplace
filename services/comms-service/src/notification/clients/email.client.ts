@@ -37,7 +37,7 @@ export class EmailClient {
 
   async sendEmail(options: {
     to: string;
-    subject: string;
+    subject?: string;
     text?: string;
     html?: string;
     template?: string;
@@ -56,11 +56,15 @@ export class EmailClient {
 
       const response = await this.httpClient.post("/send-email", {
         to: options.to,
-        subject: options.subject,
+        templateId: options.template,
+        data: {
+          ...options.variables,
+          subject: options.subject, // Include subject in data if needed by template
+          timestamp: new Date().toISOString(),
+        },
+        // Fallback for non-template emails
         text: options.text,
         html: options.html,
-        template: options.template,
-        variables: options.variables,
       });
 
       this.logger.log(
@@ -99,8 +103,11 @@ export class EmailClient {
 
       const response = await this.httpClient.post("/send-email", {
         to,
-        template,
-        variables,
+        templateId: template,
+        data: {
+          ...variables,
+          timestamp: new Date().toISOString(),
+        },
       });
 
       this.logger.log(

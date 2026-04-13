@@ -13,6 +13,7 @@ import { adminService } from '@/services/admin-service';
 import { formatDate } from '@/utils/helpers';
 import { ShieldCheck, ShieldX, FileText, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Permission } from '@/utils/permissions';
 
 function ProviderVerificationCard({ provider, onAction }: { provider: any; onAction: () => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -153,7 +154,7 @@ export default function ProviderVerificationPage() {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-providers', statusFilter, page],
-    queryFn: () => adminService.getPendingProviders({ page, limit }),
+    queryFn: () => adminService.getProviders({ page, limit, status: statusFilter }),
     refetchOnWindowFocus: false,
   });
 
@@ -162,7 +163,7 @@ export default function ProviderVerificationPage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <ProtectedRoute requiredRoles={['admin']}>
+    <ProtectedRoute requiredPermissions={[Permission.PROVIDERS_MANAGE]}>
       <Layout>
         <div className="container-custom py-12">
           <div className="mb-8">

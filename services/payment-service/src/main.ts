@@ -12,7 +12,17 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  app.use(helmet());
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
 
   // Reject oversized request bodies early (before body parsing)
   // This limits DoS risk from large JSON payloads; Express default is 100kb
