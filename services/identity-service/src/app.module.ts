@@ -28,4 +28,4 @@ const conditionalModules = process.env.WORKERS_ENABLED === "true" ? [WorkersModu
   ],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule { }

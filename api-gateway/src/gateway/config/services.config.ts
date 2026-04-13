@@ -15,6 +15,14 @@ export const servicesConfig = {
     name: "identity-service",
     stripPrefix: "/user",
   },
+  "identity-service-rbac": {
+    url:
+      process.env.IDENTITY_SERVICE_URL ||
+      process.env.AUTH_SERVICE_URL ||
+      "http://localhost:3001",
+    name: "identity-service",
+    stripPrefix: "/identity",
+  },
   "marketplace-service": {
     url:
       process.env.MARKETPLACE_SERVICE_URL ||
@@ -51,7 +59,8 @@ export const servicesConfig = {
 };
 
 export const routingConfig = {
-  // identity-service (auth + user + providers)
+  // identity-service (auth + user + providers + rbac)
+  "/identity": "identity-service-rbac",
   "/user/auth": "identity-service-auth",
   "/users": "identity-service",
   "/providers": "identity-service",

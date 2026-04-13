@@ -20,6 +20,7 @@ const nextConfig = {
 			{ protocol: "https", hostname: "**.cloudinary.com" },
 			{ protocol: "https", hostname: "**.amazonaws.com" },
 			{ protocol: "https", hostname: "cloudflare-ipfs.com" },
+			{ protocol: "https", hostname: "avatars.githubusercontent.com" },
 			{ protocol: "http", hostname: "localhost" },
 		],
 		formats: ["image/avif", "image/webp"],
