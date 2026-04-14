@@ -10,6 +10,8 @@ export const metadata: Metadata = {
 		description:
 			'Browse verified local service providers. Find trusted professionals for home repairs, cleaning, tutoring, and more.',
 		url: '/providers',
+		type: 'website',
+		locale: 'en_IN',
 		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
 	},
 	twitter: {

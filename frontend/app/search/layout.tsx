@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 			'Find trusted, verified local service providers near you. Compare ratings, read reviews and book instantly.',
 		url: '/search',
 		type: 'website',
+		locale: 'en_IN',
 		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Search Local Service Marketplace' }],
 	},
 	twitter: {

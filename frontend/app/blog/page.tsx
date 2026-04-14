@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Layout } from '@/components/layout/Layout';
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
-import { BLOG_POSTS } from './blog-data';
+import { BLOG_POSTS, BLOG_CATEGORIES, categoryToSlug } from './blog-data';
 import { Clock, ChevronRight } from 'lucide-react';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
@@ -33,13 +33,25 @@ export default function BlogPage() {
 				<div className='container-custom py-8 md:py-12'>
 					<Breadcrumb items={[{ label: 'Blog', href: '/blog' }]} className='mb-6' />
 
-					<div className='text-center mb-10'>
+					<div className='text-center mb-8'>
 						<h1 className='text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3'>
-							Home Service Tips & Guides
+							Home Service Tips &amp; Guides
 						</h1>
 						<p className='text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto'>
 							Expert advice on hiring service providers, home maintenance, and getting the best value for services across India.
 						</p>
+					</div>
+
+					{/* Category filter strip */}
+					<div className='flex flex-wrap gap-2 justify-center mb-8'>
+						{BLOG_CATEGORIES.map((cat) => (
+							<Link
+								key={cat}
+								href={`/blog/category/${categoryToSlug(cat)}`}
+								className='inline-flex items-center px-4 py-1.5 rounded-full text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors'>
+								{cat}
+							</Link>
+						))}
 					</div>
 
 					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -48,9 +60,11 @@ export default function BlogPage() {
 								key={post.slug}
 								className='flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow'>
 								<div className='p-6 flex flex-col flex-1'>
-									<span className='inline-block text-xs font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2.5 py-1 rounded-full mb-3'>
+									<Link
+										href={`/blog/category/${categoryToSlug(post.category)}`}
+										className='inline-block self-start text-xs font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2.5 py-1 rounded-full mb-3 hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors'>
 										{post.category}
-									</span>
+									</Link>
 									<h2 className='text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2'>
 										<Link
 											href={`/blog/${post.slug}`}
