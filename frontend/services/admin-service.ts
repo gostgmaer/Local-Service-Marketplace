@@ -344,6 +344,11 @@ class AdminService {
 		return response.data;
 	}
 
+	async createSystemSetting(key: string, value: string, description?: string): Promise<any> {
+		const response = await apiClient.post<any>('/admin/settings', { key, value, description });
+		return response.data;
+	}
+
 	async getSystemSettings(): Promise<any[]> {
 		const response = await apiClient.get<any>('/admin/settings');
 		return apiClient.extractList<any>(response.data);

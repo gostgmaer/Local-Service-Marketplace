@@ -920,6 +920,33 @@ CREATE TABLE system_settings (
   updated_by UUID REFERENCES users(id)
 );
 
+-- Default system settings (all use ON CONFLICT DO NOTHING so re-runs are safe)
+INSERT INTO system_settings (key, value, description) VALUES
+  ('platform_fee_percentage',        '15',                  'Platform commission percentage charged on each payment'),
+  ('min_payout_amount',              '5000',                'Minimum provider payout amount in smallest currency unit (paise)'),
+  ('max_proposal_count',             '10',                  'Maximum number of proposals a provider can submit for a single request'),
+  ('request_expiry_days',            '30',                  'Number of days before an open service request automatically expires'),
+  ('support_email',                  'support@marketplace.com', 'Platform support email address'),
+  ('max_login_attempts',             '5',                   'Maximum failed login attempts before account is temporarily locked'),
+  ('session_timeout_minutes',        '15',                  'JWT access token lifetime in minutes'),
+  ('otp_expiry_minutes',             '10',                  'OTP verification code validity in minutes'),
+  ('maintenance_mode',               'false',               'Set to true to put the platform in maintenance mode'),
+  ('maintenance_message',            'We are performing scheduled maintenance. Please check back shortly.', 'Message shown to users during maintenance mode'),
+  ('provider_verification_required', 'true',                'Require providers to be verified before they can submit proposals'),
+  ('max_providers_per_category',     '500',                 'Maximum number of providers allowed per service category'),
+  ('max_services_per_provider',      '10',                  'Maximum number of service categories a single provider can offer'),
+  ('review_auto_approve_days',       '7',                   'Days after job completion before a review is auto-approved if provider does not respond'),
+  ('min_review_length',              '10',                  'Minimum character count required for a review comment'),
+  ('default_currency',               'INR',                 'Default currency code for pricing and payments (ISO 4217)'),
+  ('default_timezone',               'Asia/Kolkata',        'Default timezone for scheduling and date/time display'),
+  ('max_file_upload_size_mb',        '10',                  'Maximum file upload size in megabytes'),
+  ('allowed_file_types',             'image/jpeg,image/png,image/webp,application/pdf', 'Comma-separated list of allowed MIME types for file uploads'),
+  ('contact_phone',                  '+91 98765 43210',     'Public support phone number shown on the contact page'),
+  ('contact_address',                '123 Marketplace Tower, MG Road, Bengaluru, Karnataka 560001', 'Public office address shown on the contact page'),
+  ('terms_version',                  '1.0',                 'Current version of the Terms of Service document'),
+  ('privacy_version',                '1.0',                 'Current version of the Privacy Policy document')
+ON CONFLICT (key) DO NOTHING;
+
 -- =====================================================
 -- ADMIN ACTIONS
 -- =====================================================
@@ -2296,6 +2323,7 @@ VALUES
   ('023', 'schema_integrity_fixes', 'integrated_in_schema', 0),
   ('024', 'rbac_dynamic_permissions', 'integrated_in_schema', 0),
   ('025', 'add_conversations_table', 'integrated_in_schema', 0),
-  ('026', 'india_localization', 'integrated_in_schema', 0)
+  ('026', 'india_localization', 'integrated_in_schema', 0),
+  ('027', 'add_system_settings', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 
