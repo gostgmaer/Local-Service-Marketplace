@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 			'Find trusted local service providers in 50+ Indian cities — Mumbai, Delhi, Bengaluru, Hyderabad and more.',
 		url: '/cities',
 		type: 'website',
+		locale: 'en_IN',
 		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace Cities' }],
 	},
 	twitter: {

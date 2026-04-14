@@ -13,6 +13,8 @@ title: 'Contact Us',
 description:
 'Get in touch with the Local Service Marketplace team. We are here to help with questions, feedback, and support.',
 url: '/contact',
+type: 'website',
+locale: 'en_IN',
 images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
 },
 twitter: {
@@ -47,11 +49,21 @@ const contactOrgJsonLd = {
 	},
 };
 
+const breadcrumbJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'BreadcrumbList',
+	itemListElement: [
+		{ '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+		{ '@type': 'ListItem', position: 2, name: 'Contact Us', item: `${SITE_URL}/contact` },
+	],
+};
+
 export default function ContactPage() {
 return (
 <Layout>
 <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(contactPageJsonLd) }} />
 <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(contactOrgJsonLd) }} />
+<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 <div className="bg-white dark:bg-gray-900">
 {/* Hero Section */}
 <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
@@ -63,10 +75,10 @@ return (
 
 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
 <div className="grid md:grid-cols-2 gap-12">
-{/* Contact Form — client island */}
+{/* Contact Form ï¿½ client island */}
 <ContactForm />
 
-{/* Contact Information — static, server-rendered */}
+{/* Contact Information ï¿½ static, server-rendered */}
 <div>
 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
 Contact Information

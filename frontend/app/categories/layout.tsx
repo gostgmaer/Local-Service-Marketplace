@@ -10,6 +10,8 @@ export const metadata: Metadata = {
 		description:
 			'Explore all service categories on Local Service Marketplace — from home cleaning and repairs to tutoring, events, and more.',
 		url: '/categories',
+		type: 'website',
+		locale: 'en_IN',
 		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
 	},
 	twitter: {
