@@ -1057,6 +1057,18 @@ export class AuthService {
       // Send OTP via SMS service
       await this.smsClient.sendOtp(phone, "login");
 
+      // WhatsApp OTP fallback (when WHATSAPP_OTP_ENABLED=true)
+      if (this.notificationClient.isWhatsAppOtpEnabled()) {
+        const otp = this.configService.get<string>("CURRENT_PHONE_OTP_DEBUG") || "";
+        this.notificationClient.sendWhatsAppOtp(phone, otp).catch((err: any) => {
+          this.logger.warn("WhatsApp OTP fallback failed (non-fatal)", {
+            context: "AuthService",
+            phone,
+            error: err?.message,
+          });
+        });
+      }
+
       this.logger.info("OTP sent successfully", {
         context: "AuthService",
         phone,
