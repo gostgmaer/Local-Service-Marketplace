@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html
-			lang='en-IN'
+			lang='en'
 			className={`${inter.variable} ${jakartaSans.variable}`}>
 			<head>
 				<link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700"} />
