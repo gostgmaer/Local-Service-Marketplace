@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Layout } from '@/components/layout/Layout';
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
-import { BLOG_POSTS } from '../blog-data';
-import { Clock, ArrowLeft, ChevronRight } from 'lucide-react';
+import { BLOG_POSTS, categoryToSlug } from '../blog-data';
+import { ShareButtons } from '@/components/blog/ShareButtons';
+import { Clock, ArrowLeft, ChevronRight, User2 } from 'lucide-react';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
 
@@ -208,7 +209,9 @@ export default function BlogPostPage({ params }: Props) {
 	if (!post) notFound();
 
 	const content = ARTICLE_CONTENT[params.slug];
-	const relatedPosts = BLOG_POSTS.filter((p) => p.slug !== params.slug).slice(0, 3);
+	const sameCategoryPosts = BLOG_POSTS.filter((p) => p.slug !== params.slug && p.category === post.category);
+	const otherPosts = BLOG_POSTS.filter((p) => p.slug !== params.slug && p.category !== post.category);
+	const relatedPosts = [...sameCategoryPosts, ...otherPosts].slice(0, 3);
 
 	const articleJsonLd = {
 		'@context': 'https://schema.org',
@@ -217,7 +220,7 @@ export default function BlogPostPage({ params }: Props) {
 		description: post.excerpt,
 		url: `${SITE_URL}/blog/${post.slug}`,
 		datePublished: post.date,
-		dateModified: post.date,
+		dateModified: post.dateModified || post.date,
 		author: { '@type': 'Organization', name: 'Local Service Marketplace', url: SITE_URL },
 		publisher: {
 			'@type': 'Organization',
@@ -228,15 +231,27 @@ export default function BlogPostPage({ params }: Props) {
 		keywords: post.keywords.join(', '),
 	};
 
+	const breadcrumbJsonLd = {
+		'@context': 'https://schema.org',
+		'@type': 'BreadcrumbList',
+		itemListElement: [
+			{ '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+			{ '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_URL}/blog` },
+			{ '@type': 'ListItem', position: 3, name: post.category, item: `${SITE_URL}/blog/category/${categoryToSlug(post.category)}` },
+			{ '@type': 'ListItem', position: 4, name: post.title, item: `${SITE_URL}/blog/${post.slug}` },
+		],
+	};
+
 	return (
 		<Layout>
 			<script type='application/ld+json' dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+			<script type='application/ld+json' dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 			<div className='bg-white dark:bg-gray-950 min-h-screen'>
 				<div className='container-custom py-8'>
 					<Breadcrumb
 						items={[
 							{ label: 'Blog', href: '/blog' },
-							{ label: post.category, href: '/blog' },
+							{ label: post.category, href: `/blog/category/${categoryToSlug(post.category)}` },
 							{ label: post.title.substring(0, 40) + '…', href: `/blog/${post.slug}` },
 						]}
 						className='mb-6'
@@ -247,7 +262,7 @@ export default function BlogPostPage({ params }: Props) {
 							{post.category}
 						</span>
 						<h1 className='text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4'>{post.title}</h1>
-						<div className='flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-8 pb-8 border-b border-gray-200 dark:border-gray-700'>
+						<div className='flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700'>
 							<div className='flex items-center gap-1.5'>
 								<Clock className='h-4 w-4' />
 								{post.readTime}
@@ -257,9 +272,26 @@ export default function BlogPostPage({ params }: Props) {
 							</time>
 							<span>By Local Service Marketplace</span>
 						</div>
+						<div className='mb-8'>
+							<ShareButtons url={`${SITE_URL}/blog/${post.slug}`} title={post.title} />
+						</div>
 
 						<div className='prose prose-gray dark:prose-invert prose-headings:font-semibold prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-p:text-gray-600 dark:prose-p:text-gray-400 prose-p:leading-relaxed prose-ul:text-gray-600 dark:prose-ul:text-gray-400 max-w-none'>
 							{content || <p>{post.excerpt}</p>}
+						</div>
+
+						{/* Author */}
+						<div className='mt-10 pt-6 border-t border-gray-200 dark:border-gray-700 flex items-start gap-4'>
+							<div className='h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-violet-500 flex items-center justify-center text-white flex-shrink-0'>
+								<User2 className='h-6 w-6' />
+							</div>
+							<div>
+								<p className='text-sm font-semibold text-gray-900 dark:text-white'>Editorial Team</p>
+								<p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>Local Service Marketplace</p>
+								<p className='text-sm text-gray-600 dark:text-gray-400 mt-2 leading-relaxed'>
+									Written by our editorial team of home services experts and consumer advocates with 20+ years of combined experience helping Indian homeowners find and verify local service professionals.
+								</p>
+							</div>
 						</div>
 
 						{/* CTA */}

@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 import { INDIA_CITIES, SERVICE_SLUGS } from "@/config/seo-data";
-import { BLOG_POSTS } from "./blog/blog-data";
+import { BLOG_POSTS, BLOG_CATEGORIES, categoryToSlug } from "./blog/blog-data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
 	const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -24,7 +24,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		"/login",
 		"/signup",
 		"/cities",
-		"/blog",
 	];
 
 	const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
@@ -59,14 +58,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		priority: 0.7,
 	}));
 
-	// Individual blog post pages
-	const blogEntries: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
-		url: `${siteUrl}/blog/${post.slug}`,
-		lastModified: new Date(post.date),
-		changeFrequency: "monthly" as const,
-		priority: 0.65,
-	}));
-
-	return [...staticEntries, ...cityServiceEntries, ...cityHubEntries, ...blogEntries];
+	return [...staticEntries, ...cityServiceEntries, ...cityHubEntries];
 }
 
