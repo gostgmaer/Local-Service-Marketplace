@@ -4,13 +4,15 @@ import { RedisService } from "./redis.service";
 import { CacheWarmingService } from "./cache-warming.service";
 import { UserModule } from "../modules/user/user.module";
 
+import { ConfigModule, ConfigService } from "@nestjs/config";
+
 const redisClientProvider = {
   provide: "REDIS_CLIENT",
-  useFactory: (): Redis => {
+  useFactory: (configService: ConfigService): Redis => {
     const client = new Redis({
-      host: process.env.REDIS_HOST || "localhost",
-      port: parseInt(process.env.REDIS_PORT || "6379", 10),
-      password: process.env.REDIS_PASSWORD || undefined,
+      host: configService.get<string>("REDIS_HOST", "localhost"),
+      port: configService.get<number>("REDIS_PORT", 63790),
+      password: configService.get<string>("REDIS_PASSWORD") || undefined,
       lazyConnect: true,
       retryStrategy: (times) => {
         if (times > 5) return null; // stop retrying — fail gracefully
@@ -20,6 +22,7 @@ const redisClientProvider = {
     client.on("error", () => {}); // swallow connection errors (fail-open policy)
     return client;
   },
+  inject: [ConfigService],
 };
 
 @Global()
