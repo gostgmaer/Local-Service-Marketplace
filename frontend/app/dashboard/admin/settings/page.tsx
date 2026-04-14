@@ -8,7 +8,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
-import { Settings, Mail, Shield, Save, RefreshCw } from 'lucide-react';
+import { Settings, Mail, Shield, Save, RefreshCw, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { adminService } from '@/services/admin-service';
 import toast from "react-hot-toast";
@@ -52,8 +52,15 @@ function SettingItem({ setting, onSave }: { setting: SettingRow; onSave: (_k: st
   );
 }
 
+const EMPTY_FORM = { key: '', value: '', description: '' };
+const KEY_PATTERN = /^[a-z][a-z0-9_]*$/;
+
 export default function AdminSettingsPage() {
   useAuth();
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState('');
 
   const { data: settings, isLoading, refetch } = useQuery({
     queryKey: ['admin-system-settings'],
@@ -66,6 +73,35 @@ export default function AdminSettingsPage() {
     onSuccess: () => { toast.success('Setting saved'); refetch(); },
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to save setting'),
   });
+
+  const createMutation = useMutation({
+    mutationFn: ({ key, value, description }: { key: string; value: string; description?: string }) =>
+      adminService.createSystemSetting(key, value, description || undefined),
+    onSuccess: () => {
+      toast.success('Setting created');
+      setForm(EMPTY_FORM);
+      setFormError('');
+      setShowAddForm(false);
+      refetch();
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || 'Failed to create setting';
+      toast.error(msg);
+    },
+  });
+
+  const handleCreate = () => {
+    if (!KEY_PATTERN.test(form.key)) {
+      setFormError('Key must start with a lowercase letter and use only lowercase letters, digits, and underscores.');
+      return;
+    }
+    if (!form.value.trim()) {
+      setFormError('Value is required.');
+      return;
+    }
+    setFormError('');
+    createMutation.mutate({ key: form.key, value: form.value, description: form.description });
+  };
 
   // Group settings by prefix
   const grouped: Record<string, SettingRow[]> = {};
@@ -88,10 +124,88 @@ export default function AdminSettingsPage() {
               <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-2'>System Settings</h1>
               <p className='text-gray-600 dark:text-gray-400'>Configure platform-wide settings</p>
             </div>
-            <Button variant="outline" onClick={() => refetch()} className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" /> Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => refetch()} className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" /> Refresh
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => { setShowAddForm((v) => !v); setFormError(''); }}
+                className="flex items-center gap-2"
+              >
+                {showAddForm ? <><X className="h-4 w-4" /> Cancel</> : <><Plus className="h-4 w-4" /> Add Setting</>}
+              </Button>
+            </div>
           </div>
+
+          {/* Add New Setting Form */}
+          {showAddForm && (
+            <Card className="mb-6 border-primary-300 dark:border-primary-700">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-primary-600" />
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Add New Setting</h2>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Key <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. max_upload_size"
+                      value={form.key}
+                      onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-primary-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Value <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Setting value"
+                      value={form.value}
+                      onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Description <span className="text-gray-400">(optional)</span>
+                    </label>
+                    <textarea
+                      placeholder="Brief description of what this setting controls"
+                      value={form.description}
+                      onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                      rows={2}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-primary-500 resize-none"
+                    />
+                  </div>
+                </div>
+                {formError && (
+                  <p className="mt-2 text-xs text-red-500">{formError}</p>
+                )}
+                <div className="mt-4 flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => { setShowAddForm(false); setForm(EMPTY_FORM); setFormError(''); }}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleCreate}
+                    disabled={createMutation.isPending}
+                    className="flex items-center gap-2"
+                  >
+                    {createMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Create Setting
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {isLoading ? (
             <Loading />

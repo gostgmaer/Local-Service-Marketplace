@@ -80,7 +80,9 @@ export class ProposalService {
     }
 
     // Cap total lifetime submissions per (provider, request) to prevent spam re-proposals
-    const MAX_PROPOSALS_PER_REQUEST = 3;
+    // Limit is read from system_settings (default 10 if not set)
+    const maxProposalsStr = await this.proposalRepository.getSystemSetting('max_proposal_count', '10');
+    const MAX_PROPOSALS_PER_REQUEST = Math.max(1, parseInt(maxProposalsStr, 10) || 10);
     const totalAttempts = await this.proposalRepository.countProposalsByProviderForRequest(
       dto.request_id,
       dto.provider_id,
@@ -91,10 +93,11 @@ export class ProposalService {
       );
     }
 
-    // Verify provider is verified and their email is confirmed before allowing proposal submission
+    // Gate provider verification based on the provider_verification_required system setting
+    const verificationRequired = await this.proposalRepository.getSystemSetting('provider_verification_required', 'true');
     if (this.userClient.isEnabled()) {
       const providerForGate = await this.userClient.getProviderById(dto.provider_id);
-      if (providerForGate && providerForGate.verification_status !== 'verified') {
+      if (verificationRequired !== 'false' && providerForGate && providerForGate.verification_status !== 'verified') {
         throw new BadRequestException(
           `Cannot submit proposal: your provider account is not yet verified (status: ${providerForGate.verification_status}). Please wait for admin approval.`,
         );
