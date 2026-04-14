@@ -15,9 +15,9 @@ export function Layout({ children }: LayoutProps) {
 	const pathname = usePathname();
 	const isDashboard = pathname?.startsWith('/dashboard');
 
-	if (isDashboard) {
-		return <>{children}</>;
-	}
+	// if (isDashboard) {
+	// 	return <>{children}</>;
+	// }
 
 	return (
 		<div className='min-h-screen flex justify-between flex-col bg-gray-50 dark:bg-gray-900'>
