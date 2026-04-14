@@ -48,7 +48,7 @@ export default function CitiesPage() {
 							{INDIA_CITIES.slice(0, 10).map((city) => (
 								<Link
 									key={city.slug}
-									href={`/services/home-cleaning/${city.slug}`}
+									href={`/cities/${city.slug}`}
 									className='flex items-center gap-2 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all group'>
 									<MapPin className='h-4 w-4 text-primary-500 shrink-0' />
 									<div>
@@ -71,7 +71,7 @@ export default function CitiesPage() {
 								.map((city) => (
 									<Link
 										key={city.slug}
-										href={`/services/home-cleaning/${city.slug}`}
+										href={`/cities/${city.slug}`}
 										className='flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors'>
 										<MapPin className='h-3 w-3 shrink-0 text-gray-400' />
 										{city.name}
