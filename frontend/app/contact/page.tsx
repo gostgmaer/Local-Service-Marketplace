@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Layout } from '@/components/layout/Layout';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { ContactForm } from './_components/ContactForm';
+import { getSiteConfig } from '@/services/public-settings-service';
 
 export const metadata: Metadata = {
 title: 'Contact Us',
@@ -58,7 +59,8 @@ const breadcrumbJsonLd = {
 	],
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+const cfg = await getSiteConfig();
 return (
 <Layout>
 <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(contactPageJsonLd) }} />
@@ -78,7 +80,7 @@ return (
 {/* Contact Form � client island */}
 <ContactForm />
 
-{/* Contact Information � static, server-rendered */}
+{/* Contact Information — server-rendered from system settings */}
 <div>
 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
 Contact Information
@@ -94,10 +96,10 @@ Contact Information
 <div className="ml-4">
 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Email</h3>
 <a
-href="mailto:support@localservicemarketplace.com"
+href={`mailto:${cfg.supportEmail}`}
 className="text-primary-600 dark:text-primary-400 hover:underline"
 >
-support@localservicemarketplace.com
+{cfg.supportEmail}
 </a>
 </div>
 </div>
@@ -110,9 +112,13 @@ support@localservicemarketplace.com
 </div>
 <div className="ml-4">
 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Phone</h3>
-<p className="text-gray-600 dark:text-gray-400">
-Available via email or in-app messaging
-</p>
+{cfg.contactPhone ? (
+<a href={`tel:${cfg.contactPhone}`} className="text-primary-600 dark:text-primary-400 hover:underline">
+{cfg.contactPhone}
+</a>
+) : (
+<p className="text-gray-600 dark:text-gray-400">Available via email or in-app messaging</p>
+)}
 </div>
 </div>
 
@@ -124,11 +130,11 @@ Available via email or in-app messaging
 </div>
 <div className="ml-4">
 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Location</h3>
-<p className="text-gray-600 dark:text-gray-400">
-Servicing your local area
-<br />
-Online &amp; On-site
-</p>
+{cfg.contactAddress ? (
+<p className="text-gray-600 dark:text-gray-400 whitespace-pre-line">{cfg.contactAddress}</p>
+) : (
+<p className="text-gray-600 dark:text-gray-400">Servicing your local area<br />Online &amp; On-site</p>
+)}
 </div>
 </div>
 </div>
