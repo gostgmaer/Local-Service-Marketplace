@@ -344,8 +344,8 @@ class AdminService {
 		return response.data;
 	}
 
-	async createSystemSetting(key: string, value: string, description?: string): Promise<any> {
-		const response = await apiClient.post<any>('/admin/settings', { key, value, description });
+	async createSystemSetting(key: string, value: string, description?: string, type?: string): Promise<any> {
+		const response = await apiClient.post<any>('/admin/settings', { key, value, description, type });
 		return response.data;
 	}
 

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, Matches, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, Matches, MaxLength, IsIn } from 'class-validator';
 
 export class CreateSystemSettingDto {
 	@IsNotEmpty()
@@ -18,4 +18,9 @@ export class CreateSystemSettingDto {
 	@IsString()
 	@MaxLength(500)
 	description?: string;
+
+	@IsOptional()
+	@IsString()
+	@IsIn(['boolean', 'number', 'textarea', 'text'])
+	type?: string;
 }
