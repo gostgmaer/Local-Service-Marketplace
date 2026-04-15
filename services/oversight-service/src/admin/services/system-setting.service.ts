@@ -78,7 +78,7 @@ export class SystemSettingService {
 			throw new ConflictException(`System setting with key '${dto.key}' already exists`);
 		}
 
-		const newSetting = await this.systemSettingRepository.createSetting(dto.key, dto.value, dto.description);
+		const newSetting = await this.systemSettingRepository.createSetting(dto.key, dto.value, dto.description, dto.type);
 
 		await this.auditLogRepository.createAuditLog(adminId, "create_system_setting", "system_setting", dto.key, {
 			value: dto.value,

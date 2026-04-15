@@ -16,37 +16,17 @@ import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { adminService } from '@/services/admin-service';
 import toast from "react-hot-toast";
 
-type SettingRow = { key: string; value: string; description?: string };
+type SettingRow = { key: string; value: string; description?: string; type: string };
 
-// ─── Type inference per key ─────────────────────────────────────────────────
+type SettingType = 'boolean' | 'number' | 'textarea' | 'text';
 
-const BOOLEAN_KEYS = new Set([
-  'maintenance_mode', 'registration_enabled', 'provider_registration_enabled',
-  'guest_requests_enabled', 'provider_verification_required',
-]);
-
-const NUMBER_KEYS = new Set([
-  'platform_fee_percentage', 'gst_rate', 'max_proposal_count', 'request_expiry_days',
-  'max_login_attempts', 'session_timeout_minutes', 'otp_expiry_minutes',
-  'max_providers_per_category', 'max_services_per_provider', 'review_auto_approve_days',
-  'min_review_length', 'max_file_upload_size_mb', 'min_payout_amount',
-  'max_active_requests_per_customer', 'refund_window_days', 'dispute_window_days',
-  'proposal_withdrawal_window_hours', 'max_coupon_discount_percentage', 'job_auto_complete_days',
-  'email_verification_expiry_hours', 'password_reset_expiry_hours', 'magic_link_expiry_hours',
-  'session_ttl_days', 'auto_generated_password_length', 'notification_retention_days',
-  'failed_delivery_retention_days', 'provider_cache_ttl_seconds', 'request_cache_ttl_seconds',
-  'job_cache_ttl_seconds', 'default_page_limit', 'rate_limit_max_requests',
-  'auth_rate_limit_max_requests',
-]);
-
-const TEXTAREA_KEYS = new Set([
-  'maintenance_message', 'contact_address', 'allowed_file_types',
-]);
-
-function inferType(key: string): 'boolean' | 'number' | 'textarea' | 'text' {
-  if (BOOLEAN_KEYS.has(key)) return 'boolean';
-  if (NUMBER_KEYS.has(key)) return 'number';
-  if (TEXTAREA_KEYS.has(key)) return 'textarea';
+/** Falls back to a best-guess if the DB column is missing (e.g. older rows). */
+function resolveType(row: SettingRow): SettingType {
+  const t = row.type as SettingType;
+  if (t === 'boolean' || t === 'number' || t === 'textarea' || t === 'text') return t;
+  // Fallback: infer from value
+  if (row.value === 'true' || row.value === 'false') return 'boolean';
+  if (/^-?\d+(\.\d+)?$/.test(row.value)) return 'number';
   return 'text';
 }
 
@@ -163,7 +143,7 @@ function SettingItem({ setting, onSave, isSaving }: {
   onSave: (_k: string, _v: string) => void;
   isSaving: boolean;
 }) {
-  const type = inferType(setting.key);
+  const type = resolveType(setting);
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(setting.value);
 
@@ -266,11 +246,18 @@ function SettingItem({ setting, onSave, isSaving }: {
 
 // ─── "Add new setting" form ──────────────────────────────────────────────────
 
-const EMPTY_FORM = { key: '', value: '', description: '' };
+const EMPTY_FORM = { key: '', value: '', description: '', type: 'text' as SettingType };
 const KEY_PATTERN = /^[a-z][a-z0-9_]*$/;
 
+const TYPE_OPTIONS: { value: SettingType; label: string; hint: string }[] = [
+  { value: 'text',     label: 'Text',     hint: 'Single-line text input' },
+  { value: 'number',   label: 'Number',   hint: 'Numeric input' },
+  { value: 'boolean',  label: 'Boolean',  hint: 'Toggle switch (true/false)' },
+  { value: 'textarea', label: 'Textarea', hint: 'Multi-line text area' },
+];
+
 function AddSettingForm({ onSubmit, isPending, onCancel }: {
-  onSubmit: (_data: { key: string; value: string; description?: string }) => void;
+  onSubmit: (_data: { key: string; value: string; description?: string; type: string }) => void;
   isPending: boolean;
   onCancel: () => void;
 }) {
@@ -284,7 +271,7 @@ function AddSettingForm({ onSubmit, isPending, onCancel }: {
     }
     if (!form.value.trim()) { setError('Value is required.'); return; }
     setError('');
-    onSubmit({ key: form.key, value: form.value, description: form.description || undefined });
+    onSubmit({ key: form.key, value: form.value, description: form.description || undefined, type: form.type });
   };
 
   return (
@@ -311,11 +298,25 @@ function AddSettingForm({ onSubmit, isPending, onCancel }: {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Field Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={form.type}
+              onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SettingType }))}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-primary-500"
+            >
+              {TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label} — {o.hint}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Value <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="Setting value"
+              placeholder={form.type === 'boolean' ? 'true or false' : form.type === 'number' ? '0' : 'Setting value'}
               value={form.value}
               onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-primary-500"
@@ -376,8 +377,8 @@ export default function AdminSettingsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: ({ key, value, description }: { key: string; value: string; description?: string }) =>
-      adminService.createSystemSetting(key, value, description),
+    mutationFn: ({ key, value, description, type }: { key: string; value: string; description?: string; type: string }) =>
+      adminService.createSystemSetting(key, value, description, type),
     onSuccess: () => {
       toast.success('Setting created');
       setShowAddForm(false);
