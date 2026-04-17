@@ -18,7 +18,6 @@ export function PortfolioUpload({
   onUploadSuccess,
 }: PortfolioUploadProps) {
   const { config } = usePublicSettings();
-  const maxSizeBytes = config.maxFileUploadSizeMb * 1024 * 1024;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -28,6 +27,8 @@ export function PortfolioUpload({
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      const maxSizeBytes = config.maxFileUploadSizeMb * 1024 * 1024;
+
       // Validate total count (max 10 images)
       if (files.length + acceptedFiles.length > 10) {
         setError("Maximum 10 images allowed per portfolio item");
@@ -59,7 +60,7 @@ export function PortfolioUpload({
         setError(null);
       }
     },
-    [files],
+    [files, config],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

@@ -56,7 +56,7 @@ const detectInputType = (input: string): "email" | "phone" | "unknown" => {
   }
 
   // Email validation: proper email format (supports + in local part e.g. user+tag@example.com)
-  const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (emailRegex.test(input.trim())) {
     return "email";
   }
