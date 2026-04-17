@@ -52,7 +52,7 @@ function VerifyEmailContent() {
 				}
 
 				setTimeout(() => router.push(redirectPath), 3000);
-			};)
+			})
 			.catch((err: any) => {
 				const msg =
 					err?.response?.data?.error?.message ||
