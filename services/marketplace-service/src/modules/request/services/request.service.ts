@@ -86,13 +86,17 @@ export class RequestService {
       }
     }
 
-    // Verify authenticated user has a verified email before creating a request
+    // Verify authenticated user has verified contact (email or phone) before creating a request
     if (dto.user_id && this.userClient.isEnabled()) {
       const requestingUser = await this.userClient.getUserById(dto.user_id);
-      if (requestingUser && requestingUser.email_verified === false) {
-        throw new BadRequestException(
-          "Cannot create a service request: please verify your email address first.",
-        );
+      if (requestingUser) {
+        const contactVerified =
+          requestingUser.email_verified || requestingUser.phone_verified;
+        if (!contactVerified) {
+          throw new ForbiddenException(
+            "Please verify your email address or phone number before creating a service request.",
+          );
+        }
       }
     }
 

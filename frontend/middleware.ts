@@ -223,7 +223,7 @@ export async function middleware(req: NextRequest) {
     const phoneVerified = Boolean(token?.phoneVerified);
     const contactVerified = emailVerified || phoneVerified;
 
-    const CUSTOMER_GATED_PREFIXES = ["/dashboard/requests"];
+    const CUSTOMER_GATED_PREFIXES = ["/dashboard/requests", "/checkout"];
     const isGatedPath = CUSTOMER_GATED_PREFIXES.some(
       (p) => pathname === p || pathname.startsWith(p + "/"),
     );
