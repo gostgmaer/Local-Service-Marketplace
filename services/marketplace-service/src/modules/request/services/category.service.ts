@@ -109,7 +109,10 @@ export class CategoryService {
       throw new NotFoundException("Category not found");
     }
 
-    const updated = await this.categoryRepository.updateCategory(id, updateCategoryDto);
+    const updated = await this.categoryRepository.updateCategory(
+      id,
+      updateCategoryDto,
+    );
 
     // Invalidate cache
     if (this.redisService.isCacheEnabled()) {
@@ -123,7 +126,10 @@ export class CategoryService {
   }
 
   async deleteCategory(id: string): Promise<void> {
-    this.logger.log(`Deleting (deactivating) category: ${id}`, CategoryService.name);
+    this.logger.log(
+      `Deleting (deactivating) category: ${id}`,
+      CategoryService.name,
+    );
 
     const existing = await this.categoryRepository.getCategoryById(id);
     if (!existing) {

@@ -1,7 +1,7 @@
-import { renderHook, act } from '@testing-library/react';
-import { useDebounce } from '@/hooks/useDebounce';
+import { renderHook, act } from "@testing-library/react";
+import { useDebounce } from "@/hooks/useDebounce";
 
-describe('useDebounce Hook', () => {
+describe("useDebounce Hook", () => {
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -10,51 +10,51 @@ describe('useDebounce Hook', () => {
     jest.useRealTimers();
   });
 
-  it('returns initial value immediately', () => {
-    const { result } = renderHook(() => useDebounce('test', 500));
-    expect(result.current).toBe('test');
+  it("returns initial value immediately", () => {
+    const { result } = renderHook(() => useDebounce("test", 500));
+    expect(result.current).toBe("test");
   });
 
-  it('debounces value changes', () => {
+  it("debounces value changes", () => {
     const { result, rerender } = renderHook(
       ({ value, delay }) => useDebounce(value, delay),
-      { initialProps: { value: 'initial', delay: 500 } }
+      { initialProps: { value: "initial", delay: 500 } },
     );
 
-    expect(result.current).toBe('initial');
+    expect(result.current).toBe("initial");
 
-    rerender({ value: 'updated', delay: 500 });
-    expect(result.current).toBe('initial');
+    rerender({ value: "updated", delay: 500 });
+    expect(result.current).toBe("initial");
 
     act(() => {
       jest.advanceTimersByTime(500);
     });
 
-    expect(result.current).toBe('updated');
+    expect(result.current).toBe("updated");
   });
 
-  it('cancels previous timeout on rapid changes', () => {
+  it("cancels previous timeout on rapid changes", () => {
     const { result, rerender } = renderHook(
       ({ value }) => useDebounce(value, 500),
-      { initialProps: { value: 'first' } }
+      { initialProps: { value: "first" } },
     );
 
-    rerender({ value: 'second' });
+    rerender({ value: "second" });
     act(() => {
       jest.advanceTimersByTime(250);
     });
 
-    rerender({ value: 'third' });
+    rerender({ value: "third" });
     act(() => {
       jest.advanceTimersByTime(250);
     });
 
-    expect(result.current).toBe('first');
+    expect(result.current).toBe("first");
 
     act(() => {
       jest.advanceTimersByTime(250);
     });
 
-    expect(result.current).toBe('third');
+    expect(result.current).toBe("third");
   });
 });

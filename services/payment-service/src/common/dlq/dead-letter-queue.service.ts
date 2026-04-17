@@ -20,13 +20,13 @@ export interface FailedJobRecord {
 
 /**
  * DeadLetterQueueService - Manages failed jobs across all BullMQ queues
- * 
+ *
  * Features:
  * - Captures failed jobs after max retries
  * - Stores in database for admin review
  * - Provides replay/discard functionality
  * - Prevents job loss
- * 
+ *
  * Usage:
  * In worker error handlers, call captureFailedJob() when job.attemptsMade >= maxAttempts
  */
@@ -36,7 +36,7 @@ export class DeadLetterQueueService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     @Inject("DATABASE_POOL") private readonly pool: Pool,
-  ) { }
+  ) {}
 
   /**
    * Capture a failed job and store in DLQ

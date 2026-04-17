@@ -1,5 +1,5 @@
-import { useOptimisticMutation } from './useOptimisticMutation';
-import { favoriteService } from '@/services/favorite-service';
+import { useOptimisticMutation } from "./useOptimisticMutation";
+import { favoriteService } from "@/services/favorite-service";
 import { useAuth } from "@/hooks/useAuth";
 
 interface ToggleFavoriteVariables {
@@ -15,9 +15,9 @@ export function useFavoriteToggle() {
   const { user } = useAuth();
 
   return useOptimisticMutation<void, ToggleFavoriteVariables>({
-    queryKey: ['favorites', user?.id],
+    queryKey: ["favorites", user?.id],
     mutationFn: async ({ providerId, isFavorite }) => {
-      if (!user?.id) throw new Error('User not authenticated');
+      if (!user?.id) throw new Error("User not authenticated");
 
       if (isFavorite) {
         // Remove favorite
@@ -46,6 +46,6 @@ export function useFavoriteToggle() {
       }
     },
     successMessage: undefined, // Silent success
-    errorMessage: 'Failed to update favorite',
+    errorMessage: "Failed to update favorite",
   });
 }

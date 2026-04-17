@@ -78,7 +78,7 @@ export async function resolveId(
   if (expectedPrefix && !upper.startsWith(expectedPrefix)) {
     throw new BadRequestException(
       `Invalid ID format: expected a ${expectedPrefix}... display ID for ${table} (got '${idOrDisplayId}'). ` +
-      `Provide either a UUID or a valid display ID starting with '${expectedPrefix}'.`,
+        `Provide either a UUID or a valid display ID starting with '${expectedPrefix}'.`,
     );
   }
 

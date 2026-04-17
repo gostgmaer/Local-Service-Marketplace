@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { Star, Award } from 'lucide-react';
-import reviewService, { type ReviewAggregate } from '@/services/review-service';
+import { useState, useEffect, useCallback } from "react";
+import { Star, Award } from "lucide-react";
+import reviewService, { type ReviewAggregate } from "@/services/review-service";
 
 export function ReviewAggregates({ providerId }: { providerId: string }) {
   const [aggregate, setAggregate] = useState<ReviewAggregate | null>(null);
@@ -13,7 +13,7 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
       const data = await reviewService.getProviderReviewAggregates(providerId);
       setAggregate(data || null);
     } catch (error) {
-      console.error('Failed to load review aggregates:', error);
+      console.error("Failed to load review aggregates:", error);
     } finally {
       setLoading(false);
     }
@@ -38,10 +38,10 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
         key={i}
         className={`w-5 h-5 ${
           i < Math.floor(rating)
-            ? 'text-yellow-400 fill-yellow-400'
+            ? "text-yellow-400 fill-yellow-400"
             : i < rating
-            ? 'text-yellow-400 fill-yellow-400 opacity-50'
-            : 'text-gray-300'
+              ? "text-yellow-400 fill-yellow-400 opacity-50"
+              : "text-gray-300"
         }`}
       />
     ));
@@ -50,7 +50,7 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-<div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -78,7 +78,8 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
               Customer Reviews
             </h2>
             <p className="text-gray-600">
-              Based on {aggregate.total_reviews} {aggregate.total_reviews === 1 ? 'review' : 'reviews'}
+              Based on {aggregate.total_reviews}{" "}
+              {aggregate.total_reviews === 1 ? "review" : "reviews"}
             </p>
           </div>
 
@@ -108,36 +109,49 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
 
         {/* Rating Distribution */}
         <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 mb-4">Rating Distribution</h3>
-          
+          <h3 className="font-semibold text-gray-900 mb-4">
+            Rating Distribution
+          </h3>
+
           {[5, 4, 3, 2, 1].map((stars) => {
-            const count = 
-              stars === 5 ? aggregate.five_star_count :
-              stars === 4 ? aggregate.four_star_count :
-              stars === 3 ? aggregate.three_star_count :
-              stars === 2 ? aggregate.two_star_count :
-              aggregate.one_star_count;
-            
-            const percentage = getRatingPercentage(count, aggregate.total_reviews);
+            const count =
+              stars === 5
+                ? aggregate.five_star_count
+                : stars === 4
+                  ? aggregate.four_star_count
+                  : stars === 3
+                    ? aggregate.three_star_count
+                    : stars === 2
+                      ? aggregate.two_star_count
+                      : aggregate.one_star_count;
+
+            const percentage = getRatingPercentage(
+              count,
+              aggregate.total_reviews,
+            );
 
             return (
               <div key={stars} className="flex items-center gap-4">
                 <div className="flex items-center gap-1 w-24">
-                  <span className="text-sm font-medium text-gray-700">{stars}</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {stars}
+                  </span>
                   <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                 </div>
-                
+
                 <div className="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      stars >= 4 ? 'bg-green-500' :
-                      stars === 3 ? 'bg-yellow-500' :
-                      'bg-red-500'
+                      stars >= 4
+                        ? "bg-green-500"
+                        : stars === 3
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
                     }`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                
+
                 <span className="text-sm text-gray-600 w-16 text-right">
                   {count} ({percentage.toFixed(0)}%)
                 </span>
@@ -149,7 +163,8 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
         {/* Last Review */}
         {aggregate.last_review_at && (
           <div className="mt-6 pt-6 border-t border-gray-200 text-sm text-gray-600">
-            Last reviewed {new Date(aggregate.last_review_at).toLocaleDateString()}
+            Last reviewed{" "}
+            {new Date(aggregate.last_review_at).toLocaleDateString()}
           </div>
         )}
       </div>
@@ -160,10 +175,14 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
           <div className="flex items-start gap-4">
             <Award className="w-8 h-8 text-blue-600 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold text-blue-900 mb-2">Trusted Pro Status</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">
+                Trusted Pro Status
+              </h4>
               <p className="text-sm text-blue-800">
-                This provider has earned the Trusted Pro badge by maintaining an average rating of 
-                {aggregate.average_rating.toFixed(1)} stars with {aggregate.total_reviews} verified reviews.
+                This provider has earned the Trusted Pro badge by maintaining an
+                average rating of
+                {aggregate.average_rating.toFixed(1)} stars with{" "}
+                {aggregate.total_reviews} verified reviews.
               </p>
             </div>
           </div>
@@ -173,16 +192,31 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
           <div className="flex items-start gap-4">
             <Award className="w-8 h-8 text-gray-400 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">Earn Trusted Pro Status</h4>
+              <h4 className="font-semibold text-gray-900 mb-2">
+                Earn Trusted Pro Status
+              </h4>
               <p className="text-sm text-gray-600">
-                Get at least 10 reviews with an average rating of 4.0 or higher to earn the Trusted Pro badge 
-                and stand out to potential customers.
+                Get at least 10 reviews with an average rating of 4.0 or higher
+                to earn the Trusted Pro badge and stand out to potential
+                customers.
               </p>
               <div className="mt-3 flex gap-4 text-sm">
-                <span className={aggregate.total_reviews >= 10 ? 'text-green-600' : 'text-gray-600'}>
+                <span
+                  className={
+                    aggregate.total_reviews >= 10
+                      ? "text-green-600"
+                      : "text-gray-600"
+                  }
+                >
                   ✓ {aggregate.total_reviews}/10 reviews
                 </span>
-                <span className={aggregate.average_rating >= 4.0 ? 'text-green-600' : 'text-gray-600'}>
+                <span
+                  className={
+                    aggregate.average_rating >= 4.0
+                      ? "text-green-600"
+                      : "text-gray-600"
+                  }
+                >
                   ✓ {aggregate.average_rating.toFixed(1)}/4.0 rating
                 </span>
               </div>

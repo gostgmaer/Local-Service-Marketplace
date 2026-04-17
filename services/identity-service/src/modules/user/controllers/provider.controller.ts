@@ -33,7 +33,10 @@ import { ProviderQueryDto } from "../dto/provider-query.dto";
 import { ProviderResponseDto } from "../dto/provider-response.dto";
 import { PaginatedResponseDto } from "../dto/paginated-response.dto";
 import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  RequirePermissions,
+} from "@/common/rbac";
 import { FileServiceClient } from "../../../common/file-service.client";
 import "multer";
 
@@ -45,7 +48,7 @@ export class ProviderController {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
-  @RequirePermissions('providers.manage')
+  @RequirePermissions("provider_profile.update")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -85,7 +88,7 @@ export class ProviderController {
     return this.providerService.getProviders(queryDto);
   }
 
-  @RequirePermissions('provider_profile.update')
+  @RequirePermissions("provider_profile.update")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
@@ -94,8 +97,13 @@ export class ProviderController {
     @Body() updateProviderDto: UpdateProviderDto,
     @Req() req: any,
   ): Promise<ProviderResponseDto> {
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== id) {
-      throw new ForbiddenException("You can only manage your own provider profile");
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== id
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own provider profile",
+      );
     }
     this.logger.info("PATCH /providers/:id", {
       context: "ProviderController",
@@ -108,7 +116,7 @@ export class ProviderController {
    * Upload profile picture for provider
    * POST /providers/:id/profile-picture
    */
-  @RequirePermissions('provider_profile.update')
+  @RequirePermissions("provider_profile.update")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(":id/profile-picture")
   @UseInterceptors(FileInterceptor("file"))
@@ -121,8 +129,13 @@ export class ProviderController {
     if (!file) {
       throw new BadRequestException("Profile picture file is required");
     }
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== id) {
-      throw new ForbiddenException("You can only manage your own provider profile");
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== id
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own provider profile",
+      );
     }
 
     this.logger.info("POST /providers/:id/profile-picture", {
@@ -157,10 +170,7 @@ export class ProviderController {
 
     return {
       success: true,
-      data: {
-        provider: updatedProvider,
-        file: uploadedFile,
-      },
+      data: { provider: updatedProvider, file: uploadedFile },
       message: "Provider profile picture uploaded successfully",
     };
   }
@@ -169,7 +179,7 @@ export class ProviderController {
    * Admin: verify or reject a provider
    * PATCH /providers/:id/verify
    */
-  @RequirePermissions('providers.verify')
+  @RequirePermissions("providers.verify")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(":id/verify")
   @HttpCode(HttpStatus.OK)
@@ -185,13 +195,21 @@ export class ProviderController {
     return this.providerService.verifyProvider(id, dto.status);
   }
 
-  @RequirePermissions('provider_profile.update')
+  @RequirePermissions("provider_profile.update")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteProvider(@Param("id", StrictUuidPipe) id: string, @Req() req: any): Promise<void> {
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== id) {
-      throw new ForbiddenException("You can only manage your own provider profile");
+  async deleteProvider(
+    @Param("id", StrictUuidPipe) id: string,
+    @Req() req: any,
+  ): Promise<void> {
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== id
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own provider profile",
+      );
     }
     this.logger.info("DELETE /providers/:id", {
       context: "ProviderController",
@@ -204,7 +222,7 @@ export class ProviderController {
    * Update provider service categories
    * PATCH /providers/:id/services
    */
-  @RequirePermissions('provider_services.manage')
+  @RequirePermissions("provider_services.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(":id/services")
   @HttpCode(HttpStatus.OK)
@@ -213,8 +231,13 @@ export class ProviderController {
     @Body() dto: UpdateProviderServicesDto,
     @Req() req: any,
   ): Promise<ProviderResponseDto> {
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== id) {
-      throw new ForbiddenException("You can only manage your own provider profile");
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== id
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own provider profile",
+      );
     }
     this.logger.info("PATCH /providers/:id/services", {
       context: "ProviderController",
@@ -232,7 +255,7 @@ export class ProviderController {
    * Update provider availability schedule
    * PATCH /providers/:id/availability
    */
-  @RequirePermissions('provider_availability.manage')
+  @RequirePermissions("provider_availability.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(":id/availability")
   @HttpCode(HttpStatus.OK)
@@ -241,8 +264,13 @@ export class ProviderController {
     @Body() dto: UpdateProviderAvailabilityDto,
     @Req() req: any,
   ): Promise<ProviderResponseDto> {
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== id) {
-      throw new ForbiddenException("You can only manage your own provider profile");
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== id
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own provider profile",
+      );
     }
     this.logger.info("PATCH /providers/:id/availability", {
       context: "ProviderController",
@@ -275,7 +303,7 @@ export class ProviderController {
    * Add a single provider service category
    * POST /providers/:id/services
    */
-  @RequirePermissions('provider_services.manage')
+  @RequirePermissions("provider_services.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(":id/services")
   @HttpCode(HttpStatus.CREATED)
@@ -284,8 +312,13 @@ export class ProviderController {
     @Body() dto: AddProviderServiceDto,
     @Req() req: any,
   ): Promise<any> {
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== id) {
-      throw new ForbiddenException("You can only manage your own provider profile");
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== id
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own provider profile",
+      );
     }
     this.logger.info("POST /providers/:id/services", {
       context: "ProviderController",
@@ -299,7 +332,7 @@ export class ProviderController {
    * Remove a single provider service category
    * DELETE /providers/:id/services/:serviceId
    */
-  @RequirePermissions('provider_services.manage')
+  @RequirePermissions("provider_services.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(":id/services/:serviceId")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -308,8 +341,13 @@ export class ProviderController {
     @Param("serviceId", StrictUuidPipe) serviceId: string,
     @Req() req: any,
   ): Promise<void> {
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== id) {
-      throw new ForbiddenException("You can only manage your own provider profile");
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== id
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own provider profile",
+      );
     }
     this.logger.info("DELETE /providers/:id/services/:serviceId", {
       context: "ProviderController",

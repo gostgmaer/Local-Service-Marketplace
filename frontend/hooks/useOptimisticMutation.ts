@@ -1,6 +1,10 @@
-import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import {
+  useMutation,
+  useQueryClient,
+  UseMutationOptions,
+} from "@tanstack/react-query";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 interface OptimisticUpdateConfig<TData, TVariables> {
   queryKey: any[];
@@ -21,7 +25,7 @@ export function useOptimisticMutation<TData = unknown, TVariables = unknown>({
   mutationFn,
   updateFn,
   successMessage,
-  errorMessage = 'Operation failed',
+  errorMessage = "Operation failed",
   onSuccess,
   onError,
 }: OptimisticUpdateConfig<TData, TVariables>) {
@@ -40,7 +44,9 @@ export function useOptimisticMutation<TData = unknown, TVariables = unknown>({
       const previousData = queryClient.getQueryData(queryKey);
 
       // Optimistically update cache
-      queryClient.setQueryData(queryKey, (old: any) => updateFn(old, variables));
+      queryClient.setQueryData(queryKey, (old: any) =>
+        updateFn(old, variables),
+      );
 
       // Return context with snapshot
       return { previousData };

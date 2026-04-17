@@ -1,17 +1,17 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 // Helper: Safely extract list from various response shapes
 function extractList<T>(payload: any): T[] {
-	if (Array.isArray(payload)) return payload as T[];
-	if (payload && Array.isArray(payload.data)) return payload.data as T[];
-	return [];
+  if (Array.isArray(payload)) return payload as T[];
+  if (payload && Array.isArray(payload.data)) return payload.data as T[];
+  return [];
 }
 
 export interface SearchResult {
   id: string;
   name: string;
   description?: string;
-  type: 'provider' | 'category' | 'location';
+  type: "provider" | "category" | "location";
 }
 
 export interface ProviderSearchResult {
@@ -31,7 +31,10 @@ class SearchService {
   /**
    * Search providers by name or description
    */
-  async searchProviders(query: string, limit: number = 5): Promise<ProviderSearchResult[]> {
+  async searchProviders(
+    query: string,
+    limit: number = 5,
+  ): Promise<ProviderSearchResult[]> {
     if (!query || query.length < 2) return [];
 
     const response = await apiClient.get<any>(
@@ -46,7 +49,10 @@ class SearchService {
   /**
    * Search categories by name
    */
-  async searchCategories(query: string, limit: number = 5): Promise<CategorySearchResult[]> {
+  async searchCategories(
+    query: string,
+    limit: number = 5,
+  ): Promise<CategorySearchResult[]> {
     if (!query || query.length < 2) return [];
 
     const response = await apiClient.get<any>(
@@ -71,13 +77,13 @@ class SearchService {
         id: provider.id,
         name: provider.business_name,
         description: provider.description,
-        type: 'provider' as const,
+        type: "provider" as const,
       })),
       ...categories.map((category) => ({
         id: category.id,
         name: category.name,
         description: category.description,
-        type: 'category' as const,
+        type: "category" as const,
       })),
     ];
 

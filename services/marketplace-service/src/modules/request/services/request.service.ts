@@ -33,7 +33,7 @@ import { UserClient } from "../../../common/user/user.client";
 
 @Injectable()
 export class RequestService {
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     private readonly requestRepository: RequestRepository,
@@ -45,8 +45,9 @@ export class RequestService {
     private readonly userClient: UserClient,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-    @InjectQueue('marketplace.notification') private readonly notificationQueue: Queue,
-  ) { }
+    @InjectQueue("marketplace.notification")
+    private readonly notificationQueue: Queue,
+  ) {}
 
   async createRequest(dto: CreateRequestDto): Promise<RequestResponseDto> {
     const userContext = dto.user_id ? `user ${dto.user_id}` : "anonymous user";
@@ -74,9 +75,14 @@ export class RequestService {
 
     // Check if guest requests are enabled (only enforce for anonymous submissions)
     if (!dto.user_id) {
-      const guestEnabled = await this.requestRepository.getSystemSetting('guest_requests_enabled', 'true');
-      if (guestEnabled === 'false') {
-        throw new BadRequestException('Guest (unauthenticated) service requests are currently disabled. Please sign in to submit a request.');
+      const guestEnabled = await this.requestRepository.getSystemSetting(
+        "guest_requests_enabled",
+        "true",
+      );
+      if (guestEnabled === "false") {
+        throw new BadRequestException(
+          "Guest (unauthenticated) service requests are currently disabled. Please sign in to submit a request.",
+        );
       }
     }
 
@@ -85,18 +91,24 @@ export class RequestService {
       const requestingUser = await this.userClient.getUserById(dto.user_id);
       if (requestingUser && requestingUser.email_verified === false) {
         throw new BadRequestException(
-          'Cannot create a service request: please verify your email address first.',
+          "Cannot create a service request: please verify your email address first.",
         );
       }
     }
 
     // Enforce active request cap for authenticated customers
     if (dto.user_id) {
-      const maxActiveStr = await this.requestRepository.getSystemSetting('max_active_requests_per_customer', '10');
+      const maxActiveStr = await this.requestRepository.getSystemSetting(
+        "max_active_requests_per_customer",
+        "10",
+      );
       const maxActive = parseInt(maxActiveStr, 10) || 10;
-      const activeCount = await this.requestRepository.countActiveRequestsByUser(dto.user_id);
+      const activeCount =
+        await this.requestRepository.countActiveRequestsByUser(dto.user_id);
       if (activeCount >= maxActive) {
-        throw new BadRequestException(`You have reached the maximum number of open service requests (${maxActive}). Please close or complete existing requests before creating new ones.`);
+        throw new BadRequestException(
+          `You have reached the maximum number of open service requests (${maxActive}). Please close or complete existing requests before creating new ones.`,
+        );
       }
     }
 
@@ -131,7 +143,7 @@ export class RequestService {
     if (dto.user_id) {
       if (this.workersEnabled) {
         this.notificationQueue
-          .add('notify-request-created', {
+          .add("notify-request-created", {
             userId: request.user_id,
             requestId: request.id,
             description: dto.description,
@@ -144,32 +156,36 @@ export class RequestService {
             );
           });
       } else {
-        this.userClient.getUserEmail(request.user_id).then((email) => {
-          if (!email) return;
-          this.notificationClient.sendEmail({
-            to: email,
-            template: 'MARKETPLACE_NEW_REQUEST',
-            variables: {
-              providerName: email.split('@')[0],
-              requestTitle: dto.description?.substring(0, 80) || 'Service Request',
-              category: 'General',
-              budget: request.budget ? `₹${request.budget}` : 'Not specified',
-              customerName: email.split('@')[0],
-              requestDisplayId: request.id,
-              requestUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${request.id}`,
-            },
+        this.userClient
+          .getUserEmail(request.user_id)
+          .then((email) => {
+            if (!email) return;
+            this.notificationClient.sendEmail({
+              to: email,
+              template: "MARKETPLACE_NEW_REQUEST",
+              variables: {
+                providerName: email.split("@")[0],
+                requestTitle:
+                  dto.description?.substring(0, 80) || "Service Request",
+                category: "General",
+                budget: request.budget ? `₹${request.budget}` : "Not specified",
+                customerName: email.split("@")[0],
+                requestDisplayId: request.id,
+                requestUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/requests/${request.id}`,
+              },
+            });
+          })
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to send request creation notification: ${err.message}`,
+              RequestService.name,
+            );
           });
-        }).catch((err: any) => {
-          this.logger.warn(
-            `Failed to send request creation notification: ${err.message}`,
-            RequestService.name,
-          );
-        });
       }
     } else if (dto.guest_info?.email) {
       if (this.workersEnabled) {
         this.notificationQueue
-          .add('notify-request-created', {
+          .add("notify-request-created", {
             guestEmail: dto.guest_info.email,
             requestId: request.id,
             description: dto.description,
@@ -182,24 +198,27 @@ export class RequestService {
             );
           });
       } else {
-        this.notificationClient.sendEmail({
-          to: dto.guest_info.email,
-          template: 'MARKETPLACE_NEW_REQUEST',
-          variables: {
-            providerName: dto.guest_info.email.split('@')[0],
-            requestTitle: dto.description?.substring(0, 80) || 'Service Request',
-            category: 'General',
-            budget: request.budget ? `₹${request.budget}` : 'Not specified',
-            customerName: dto.guest_info.email.split('@')[0],
-            requestDisplayId: request.id,
-            requestUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${request.id}`,
-          },
-        }).catch((err: any) => {
-          this.logger.warn(
-            `Failed to send guest request creation notification: ${err.message}`,
-            RequestService.name,
-          );
-        });
+        this.notificationClient
+          .sendEmail({
+            to: dto.guest_info.email,
+            template: "MARKETPLACE_NEW_REQUEST",
+            variables: {
+              providerName: dto.guest_info.email.split("@")[0],
+              requestTitle:
+                dto.description?.substring(0, 80) || "Service Request",
+              category: "General",
+              budget: request.budget ? `₹${request.budget}` : "Not specified",
+              customerName: dto.guest_info.email.split("@")[0],
+              requestDisplayId: request.id,
+              requestUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/requests/${request.id}`,
+            },
+          })
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to send guest request creation notification: ${err.message}`,
+              RequestService.name,
+            );
+          });
       }
     }
 
@@ -231,9 +250,16 @@ export class RequestService {
     );
 
     // RBAC: Users without browse permission can ONLY see their own requests
-    const isAuthenticated = user && user.userId && user.userId !== 'anonymous';
-    if (isAuthenticated && !user.permissions?.includes('requests.browse') && !user.permissions?.includes('requests.manage')) {
-      this.logger.log(`Enforcing own-requests-only filter for user ${user.userId}`, RequestService.name);
+    const isAuthenticated = user && user.userId && user.userId !== "anonymous";
+    if (
+      isAuthenticated &&
+      !user.permissions?.includes("requests.browse") &&
+      !user.permissions?.includes("requests.manage")
+    ) {
+      this.logger.log(
+        `Enforcing own-requests-only filter for user ${user.userId}`,
+        RequestService.name,
+      );
       queryDto.user_id = user.userId;
     }
 
@@ -258,7 +284,10 @@ export class RequestService {
       SortOrder.DESC,
     );
 
-    const limitStr = await this.requestRepository.getSystemSetting('default_page_limit', '20');
+    const limitStr = await this.requestRepository.getSystemSetting(
+      "default_page_limit",
+      "20",
+    );
     const limit = queryDto.limit || parseInt(limitStr, 10) || 20;
 
     if (queryDto.cursor) {
@@ -319,13 +348,12 @@ export class RequestService {
     // Cache the result
     if (this.redisService.isCacheEnabled()) {
       const cacheKey = `request:${id}`;
-      const cacheTtlStr = await this.requestRepository.getSystemSetting('request_cache_ttl_seconds', '300');
-      const cacheTtl = parseInt(cacheTtlStr, 10) || 300;
-      await this.redisService.set(
-        cacheKey,
-        JSON.stringify(response),
-        cacheTtl,
+      const cacheTtlStr = await this.requestRepository.getSystemSetting(
+        "request_cache_ttl_seconds",
+        "300",
       );
+      const cacheTtl = parseInt(cacheTtlStr, 10) || 300;
+      await this.redisService.set(cacheKey, JSON.stringify(response), cacheTtl);
     }
 
     return response;
@@ -380,18 +408,18 @@ export class RequestService {
     if (userEmail && dto.status) {
       const updatePayload = {
         to: userEmail,
-        template: 'MESSAGE_RECEIVED',
+        template: "MESSAGE_RECEIVED",
         variables: {
-          recipientName: userEmail.split('@')[0],
-          senderName: 'LocalServices',
+          recipientName: userEmail.split("@")[0],
+          senderName: "LocalServices",
           messagePreview: `Your service request has been updated. Status: ${dto.status}`,
           receivedAt: new Date().toISOString(),
-          replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${id}`,
+          replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/requests/${id}`,
         },
       };
       if (this.workersEnabled) {
         this.notificationQueue
-          .add('notify-request-updated', updatePayload)
+          .add("notify-request-updated", updatePayload)
           .catch((err: any) => {
             this.logger.warn(
               `Failed to enqueue request update notification: ${err.message}`,
@@ -399,14 +427,12 @@ export class RequestService {
             );
           });
       } else {
-        this.notificationClient
-          .sendEmail(updatePayload)
-          .catch((err: any) => {
-            this.logger.warn(
-              `Failed to send request update notification: ${err.message}`,
-              RequestService.name,
-            );
-          });
+        this.notificationClient.sendEmail(updatePayload).catch((err: any) => {
+          this.logger.warn(
+            `Failed to send request update notification: ${err.message}`,
+            RequestService.name,
+          );
+        });
       }
     }
 
@@ -440,7 +466,9 @@ export class RequestService {
     }
 
     if (request.user_id !== userId) {
-      throw new ForbiddenException("You are not allowed to cancel this request");
+      throw new ForbiddenException(
+        "You are not allowed to cancel this request",
+      );
     }
 
     if (request.status !== "open") {
@@ -449,14 +477,16 @@ export class RequestService {
       );
     }
 
-    await this.requestRepository.updateRequest(request.id, { status: "cancelled" } as any);
+    await this.requestRepository.updateRequest(request.id, {
+      status: "cancelled",
+    } as any);
 
     this.logger.log(`Request cancelled: ${id}`, RequestService.name);
 
     // Notify customer of cancellation — queue if workers enabled, else inline
     if (this.workersEnabled) {
       this.notificationQueue
-        .add('notify-request-cancelled', {
+        .add("notify-request-cancelled", {
           userId: request.user_id,
           requestId: request.id,
         })
@@ -467,24 +497,27 @@ export class RequestService {
           );
         });
     } else {
-      this.userClient.getUserEmail(request.user_id).then((email) => {
-        if (!email) return;
-        this.notificationClient.sendEmail({
-          to: email,
-          template: 'ORDER_CANCELLED',
-          variables: {
-            username: email.split('@')[0],
-            orderId: request.id,
-            cancelledBy: 'user',
-            reason: 'Request cancelled',
-          },
+      this.userClient
+        .getUserEmail(request.user_id)
+        .then((email) => {
+          if (!email) return;
+          this.notificationClient.sendEmail({
+            to: email,
+            template: "ORDER_CANCELLED",
+            variables: {
+              username: email.split("@")[0],
+              orderId: request.id,
+              cancelledBy: "user",
+              reason: "Request cancelled",
+            },
+          });
+        })
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to send request cancellation email: ${err.message}`,
+            RequestService.name,
+          );
         });
-      }).catch((err: any) => {
-        this.logger.warn(
-          `Failed to send request cancellation email: ${err.message}`,
-          RequestService.name,
-        );
-      });
     }
 
     await this.kafkaService.publishEvent("request-events", {

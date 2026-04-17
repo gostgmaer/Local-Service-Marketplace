@@ -29,4 +29,4 @@ const conditionalModules = workersEnabled ? [WorkersModule] : [];
   ],
   controllers: [HealthController],
 })
-export class AppModule { }
+export class AppModule {}

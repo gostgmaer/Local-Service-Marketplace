@@ -1,12 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Dropdown } from '@/components/ui/Dropdown';
-import type { DropdownOption } from '@/components/ui/Dropdown';
-import { X, Filter } from 'lucide-react';
-
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui/Dropdown";
+import type { DropdownOption } from "@/components/ui/Dropdown";
+import { X, Filter } from "lucide-react";
 
 interface ProviderFiltersProps {
   onFilterChange: (_f: Record<string, string>) => void;
@@ -22,19 +21,19 @@ export function ProviderFilters({
   const [isOpen, setIsOpen] = useState(false);
 
   const categoryOptions: DropdownOption[] = [
-    { label: 'All Categories', value: '' },
-    { label: 'Plumbing', value: 'plumbing' },
-    { label: 'Electrical', value: 'electrical' },
-    { label: 'Carpentry', value: 'carpentry' },
-    { label: 'Cleaning', value: 'cleaning' },
-    { label: 'Painting', value: 'painting' },
-    { label: 'Landscaping', value: 'landscaping' },
+    { label: "All Categories", value: "" },
+    { label: "Plumbing", value: "plumbing" },
+    { label: "Electrical", value: "electrical" },
+    { label: "Carpentry", value: "carpentry" },
+    { label: "Cleaning", value: "cleaning" },
+    { label: "Painting", value: "painting" },
+    { label: "Landscaping", value: "landscaping" },
   ];
 
   const sortOptions: DropdownOption[] = [
-    { label: 'Most Recent', value: 'recent' },
-    { label: 'Highest Rated', value: 'rating' },
-    { label: 'Most Popular', value: 'popular' },
+    { label: "Most Recent", value: "recent" },
+    { label: "Highest Rated", value: "rating" },
+    { label: "Most Popular", value: "popular" },
   ];
 
   const handleFilterChange = (key: string, value: string) => {
@@ -87,8 +86,8 @@ export function ProviderFilters({
                 </label>
                 <Dropdown
                   options={categoryOptions}
-                  value={activeFilters.category_id || ''}
-                  onChange={(value) => handleFilterChange('category_id', value)}
+                  value={activeFilters.category_id || ""}
+                  onChange={(value) => handleFilterChange("category_id", value)}
                   placeholder="Select category"
                 />
               </div>
@@ -100,8 +99,8 @@ export function ProviderFilters({
                 </label>
                 <Dropdown
                   options={sortOptions}
-                  value={activeFilters.sort || ''}
-                  onChange={(value) => handleFilterChange('sort', value)}
+                  value={activeFilters.sort || ""}
+                  onChange={(value) => handleFilterChange("sort", value)}
                   placeholder="Select order"
                 />
               </div>
@@ -113,13 +112,13 @@ export function ProviderFilters({
                 </label>
                 <Dropdown
                   options={[
-                    { label: 'Any Rating', value: '' },
-                    { label: '4+ Stars', value: '4' },
-                    { label: '4.5+ Stars', value: '4.5' },
-                    { label: '5 Stars', value: '5' },
+                    { label: "Any Rating", value: "" },
+                    { label: "4+ Stars", value: "4" },
+                    { label: "4.5+ Stars", value: "4.5" },
+                    { label: "5 Stars", value: "5" },
                   ]}
-                  value={activeFilters.min_rating || ''}
-                  onChange={(value) => handleFilterChange('min_rating', value)}
+                  value={activeFilters.min_rating || ""}
+                  onChange={(value) => handleFilterChange("min_rating", value)}
                   placeholder="Select rating"
                 />
               </div>

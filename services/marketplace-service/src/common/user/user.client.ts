@@ -108,7 +108,7 @@ export class UserClient {
 
   async getUserName(userId: string): Promise<string | null> {
     const user = await this.getUserById(userId);
-    return user?.name || user?.email?.split('@')[0] || null;
+    return user?.name || user?.email?.split("@")[0] || null;
   }
 
   async getProviderById(providerId: string): Promise<ProviderData | null> {
@@ -117,9 +117,7 @@ export class UserClient {
     }
 
     try {
-      const response = await this.httpClient.get(
-        `/providers/${providerId}`,
-      );
+      const response = await this.httpClient.get(`/providers/${providerId}`);
       return response.data as ProviderData;
     } catch (error: any) {
       this.logger.error(

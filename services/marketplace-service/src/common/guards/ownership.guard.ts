@@ -9,7 +9,10 @@ import {
 } from "@nestjs/common";
 import { Reflector, ModuleRef } from "@nestjs/core";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
-import { OWNERSHIP_KEY, OwnershipConfig } from "../decorators/ownership.decorator";
+import {
+  OWNERSHIP_KEY,
+  OwnershipConfig,
+} from "../decorators/ownership.decorator";
 import { RequestService } from "../../modules/request/services/request.service";
 import { ProposalService } from "../../modules/proposal/services/proposal.service";
 import { JobService } from "../../modules/job/services/job.service";
@@ -17,15 +20,15 @@ import { ReviewService } from "../../modules/review/services/review.service";
 
 /**
  * OwnershipGuard - Validates that the authenticated user owns the requested resource
- * 
+ *
  * Used in combination with @Ownership() decorator
- * 
+ *
  * Example:
  * @UseGuards(JwtAuthGuard, OwnershipGuard)
  * @Ownership({ resourceType: 'request', userIdField: 'user_id' })
  * @Patch(':id')
  * async updateRequest(@Param('id') id: string, @Body() dto: UpdateRequestDto)
- * 
+ *
  * This guards against:
  * - Users updating other users' requests
  * - Providers accepting proposals they don't own
@@ -60,7 +63,10 @@ export class OwnershipGuard implements CanActivate {
 
     // Users with manage permission for the resource bypass ownership checks
     const managePermission = `${config.resourceType}s.manage`;
-    if (user.permissions?.includes(managePermission) || user.permissions?.includes('admin.access')) {
+    if (
+      user.permissions?.includes(managePermission) ||
+      user.permissions?.includes("admin.access")
+    ) {
       return true;
     }
 
@@ -68,7 +74,9 @@ export class OwnershipGuard implements CanActivate {
     const resourceId = request.params[paramName];
 
     if (!resourceId) {
-      throw new ForbiddenException(`Missing resource ID parameter: ${paramName}`);
+      throw new ForbiddenException(
+        `Missing resource ID parameter: ${paramName}`,
+      );
     }
 
     // Fetch resource and validate ownership

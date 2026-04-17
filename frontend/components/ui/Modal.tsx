@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef } from 'react';
-import { cn } from '@/utils/helpers';
-import { X } from 'lucide-react';
-import { FocusTrap } from '@/utils/accessibility';
+import React, { useEffect, useRef } from "react";
+import { cn } from "@/utils/helpers";
+import { X } from "lucide-react";
+import { FocusTrap } from "@/utils/accessibility";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
   showCloseButton?: boolean;
 }
 
@@ -19,7 +19,7 @@ export function Modal({
   onClose,
   title,
   children,
-  size = 'md',
+  size = "md",
   showCloseButton = true,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
@@ -27,25 +27,25 @@ export function Modal({
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === "Escape" && isOpen) {
         onClose();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
       // Activate focus trap
       if (modalRef.current) {
         focusTrapRef.current = new FocusTrap(modalRef.current);
         focusTrapRef.current.activate();
       }
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
       // Deactivate focus trap
       if (focusTrapRef.current) {
         focusTrapRef.current.deactivate();
@@ -53,7 +53,7 @@ export function Modal({
       }
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
       if (focusTrapRef.current) {
         focusTrapRef.current.deactivate();
       }
@@ -63,10 +63,10 @@ export function Modal({
   if (!isOpen) return null;
 
   const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
   };
 
   return (
@@ -82,19 +82,22 @@ export function Modal({
         <div
           ref={modalRef}
           className={cn(
-            'relative w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl',
+            "relative w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl",
             sizes[size],
           )}
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
-          aria-labelledby={title ? 'modal-title' : undefined}
+          aria-labelledby={title ? "modal-title" : undefined}
         >
           {/* Header */}
           {(title || showCloseButton) && (
             <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
               {title && (
-                <h3 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                <h3
+                  id="modal-title"
+                  className="text-xl font-semibold text-gray-900 dark:text-gray-100"
+                >
                   {title}
                 </h3>
               )}

@@ -1,10 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { DailyMetric } from '../entities/daily-metric.entity';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { DailyMetric } from "../entities/daily-metric.entity";
 
 @Injectable()
 export class MetricsRepository {
-  constructor(@Inject('DATABASE_POOL') private readonly pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
   async getDailyMetrics(
     startDate?: string,
@@ -31,7 +31,7 @@ export class MetricsRepository {
     }
 
     if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
+      query += ` WHERE ${conditions.join(" AND ")}`;
     }
 
     query += ` ORDER BY date DESC LIMIT $${values.length + 1}`;
@@ -73,7 +73,13 @@ export class MetricsRepository {
                 total_jobs, total_payments
     `;
 
-    const values = [date, total_users, total_requests, total_jobs, total_payments];
+    const values = [
+      date,
+      total_users,
+      total_requests,
+      total_jobs,
+      total_payments,
+    ];
     const result = await this.pool.query(query, values);
     return result.rows[0];
   }

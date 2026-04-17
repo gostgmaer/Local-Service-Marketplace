@@ -56,25 +56,29 @@ export class EmailClient {
     try {
       this.logger.log(`Sending email to ${options.to}`, "EmailClient");
 
-      const response = await this.httpClient.post("/send-email", {
-        to: options.to,
-        templateId: options.template,
-        data: {
-          ...options.variables,
-          ...options.appContext, // Merge application context into template variables
-          subject: options.subject, // Include subject in data if needed by template
-          timestamp: new Date().toISOString(),
+      const response = await this.httpClient.post(
+        "/send-email",
+        {
+          to: options.to,
+          templateId: options.template,
+          data: {
+            ...options.variables,
+            ...options.appContext, // Merge application context into template variables
+            subject: options.subject, // Include subject in data if needed by template
+            timestamp: new Date().toISOString(),
+          },
+          // Fallback for non-template emails
+          text: options.text,
+          html: options.html,
         },
-        // Fallback for non-template emails
-        text: options.text,
-        html: options.html,
-      }, {
-        headers: {
-          "x-app": options.appContext?.applicationName || "",
-          "x-app-url": options.appContext?.appUrl || "",
-          "x-path": options.appContext?.ctaPath || "",
-        }
-      });
+        {
+          headers: {
+            "x-app": options.appContext?.applicationName || "",
+            "x-app-url": options.appContext?.appUrl || "",
+            "x-path": options.appContext?.ctaPath || "",
+          },
+        },
+      );
 
       this.logger.log(
         `Email sent successfully to ${options.to}`,
@@ -111,21 +115,25 @@ export class EmailClient {
         "EmailClient",
       );
 
-      const response = await this.httpClient.post("/send-email", {
-        to,
-        templateId: template,
-        data: {
-          ...variables,
-          ...appContext,
-          timestamp: new Date().toISOString(),
+      const response = await this.httpClient.post(
+        "/send-email",
+        {
+          to,
+          templateId: template,
+          data: {
+            ...variables,
+            ...appContext,
+            timestamp: new Date().toISOString(),
+          },
         },
-      }, {
-        headers: {
-          "x-app": appContext?.applicationName || "",
-          "x-app-url": appContext?.appUrl || "",
-          "x-path": appContext?.ctaPath || "",
-        }
-      });
+        {
+          headers: {
+            "x-app": appContext?.applicationName || "",
+            "x-app-url": appContext?.appUrl || "",
+            "x-path": appContext?.ctaPath || "",
+          },
+        },
+      );
 
       this.logger.log(
         `Template email sent successfully to ${to}`,

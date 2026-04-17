@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { SessionProvider } from 'next-auth/react';
-import { useState } from 'react';
-import { APP_CONFIG } from '@/config/constants';
-import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
-import { ToasterProvider } from '@/components/providers/ToasterProvider';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { SessionProvider } from "next-auth/react";
+import { useState } from "react";
+import { APP_CONFIG } from "@/config/constants";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { ToasterProvider } from "@/components/providers/ToasterProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -19,12 +19,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: false,
             refetchOnReconnect: true,
             retry: 1,
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+            retryDelay: (attemptIndex) =>
+              Math.min(1000 * 2 ** attemptIndex, 30000),
           },
           mutations: {
             retry: 0,
             onError: (error) => {
-              console.error('Mutation error:', error);
+              console.error("Mutation error:", error);
             },
           },
         },
@@ -34,11 +35,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
       <QueryClientProvider client={queryClient}>
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+        <ErrorBoundary>{children}</ErrorBoundary>
         <ToasterProvider />
-        {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+        {process.env.NODE_ENV === "development" && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
       </QueryClientProvider>
     </SessionProvider>
   );

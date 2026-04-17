@@ -11,7 +11,7 @@ export class UserRepository {
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
-        'SELECT value FROM system_settings WHERE key = $1',
+        "SELECT value FROM system_settings WHERE key = $1",
         [key],
       );
       return res.rows[0]?.value ?? defaultValue;
@@ -64,7 +64,10 @@ export class UserRepository {
     return result.rows[0] || null;
   }
 
-  async updatePassword(userId: string, passwordHash: string): Promise<User | null> {
+  async updatePassword(
+    userId: string,
+    passwordHash: string,
+  ): Promise<User | null> {
     const query = `
       UPDATE users 
       SET password_hash = $1, updated_at = NOW() 
@@ -300,10 +303,9 @@ export class UserRepository {
 
   async deleteOldLoginAttempts(olderThanDays: number): Promise<void> {
     const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
-    await this.pool.query(
-      `DELETE FROM login_attempts WHERE created_at < $1`,
-      [cutoff],
-    );
+    await this.pool.query(`DELETE FROM login_attempts WHERE created_at < $1`, [
+      cutoff,
+    ]);
   }
 
   async softDelete(userId: string): Promise<User | null> {
@@ -343,11 +345,11 @@ export class UserRepository {
     const result = await this.pool.query(query, [
       dto.email.toLowerCase().trim(),
       passwordHash,
-      dto.role || 'customer',
+      dto.role || "customer",
       dto.phone || null,
       dto.name || null,
       dto.emailVerified ?? false,
-      (dto as any).status || 'active',
+      (dto as any).status || "active",
     ]);
     return result.rows[0];
   }

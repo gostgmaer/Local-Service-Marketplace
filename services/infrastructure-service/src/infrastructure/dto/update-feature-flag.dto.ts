@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, Min, Max, IsOptional } from 'class-validator';
+import { IsBoolean, IsInt, Min, Max, IsOptional } from "class-validator";
 
 export class UpdateFeatureFlagDto {
   @IsOptional()

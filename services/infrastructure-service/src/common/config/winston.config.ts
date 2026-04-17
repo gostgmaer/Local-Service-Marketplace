@@ -1,5 +1,5 @@
-import * as winston from 'winston';
-import { redactFormat } from './log-redaction';
+import * as winston from "winston";
+import { redactFormat } from "./log-redaction";
 
 export const winstonConfig = {
   format: redactFormat(),
@@ -14,15 +14,15 @@ export const winstonConfig = {
       ),
     }),
     new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
+      filename: "logs/error.log",
+      level: "error",
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json(),
       ),
     }),
     new winston.transports.File({
-      filename: 'logs/combined.log',
+      filename: "logs/combined.log",
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json(),

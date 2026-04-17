@@ -1,14 +1,17 @@
-import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Inject, OnModuleInit } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Logger } from 'winston';
-import { NotificationClient } from '../common/notification/notification.client';
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
+import { Inject, OnModuleInit } from "@nestjs/common";
+import { Job } from "bullmq";
+import { WINSTON_MODULE_PROVIDER } from "nest-winston";
+import { Logger } from "winston";
+import { NotificationClient } from "../common/notification/notification.client";
 
-@Processor('identity.notification', {
-  concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
+@Processor("identity.notification", {
+  concurrency: parseInt(process.env.WORKER_CONCURRENCY || "5", 10),
 })
-export class IdentityNotificationWorker extends WorkerHost implements OnModuleInit {
+export class IdentityNotificationWorker
+  extends WorkerHost
+  implements OnModuleInit
+{
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly notificationClient: NotificationClient,
@@ -24,14 +27,14 @@ export class IdentityNotificationWorker extends WorkerHost implements OnModuleIn
     const { to, template, variables } = job.data;
     try {
       await this.notificationClient.sendEmail({ to, template, variables });
-      this.logger.info('Identity notification sent', {
-        context: 'IdentityNotificationWorker',
+      this.logger.info("Identity notification sent", {
+        context: "IdentityNotificationWorker",
         template,
         to,
       });
     } catch (error: any) {
-      this.logger.error('Identity notification failed', {
-        context: 'IdentityNotificationWorker',
+      this.logger.error("Identity notification failed", {
+        context: "IdentityNotificationWorker",
         template,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -43,31 +46,41 @@ export class IdentityNotificationWorker extends WorkerHost implements OnModuleIn
   // Worker lifecycle hooks
   // ─────────────────────────────────────────────────────────────────
 
-  @OnWorkerEvent('active')
+  @OnWorkerEvent("active")
   onActive(job: Job): void {
-    this.logger.info(`Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`, { context: 'IdentityNotificationWorker' });
-  }
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job): void {
-    this.logger.info(`Job "${job.name}/${job.id}" completed`, { context: 'IdentityNotificationWorker' });
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job | undefined, error: Error): void {
-    this.logger.error(
-      `Job "${job?.name ?? 'unknown'}/${job?.id ?? '?'}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
-      { context: 'IdentityNotificationWorker', stack: error.stack },
+    this.logger.info(
+      `Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`,
+      { context: "IdentityNotificationWorker" },
     );
   }
 
-  @OnWorkerEvent('error')
-  onError(error: Error): void {
-    this.logger.error(`Worker error: ${error.message}`, { context: 'IdentityNotificationWorker', stack: error.stack });
+  @OnWorkerEvent("completed")
+  onCompleted(job: Job): void {
+    this.logger.info(`Job "${job.name}/${job.id}" completed`, {
+      context: "IdentityNotificationWorker",
+    });
   }
 
-  @OnWorkerEvent('stalled')
+  @OnWorkerEvent("failed")
+  onFailed(job: Job | undefined, error: Error): void {
+    this.logger.error(
+      `Job "${job?.name ?? "unknown"}/${job?.id ?? "?"}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+      { context: "IdentityNotificationWorker", stack: error.stack },
+    );
+  }
+
+  @OnWorkerEvent("error")
+  onError(error: Error): void {
+    this.logger.error(`Worker error: ${error.message}`, {
+      context: "IdentityNotificationWorker",
+      stack: error.stack,
+    });
+  }
+
+  @OnWorkerEvent("stalled")
   onStalled(jobId: string): void {
-    this.logger.warn(`Job ${jobId} stalled and will be requeued`, { context: 'IdentityNotificationWorker' });
+    this.logger.warn(`Job ${jobId} stalled and will be requeued`, {
+      context: "IdentityNotificationWorker",
+    });
   }
 }

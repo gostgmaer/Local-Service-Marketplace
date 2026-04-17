@@ -1,14 +1,14 @@
 import {
-	Controller,
-	Get,
-	Post,
-	Body,
-	Param,
-	Query,
-	Headers,
-	UseGuards,
-	HttpCode,
-	HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Headers,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
@@ -27,36 +27,36 @@ import { CreateDisputeDto } from "./dto/create-dispute.dto";
 @UseGuards(JwtAuthGuard)
 @Controller("disputes")
 export class DisputeController {
-	constructor(private readonly disputeService: DisputeService) {}
+  constructor(private readonly disputeService: DisputeService) {}
 
-	@Post()
-	@HttpCode(HttpStatus.CREATED)
-	async createDispute(
-		@Body() dto: CreateDisputeDto,
-		@Headers("x-user-id") userId: string,
-	) {
-		return this.disputeService.createDispute(dto.job_id, userId, dto.reason);
-	}
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async createDispute(
+    @Body() dto: CreateDisputeDto,
+    @Headers("x-user-id") userId: string,
+  ) {
+    return this.disputeService.createDispute(dto.job_id, userId, dto.reason);
+  }
 
-	@Get("my")
-	async getMyDisputes(
-		@Headers("x-user-id") userId: string,
-		@Query("status") status?: string,
-		@Query("page") page?: string,
-		@Query("limit") limit?: string,
-	) {
-		return this.disputeService.getUserDisputes(userId, {
-			status,
-			page: page ? parseInt(page, 10) : 1,
-			limit: limit ? parseInt(limit, 10) : 20,
-		});
-	}
+  @Get("my")
+  async getMyDisputes(
+    @Headers("x-user-id") userId: string,
+    @Query("status") status?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.disputeService.getUserDisputes(userId, {
+      status,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
+  }
 
-	@Get(":id")
-	async getDisputeById(
-		@Param("id", FlexibleIdPipe) id: string,
-		@Headers("x-user-id") userId: string,
-	) {
-		return this.disputeService.getDisputeForUser(id, userId);
-	}
+  @Get(":id")
+  async getDisputeById(
+    @Param("id", FlexibleIdPipe) id: string,
+    @Headers("x-user-id") userId: string,
+  ) {
+    return this.disputeService.getDisputeForUser(id, userId);
+  }
 }

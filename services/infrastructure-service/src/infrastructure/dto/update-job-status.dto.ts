@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsString, IsIn, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsIn, IsOptional } from "class-validator";
 
 export class UpdateJobStatusDto {
   @IsNotEmpty()
   @IsString()
-  @IsIn(['pending', 'processing', 'completed', 'failed'])
+  @IsIn(["pending", "processing", "completed", "failed"])
   status: string;
 
   @IsOptional()

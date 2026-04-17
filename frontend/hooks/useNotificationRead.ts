@@ -1,5 +1,8 @@
-import { useOptimisticMutation } from './useOptimisticMutation';
-import { notificationService, Notification } from '@/services/notification-service';
+import { useOptimisticMutation } from "./useOptimisticMutation";
+import {
+  notificationService,
+  Notification,
+} from "@/services/notification-service";
 
 interface MarkReadVariables {
   notificationId: string;
@@ -11,7 +14,7 @@ interface MarkReadVariables {
  */
 export function useNotificationRead() {
   return useOptimisticMutation<void, MarkReadVariables>({
-    queryKey: ['notifications'],
+    queryKey: ["notifications"],
     mutationFn: async ({ notificationId }) => {
       await notificationService.markAsRead(notificationId);
     },
@@ -25,6 +28,6 @@ export function useNotificationRead() {
       );
     },
     successMessage: undefined, // Silent success
-    errorMessage: 'Failed to mark notification as read',
+    errorMessage: "Failed to mark notification as read",
   });
 }

@@ -1,10 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { RateLimit } from '../entities/rate-limit.entity';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { RateLimit } from "../entities/rate-limit.entity";
 
 @Injectable()
 export class RateLimitRepository {
-  constructor(@Inject('DATABASE_POOL') private readonly pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
   async getRateLimit(key: string): Promise<RateLimit | null> {
     const query = `
@@ -31,7 +31,11 @@ export class RateLimitRepository {
       RETURNING id, key, request_count, window_start
     `;
 
-    const result = await this.pool.query(query, [key, requestCount, windowStart]);
+    const result = await this.pool.query(query, [
+      key,
+      requestCount,
+      windowStart,
+    ]);
     return result.rows[0];
   }
 
@@ -47,7 +51,11 @@ export class RateLimitRepository {
       RETURNING id, key, request_count, window_start
     `;
 
-    const result = await this.pool.query(query, [key, requestCount, windowStart]);
+    const result = await this.pool.query(query, [
+      key,
+      requestCount,
+      windowStart,
+    ]);
     return result.rows[0] || null;
   }
 

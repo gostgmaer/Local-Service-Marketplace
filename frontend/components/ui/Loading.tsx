@@ -1,15 +1,15 @@
-import React from 'react';
+import React from "react";
 
 interface LoadingProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   text?: string;
 }
 
-export function Loading({ size = 'md', text }: LoadingProps) {
+export function Loading({ size = "md", text }: LoadingProps) {
   const sizes = {
-    sm: 'h-6 w-6',
-    md: 'h-12 w-12',
-    lg: 'h-16 w-16',
+    sm: "h-6 w-6",
+    md: "h-12 w-12",
+    lg: "h-16 w-16",
   };
 
   return (
@@ -48,12 +48,9 @@ export function LoadingOverlay() {
 }
 
 export function RouteLoading({ text = "Loading..." }: { text?: string }) {
-	return (
-		<div className='min-h-[60vh] flex items-center justify-center'>
-			<Loading
-				size='lg'
-				text={text}
-			/>
-		</div>
-	);
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <Loading size="lg" text={text} />
+    </div>
+  );
 }

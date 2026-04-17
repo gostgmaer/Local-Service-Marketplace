@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsOptional, IsObject, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsObject, IsEnum } from "class-validator";
 
 export enum BackgroundJobType {
-  SEND_EMAIL = 'send-email',
-  CLEANUP_EXPIRED_DATA = 'cleanup-expired-data',
-  RECALCULATE_METRICS = 'recalculate-metrics',
+  SEND_EMAIL = "send-email",
+  CLEANUP_EXPIRED_DATA = "cleanup-expired-data",
+  RECALCULATE_METRICS = "recalculate-metrics",
 }
 
 export class CreateBackgroundJobDto {

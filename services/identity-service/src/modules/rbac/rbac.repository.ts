@@ -1,6 +1,6 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { DATABASE_POOL } from '@/common/database/database.module';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { DATABASE_POOL } from "@/common/database/database.module";
 
 @Injectable()
 export class RbacRepository {
@@ -17,12 +17,17 @@ export class RbacRepository {
   }
 
   async findRoleById(id: string) {
-    const result = await this.pool.query('SELECT * FROM roles WHERE id = $1', [id]);
+    const result = await this.pool.query("SELECT * FROM roles WHERE id = $1", [
+      id,
+    ]);
     return result.rows[0] || null;
   }
 
   async findRoleByName(name: string) {
-    const result = await this.pool.query('SELECT * FROM roles WHERE name = $1', [name]);
+    const result = await this.pool.query(
+      "SELECT * FROM roles WHERE name = $1",
+      [name],
+    );
     return result.rows[0] || null;
   }
 
@@ -36,7 +41,12 @@ export class RbacRepository {
     return result.rows[0];
   }
 
-  async updateRole(id: string, displayName?: string, description?: string, isActive?: boolean) {
+  async updateRole(
+    id: string,
+    displayName?: string,
+    description?: string,
+    isActive?: boolean,
+  ) {
     const updates: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -59,7 +69,7 @@ export class RbacRepository {
 
     values.push(id);
     const result = await this.pool.query(
-      `UPDATE roles SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
+      `UPDATE roles SET ${updates.join(", ")} WHERE id = $${idx} RETURNING *`,
       values,
     );
     return result.rows[0] || null;
@@ -67,7 +77,7 @@ export class RbacRepository {
 
   async deleteRole(id: string) {
     const result = await this.pool.query(
-      'DELETE FROM roles WHERE id = $1 AND is_system = false RETURNING *',
+      "DELETE FROM roles WHERE id = $1 AND is_system = false RETURNING *",
       [id],
     );
     return result.rows[0] || null;
@@ -77,7 +87,7 @@ export class RbacRepository {
 
   async findAllPermissions() {
     const result = await this.pool.query(
-      'SELECT * FROM permissions ORDER BY resource ASC, action ASC',
+      "SELECT * FROM permissions ORDER BY resource ASC, action ASC",
     );
     return result.rows;
   }
@@ -85,7 +95,7 @@ export class RbacRepository {
   async findPermissionsByIds(ids: string[]) {
     if (!ids.length) return [];
     const result = await this.pool.query(
-      'SELECT * FROM permissions WHERE id = ANY($1::uuid[])',
+      "SELECT * FROM permissions WHERE id = ANY($1::uuid[])",
       [ids],
     );
     return result.rows;
@@ -119,16 +129,18 @@ export class RbacRepository {
   async setRolePermissions(roleId: string, permissionIds: string[]) {
     const client = await this.pool.connect();
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       // Remove existing permissions
-      await client.query('DELETE FROM role_permissions WHERE role_id = $1', [roleId]);
+      await client.query("DELETE FROM role_permissions WHERE role_id = $1", [
+        roleId,
+      ]);
 
       // Insert new permissions
       if (permissionIds.length > 0) {
         const values = permissionIds
           .map((_, i) => `($1, $${i + 2}, now())`)
-          .join(', ');
+          .join(", ");
         await client.query(
           `INSERT INTO role_permissions (role_id, permission_id, created_at) VALUES ${values}
            ON CONFLICT DO NOTHING`,
@@ -136,9 +148,9 @@ export class RbacRepository {
         );
       }
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
     } catch (err) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw err;
     } finally {
       client.release();
@@ -149,7 +161,7 @@ export class RbacRepository {
     if (!permissionIds.length) return;
     const values = permissionIds
       .map((_, i) => `($1, $${i + 2}, now())`)
-      .join(', ');
+      .join(", ");
     await this.pool.query(
       `INSERT INTO role_permissions (role_id, permission_id, created_at) VALUES ${values}
        ON CONFLICT DO NOTHING`,
@@ -177,7 +189,7 @@ export class RbacRepository {
 
   async getUsersCountByRole(roleId: string): Promise<number> {
     const result = await this.pool.query(
-      'SELECT COUNT(*)::int as count FROM users WHERE role_id = $1 AND deleted_at IS NULL',
+      "SELECT COUNT(*)::int as count FROM users WHERE role_id = $1 AND deleted_at IS NULL",
       [roleId],
     );
     return result.rows[0].count;

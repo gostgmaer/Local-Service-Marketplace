@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 // ------------------ Types ------------------
 
@@ -8,7 +8,7 @@ export interface UserProfile {
   email: string;
   name?: string;
   phone?: string;
-  role: 'customer' | 'provider' | 'admin';
+  role: "customer" | "provider" | "admin";
   email_verified: boolean;
   status: string;
   created_at: string;
@@ -35,7 +35,12 @@ export interface ProviderProfile {
   rating?: number | string | null;
   created_at: string;
   services?: Array<{ id: string; category_id: string }>;
-  availability?: Array<{ id: string; day_of_week: number; start_time: string; end_time: string }>;
+  availability?: Array<{
+    id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+  }>;
   verification_status?: "pending" | "verified" | "rejected";
   certifications?: any;
   years_of_experience?: number;
@@ -81,7 +86,9 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 /**
  * Update current user profile
  */
-export const updateUserProfile = async (data: UpdateProfileData): Promise<UserProfile> => {
+export const updateUserProfile = async (
+  data: UpdateProfileData,
+): Promise<UserProfile> => {
   const response = await apiClient.patch<UserProfile>("/user/auth/me", data);
   return response.data;
 };
@@ -89,20 +96,28 @@ export const updateUserProfile = async (data: UpdateProfileData): Promise<UserPr
 /**
  * Upload user profile picture
  */
-export const uploadUserProfilePicture = async (file: File): Promise<UserProfile> => {
+export const uploadUserProfilePicture = async (
+  file: File,
+): Promise<UserProfile> => {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await apiClient.post<any>("/users/me/profile-picture", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await apiClient.post<any>(
+    "/users/me/profile-picture",
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
   return response.data?.user ?? response.data;
 };
 
 /**
  * Create provider profile
  */
-export const createProviderProfile = async (data: CreateProviderData): Promise<ProviderProfile> => {
-  const response = await apiClient.post<ProviderProfile>('/providers', data);
+export const createProviderProfile = async (
+  data: CreateProviderData,
+): Promise<ProviderProfile> => {
+  const response = await apiClient.post<ProviderProfile>("/providers", data);
   return response.data;
 };
 
@@ -111,24 +126,33 @@ export const createProviderProfile = async (data: CreateProviderData): Promise<P
  */
 export const updateProviderProfile = async (
   providerId: string,
-  data: UpdateProviderData
+  data: UpdateProviderData,
 ): Promise<ProviderProfile> => {
-  const response = await apiClient.patch<ProviderProfile>(`/providers/${providerId}`, data);
+  const response = await apiClient.patch<ProviderProfile>(
+    `/providers/${providerId}`,
+    data,
+  );
   return response.data;
 };
 
 /**
  * Get provider profile
  */
-export const getProviderProfile = async (providerId: string): Promise<ProviderProfile> => {
-  const response = await apiClient.get<ProviderProfile>(`/providers/${providerId}`);
+export const getProviderProfile = async (
+  providerId: string,
+): Promise<ProviderProfile> => {
+  const response = await apiClient.get<ProviderProfile>(
+    `/providers/${providerId}`,
+  );
   return response.data;
 };
 
 /**
  * Get provider profile for an authenticated user.
  */
-export const getProviderProfileByUserId = async (userId: string): Promise<ProviderProfile | null> => {
+export const getProviderProfileByUserId = async (
+  userId: string,
+): Promise<ProviderProfile | null> => {
   const response = await apiClient.get<any>(`/providers?user_id=${userId}`);
   const list = apiClient.extractList<ProviderProfile>(response.data);
   return list[0] || null;
@@ -137,8 +161,12 @@ export const getProviderProfileByUserId = async (userId: string): Promise<Provid
 /**
  * List provider services
  */
-export const getProviderServices = async (providerId: string): Promise<ProviderService[]> => {
-  const response = await apiClient.get<any>(`/providers/${providerId}/services`);
+export const getProviderServices = async (
+  providerId: string,
+): Promise<ProviderService[]> => {
+  const response = await apiClient.get<any>(
+    `/providers/${providerId}/services`,
+  );
   return apiClient.extractList<ProviderService>(response.data);
 };
 
@@ -148,11 +176,16 @@ export const getProviderServices = async (providerId: string): Promise<ProviderS
  */
 export const updateProviderServices = async (
   providerId: string,
-  data: UpdateProviderServicesData
+  data: UpdateProviderServicesData,
 ): Promise<ProviderService[]> => {
   // Transform frontend { services: [{ category_id }] } → backend { service_categories: [id] }
-  const payload = { service_categories: data.services.map(s => s.category_id) };
-  const response = await apiClient.patch<any>(`/providers/${providerId}/services`, payload);
+  const payload = {
+    service_categories: data.services.map((s) => s.category_id),
+  };
+  const response = await apiClient.patch<any>(
+    `/providers/${providerId}/services`,
+    payload,
+  );
   const result = apiClient.extractList<ProviderService>(response.data);
   return result.length ? result : (response.data?.services ?? []);
 };
@@ -181,9 +214,11 @@ export const getProviders = async (params?: {
   if (params?.limit) queryParams.append("limit", params.limit.toString());
   if (params?.page) queryParams.append("page", params.page.toString());
   if (params?.cursor) queryParams.append("cursor", params.cursor);
-  if (params?.category_id) queryParams.append("category_id", params.category_id);
+  if (params?.category_id)
+    queryParams.append("category_id", params.category_id);
   if (params?.search) queryParams.append("search", params.search);
-  if (params?.location_id) queryParams.append("location_id", params.location_id);
+  if (params?.location_id)
+    queryParams.append("location_id", params.location_id);
 
   const response = await apiClient.get<{
     data: ProviderProfile[];
@@ -198,10 +233,16 @@ export const getProviders = async (params?: {
   const payload = response.data;
   const page = payload.page;
   const totalPages = payload.totalPages;
-  const hasMore = payload.hasMore ?? (page !== undefined && totalPages !== undefined ? page < totalPages : false);
+  const hasMore =
+    payload.hasMore ??
+    (page !== undefined && totalPages !== undefined
+      ? page < totalPages
+      : false);
   const nextCursor =
     payload.nextCursor ??
-    (page !== undefined && totalPages !== undefined && page < totalPages ? String(page + 1) : undefined);
+    (page !== undefined && totalPages !== undefined && page < totalPages
+      ? String(page + 1)
+      : undefined);
 
   return { ...payload, hasMore, nextCursor };
 };
@@ -211,11 +252,16 @@ export const getProviders = async (params?: {
 export interface ProviderDocument {
   id: string;
   provider_id: string;
-  document_type: 'government_id' | 'business_license' | 'insurance_certificate' | 'certification' | 'tax_document';
+  document_type:
+    | "government_id"
+    | "business_license"
+    | "insurance_certificate"
+    | "certification"
+    | "tax_document";
   document_url: string;
   document_name: string;
   document_number?: string;
-  expiry_date?: string;  // Maps to expires_at in database
+  expiry_date?: string; // Maps to expires_at in database
   verified: boolean;
   rejected: boolean;
   rejection_reason?: string;
@@ -244,20 +290,21 @@ export interface VerificationStatus {
  */
 export const uploadProviderDocument = async (
   providerId: string,
-  data: UploadDocumentData
+  data: UploadDocumentData,
 ): Promise<ProviderDocument> => {
   const formData = new FormData();
-  formData.append('file', data.file);
-  formData.append('document_type', data.document_type);
-  if (data.document_number) formData.append('document_number', data.document_number);
-  if (data.expiry_date) formData.append('expiry_date', data.expiry_date);
+  formData.append("file", data.file);
+  formData.append("document_type", data.document_type);
+  if (data.document_number)
+    formData.append("document_number", data.document_number);
+  if (data.expiry_date) formData.append("expiry_date", data.expiry_date);
 
   const response = await apiClient.post<ProviderDocument>(
     `/provider-documents/upload/${providerId}`,
     formData,
     {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    }
+      headers: { "Content-Type": "multipart/form-data" },
+    },
   );
   return response.data;
 };
@@ -265,8 +312,12 @@ export const uploadProviderDocument = async (
 /**
  * Get provider documents
  */
-export const getProviderDocuments = async (providerId: string): Promise<ProviderDocument[]> => {
-  const response = await apiClient.get<any>(`/provider-documents/provider/${providerId}`);
+export const getProviderDocuments = async (
+  providerId: string,
+): Promise<ProviderDocument[]> => {
+  const response = await apiClient.get<any>(
+    `/provider-documents/provider/${providerId}`,
+  );
   return apiClient.extractList<ProviderDocument>(response.data);
 };
 
@@ -274,10 +325,10 @@ export const getProviderDocuments = async (providerId: string): Promise<Provider
  * Get document verification status
  */
 export const getDocumentVerificationStatus = async (
-  providerId: string
+  providerId: string,
 ): Promise<VerificationStatus> => {
   const response = await apiClient.get<VerificationStatus>(
-    `/provider-documents/verification-status/${providerId}`
+    `/provider-documents/verification-status/${providerId}`,
   );
   return response.data;
 };
@@ -287,7 +338,7 @@ export const getDocumentVerificationStatus = async (
  */
 export const deleteProviderDocument = async (
   providerId: string,
-  documentId: string
+  documentId: string,
 ): Promise<void> => {
   await apiClient.delete(`/provider-documents/${documentId}`);
 };
@@ -299,7 +350,7 @@ export interface PortfolioItem {
   provider_id: string;
   title: string;
   description?: string;
-  images: string[];  // Transformed from image_url
+  images: string[]; // Transformed from image_url
   display_order: number;
   created_at: string;
 }
@@ -320,19 +371,19 @@ export interface UpdatePortfolioData {
  */
 export const createPortfolioItem = async (
   providerId: string,
-  data: CreatePortfolioData
+  data: CreatePortfolioData,
 ): Promise<PortfolioItem> => {
   const formData = new FormData();
-  formData.append('title', data.title);
-  if (data.description) formData.append('description', data.description);
-  data.images.forEach((image) => formData.append('images', image));
+  formData.append("title", data.title);
+  if (data.description) formData.append("description", data.description);
+  data.images.forEach((image) => formData.append("images", image));
 
   const response = await apiClient.post<PortfolioItem>(
     `/provider-portfolio/${providerId}`,
     formData,
     {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    }
+      headers: { "Content-Type": "multipart/form-data" },
+    },
   );
   return response.data;
 };
@@ -340,8 +391,12 @@ export const createPortfolioItem = async (
 /**
  * Get provider portfolio
  */
-export const getProviderPortfolio = async (providerId: string): Promise<PortfolioItem[]> => {
-  const response = await apiClient.get<any>(`/provider-portfolio/provider/${providerId}`);
+export const getProviderPortfolio = async (
+  providerId: string,
+): Promise<PortfolioItem[]> => {
+  const response = await apiClient.get<any>(
+    `/provider-portfolio/provider/${providerId}`,
+  );
   return apiClient.extractList<PortfolioItem>(response.data);
 };
 
@@ -351,11 +406,11 @@ export const getProviderPortfolio = async (providerId: string): Promise<Portfoli
 export const updatePortfolioItem = async (
   providerId: string,
   itemId: string,
-  data: UpdatePortfolioData
+  data: UpdatePortfolioData,
 ): Promise<PortfolioItem> => {
   const response = await apiClient.put<PortfolioItem>(
     `/provider-portfolio/${itemId}`,
-    data
+    data,
   );
   return response.data;
 };
@@ -365,7 +420,7 @@ export const updatePortfolioItem = async (
  */
 export const deletePortfolioItem = async (
   providerId: string,
-  itemId: string
+  itemId: string,
 ): Promise<void> => {
   await apiClient.delete(`/provider-portfolio/${itemId}`);
 };
@@ -375,9 +430,11 @@ export const deletePortfolioItem = async (
  */
 export const reorderPortfolio = async (
   providerId: string,
-  orderedIds: string[]
+  orderedIds: string[],
 ): Promise<void> => {
-  await apiClient.put(`/provider-portfolio/${providerId}/reorder`, { ordered_ids: orderedIds });
+  await apiClient.put(`/provider-portfolio/${providerId}/reorder`, {
+    ordered_ids: orderedIds,
+  });
 };
 
 /**
@@ -385,11 +442,11 @@ export const reorderPortfolio = async (
  */
 export const addProviderCategory = async (
   providerId: string,
-  categoryId: string
+  categoryId: string,
 ): Promise<ProviderService> => {
   const response = await apiClient.post<ProviderService>(
     `/providers/${providerId}/services`,
-    { category_id: categoryId }
+    { category_id: categoryId },
   );
   return response.data;
 };
@@ -399,7 +456,7 @@ export const addProviderCategory = async (
  */
 export const removeProviderCategory = async (
   providerId: string,
-  serviceId: string
+  serviceId: string,
 ): Promise<void> => {
   await apiClient.delete(`/providers/${providerId}/services/${serviceId}`);
 };

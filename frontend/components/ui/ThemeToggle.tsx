@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Moon, Sun } from 'lucide-react';
-import { useThemeStore } from '@/store/themeStore';
+import React, { useState, useEffect } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useThemeStore } from "@/store/themeStore";
 
 /**
  * Dark Mode Toggle Component
@@ -36,13 +36,9 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
       aria-label="Toggle dark mode"
-      title={`Current theme: ${theme} (Click to switch to ${theme === 'light' ? 'dark' : 'light'} mode)`}
+      title={`Current theme: ${theme} (Click to switch to ${theme === "light" ? "dark" : "light"} mode)`}
     >
-      {isDark ? (
-        <Sun className="h-5 w-5" />
-      ) : (
-        <Moon className="h-5 w-5" />
-      )}
+      {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </button>
   );
 }

@@ -7,11 +7,12 @@ import { Pool } from "pg";
 export class HealthController {
   constructor(
     @Inject("DATABASE_POOL") private readonly pool: Pool,
-    @InjectQueue("payment.notification") private readonly notificationQueue: Queue,
+    @InjectQueue("payment.notification")
+    private readonly notificationQueue: Queue,
     @InjectQueue("payment.analytics") private readonly analyticsQueue: Queue,
     @InjectQueue("payment.refund") private readonly refundQueue: Queue,
     @InjectQueue("payment.webhook") private readonly webhookQueue: Queue,
-  ) { }
+  ) {}
 
   @Get()
   async check() {
@@ -40,12 +41,13 @@ export class HealthController {
   @Get("queues")
   async checkQueues() {
     try {
-      const [notificationCounts, analyticsCounts, refundCounts, webhookCounts] = await Promise.all([
-        this.notificationQueue.getJobCounts(),
-        this.analyticsQueue.getJobCounts(),
-        this.refundQueue.getJobCounts(),
-        this.webhookQueue.getJobCounts(),
-      ]);
+      const [notificationCounts, analyticsCounts, refundCounts, webhookCounts] =
+        await Promise.all([
+          this.notificationQueue.getJobCounts(),
+          this.analyticsQueue.getJobCounts(),
+          this.refundQueue.getJobCounts(),
+          this.webhookQueue.getJobCounts(),
+        ]);
 
       const queues = {
         "payment.notification": {
@@ -84,11 +86,15 @@ export class HealthController {
 
       Object.entries(queues).forEach(([queueName, counts]) => {
         if (counts.failed > 100) {
-          warnings.push(`${queueName}: High failed job count (${counts.failed})`);
+          warnings.push(
+            `${queueName}: High failed job count (${counts.failed})`,
+          );
           status = "degraded";
         }
         if (counts.waiting > 1000) {
-          warnings.push(`${queueName}: High waiting job count (${counts.waiting})`);
+          warnings.push(
+            `${queueName}: High waiting job count (${counts.waiting})`,
+          );
           status = "degraded";
         }
       });

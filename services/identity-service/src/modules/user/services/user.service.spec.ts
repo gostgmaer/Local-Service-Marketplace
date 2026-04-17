@@ -44,9 +44,20 @@ describe("UserService", () => {
       add: jest.fn().mockResolvedValue({}),
     } as any;
 
-    const service = new UserService(userRepository, logger, notificationClient, notificationQueue);
+    const service = new UserService(
+      userRepository,
+      logger,
+      notificationClient,
+      notificationQueue,
+    );
 
-    return { service, userRepository, logger, notificationClient, notificationQueue };
+    return {
+      service,
+      userRepository,
+      logger,
+      notificationClient,
+      notificationQueue,
+    };
   };
 
   describe("getUsersForAdmin", () => {
@@ -143,15 +154,17 @@ describe("UserService", () => {
         "user-1",
         "suspended",
       );
-      expect(notificationClient.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        template: 'USER_SUSPENDED',
-        variables: expect.objectContaining({
-          userId: 'user-1',
-          username: 'Test',
-          email: 'test@test.com',
-          reason: 'Violation',
+      expect(notificationClient.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          template: "USER_SUSPENDED",
+          variables: expect.objectContaining({
+            userId: "user-1",
+            username: "Test",
+            email: "test@test.com",
+            reason: "Violation",
+          }),
         }),
-      }));
+      );
       expect(result).toBeDefined();
     });
 
@@ -181,15 +194,17 @@ describe("UserService", () => {
         "user-1",
         "suspended",
       );
-      expect(notificationClient.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-        template: 'USER_BANNED',
-        variables: expect.objectContaining({
-          userId: 'user-1',
-          username: 'Test',
-          email: 'test@test.com',
-          reason: 'Spamming',
+      expect(notificationClient.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          template: "USER_BANNED",
+          variables: expect.objectContaining({
+            userId: "user-1",
+            username: "Test",
+            email: "test@test.com",
+            reason: "Spamming",
+          }),
         }),
-      }));
+      );
       expect(result).toBeDefined();
     });
   });

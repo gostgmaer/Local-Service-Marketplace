@@ -14,7 +14,7 @@ export class EmailWorkerService {
     private readonly notificationRepository: NotificationRepository,
     private readonly emailClient: EmailClient,
     private readonly userClient: UserClient,
-  ) { }
+  ) {}
 
   async processPendingEmails(): Promise<void> {
     this.logger.log(
@@ -55,13 +55,18 @@ export class EmailWorkerService {
           }
 
           // Resolve user email from identity-service, fall back to null on error
-          const userEmail = await this.userClient.getUserEmail(notification.user_id);
+          const userEmail = await this.userClient.getUserEmail(
+            notification.user_id,
+          );
           if (!userEmail) {
             this.logger.warn(
               `EmailWorkerService: could not resolve email for user ${notification.user_id} — skipping delivery ${delivery.id}`,
               "EmailWorkerService",
             );
-            await this.deliveryRepository.updateDeliveryStatus(delivery.id, "failed");
+            await this.deliveryRepository.updateDeliveryStatus(
+              delivery.id,
+              "failed",
+            );
             continue;
           }
           await this.emailClient.sendEmail({
@@ -69,10 +74,13 @@ export class EmailWorkerService {
             subject: notification.type || "Notification",
             template: "MESSAGE_RECEIVED",
             variables: {
-              recipientName: userEmail.split('@')[0],
-              senderName: 'LocalServices',
-              messagePreview: notification.message || notification.type || 'You have a new notification.',
-              replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/notifications`,
+              recipientName: userEmail.split("@")[0],
+              senderName: "LocalServices",
+              messagePreview:
+                notification.message ||
+                notification.type ||
+                "You have a new notification.",
+              replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/notifications`,
             },
           });
 
@@ -105,6 +113,4 @@ export class EmailWorkerService {
       );
     }
   }
-
 }
-

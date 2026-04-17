@@ -51,9 +51,7 @@ const createOAuthProviders = (configService: ConfigService) => {
 
 @Module({
   imports: [
-    BullModule.registerQueue(
-      { name: 'identity.notification' },
-    ),
+    BullModule.registerQueue({ name: "identity.notification" }),
     NotificationModule,
     PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.registerAsync({

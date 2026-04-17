@@ -11,7 +11,7 @@ export class CouponRepository {
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
-        'SELECT value FROM system_settings WHERE key = $1',
+        "SELECT value FROM system_settings WHERE key = $1",
         [key],
       );
       return res.rows[0]?.value ?? defaultValue;
@@ -50,7 +50,7 @@ export class CouponRepository {
 
   async deleteExpired(): Promise<number> {
     const result = await this.pool.query(
-      'DELETE FROM coupons WHERE expires_at IS NOT NULL AND expires_at < NOW()',
+      "DELETE FROM coupons WHERE expires_at IS NOT NULL AND expires_at < NOW()",
     );
     return result.rowCount ?? 0;
   }
@@ -119,10 +119,15 @@ export class CouponRepository {
     created_by?: string;
   }): Promise<Coupon> {
     // Enforce max coupon discount configured in system_settings
-    const maxPctStr = await this.getSystemSetting('max_coupon_discount_percentage', '80');
+    const maxPctStr = await this.getSystemSetting(
+      "max_coupon_discount_percentage",
+      "80",
+    );
     const maxPct = parseFloat(maxPctStr);
     if (!isNaN(maxPct) && data.discount_percent > maxPct) {
-      throw new Error(`Coupon discount cannot exceed the platform maximum of ${maxPct}%.`);
+      throw new Error(
+        `Coupon discount cannot exceed the platform maximum of ${maxPct}%.`,
+      );
     }
 
     const id = uuidv4();

@@ -5,11 +5,11 @@ import { LoggerService } from "@nestjs/common";
 
 /**
  * TokenBlacklistService - Redis-backed token revocation
- * 
+ *
  * Provides immediate token invalidation by maintaining a blacklist
  * of revoked tokens in Redis. Tokens expire automatically after their
  * original expiration time.
- * 
+ *
  * Used for:
  * - User logout (revoke current token)
  * - Security incidents (revoke all user tokens)
@@ -22,7 +22,7 @@ export class TokenBlacklistService {
     @Inject("REDIS_CLIENT") private readonly redis: Redis,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-  ) { }
+  ) {}
 
   /**
    * Add a token to the blacklist

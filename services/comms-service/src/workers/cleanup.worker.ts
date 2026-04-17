@@ -1,9 +1,14 @@
-import { Processor, WorkerHost, InjectQueue, OnWorkerEvent } from '@nestjs/bullmq';
-import { Inject, LoggerService, OnModuleInit } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { Job, Queue } from 'bullmq';
-import { NotificationRepository } from '../notification/repositories/notification.repository';
-import { NotificationDeliveryRepository } from '../notification/repositories/notification-delivery.repository';
+import {
+  Processor,
+  WorkerHost,
+  InjectQueue,
+  OnWorkerEvent,
+} from "@nestjs/bullmq";
+import { Inject, LoggerService, OnModuleInit } from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { Job, Queue } from "bullmq";
+import { NotificationRepository } from "../notification/repositories/notification.repository";
+import { NotificationDeliveryRepository } from "../notification/repositories/notification-delivery.repository";
 
 /**
  * CleanupWorker — consumes the "comms.cleanup" queue.
@@ -12,14 +17,14 @@ import { NotificationDeliveryRepository } from '../notification/repositories/not
  *   purge-old-notifications  : (repeatable weekly) delete notifications + deliveries > 90 days old
  *   purge-failed-deliveries  : (repeatable weekly) delete failed delivery records > 30 days old
  */
-@Processor('comms.cleanup', {
+@Processor("comms.cleanup", {
   concurrency: 1,
 })
 export class CleanupWorker extends WorkerHost implements OnModuleInit {
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-    @InjectQueue('comms.cleanup') private readonly cleanupQueue: Queue,
+    @InjectQueue("comms.cleanup") private readonly cleanupQueue: Queue,
     private readonly notificationRepository: NotificationRepository,
     private readonly deliveryRepository: NotificationDeliveryRepository,
   ) {
@@ -29,44 +34,51 @@ export class CleanupWorker extends WorkerHost implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     // Weekly Sunday 3 AM — purge old notifications
     await this.cleanupQueue.add(
-      'purge-old-notifications',
+      "purge-old-notifications",
       {},
       {
-        repeat: { pattern: '0 3 * * 0' },
+        repeat: { pattern: "0 3 * * 0" },
         removeOnComplete: true,
         removeOnFail: { count: 5 },
-        jobId: 'comms.cleanup.purge-notifications-recurring',
+        jobId: "comms.cleanup.purge-notifications-recurring",
       },
     );
 
     // Weekly Sunday 4 AM — purge stale failed delivery records
     await this.cleanupQueue.add(
-      'purge-failed-deliveries',
+      "purge-failed-deliveries",
       {},
       {
-        repeat: { pattern: '0 4 * * 0' },
+        repeat: { pattern: "0 4 * * 0" },
         removeOnComplete: true,
         removeOnFail: { count: 5 },
-        jobId: 'comms.cleanup.purge-deliveries-recurring',
+        jobId: "comms.cleanup.purge-deliveries-recurring",
       },
     );
 
-    this.logger.log('CleanupWorker: cleanup jobs registered', 'CleanupWorker');
+    this.logger.log("CleanupWorker: cleanup jobs registered", "CleanupWorker");
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
     try {
       switch (job.name) {
-        case 'purge-old-notifications':
+        case "purge-old-notifications":
           return this.handlePurgeOldNotifications();
-        case 'purge-failed-deliveries':
+        case "purge-failed-deliveries":
           return this.handlePurgeFailedDeliveries();
         default:
-          this.logger.warn(`CleanupWorker: unknown job name "${job.name}"`, 'CleanupWorker');
+          this.logger.warn(
+            `CleanupWorker: unknown job name "${job.name}"`,
+            "CleanupWorker",
+          );
       }
     } catch (error: any) {
       const err = error as Error;
-      this.logger.error(`Job "${job.name}/${job.id}" threw: ${err.message}`, err.stack, 'CleanupWorker');
+      this.logger.error(
+        `Job "${job.name}/${job.id}" threw: ${err.message}`,
+        err.stack,
+        "CleanupWorker",
+      );
       throw error;
     }
   }
@@ -74,34 +86,48 @@ export class CleanupWorker extends WorkerHost implements OnModuleInit {
   // ─────────────────────────────────────────────────────────────────
 
   private async handlePurgeOldNotifications(): Promise<void> {
-    const retentionDaysStr = await this.notificationRepository.getSystemSetting('notification_retention_days', '90');
+    const retentionDaysStr = await this.notificationRepository.getSystemSetting(
+      "notification_retention_days",
+      "90",
+    );
     const retentionDays = parseInt(retentionDaysStr, 10) || 90;
-    this.logger.log(`CleanupWorker: purging notifications older than ${retentionDays} days...`, 'CleanupWorker');
+    this.logger.log(
+      `CleanupWorker: purging notifications older than ${retentionDays} days...`,
+      "CleanupWorker",
+    );
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - retentionDays);
 
-    const deletedCount = await this.notificationRepository.deleteOlderThan(cutoff);
+    const deletedCount =
+      await this.notificationRepository.deleteOlderThan(cutoff);
 
     this.logger.log(
       `CleanupWorker: purged ${deletedCount} old notifications`,
-      'CleanupWorker',
+      "CleanupWorker",
     );
   }
 
   private async handlePurgeFailedDeliveries(): Promise<void> {
-    const retentionDaysStr = await this.notificationRepository.getSystemSetting('failed_delivery_retention_days', '30');
+    const retentionDaysStr = await this.notificationRepository.getSystemSetting(
+      "failed_delivery_retention_days",
+      "30",
+    );
     const retentionDays = parseInt(retentionDaysStr, 10) || 30;
-    this.logger.log(`CleanupWorker: purging failed deliveries older than ${retentionDays} days...`, 'CleanupWorker');
+    this.logger.log(
+      `CleanupWorker: purging failed deliveries older than ${retentionDays} days...`,
+      "CleanupWorker",
+    );
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - retentionDays);
 
-    const deletedCount = await this.deliveryRepository.deleteFailedOlderThan(cutoff);
+    const deletedCount =
+      await this.deliveryRepository.deleteFailedOlderThan(cutoff);
 
     this.logger.log(
       `CleanupWorker: purged ${deletedCount} failed delivery records`,
-      'CleanupWorker',
+      "CleanupWorker",
     );
   }
 
@@ -109,32 +135,42 @@ export class CleanupWorker extends WorkerHost implements OnModuleInit {
   // Worker lifecycle hooks
   // ─────────────────────────────────────────────────────────────────
 
-  @OnWorkerEvent('active')
+  @OnWorkerEvent("active")
   onActive(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`, 'CleanupWorker');
-  }
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" completed`, 'CleanupWorker');
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job | undefined, error: Error): void {
-    this.logger.error(
-      `Job "${job?.name ?? 'unknown'}/${job?.id ?? '?'}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
-      error.stack,
-      'CleanupWorker',
+    this.logger.log(
+      `Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`,
+      "CleanupWorker",
     );
   }
 
-  @OnWorkerEvent('error')
-  onError(error: Error): void {
-    this.logger.error(`Worker error: ${error.message}`, error.stack, 'CleanupWorker');
+  @OnWorkerEvent("completed")
+  onCompleted(job: Job): void {
+    this.logger.log(`Job "${job.name}/${job.id}" completed`, "CleanupWorker");
   }
 
-  @OnWorkerEvent('stalled')
+  @OnWorkerEvent("failed")
+  onFailed(job: Job | undefined, error: Error): void {
+    this.logger.error(
+      `Job "${job?.name ?? "unknown"}/${job?.id ?? "?"}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+      error.stack,
+      "CleanupWorker",
+    );
+  }
+
+  @OnWorkerEvent("error")
+  onError(error: Error): void {
+    this.logger.error(
+      `Worker error: ${error.message}`,
+      error.stack,
+      "CleanupWorker",
+    );
+  }
+
+  @OnWorkerEvent("stalled")
   onStalled(jobId: string): void {
-    this.logger.warn(`Job ${jobId} stalled and will be requeued`, 'CleanupWorker');
+    this.logger.warn(
+      `Job ${jobId} stalled and will be requeued`,
+      "CleanupWorker",
+    );
   }
 }

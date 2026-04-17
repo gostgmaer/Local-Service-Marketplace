@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useCallback } from 'react';
-import Image from 'next/image';
-import { useDropzone } from 'react-dropzone';
-import { X, Upload } from 'lucide-react';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
-import { usePublicSettings } from '@/hooks/usePublicSettings';
+import React, { useCallback } from "react";
+import Image from "next/image";
+import { useDropzone } from "react-dropzone";
+import { X, Upload } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 interface ImageUploadProps {
   onUpload: (_fs: File[]) => void;
@@ -20,7 +20,7 @@ interface ImageUploadProps {
 /**
  * Image Upload Component with Preview
  * Supports drag-and-drop, file selection, and preview
- * 
+ *
  * @param onUpload - Callback when files are selected
  * @param maxFiles - Maximum number offiles allowed (default: 5)
  * @param maxSize - Maximum file size in MB (default: 5)
@@ -34,68 +34,89 @@ export function ImageUpload({
   maxSize,
   acceptedFormats,
   currentImages = [],
-  onRemove
+  onRemove,
 }: ImageUploadProps) {
   const { config } = usePublicSettings();
   const [previews, setPreviews] = useState<string[]>([]);
 
   // Resolve defaults from system settings when props are omitted
   const resolvedMaxSize = maxSize ?? config.maxFileUploadSizeMb;
-  const resolvedFormats = acceptedFormats ?? config.allowedFileTypes
-    .split(',')
-    .map((t) => t.trim())
-    .filter((t) => t.startsWith('image/')); // ImageUpload is images-only
+  const resolvedFormats =
+    acceptedFormats ??
+    config.allowedFileTypes
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t.startsWith("image/")); // ImageUpload is images-only
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
-    // Handle rejected files
-    if (rejectedFiles.length > 0) {
-      rejectedFiles.forEach(file => {
-        file.errors.forEach((error: any) => {
-          if (error.code === 'file-too-large') {
-            toast.error(`File ${file.file.name} is too large. Max size: ${resolvedMaxSize}MB`);
-          } else if (error.code === 'file-invalid-type') {
-            toast.error(`File ${file.file.name} has invalid type. Only images allowed.`);
-          } else {
-            toast.error(`Error uploading ${file.file.name}: ${error.message}`);
-          }
+  const onDrop = useCallback(
+    (acceptedFiles: File[], rejectedFiles: any[]) => {
+      // Handle rejected files
+      if (rejectedFiles.length > 0) {
+        rejectedFiles.forEach((file) => {
+          file.errors.forEach((error: any) => {
+            if (error.code === "file-too-large") {
+              toast.error(
+                `File ${file.file.name} is too large. Max size: ${resolvedMaxSize}MB`,
+              );
+            } else if (error.code === "file-invalid-type") {
+              toast.error(
+                `File ${file.file.name} has invalid type. Only images allowed.`,
+              );
+            } else {
+              toast.error(
+                `Error uploading ${file.file.name}: ${error.message}`,
+              );
+            }
+          });
         });
+      }
+
+      // Check total file count
+      const totalFiles =
+        currentImages.length + previews.length + acceptedFiles.length;
+      if (totalFiles > maxFiles) {
+        toast.error(`Maximum ${maxFiles} files allowed`);
+        return;
+      }
+
+      // Create previews
+      const newPreviews: string[] = [];
+      acceptedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result as string);
+          if (newPreviews.length === acceptedFiles.length) {
+            setPreviews((prev) => [...prev, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
       });
-    }
 
-    // Check total file count
-    const totalFiles = currentImages.length + previews.length + acceptedFiles.length;
-    if (totalFiles > maxFiles) {
-      toast.error(`Maximum ${maxFiles} files allowed`);
-      return;
-    }
-
-    // Create previews
-    const newPreviews: string[] = [];
-    acceptedFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newPreviews.push(reader.result as string);
-        if (newPreviews.length === acceptedFiles.length) {
-          setPreviews(prev => [...prev, ...newPreviews]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    onUpload(acceptedFiles);
-    toast.success(`${acceptedFiles.length} file(s) uploaded`);
-  }, [currentImages.length, previews.length, maxFiles, resolvedMaxSize, onUpload]);
+      onUpload(acceptedFiles);
+      toast.success(`${acceptedFiles.length} file(s) uploaded`);
+    },
+    [
+      currentImages.length,
+      previews.length,
+      maxFiles,
+      resolvedMaxSize,
+      onUpload,
+    ],
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: resolvedFormats.reduce((acc, format) => ({ ...acc, [format]: [] }), {} as Record<string, string[]>),
+    accept: resolvedFormats.reduce(
+      (acc, format) => ({ ...acc, [format]: [] }),
+      {} as Record<string, string[]>,
+    ),
     maxFiles: maxFiles - currentImages.length - previews.length,
     maxSize: resolvedMaxSize * 1024 * 1024,
-    multiple: maxFiles > 1
+    multiple: maxFiles > 1,
   });
 
   const removePreview = (index: number) => {
-    setPreviews(prev => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -104,7 +125,7 @@ export function ImageUpload({
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-          ${isDragActive ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-300 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600'}
+          ${isDragActive ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20" : "border-gray-300 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600"}
         `}
       >
         <input {...getInputProps()} />
@@ -119,7 +140,8 @@ export function ImageUpload({
               Drag & drop images here, or click to select
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Max {maxFiles} files • Max {maxSize}MB per file • JPG, PNG, WebP, GIF
+              Max {maxFiles} files • Max {maxSize}MB per file • JPG, PNG, WebP,
+              GIF
             </p>
           </>
         )}

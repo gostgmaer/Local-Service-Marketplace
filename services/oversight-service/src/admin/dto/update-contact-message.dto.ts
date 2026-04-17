@@ -1,9 +1,15 @@
-import { IsNotEmpty, IsString, IsIn, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsIn,
+  IsOptional,
+  IsUUID,
+} from "class-validator";
 
 export class UpdateContactMessageDto {
   @IsNotEmpty()
   @IsString()
-  @IsIn(['new', 'in_progress', 'resolved', 'closed'])
+  @IsIn(["new", "in_progress", "resolved", "closed"])
   status: string;
 
   @IsOptional()

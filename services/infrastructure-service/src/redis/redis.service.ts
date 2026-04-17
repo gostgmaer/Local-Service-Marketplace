@@ -1,6 +1,11 @@
-﻿import { Injectable, OnModuleDestroy, Inject, LoggerService } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import Redis from 'ioredis';
+﻿import {
+  Injectable,
+  OnModuleDestroy,
+  Inject,
+  LoggerService,
+} from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import Redis from "ioredis";
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
@@ -11,12 +16,12 @@ export class RedisService implements OnModuleDestroy {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {
-    this.cacheEnabled = process.env.CACHE_ENABLED === 'true';
+    this.cacheEnabled = process.env.CACHE_ENABLED === "true";
 
     if (this.cacheEnabled) {
       this.redisClient = new Redis({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        host: process.env.REDIS_HOST || "localhost",
+        port: parseInt(process.env.REDIS_PORT || "6379", 10),
         password: process.env.REDIS_PASSWORD || undefined,
         retryStrategy: (times) => {
           const delay = Math.min(times * 50, 2000);
@@ -24,16 +29,20 @@ export class RedisService implements OnModuleDestroy {
         },
       });
 
-      this.redisClient.on('connect', () => {
-        this.logger.log('Redis connected successfully', 'RedisService');
+      this.redisClient.on("connect", () => {
+        this.logger.log("Redis connected successfully", "RedisService");
       });
 
-      this.redisClient.on('error', (err: Error) => {
-        this.logger.error(`Redis connection error: ${err.message}`, err.stack, 'RedisService');
+      this.redisClient.on("error", (err: Error) => {
+        this.logger.error(
+          `Redis connection error: ${err.message}`,
+          err.stack,
+          "RedisService",
+        );
         this.cacheEnabled = false;
       });
     } else {
-      this.logger.log('Redis cache is disabled', 'RedisService');
+      this.logger.log("Redis cache is disabled", "RedisService");
     }
   }
 
@@ -49,7 +58,10 @@ export class RedisService implements OnModuleDestroy {
 
   getClient(): Redis | null {
     if (!this.cacheEnabled) {
-      this.logger.warn('Attempted to get Redis client but cache is disabled', 'RedisService');
+      this.logger.warn(
+        "Attempted to get Redis client but cache is disabled",
+        "RedisService",
+      );
       return null;
     }
     return this.redisClient;

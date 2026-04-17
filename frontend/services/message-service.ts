@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 export interface Message {
   id: string;
@@ -29,21 +29,24 @@ export interface Attachment {
 }
 
 export interface Conversation {
-	job_id: string;
-	last_message?: string;
-	last_message_at?: string;
-	unread_count?: number;
-	participant?: { id: string; name?: string };
+  job_id: string;
+  last_message?: string;
+  last_message_at?: string;
+  unread_count?: number;
+  participant?: { id: string; name?: string };
 }
 
 export interface SendMessageData {
-	job_id: string;
-	message: string;
+  job_id: string;
+  message: string;
 }
 
 class MessageService {
   async sendMessage(data: SendMessageData): Promise<Message> {
-    const response = await apiClient.post<Message>("/messages", { job_id: data.job_id, message: data.message });
+    const response = await apiClient.post<Message>("/messages", {
+      job_id: data.job_id,
+      message: data.message,
+    });
     return response.data;
   }
 
@@ -53,12 +56,17 @@ class MessageService {
   }
 
   async getConversations(): Promise<Conversation[]> {
-    const response = await apiClient.get<Conversation[]>('/messages/conversations');
+    const response = await apiClient.get<Conversation[]>(
+      "/messages/conversations",
+    );
     return apiClient.extractList<Conversation>(response.data);
   }
 
   async markAsRead(messageId: string): Promise<void> {
-    const response = await apiClient.patch<void>(`/messages/${messageId}/read`, {});
+    const response = await apiClient.patch<void>(
+      `/messages/${messageId}/read`,
+      {},
+    );
     return response.data;
   }
 }

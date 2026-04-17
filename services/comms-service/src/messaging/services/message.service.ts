@@ -42,43 +42,53 @@ export class MessageService {
     );
 
     // Notify the other participant via email (non-blocking)
-    this.messageRepository.getJobRecipientId(newMessage.job_id, senderId)
+    this.messageRepository
+      .getJobRecipientId(newMessage.job_id, senderId)
       .then(async (recipientId) => {
         if (!recipientId) return;
         const recipientEmail = await this.userClient.getUserEmail(recipientId);
         if (!recipientEmail) return;
         return this.emailClient.sendEmail({
           to: recipientEmail,
-          template: 'MESSAGE_RECEIVED',
+          template: "MESSAGE_RECEIVED",
           variables: {
-            recipientName: recipientEmail.split('@')[0],
-            senderName: 'A job participant',
-            messagePreview: message.length > 100 ? `${message.substring(0, 97)}...` : message,
+            recipientName: recipientEmail.split("@")[0],
+            senderName: "A job participant",
+            messagePreview:
+              message.length > 100 ? `${message.substring(0, 97)}...` : message,
             receivedAt: new Date().toISOString(),
-            replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobs/${newMessage.job_id}/messages`,
+            replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/jobs/${newMessage.job_id}/messages`,
           },
         });
       })
       .catch((err: any) => {
         this.logger.warn(
           `Failed to send new message email notification: ${err.message}`,
-          'MessageService',
+          "MessageService",
         );
       });
 
     return newMessage;
   }
 
-  async getMessageById(id: string, requestingUserId?: string): Promise<Message> {
+  async getMessageById(
+    id: string,
+    requestingUserId?: string,
+  ): Promise<Message> {
     this.logger.log(`Fetching message ${id}`, "MessageService");
     const message = await this.messageRepository.getMessageById(id);
     if (!message) {
       throw new NotFoundException("Message not found");
     }
     if (requestingUserId) {
-      const isParticipant = await this.messageRepository.isJobParticipant(message.job_id, requestingUserId);
+      const isParticipant = await this.messageRepository.isJobParticipant(
+        message.job_id,
+        requestingUserId,
+      );
       if (!isParticipant) {
-        throw new ForbiddenException("You are not authorized to view this message");
+        throw new ForbiddenException(
+          "You are not authorized to view this message",
+        );
       }
     }
     return message;
@@ -96,7 +106,7 @@ export class MessageService {
     );
 
     // RBAC: Verify user is participant or has manage permission
-    if (!user.permissions?.includes('messages.manage')) {
+    if (!user.permissions?.includes("messages.manage")) {
       const conversations = await this.messageRepository.getUserConversations(
         user.userId,
       );
@@ -127,9 +137,14 @@ export class MessageService {
       throw new NotFoundException("Message not found");
     }
     if (userId) {
-      const isParticipant = await this.messageRepository.isJobParticipant(message.job_id, userId);
+      const isParticipant = await this.messageRepository.isJobParticipant(
+        message.job_id,
+        userId,
+      );
       if (!isParticipant) {
-        throw new ForbiddenException("You are not authorized to mark this message as read");
+        throw new ForbiddenException(
+          "You are not authorized to mark this message as read",
+        );
       }
     }
     return this.messageRepository.markAsRead(message.id);

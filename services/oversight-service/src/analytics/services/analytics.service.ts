@@ -1,10 +1,10 @@
-import { Injectable, Inject, LoggerService } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { UserActivityRepository } from '../repositories/user-activity.repository';
-import { MetricsRepository } from '../repositories/metrics.repository';
-import { TrackActivityDto } from '../dto/track-activity.dto';
-import { UserActivityLog } from '../entities/user-activity-log.entity';
-import { DailyMetric } from '../entities/daily-metric.entity';
+import { Injectable, Inject, LoggerService } from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { UserActivityRepository } from "../repositories/user-activity.repository";
+import { MetricsRepository } from "../repositories/metrics.repository";
+import { TrackActivityDto } from "../dto/track-activity.dto";
+import { UserActivityLog } from "../entities/user-activity-log.entity";
+import { DailyMetric } from "../entities/daily-metric.entity";
 
 @Injectable()
 export class AnalyticsService {
@@ -13,15 +13,18 @@ export class AnalyticsService {
     private readonly logger: LoggerService,
     private readonly userActivityRepository: UserActivityRepository,
     private readonly metricsRepository: MetricsRepository,
-  ) { }
+  ) {}
 
-  async trackActivity(trackActivityDto: TrackActivityDto): Promise<UserActivityLog> {
+  async trackActivity(
+    trackActivityDto: TrackActivityDto,
+  ): Promise<UserActivityLog> {
     try {
-      const activity = await this.userActivityRepository.trackActivity(trackActivityDto);
+      const activity =
+        await this.userActivityRepository.trackActivity(trackActivityDto);
 
       this.logger.log(
         `Activity tracked: ${trackActivityDto.action} by user ${trackActivityDto.user_id}`,
-        'AnalyticsService',
+        "AnalyticsService",
       );
 
       return activity;
@@ -29,7 +32,7 @@ export class AnalyticsService {
       this.logger.error(
         `Failed to track activity: ${error.message}`,
         error.stack,
-        'AnalyticsService',
+        "AnalyticsService",
       );
       throw error;
     }
@@ -48,7 +51,7 @@ export class AnalyticsService {
 
       this.logger.log(
         `Retrieved ${data.length} activity logs for user ${userId}`,
-        'AnalyticsService',
+        "AnalyticsService",
       );
 
       return { data, total };
@@ -56,7 +59,7 @@ export class AnalyticsService {
       this.logger.error(
         `Failed to get user activity: ${error.message}`,
         error.stack,
-        'AnalyticsService',
+        "AnalyticsService",
       );
       throw error;
     }
@@ -74,7 +77,7 @@ export class AnalyticsService {
 
       this.logger.log(
         `Retrieved ${data.length} activity logs`,
-        'AnalyticsService',
+        "AnalyticsService",
       );
 
       return { data, total };
@@ -82,19 +85,25 @@ export class AnalyticsService {
       this.logger.error(
         `Failed to get all activity: ${error.message}`,
         error.stack,
-        'AnalyticsService',
+        "AnalyticsService",
       );
       throw error;
     }
   }
 
-  async getActivityByAction(action: string, limit: number = 100): Promise<UserActivityLog[]> {
+  async getActivityByAction(
+    action: string,
+    limit: number = 100,
+  ): Promise<UserActivityLog[]> {
     try {
-      const data = await this.userActivityRepository.getActivityByAction(action, limit);
+      const data = await this.userActivityRepository.getActivityByAction(
+        action,
+        limit,
+      );
 
       this.logger.log(
         `Retrieved ${data.length} activity logs for action ${action}`,
-        'AnalyticsService',
+        "AnalyticsService",
       );
 
       return data;
@@ -102,7 +111,7 @@ export class AnalyticsService {
       this.logger.error(
         `Failed to get activity by action: ${error.message}`,
         error.stack,
-        'AnalyticsService',
+        "AnalyticsService",
       );
       throw error;
     }
@@ -122,7 +131,7 @@ export class AnalyticsService {
 
       this.logger.log(
         `Retrieved ${metrics.length} daily metrics`,
-        'AnalyticsService',
+        "AnalyticsService",
       );
 
       return metrics;
@@ -130,7 +139,7 @@ export class AnalyticsService {
       this.logger.error(
         `Failed to get daily metrics: ${error.message}`,
         error.stack,
-        'AnalyticsService',
+        "AnalyticsService",
       );
       throw error;
     }
@@ -140,17 +149,14 @@ export class AnalyticsService {
     try {
       const metric = await this.metricsRepository.getMetricByDate(date);
 
-      this.logger.log(
-        `Retrieved metric for date ${date}`,
-        'AnalyticsService',
-      );
+      this.logger.log(`Retrieved metric for date ${date}`, "AnalyticsService");
 
       return metric;
     } catch (error: any) {
       this.logger.error(
         `Failed to get metric by date: ${error.message}`,
         error.stack,
-        'AnalyticsService',
+        "AnalyticsService",
       );
       throw error;
     }

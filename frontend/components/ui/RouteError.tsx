@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { ErrorState } from './ErrorState';
+import { useEffect } from "react";
+import { ErrorState } from "./ErrorState";
 
 interface RouteErrorProps {
-	error: Error & { digest?: string };
-	reset: () => void;
-	title?: string;
-	message?: string;
+  error: Error & { digest?: string };
+  reset: () => void;
+  title?: string;
+  message?: string;
 }
 
 /**
@@ -16,21 +16,21 @@ interface RouteErrorProps {
  *   export default function Error(props) { return <RouteError {...props} message="Custom msg" />; }
  */
 export function RouteError({
-	error,
-	reset,
-	title = 'Something went wrong',
-	message = 'An unexpected error occurred. Please try again.',
+  error,
+  reset,
+  title = "Something went wrong",
+  message = "An unexpected error occurred. Please try again.",
 }: RouteErrorProps) {
-	useEffect(() => {
-		console.error(error);
-	}, [error]);
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
 
-	return (
-		<ErrorState
-			title={title}
-			message={message}
-			retry={reset}
-			className='min-h-[400px]'
-		/>
-	);
+  return (
+    <ErrorState
+      title={title}
+      message={message}
+      retry={reset}
+      className="min-h-[400px]"
+    />
+  );
 }

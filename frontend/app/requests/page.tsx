@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { ROUTES } from '@/config/constants';
-import { Loading } from '@/components/ui/Loading';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { ROUTES } from "@/config/constants";
+import { Loading } from "@/components/ui/Loading";
 
 export default function RequestsRedirectPage() {
   const router = useRouter();

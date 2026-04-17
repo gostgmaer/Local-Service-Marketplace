@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 export interface Favorite {
   id: string;
@@ -16,7 +16,9 @@ class FavoriteService {
   }
 
   async addFavorite(providerId: string): Promise<Favorite> {
-    const response = await apiClient.post<Favorite>('/favorites', { provider_id: providerId });
+    const response = await apiClient.post<Favorite>("/favorites", {
+      provider_id: providerId,
+    });
     return response.data;
   }
 

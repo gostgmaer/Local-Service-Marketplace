@@ -1,5 +1,5 @@
-import React from 'react';
-import { cn } from '@/utils/helpers';
+import React from "react";
+import { cn } from "@/utils/helpers";
 
 interface CardProps {
   children: React.ReactNode;
@@ -8,13 +8,18 @@ interface CardProps {
   elevated?: boolean;
 }
 
-export function Card({ children, className, hover = false, elevated = false }: CardProps) {
+export function Card({
+  children,
+  className,
+  hover = false,
+  elevated = false,
+}: CardProps) {
   return (
     <div
       className={cn(
-        'bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800',
-        elevated ? 'shadow-elevated' : 'shadow-card',
-        hover && 'card-hover',
+        "bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800",
+        elevated ? "shadow-elevated" : "shadow-card",
+        hover && "card-hover",
         className,
       )}
     >
@@ -30,7 +35,12 @@ interface CardHeaderProps {
 
 export function CardHeader({ children, className }: CardHeaderProps) {
   return (
-    <div className={cn('px-6 py-4 border-b border-gray-100 dark:border-gray-800', className)}>
+    <div
+      className={cn(
+        "px-6 py-4 border-b border-gray-100 dark:border-gray-800",
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -42,7 +52,7 @@ interface CardContentProps {
 }
 
 export function CardContent({ children, className }: CardContentProps) {
-  return <div className={cn('px-6 py-4', className)}>{children}</div>;
+  return <div className={cn("px-6 py-4", className)}>{children}</div>;
 }
 
 interface CardFooterProps {
@@ -52,7 +62,12 @@ interface CardFooterProps {
 
 export function CardFooter({ children, className }: CardFooterProps) {
   return (
-    <div className={cn('px-6 py-4 border-t border-gray-100 dark:border-gray-800', className)}>
+    <div
+      className={cn(
+        "px-6 py-4 border-t border-gray-100 dark:border-gray-800",
+        className,
+      )}
+    >
       {children}
     </div>
   );

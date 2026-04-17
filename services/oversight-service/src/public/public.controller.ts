@@ -24,9 +24,7 @@ export class PublicController {
     const maintenanceMode =
       modeResult.status === "fulfilled" && modeResult.value?.value === "true";
     const maintenanceMessage =
-      msgResult.status === "fulfilled"
-        ? (msgResult.value?.value ?? "")
-        : "";
+      msgResult.status === "fulfilled" ? (msgResult.value?.value ?? "") : "";
 
     return {
       maintenance_mode: maintenanceMode,
@@ -93,15 +91,18 @@ export class PublicController {
         : fallback;
 
     return {
-      supportEmail:          get(0, "support@marketplace.com"),
-      contactPhone:          get(1, ""),
-      contactAddress:        get(2, ""),
-      maxFileUploadSizeMb:   parseInt(get(3, "10"), 10)   || 10,
-      allowedFileTypes:      get(4, "image/jpeg,image/png,image/webp,application/pdf"),
-      gstRate:               parseFloat(get(5, "18"))     || 18,
-      platformFeePercentage: parseFloat(get(6, "15"))     || 15,
-      currency:              get(7, "INR"),
-      defaultPageLimit:      parseInt(get(8, "20"), 10)   || 20,
+      supportEmail: get(0, "support@marketplace.com"),
+      contactPhone: get(1, ""),
+      contactAddress: get(2, ""),
+      maxFileUploadSizeMb: parseInt(get(3, "10"), 10) || 10,
+      allowedFileTypes: get(
+        4,
+        "image/jpeg,image/png,image/webp,application/pdf",
+      ),
+      gstRate: parseFloat(get(5, "18")) || 18,
+      platformFeePercentage: parseFloat(get(6, "15")) || 15,
+      currency: get(7, "INR"),
+      defaultPageLimit: parseInt(get(8, "20"), 10) || 20,
     };
   }
 }

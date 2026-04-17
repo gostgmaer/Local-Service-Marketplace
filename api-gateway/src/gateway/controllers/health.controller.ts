@@ -22,7 +22,10 @@ export class ServicesHealthController {
    */
   @Get("services")
   async servicesHealthCheck(): Promise<any> {
-    this.logger.log("Services health check requested", "ServicesHealthController");
+    this.logger.log(
+      "Services health check requested",
+      "ServicesHealthController",
+    );
 
     const servicesHealth = await this.gatewayService.healthCheck();
 

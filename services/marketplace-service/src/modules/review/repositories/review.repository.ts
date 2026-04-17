@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
 import { Pool } from "pg";
 import { Review } from "../entities/review.entity";
 import { CreateReviewDto } from "../dto/create-review.dto";
@@ -12,7 +17,7 @@ export class ReviewRepository {
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
-        'SELECT value FROM system_settings WHERE key = $1',
+        "SELECT value FROM system_settings WHERE key = $1",
         [key],
       );
       return res.rows[0]?.value ?? defaultValue;
@@ -22,7 +27,14 @@ export class ReviewRepository {
   }
 
   /** Returns the job row so the service can validate status and resolve provider_id. */
-  async getJobForReview(jobId: string): Promise<{ id: string; provider_id: string; status: string; customer_id: string } | null> {
+  async getJobForReview(
+    jobId: string,
+  ): Promise<{
+    id: string;
+    provider_id: string;
+    status: string;
+    customer_id: string;
+  } | null> {
     const id = await resolveId(this.pool, "jobs", jobId).catch(() => null);
     if (!id) return null;
     const result = await this.pool.query(
@@ -83,22 +95,22 @@ export class ReviewRepository {
     providerId: string,
     limit: number = 20,
     offset: number = 0,
-    sortBy: string = 'created_at',
-    sortOrder: string = 'desc',
+    sortBy: string = "created_at",
+    sortOrder: string = "desc",
     minRating?: number,
     maxRating?: number,
   ): Promise<Review[]> {
     providerId = await resolveId(this.pool, "providers", providerId);
 
     const allowedSortColumns: Record<string, string> = {
-      created_at: 'created_at',
-      rating: 'rating',
-      helpful_count: 'helpful_count',
+      created_at: "created_at",
+      rating: "rating",
+      helpful_count: "helpful_count",
     };
-    const col = allowedSortColumns[sortBy] ?? 'created_at';
-    const dir = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const col = allowedSortColumns[sortBy] ?? "created_at";
+    const dir = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
-    const conditions: string[] = ['provider_id = $1'];
+    const conditions: string[] = ["provider_id = $1"];
     const values: any[] = [providerId];
     let idx = 2;
 
@@ -115,7 +127,7 @@ export class ReviewRepository {
     const query = `
       SELECT id, display_id, job_id, user_id, provider_id, rating, comment, response, response_at, helpful_count, verified_purchase, created_at
       FROM reviews
-      WHERE ${conditions.join(' AND ')}
+      WHERE ${conditions.join(" AND ")}
       ORDER BY ${col} ${dir}
       LIMIT $${idx++} OFFSET $${idx}
     `;
@@ -218,7 +230,10 @@ export class ReviewRepository {
     return result.rows[0];
   }
 
-  async incrementHelpfulCount(reviewId: string, userId: string): Promise<Review | null> {
+  async incrementHelpfulCount(
+    reviewId: string,
+    userId: string,
+  ): Promise<Review | null> {
     // Atomically insert vote and increment count; DO NOTHING on duplicate
     const query = `
       WITH vote AS (
@@ -365,4 +380,3 @@ export class ReviewRepository {
     return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
   }
 }
-

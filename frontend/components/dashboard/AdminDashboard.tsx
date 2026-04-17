@@ -1,66 +1,73 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/hooks/useAuth';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/utils/permissions';
-import { ROUTES } from '@/config/constants';
-import { Layout } from '@/components/layout/Layout';
-import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { Loading } from '@/components/ui/Loading';
-import { Button } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/Badge';
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/utils/permissions";
+import { ROUTES } from "@/config/constants";
+import { Layout } from "@/components/layout/Layout";
+import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Loading } from "@/components/ui/Loading";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { adminService } from '@/services/admin-service';
-import { formatDate } from '@/utils/helpers';
-import Link from 'next/link';
-import { Users, AlertCircle, Settings, FileText, TrendingUp } from 'lucide-react';
+import { adminService } from "@/services/admin-service";
+import { formatDate } from "@/utils/helpers";
+import Link from "next/link";
+import {
+  Users,
+  AlertCircle,
+  Settings,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
 
 export default function AdminDashboard() {
   const { user: _user, isAuthenticated } = useAuth();
   const { can } = usePermissions();
 
   const {
-		data: users,
-		isLoading: usersLoading,
-		error: usersError,
-		refetch: refetchUsers,
-	} = useQuery({
-		queryKey: ["admin-users"],
-		queryFn: () => adminService.getUsers(),
-		enabled: isAuthenticated && can(Permission.ADMIN_ACCESS),
-	});
+    data: users,
+    isLoading: usersLoading,
+    error: usersError,
+    refetch: refetchUsers,
+  } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => adminService.getUsers(),
+    enabled: isAuthenticated && can(Permission.ADMIN_ACCESS),
+  });
 
   const {
-		data: disputes,
-		isLoading: disputesLoading,
-		error: disputesError,
-		refetch: refetchDisputes,
-	} = useQuery({
-		queryKey: ["admin-disputes"],
-		queryFn: () => adminService.getDisputes(),
-		enabled: isAuthenticated && can(Permission.ADMIN_ACCESS),
-	});
+    data: disputes,
+    isLoading: disputesLoading,
+    error: disputesError,
+    refetch: refetchDisputes,
+  } = useQuery({
+    queryKey: ["admin-disputes"],
+    queryFn: () => adminService.getDisputes(),
+    enabled: isAuthenticated && can(Permission.ADMIN_ACCESS),
+  });
 
   if (usersError || disputesError) {
-		return (
-			<Layout>
-				<div className='container-custom py-12'>
-					<ErrorState
-						title='Failed to load admin dashboard'
-						message="We couldn't load the admin data. Please try again."
-						retry={() => {
-							refetchUsers();
-							refetchDisputes();
-						}}
-					/>
-				</div>
-			</Layout>
-		);
-	}
+    return (
+      <Layout>
+        <div className="container-custom py-12">
+          <ErrorState
+            title="Failed to load admin dashboard"
+            message="We couldn't load the admin data. Please try again."
+            retry={() => {
+              refetchUsers();
+              refetchDisputes();
+            }}
+          />
+        </div>
+      </Layout>
+    );
+  }
 
   const totalUsers = users?.total || 0;
-  const activeDisputes = disputes?.data?.filter((d: any) => d.status === 'open').length || 0;
+  const activeDisputes =
+    disputes?.data?.filter((d: any) => d.status === "open").length || 0;
   const totalDisputes = disputes?.total || 0;
 
   return (
@@ -138,7 +145,9 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <Card className="mb-8">
           <CardHeader>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Quick Actions
+            </h2>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -193,17 +202,22 @@ export default function AdminDashboard() {
                         <p className="font-medium text-gray-900 dark:text-white">
                           {user.name || user.email}
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {user.email}
+                        </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Role: {user.role} • Joined {formatDate(user.created_at)}
+                          Role: {user.role} • Joined{" "}
+                          {formatDate(user.created_at)}
                         </p>
                       </div>
-                      <StatusBadge status={user.status || 'active'} />
+                      <StatusBadge status={user.status || "active"} />
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-center py-8 text-gray-500 dark:text-gray-400">No users found</p>
+                <p className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No users found
+                </p>
               )}
             </CardContent>
           </Card>
@@ -239,7 +253,7 @@ export default function AdminDashboard() {
                         <StatusBadge status={dispute.status} />
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {dispute.description || 'No description'}
+                        {dispute.description || "No description"}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                         Filed {formatDate(dispute.created_at)}

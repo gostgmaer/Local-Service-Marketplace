@@ -1,20 +1,20 @@
-import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Inject, LoggerService, OnModuleInit, Optional } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { WebhookRepository } from '../payment/repositories/webhook.repository';
-import { PaymentRepository } from '../payment/repositories/payment.repository';
-import { PaymentGatewayService } from '../payment/gateway/payment-gateway.service';
-import { DeadLetterQueueService } from '../common/dlq/dead-letter-queue.service';
-import { KafkaService } from '../kafka/kafka.service';
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
+import { Inject, LoggerService, OnModuleInit, Optional } from "@nestjs/common";
+import { Job } from "bullmq";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { WebhookRepository } from "../payment/repositories/webhook.repository";
+import { PaymentRepository } from "../payment/repositories/payment.repository";
+import { PaymentGatewayService } from "../payment/gateway/payment-gateway.service";
+import { DeadLetterQueueService } from "../common/dlq/dead-letter-queue.service";
+import { KafkaService } from "../kafka/kafka.service";
 
 export interface ProcessWebhookJobData {
   webhookId: string;
   gateway: string;
 }
 
-@Processor('payment.webhook', {
-  concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
+@Processor("payment.webhook", {
+  concurrency: parseInt(process.env.WORKER_CONCURRENCY || "5", 10),
 })
 export class WebhookWorker extends WorkerHost implements OnModuleInit {
   constructor(
@@ -35,86 +35,138 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
 
   async process(job: Job<any, any, string>): Promise<any> {
     switch (job.name) {
-      case 'process-webhook':
+      case "process-webhook":
         return this.handleProcessWebhook(job as Job<ProcessWebhookJobData>);
       default:
         throw new Error(`Unknown job name: ${job.name}`);
     }
   }
 
-  private async handleProcessWebhook(job: Job<ProcessWebhookJobData>): Promise<void> {
+  private async handleProcessWebhook(
+    job: Job<ProcessWebhookJobData>,
+  ): Promise<void> {
     const { webhookId, gateway } = job.data;
-    this.logger.log(`Processing webhook ${webhookId} from ${gateway}`, 'WebhookWorker');
+    this.logger.log(
+      `Processing webhook ${webhookId} from ${gateway}`,
+      "WebhookWorker",
+    );
 
     const webhook = await this.webhookRepository.getWebhookById(webhookId);
     if (!webhook) {
-      this.logger.warn(`Webhook ${webhookId} not found — skipping`, 'WebhookWorker');
+      this.logger.warn(
+        `Webhook ${webhookId} not found — skipping`,
+        "WebhookWorker",
+      );
       return;
     }
 
     try {
-      const event = this.paymentGateway.parseWebhookEvent(gateway, webhook.payload);
-      this.logger.log(`Parsed webhook event: ${event.eventType}`, 'WebhookWorker');
+      const event = this.paymentGateway.parseWebhookEvent(
+        gateway,
+        webhook.payload,
+      );
+      this.logger.log(
+        `Parsed webhook event: ${event.eventType}`,
+        "WebhookWorker",
+      );
 
       switch (event.eventType) {
-        case 'payment.succeeded': {
+        case "payment.succeeded": {
           // Resolve internal payment ID: try transactionId first (reliable),
           // then fall back to the paymentId embedded in gateway metadata.
           let paymentId = event.paymentId;
           if (!paymentId && event.transactionId) {
-            const p = await this.paymentRepository.getPaymentByTransactionId(event.transactionId);
+            const p = await this.paymentRepository.getPaymentByTransactionId(
+              event.transactionId,
+            );
             paymentId = p?.id;
           }
           if (!paymentId) {
-            throw new Error(`Cannot resolve payment for transactionId=${event.transactionId}`);
+            throw new Error(
+              `Cannot resolve payment for transactionId=${event.transactionId}`,
+            );
           }
-          await this.paymentRepository.updatePaymentStatus(paymentId, 'completed', event.transactionId);
+          await this.paymentRepository.updatePaymentStatus(
+            paymentId,
+            "completed",
+            event.transactionId,
+          );
           // Publish event so marketplace-service can update job status
-          await this.kafkaService.publishEvent('payment-events', {
-            eventType: 'payment_completed',
+          await this.kafkaService.publishEvent("payment-events", {
+            eventType: "payment_completed",
             eventId: `${paymentId}-${Date.now()}`,
             timestamp: new Date().toISOString(),
-            data: { paymentId, transactionId: event.transactionId, source: 'webhook' },
+            data: {
+              paymentId,
+              transactionId: event.transactionId,
+              source: "webhook",
+            },
           });
           break;
         }
-        case 'payment.failed': {
+        case "payment.failed": {
           let paymentId = event.paymentId;
           if (!paymentId && event.transactionId) {
-            const p = await this.paymentRepository.getPaymentByTransactionId(event.transactionId);
+            const p = await this.paymentRepository.getPaymentByTransactionId(
+              event.transactionId,
+            );
             paymentId = p?.id;
           }
           if (!paymentId) {
-            throw new Error(`Cannot resolve payment for transactionId=${event.transactionId}`);
+            throw new Error(
+              `Cannot resolve payment for transactionId=${event.transactionId}`,
+            );
           }
-          await this.paymentRepository.updatePaymentStatus(paymentId, 'failed', null);
+          await this.paymentRepository.updatePaymentStatus(
+            paymentId,
+            "failed",
+            null,
+          );
           break;
         }
-        case 'refund.created': {
+        case "refund.created": {
           let paymentId = event.paymentId;
           if (!paymentId && event.transactionId) {
-            const p = await this.paymentRepository.getPaymentByTransactionId(event.transactionId);
+            const p = await this.paymentRepository.getPaymentByTransactionId(
+              event.transactionId,
+            );
             paymentId = p?.id;
           }
           if (!paymentId) {
-            throw new Error(`Cannot resolve payment for transactionId=${event.transactionId}`);
+            throw new Error(
+              `Cannot resolve payment for transactionId=${event.transactionId}`,
+            );
           }
-          await this.paymentRepository.updatePaymentStatus(paymentId, 'refunded', null);
+          await this.paymentRepository.updatePaymentStatus(
+            paymentId,
+            "refunded",
+            null,
+          );
           break;
         }
         default:
-          this.logger.log(`Unhandled webhook event type: ${event.eventType}`, 'WebhookWorker');
+          this.logger.log(
+            `Unhandled webhook event type: ${event.eventType}`,
+            "WebhookWorker",
+          );
       }
 
       await this.webhookRepository.markProcessed(webhookId);
-      this.logger.log(`Webhook ${webhookId} processed successfully`, 'WebhookWorker');
+      this.logger.log(
+        `Webhook ${webhookId} processed successfully`,
+        "WebhookWorker",
+      );
     } catch (error: any) {
-      this.logger.error(`Webhook ${webhookId} processing failed: ${error.message}`, error.stack, 'WebhookWorker');
+      this.logger.error(
+        `Webhook ${webhookId} processing failed: ${error.message}`,
+        error.stack,
+        "WebhookWorker",
+      );
       await this.webhookRepository.markFailed(webhookId, error.message);
 
       // Capture in DLQ if max retries reached
       if (this.dlqService && job.attemptsMade >= 3) {
-        await this.dlqService.captureFailedJob('payment.webhook', job, error);
+        await this.dlqService.captureFailedJob("payment.webhook", job, error);
       }
 
       throw error;
@@ -125,32 +177,42 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
   // Worker lifecycle hooks
   // ─────────────────────────────────────────────────────────────────
 
-  @OnWorkerEvent('active')
+  @OnWorkerEvent("active")
   onActive(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`, 'WebhookWorker');
-  }
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" completed`, 'WebhookWorker');
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job | undefined, error: Error): void {
-    this.logger.error(
-      `Job "${job?.name ?? 'unknown'}/${job?.id ?? '?'}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
-      error.stack,
-      'WebhookWorker',
+    this.logger.log(
+      `Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`,
+      "WebhookWorker",
     );
   }
 
-  @OnWorkerEvent('error')
-  onError(error: Error): void {
-    this.logger.error(`Worker error: ${error.message}`, error.stack, 'WebhookWorker');
+  @OnWorkerEvent("completed")
+  onCompleted(job: Job): void {
+    this.logger.log(`Job "${job.name}/${job.id}" completed`, "WebhookWorker");
   }
 
-  @OnWorkerEvent('stalled')
+  @OnWorkerEvent("failed")
+  onFailed(job: Job | undefined, error: Error): void {
+    this.logger.error(
+      `Job "${job?.name ?? "unknown"}/${job?.id ?? "?"}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+      error.stack,
+      "WebhookWorker",
+    );
+  }
+
+  @OnWorkerEvent("error")
+  onError(error: Error): void {
+    this.logger.error(
+      `Worker error: ${error.message}`,
+      error.stack,
+      "WebhookWorker",
+    );
+  }
+
+  @OnWorkerEvent("stalled")
   onStalled(jobId: string): void {
-    this.logger.warn(`Job ${jobId} stalled and will be requeued`, 'WebhookWorker');
+    this.logger.warn(
+      `Job ${jobId} stalled and will be requeued`,
+      "WebhookWorker",
+    );
   }
 }

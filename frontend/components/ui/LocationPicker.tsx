@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import { MapPin, Search, X } from 'lucide-react';
-import { cn } from '@/utils/helpers';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import toast from "react-hot-toast";
+import { MapPin, Search, X } from "lucide-react";
+import { cn } from "@/utils/helpers";
 
 interface Location {
   lat: number;
@@ -30,12 +30,12 @@ declare const google: any;
 export function LocationPicker({
   value,
   onChange,
-  label = 'Service Location',
+  label = "Service Location",
   error,
   required,
   className,
 }: LocationPickerProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [_isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [map, setMap] = useState<any>(null);
@@ -46,89 +46,95 @@ export function LocationPicker({
 
   const [mapUnavailable, setMapUnavailable] = useState(false);
   const handleMapClickRef = useRef<any>(null);
-  const addMarker = useCallback((position: { lat: number; lng: number }, mapInstance?: any) => {
-    const targetMap = mapInstance || map;
-    if (!targetMap || typeof google === 'undefined') return;
+  const addMarker = useCallback(
+    (position: { lat: number; lng: number }, mapInstance?: any) => {
+      const targetMap = mapInstance || map;
+      if (!targetMap || typeof google === "undefined") return;
 
-    // Remove existing marker
-    if (marker) {
-      marker.setMap(null);
-    }
-
-    const newMarker = new google.maps.Marker({
-      position,
-      map: targetMap,
-      draggable: true,
-      animation: google.maps.Animation.DROP,
-    });
-
-    newMarker.addListener('dragend', () => {
-      const pos = newMarker.getPosition();
-      if (pos && handleMapClickRef.current) {
-        handleMapClickRef.current(pos);
+      // Remove existing marker
+      if (marker) {
+        marker.setMap(null);
       }
-    });
 
-    setMarker(newMarker);
-  }, [map, marker]);
-  const handleMapClick = useCallback(async (latLng: any) => {
-    const lat = latLng.lat();
-    const lng = latLng.lng();
+      const newMarker = new google.maps.Marker({
+        position,
+        map: targetMap,
+        draggable: true,
+        animation: google.maps.Animation.DROP,
+      });
 
-    addMarker({ lat, lng });
-
-    // Reverse geocode to get address
-    if (geocoderRef.current) {
-      try {
-        const result = await geocoderRef.current.geocode({ location: latLng });
-        if (result.results[0]) {
-          const addressComponents = result.results[0].address_components;
-          const location: Location = {
-            lat,
-            lng,
-            address: result.results[0].formatted_address,
-          };
-
-          // Parse address components
-          addressComponents.forEach((component: any) => {
-            if (component.types.includes('locality')) {
-              location.city = component.long_name;
-            }
-            if (component.types.includes('administrative_area_level_1')) {
-              location.state = component.short_name;
-            }
-            if (component.types.includes('postal_code')) {
-              location.zipCode = component.long_name;
-            }
-            if (component.types.includes('country')) {
-              location.country = component.short_name;
-            }
-          });
-
-          onChange(location);
-          setSearchQuery(location.address || '');
+      newMarker.addListener("dragend", () => {
+        const pos = newMarker.getPosition();
+        if (pos && handleMapClickRef.current) {
+          handleMapClickRef.current(pos);
         }
-      } catch (error) {
-        console.error('Geocoding error:', error);
+      });
+
+      setMarker(newMarker);
+    },
+    [map, marker],
+  );
+  const handleMapClick = useCallback(
+    async (latLng: any) => {
+      const lat = latLng.lat();
+      const lng = latLng.lng();
+
+      addMarker({ lat, lng });
+
+      // Reverse geocode to get address
+      if (geocoderRef.current) {
+        try {
+          const result = await geocoderRef.current.geocode({
+            location: latLng,
+          });
+          if (result.results[0]) {
+            const addressComponents = result.results[0].address_components;
+            const location: Location = {
+              lat,
+              lng,
+              address: result.results[0].formatted_address,
+            };
+
+            // Parse address components
+            addressComponents.forEach((component: any) => {
+              if (component.types.includes("locality")) {
+                location.city = component.long_name;
+              }
+              if (component.types.includes("administrative_area_level_1")) {
+                location.state = component.short_name;
+              }
+              if (component.types.includes("postal_code")) {
+                location.zipCode = component.long_name;
+              }
+              if (component.types.includes("country")) {
+                location.country = component.short_name;
+              }
+            });
+
+            onChange(location);
+            setSearchQuery(location.address || "");
+          }
+        } catch (error) {
+          console.error("Geocoding error:", error);
+          onChange({ lat, lng });
+        }
+      } else {
         onChange({ lat, lng });
       }
-    } else {
-      onChange({ lat, lng });
-    }
-  }, [onChange, addMarker]);
+    },
+    [onChange, addMarker],
+  );
 
   useEffect(() => {
     handleMapClickRef.current = handleMapClick;
   }, [handleMapClick]);
 
-
-
   const initializeMap = useCallback(() => {
-    if (!mapRef.current || typeof google === 'undefined') return;
+    if (!mapRef.current || typeof google === "undefined") return;
 
     const defaultCenter = value
       ? { lat: value.lat, lng: value.lng }
-      : { lat: 19.0760, lng: 72.8777 }; // Mumbai, India default
+      : { lat: 19.076, lng: 72.8777 }; // Mumbai, India default
 
     const mapInstance = new google.maps.Map(mapRef.current, {
       center: defaultCenter,
@@ -145,7 +151,7 @@ export function LocationPicker({
     geocoderRef.current = new google.maps.Geocoder();
 
     // Add click listener to map
-    mapInstance.addListener('click', (e: any) => {
+    mapInstance.addListener("click", (e: any) => {
       if (e.latLng) {
         handleMapClick(e.latLng);
       }
@@ -167,8 +173,8 @@ export function LocationPicker({
           mapInstance.setCenter(pos);
         },
         () => {
-          console.log('Location access denied');
-        }
+          console.log("Location access denied");
+        },
       );
     }
   }, [value, handleMapClick, addMarker]);
@@ -179,7 +185,7 @@ export function LocationPicker({
       setMapUnavailable(true);
       return;
     }
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.defer = true;
@@ -192,7 +198,7 @@ export function LocationPicker({
     if (!mapRef.current || map) return;
 
     // Check if Google Maps is loaded
-    if (typeof window !== 'undefined' && window.google) {
+    if (typeof window !== "undefined" && window.google) {
       initializeMap();
     } else {
       // Load Google Maps script
@@ -214,12 +220,15 @@ export function LocationPicker({
       { input: query },
       (predictions: any, status: any) => {
         setIsSearching(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+        if (
+          status === google.maps.places.PlacesServiceStatus.OK &&
+          predictions
+        ) {
           setSuggestions(predictions);
         } else {
           setSuggestions([]);
         }
-      }
+      },
     );
   }, []);
 
@@ -239,17 +248,17 @@ export function LocationPicker({
         setSuggestions([]);
       }
     } catch (error) {
-      console.error('Place selection error:', error);
+      console.error("Place selection error:", error);
     }
   };
 
   const handleCurrentLocation = () => {
-    if (navigator.geolocation && typeof google !== 'undefined') {
+    if (navigator.geolocation && typeof google !== "undefined") {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const latLng = new google.maps.LatLng(
             position.coords.latitude,
-            position.coords.longitude
+            position.coords.longitude,
           );
           if (map) {
             map.setCenter(latLng);
@@ -258,15 +267,17 @@ export function LocationPicker({
           handleMapClick(latLng);
         },
         (error) => {
-          console.error('Geolocation error:', error);
-          toast.error('Unable to get your location. Please enter address manually or click on map.');
-        }
+          console.error("Geolocation error:", error);
+          toast.error(
+            "Unable to get your location. Please enter address manually or click on map.",
+          );
+        },
       );
     }
   };
 
   const handleClear = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     if (marker) {
       marker.setMap(null);
       setMarker(null);
@@ -275,7 +286,7 @@ export function LocationPicker({
   };
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn("w-full", className)}>
       {label && (
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           {label}
@@ -287,8 +298,12 @@ export function LocationPicker({
         <div className="w-full h-80 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
           <div className="text-center p-6">
             <MapPin className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Map is not available</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Please enter your address manually below</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Map is not available
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Please enter your address manually below
+            </p>
             <input
               type="text"
               value={searchQuery}
@@ -347,7 +362,9 @@ export function LocationPicker({
                     <div className="flex items-start gap-2">
                       <MapPin className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
                       <div>
-                        <div className="font-medium">{suggestion.structured_formatting.main_text}</div>
+                        <div className="font-medium">
+                          {suggestion.structured_formatting.main_text}
+                        </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           {suggestion.structured_formatting.secondary_text}
                         </div>
@@ -377,7 +394,7 @@ export function LocationPicker({
                 <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    {value.address || 'Selected Location'}
+                    {value.address || "Selected Location"}
                   </div>
                   <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                     Coordinates: {value.lat.toFixed(6)}, {value.lng.toFixed(6)}
@@ -386,7 +403,6 @@ export function LocationPicker({
               </div>
             </div>
           )}
-
         </>
       )}
 
@@ -407,7 +423,7 @@ interface LocationMapProps {
 
 export function LocationMap({
   location,
-  height = 'h-64',
+  height = "h-64",
   showMarker = true,
   className,
 }: LocationMapProps) {
@@ -415,7 +431,7 @@ export function LocationMap({
   const [map, setMap] = useState<any>(null);
 
   const initMap = useCallback(() => {
-    if (!mapRef.current || typeof google === 'undefined') return;
+    if (!mapRef.current || typeof google === "undefined") return;
 
     const mapInstance = new google.maps.Map(mapRef.current, {
       center: { lat: location.lat, lng: location.lng },
@@ -428,7 +444,7 @@ export function LocationMap({
       new google.maps.Marker({
         position: { lat: location.lat, lng: location.lng },
         map: mapInstance,
-        title: location.address || 'Service Location',
+        title: location.address || "Service Location",
       });
     }
 
@@ -438,15 +454,17 @@ export function LocationMap({
   useEffect(() => {
     if (!mapRef.current || map) return;
 
-    if (typeof window !== 'undefined' && typeof google !== 'undefined') {
+    if (typeof window !== "undefined" && typeof google !== "undefined") {
       initMap();
     } else {
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       if (!apiKey) {
-        console.warn("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set. Map features will be unavailable.");
+        console.warn(
+          "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set. Map features will be unavailable.",
+        );
         return;
       }
-      const script = document.createElement('script');
+      const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
       script.async = true;
       script.onload = () => initMap();
@@ -455,8 +473,11 @@ export function LocationMap({
   }, [initMap, map]);
 
   return (
-    <div className={cn('w-full', className)}>
-      <div ref={mapRef} className={cn('w-full rounded-lg overflow-hidden', height)} />
+    <div className={cn("w-full", className)}>
+      <div
+        ref={mapRef}
+        className={cn("w-full rounded-lg overflow-hidden", height)}
+      />
       {location.address && (
         <div className="mt-2 flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
           <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />

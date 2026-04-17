@@ -80,7 +80,12 @@ describe("MessagingController", () => {
     it("should return paginated messages", async () => {
       const paginated = { data: [mockMessage], total: 1, page: 1, limit: 20 };
       mockMessageService.getMessagesForJob.mockResolvedValue(paginated);
-      const result = await controller.getMessagesForJob("job-uuid-1", { user: { userId: "user-uuid-1" } }, 1, 20);
+      const result = await controller.getMessagesForJob(
+        "job-uuid-1",
+        { user: { userId: "user-uuid-1" } },
+        1,
+        20,
+      );
       expect(result).toEqual(paginated);
     });
   });
@@ -103,19 +108,23 @@ describe("MessagingController", () => {
         url: "https://cdn.example.com/file.pdf",
         originalName: "file.pdf",
         size: 1024,
-        mimeType: "application/pdf"
+        mimeType: "application/pdf",
       });
       mockAttachmentService.createAttachment.mockResolvedValue(mockAttachment);
-      
-      const fileMock = { originalname: "file.pdf", buffer: Buffer.from("test"), mimetype: "application/pdf" } as any;
+
+      const fileMock = {
+        originalname: "file.pdf",
+        buffer: Buffer.from("test"),
+        mimetype: "application/pdf",
+      } as any;
       const reqMock = { user: { userId: "user-uuid-1", role: "user" } };
 
       const result = await controller.createAttachment(
         { message_id: "msg-uuid-1" } as any,
         fileMock,
-        reqMock
+        reqMock,
       );
-      
+
       expect(result.success).toBe(true);
       expect(result.data.id).toEqual(mockAttachment.id);
     });
@@ -137,7 +146,10 @@ describe("MessagingController", () => {
       mockAttachmentService.getAttachmentById.mockResolvedValue(mockAttachment);
       mockMessageService.getMessageById.mockResolvedValue(mockMessage);
       const mockReq = { user: { userId: "user-uuid-1", role: "customer" } };
-      const result = await controller.getAttachment("att-uuid-1", mockReq as any);
+      const result = await controller.getAttachment(
+        "att-uuid-1",
+        mockReq as any,
+      );
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockAttachment);
     });
@@ -146,7 +158,9 @@ describe("MessagingController", () => {
   describe("getMessage", () => {
     it("should return single message", async () => {
       mockMessageService.getMessageById.mockResolvedValue(mockMessage);
-      const result = await controller.getMessage("msg-uuid-1", { user: { id: "user-uuid-1" } } as any);
+      const result = await controller.getMessage("msg-uuid-1", {
+        user: { id: "user-uuid-1" },
+      } as any);
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockMessage);
     });
@@ -156,7 +170,9 @@ describe("MessagingController", () => {
     it("should mark message as read", async () => {
       const readMsg = { ...mockMessage, read: true };
       mockMessageService.markMessageAsRead.mockResolvedValue(readMsg);
-      const result = await controller.markAsRead("msg-uuid-1", { user: { id: "user-uuid-1" } } as any);
+      const result = await controller.markAsRead("msg-uuid-1", {
+        user: { id: "user-uuid-1" },
+      } as any);
       expect(result.success).toBe(true);
       expect(result.data.read).toBe(true);
     });

@@ -25,7 +25,11 @@ import {
   PaginatedProposalResponseDto,
 } from "../dto/proposal-response.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  Roles,
+  RequirePermissions,
+} from "@/common/rbac";
 import { OwnershipGuard } from "@/common/guards/ownership.guard";
 import { Ownership } from "@/common/decorators/ownership.decorator";
 
@@ -34,7 +38,7 @@ import { Ownership } from "@/common/decorators/ownership.decorator";
 export class ProposalController {
   constructor(private readonly proposalService: ProposalService) {}
 
-  @RequirePermissions('proposals.create')
+  @RequirePermissions("proposals.create")
   @UseGuards(RolesGuard)
   @Post("proposals")
   @HttpCode(HttpStatus.CREATED)
@@ -79,7 +83,7 @@ export class ProposalController {
     return this.proposalService.getProposalsForRequest(requestId, req.user);
   }
 
-  @RequirePermissions('proposals.accept')
+  @RequirePermissions("proposals.accept")
   @UseGuards(RolesGuard)
   @Post("proposals/:id/accept")
   @HttpCode(HttpStatus.OK)
@@ -95,7 +99,7 @@ export class ProposalController {
     );
   }
 
-  @RequirePermissions('proposals.accept')
+  @RequirePermissions("proposals.accept")
   @UseGuards(RolesGuard)
   @Post("proposals/:id/reject")
   @HttpCode(HttpStatus.OK)

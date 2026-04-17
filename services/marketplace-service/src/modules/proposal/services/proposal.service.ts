@@ -32,7 +32,7 @@ import { UserClient } from "../../../common/user/user.client";
 
 @Injectable()
 export class ProposalService {
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     private readonly proposalRepository: ProposalRepository,
@@ -43,8 +43,9 @@ export class ProposalService {
     private readonly userClient: UserClient,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-    @InjectQueue('marketplace.notification') private readonly notificationQueue: Queue,
-  ) { }
+    @InjectQueue("marketplace.notification")
+    private readonly notificationQueue: Queue,
+  ) {}
 
   async createProposal(dto: CreateProposalDto): Promise<ProposalResponseDto> {
     this.logger.log(
@@ -58,7 +59,9 @@ export class ProposalService {
     }
 
     // Validate that the request exists and is still open
-    const requestStatus = await this.proposalRepository.getRequestStatus(dto.request_id);
+    const requestStatus = await this.proposalRepository.getRequestStatus(
+      dto.request_id,
+    );
     if (!requestStatus) {
       throw new NotFoundException("Service request not found");
     }
@@ -81,12 +84,19 @@ export class ProposalService {
 
     // Cap total lifetime submissions per (provider, request) to prevent spam re-proposals
     // Limit is read from system_settings (default 10 if not set)
-    const maxProposalsStr = await this.proposalRepository.getSystemSetting('max_proposal_count', '10');
-    const MAX_PROPOSALS_PER_REQUEST = Math.max(1, parseInt(maxProposalsStr, 10) || 10);
-    const totalAttempts = await this.proposalRepository.countProposalsByProviderForRequest(
-      dto.request_id,
-      dto.provider_id,
+    const maxProposalsStr = await this.proposalRepository.getSystemSetting(
+      "max_proposal_count",
+      "10",
     );
+    const MAX_PROPOSALS_PER_REQUEST = Math.max(
+      1,
+      parseInt(maxProposalsStr, 10) || 10,
+    );
+    const totalAttempts =
+      await this.proposalRepository.countProposalsByProviderForRequest(
+        dto.request_id,
+        dto.provider_id,
+      );
     if (totalAttempts >= MAX_PROPOSALS_PER_REQUEST) {
       throw new ConflictException(
         `You have reached the maximum number of proposals (${MAX_PROPOSALS_PER_REQUEST}) for this request`,
@@ -94,19 +104,30 @@ export class ProposalService {
     }
 
     // Gate provider verification based on the provider_verification_required system setting
-    const verificationRequired = await this.proposalRepository.getSystemSetting('provider_verification_required', 'true');
+    const verificationRequired = await this.proposalRepository.getSystemSetting(
+      "provider_verification_required",
+      "true",
+    );
     if (this.userClient.isEnabled()) {
-      const providerForGate = await this.userClient.getProviderById(dto.provider_id);
-      if (verificationRequired !== 'false' && providerForGate && providerForGate.verification_status !== 'verified') {
+      const providerForGate = await this.userClient.getProviderById(
+        dto.provider_id,
+      );
+      if (
+        verificationRequired !== "false" &&
+        providerForGate &&
+        providerForGate.verification_status !== "verified"
+      ) {
         throw new BadRequestException(
           `Cannot submit proposal: your provider account is not yet verified (status: ${providerForGate.verification_status}). Please wait for admin approval.`,
         );
       }
       if (providerForGate?.user_id) {
-        const providerUser = await this.userClient.getUserById(providerForGate.user_id);
+        const providerUser = await this.userClient.getUserById(
+          providerForGate.user_id,
+        );
         if (providerUser && providerUser.email_verified === false) {
           throw new BadRequestException(
-            'Cannot submit proposal: your email address is not verified. Please verify your email first.',
+            "Cannot submit proposal: your email address is not verified. Please verify your email first.",
           );
         }
       }
@@ -140,7 +161,7 @@ export class ProposalService {
     if (customerEmail) {
       if (this.workersEnabled) {
         this.notificationQueue
-          .add('notify-proposal-submitted', {
+          .add("notify-proposal-submitted", {
             customerId: fullProposal?.customer_id,
             providerId: proposal.provider_id,
             requestId: proposal.request_id,
@@ -154,25 +175,27 @@ export class ProposalService {
             );
           });
       } else {
-        this.notificationClient.sendEmail({
-          to: customerEmail,
-          template: 'MARKETPLACE_PROPOSAL_RECEIVED',
-          variables: {
-            customerName: customerEmail.split('@')[0],
-            providerName: 'Service Provider',
-            requestTitle: `Request #${proposal.request_id}`,
-            price: proposal.price ? `₹${proposal.price}` : 'To be confirmed',
-            estimatedDuration: 'To be confirmed',
-            proposalDisplayId: proposal.id,
-            requestDisplayId: proposal.request_id,
-            proposalUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${proposal.request_id}/proposals/${proposal.id}`,
-          },
-        }).catch((err: any) => {
-          this.logger.warn(
-            `Failed to send proposal notification: ${err.message}`,
-            ProposalService.name,
-          );
-        });
+        this.notificationClient
+          .sendEmail({
+            to: customerEmail,
+            template: "MARKETPLACE_PROPOSAL_RECEIVED",
+            variables: {
+              customerName: customerEmail.split("@")[0],
+              providerName: "Service Provider",
+              requestTitle: `Request #${proposal.request_id}`,
+              price: proposal.price ? `₹${proposal.price}` : "To be confirmed",
+              estimatedDuration: "To be confirmed",
+              proposalDisplayId: proposal.id,
+              requestDisplayId: proposal.request_id,
+              proposalUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/requests/${proposal.request_id}/proposals/${proposal.id}`,
+            },
+          })
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to send proposal notification: ${err.message}`,
+              ProposalService.name,
+            );
+          });
       }
     }
 
@@ -205,8 +228,9 @@ export class ProposalService {
     );
 
     // RBAC: Only the request owner or user with manage permission can see proposals for a request
-    if (user && !user.permissions?.includes('proposals.manage')) {
-      const requestOwner = await this.proposalRepository.getRequestOwner(requestId);
+    if (user && !user.permissions?.includes("proposals.manage")) {
+      const requestOwner =
+        await this.proposalRepository.getRequestOwner(requestId);
       if (requestOwner !== user.userId) {
         throw new ForbiddenException(
           "Only the request owner or an admin can see the proposals for this request",
@@ -255,7 +279,10 @@ export class ProposalService {
     }
 
     // Ownership check: only the customer who owns the request or user with manage permission can accept
-    if (!userPermissions?.includes('proposals.manage') && existingProposal.customer_id !== userId) {
+    if (
+      !userPermissions?.includes("proposals.manage") &&
+      existingProposal.customer_id !== userId
+    ) {
       throw new ForbiddenException(
         "Only the request owner can accept a proposal",
       );
@@ -269,16 +296,20 @@ export class ProposalService {
     }
 
     // Validate that the parent request is still open (not cancelled/closed by another path)
-    const currentRequestStatus = await this.proposalRepository.getRequestStatus(existingProposal.request_id);
-    if (currentRequestStatus !== 'open') {
+    const currentRequestStatus = await this.proposalRepository.getRequestStatus(
+      existingProposal.request_id,
+    );
+    if (currentRequestStatus !== "open") {
       throw new BadRequestException(
         `Cannot accept proposal: the service request is no longer open (status: ${currentRequestStatus})`,
       );
     }
 
     // Verify provider is approved before creating a job
-    const provider = await this.userClient.getProviderById(existingProposal.provider_id);
-    if (provider && provider.verification_status !== 'verified') {
+    const provider = await this.userClient.getProviderById(
+      existingProposal.provider_id,
+    );
+    if (provider && provider.verification_status !== "verified") {
       throw new BadRequestException(
         `Cannot accept proposal: provider is not verified (status: ${provider.verification_status})`,
       );
@@ -309,7 +340,7 @@ export class ProposalService {
 
     // Transition the service request to 'assigned'
     await this.requestRepository.updateRequest(existingProposal.request_id, {
-      status: 'assigned',
+      status: "assigned",
     } as any);
 
     this.logger.log(
@@ -329,7 +360,7 @@ export class ProposalService {
     if (providerEmail) {
       if (this.workersEnabled) {
         this.notificationQueue
-          .add('notify-proposal-accepted', {
+          .add("notify-proposal-accepted", {
             providerId: proposal.provider_id,
             requestId: proposal.request_id,
             proposalId: proposal.id,
@@ -341,24 +372,28 @@ export class ProposalService {
             );
           });
       } else {
-        this.notificationClient.sendEmail({
-          to: providerEmail,
-          template: 'MARKETPLACE_JOB_ASSIGNED',
-          variables: {
-            providerName: providerEmail.split('@')[0],
-            requestTitle: `Request #${proposal.request_id}`,
-            customerName: customerName,
-            price: existingProposal.price ? `₹${existingProposal.price}` : 'Agreed price',
-            startDate: new Date().toLocaleDateString('en-IN'),
-            jobDisplayId: job.id,
-            jobUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobs/${job.id}`,
-          },
-        }).catch((err: any) => {
-          this.logger.warn(
-            `Failed to send acceptance notification: ${err.message}`,
-            ProposalService.name,
-          );
-        });
+        this.notificationClient
+          .sendEmail({
+            to: providerEmail,
+            template: "MARKETPLACE_JOB_ASSIGNED",
+            variables: {
+              providerName: providerEmail.split("@")[0],
+              requestTitle: `Request #${proposal.request_id}`,
+              customerName: customerName,
+              price: existingProposal.price
+                ? `₹${existingProposal.price}`
+                : "Agreed price",
+              startDate: new Date().toLocaleDateString("en-IN"),
+              jobDisplayId: job.id,
+              jobUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/jobs/${job.id}`,
+            },
+          })
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to send acceptance notification: ${err.message}`,
+              ProposalService.name,
+            );
+          });
       }
     }
 
@@ -394,7 +429,10 @@ export class ProposalService {
     }
 
     // Ownership check: only the customer who owns the request or user with manage permission can reject
-    if (!userPermissions?.includes?.('proposals.manage') && existingProposal.customer_id !== userId) {
+    if (
+      !userPermissions?.includes?.("proposals.manage") &&
+      existingProposal.customer_id !== userId
+    ) {
       throw new ForbiddenException(
         "Only the request owner can reject a proposal",
       );
@@ -418,26 +456,36 @@ export class ProposalService {
     );
 
     // Notify provider that their proposal was rejected
-    const providerEmail = await this.userClient.getProviderEmail(proposal.provider_id).catch(() => null);
+    const providerEmail = await this.userClient
+      .getProviderEmail(proposal.provider_id)
+      .catch(() => null);
     if (providerEmail) {
       const rejectPayload = {
         to: providerEmail,
-        template: 'MESSAGE_RECEIVED',
+        template: "MESSAGE_RECEIVED",
         variables: {
-          recipientName: providerEmail.split('@')[0],
-          senderName: 'LocalServices',
-          messagePreview: `Your proposal for Request #${proposal.request_id} has been declined by the customer.${reason ? ` Reason: ${reason}` : ''}`,
+          recipientName: providerEmail.split("@")[0],
+          senderName: "LocalServices",
+          messagePreview: `Your proposal for Request #${proposal.request_id} has been declined by the customer.${reason ? ` Reason: ${reason}` : ""}`,
           receivedAt: new Date().toISOString(),
-          replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/proposals/${proposal.id}`,
+          replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/proposals/${proposal.id}`,
         },
       };
       if (this.workersEnabled) {
-        this.notificationQueue.add('notify-proposal-rejected', rejectPayload).catch((err: any) => {
-          this.logger.warn(`Failed to enqueue rejection notification: ${err.message}`, ProposalService.name);
-        });
+        this.notificationQueue
+          .add("notify-proposal-rejected", rejectPayload)
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to enqueue rejection notification: ${err.message}`,
+              ProposalService.name,
+            );
+          });
       } else {
         this.notificationClient.sendEmail(rejectPayload).catch((err: any) => {
-          this.logger.warn(`Failed to send rejection notification: ${err.message}`, ProposalService.name);
+          this.logger.warn(
+            `Failed to send rejection notification: ${err.message}`,
+            ProposalService.name,
+          );
         });
       }
     }
@@ -468,7 +516,7 @@ export class ProposalService {
     );
 
     // RBAC: Enforce ownership filtering unless user has manage permission
-    if (user && !user.permissions?.includes('proposals.manage')) {
+    if (user && !user.permissions?.includes("proposals.manage")) {
       if (user.role === "customer") {
         queryDto.customer_id = user.userId;
       } else if (user.role === "provider") {
@@ -575,7 +623,7 @@ export class ProposalService {
     }
 
     const isOwner = providerId && existingProposal.provider_id === providerId;
-    const isAdmin = userPermissions?.includes('proposals.manage');
+    const isAdmin = userPermissions?.includes("proposals.manage");
 
     if (!isOwner && !isAdmin) {
       throw new ForbiddenException(
@@ -591,12 +639,17 @@ export class ProposalService {
 
     // Enforce withdrawal window for providers (admins bypass this)
     if (!isAdmin && existingProposal.created_at) {
-      const windowHoursStr = await this.proposalRepository.getSystemSetting('proposal_withdrawal_window_hours', '24');
+      const windowHoursStr = await this.proposalRepository.getSystemSetting(
+        "proposal_withdrawal_window_hours",
+        "24",
+      );
       const windowHours = parseInt(windowHoursStr, 10) || 24;
-      const ageHours = (Date.now() - new Date(existingProposal.created_at).getTime()) / (1000 * 60 * 60);
+      const ageHours =
+        (Date.now() - new Date(existingProposal.created_at).getTime()) /
+        (1000 * 60 * 60);
       if (ageHours > windowHours) {
         throw new BadRequestException(
-          `Proposals can only be withdrawn within ${windowHours} hour${windowHours === 1 ? '' : 's'} of submission. This proposal was submitted ${Math.floor(ageHours)} hours ago.`,
+          `Proposals can only be withdrawn within ${windowHours} hour${windowHours === 1 ? "" : "s"} of submission. This proposal was submitted ${Math.floor(ageHours)} hours ago.`,
         );
       }
     }
@@ -616,27 +669,37 @@ export class ProposalService {
 
     // Notify customer that the provider withdrew the proposal
     const customerEmail = existingProposal.customer_id
-      ? await this.userClient.getUserEmail(existingProposal.customer_id).catch(() => null)
+      ? await this.userClient
+          .getUserEmail(existingProposal.customer_id)
+          .catch(() => null)
       : null;
     if (customerEmail) {
       const withdrawPayload = {
         to: customerEmail,
-        template: 'MESSAGE_RECEIVED',
+        template: "MESSAGE_RECEIVED",
         variables: {
-          recipientName: customerEmail.split('@')[0],
-          senderName: 'LocalServices',
+          recipientName: customerEmail.split("@")[0],
+          senderName: "LocalServices",
           messagePreview: `A service provider has withdrawn their proposal for your Request #${existingProposal.request_id}. You may receive other proposals.`,
           receivedAt: new Date().toISOString(),
-          replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${existingProposal.request_id}`,
+          replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/requests/${existingProposal.request_id}`,
         },
       };
       if (this.workersEnabled) {
-        this.notificationQueue.add('notify-proposal-withdrawn', withdrawPayload).catch((err: any) => {
-          this.logger.warn(`Failed to enqueue withdrawal notification: ${err.message}`, ProposalService.name);
-        });
+        this.notificationQueue
+          .add("notify-proposal-withdrawn", withdrawPayload)
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to enqueue withdrawal notification: ${err.message}`,
+              ProposalService.name,
+            );
+          });
       } else {
         this.notificationClient.sendEmail(withdrawPayload).catch((err: any) => {
-          this.logger.warn(`Failed to send withdrawal notification: ${err.message}`, ProposalService.name);
+          this.logger.warn(
+            `Failed to send withdrawal notification: ${err.message}`,
+            ProposalService.name,
+          );
         });
       }
     }
@@ -673,7 +736,7 @@ export class ProposalService {
     }
 
     const isOwner = providerId && existingProposal.provider_id === providerId;
-    const isAdmin = userPermissions?.includes?.('proposals.manage');
+    const isAdmin = userPermissions?.includes?.("proposals.manage");
 
     if (!isOwner && !isAdmin) {
       throw new ForbiddenException(
@@ -703,30 +766,40 @@ export class ProposalService {
 
     // Notify customer about updated proposal terms
     const customerEmail = existingProposal.customer_id
-      ? await this.userClient.getUserEmail(existingProposal.customer_id).catch(() => null)
+      ? await this.userClient
+          .getUserEmail(existingProposal.customer_id)
+          .catch(() => null)
       : null;
     if (customerEmail) {
       const updatePayload = {
         to: customerEmail,
-        template: 'MARKETPLACE_PROPOSAL_RECEIVED',
+        template: "MARKETPLACE_PROPOSAL_RECEIVED",
         variables: {
-          customerName: customerEmail.split('@')[0],
-          providerName: 'Service Provider',
+          customerName: customerEmail.split("@")[0],
+          providerName: "Service Provider",
           requestTitle: `Request #${proposal.request_id}`,
-          price: proposal.price ? `₹${proposal.price}` : 'To be confirmed',
-          estimatedDuration: 'To be confirmed',
+          price: proposal.price ? `₹${proposal.price}` : "To be confirmed",
+          estimatedDuration: "To be confirmed",
           proposalDisplayId: proposal.id,
           requestDisplayId: proposal.request_id,
-          proposalUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/requests/${proposal.request_id}/proposals/${proposal.id}`,
+          proposalUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/requests/${proposal.request_id}/proposals/${proposal.id}`,
         },
       };
       if (this.workersEnabled) {
-        this.notificationQueue.add('notify-proposal-updated', updatePayload).catch((err: any) => {
-          this.logger.warn(`Failed to enqueue proposal update notification: ${err.message}`, ProposalService.name);
-        });
+        this.notificationQueue
+          .add("notify-proposal-updated", updatePayload)
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to enqueue proposal update notification: ${err.message}`,
+              ProposalService.name,
+            );
+          });
       } else {
         this.notificationClient.sendEmail(updatePayload).catch((err: any) => {
-          this.logger.warn(`Failed to send proposal update notification: ${err.message}`, ProposalService.name);
+          this.logger.warn(
+            `Failed to send proposal update notification: ${err.message}`,
+            ProposalService.name,
+          );
         });
       }
     }
@@ -749,7 +822,7 @@ export class ProposalService {
     }
 
     const isOwner = providerId && existingProposal.provider_id === providerId;
-    const isAdmin = userPermissions?.includes?.('proposals.manage');
+    const isAdmin = userPermissions?.includes?.("proposals.manage");
 
     if (!isOwner && !isAdmin) {
       throw new ForbiddenException(

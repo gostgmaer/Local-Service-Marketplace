@@ -21,7 +21,7 @@ export class RegisterDeviceDto {
 
 /**
  * DeviceController - Manage user devices for push notifications
- * 
+ *
  * Endpoints:
  * - POST /devices - Register device token
  * - GET /devices - List user's devices
@@ -38,10 +38,7 @@ export class DeviceController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async registerDevice(
-    @Body() dto: RegisterDeviceDto,
-    @Request() req: any,
-  ) {
+  async registerDevice(@Body() dto: RegisterDeviceDto, @Request() req: any) {
     const device = await this.deviceRepository.registerDevice({
       user_id: req.user.userId,
       device_id: dto.device_id,
@@ -74,7 +71,7 @@ export class DeviceController {
     return {
       success: true,
       message: "Devices retrieved successfully",
-      data: devices.map(d => ({
+      data: devices.map((d) => ({
         id: d.id,
         device_id: d.device_id,
         device_type: d.device_type,
@@ -90,10 +87,7 @@ export class DeviceController {
    */
   @Delete(":deviceId")
   @HttpCode(HttpStatus.OK)
-  async removeDevice(
-    @Param("deviceId") deviceId: string,
-    @Request() req: any,
-  ) {
+  async removeDevice(@Param("deviceId") deviceId: string, @Request() req: any) {
     await this.deviceRepository.removeDevice(req.user.userId, deviceId);
 
     return {

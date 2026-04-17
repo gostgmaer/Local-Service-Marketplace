@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -15,7 +15,7 @@ async function bootstrap() {
   });
 
   const allowedOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map((o) => o.trim())
+    ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
     : [];
   app.enableCors({
     origin: allowedOrigins.length > 0 ? allowedOrigins : false,

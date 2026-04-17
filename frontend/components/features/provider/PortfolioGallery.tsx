@@ -1,14 +1,39 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import toast from 'react-hot-toast';
-import { Image as ImageIcon, Edit, Trash2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { getProviderPortfolio, updatePortfolioItem, deletePortfolioItem, reorderPortfolio } from '@/services/user-service';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import toast from "react-hot-toast";
+import {
+  Image as ImageIcon,
+  Edit,
+  Trash2,
+  GripVertical,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  getProviderPortfolio,
+  updatePortfolioItem,
+  deletePortfolioItem,
+  reorderPortfolio,
+} from "@/services/user-service";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface PortfolioItem {
   id: string;
@@ -27,13 +52,8 @@ interface SortableItemProps {
 
 function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: item.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -42,13 +62,13 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
 
   const nextImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === item.image_urls.length - 1 ? 0 : prev + 1
+      prev === item.image_urls.length - 1 ? 0 : prev + 1,
     );
   };
 
   const prevImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === 0 ? item.image_urls.length - 1 : prev - 1
+      prev === 0 ? item.image_urls.length - 1 : prev - 1,
     );
   };
 
@@ -90,10 +110,11 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
                 <button
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${index === currentImageIndex
-                    ? 'bg-white w-6'
-                    : 'bg-white bg-opacity-50 hover:bg-opacity-75'
-                    }`}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentImageIndex
+                      ? "bg-white w-6"
+                      : "bg-white bg-opacity-50 hover:bg-opacity-75"
+                  }`}
                 />
               ))}
             </div>
@@ -124,7 +145,9 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
               {item.title}
             </h3>
             {item.description && (
-              <p className="text-gray-600 text-sm line-clamp-3">{item.description}</p>
+              <p className="text-gray-600 text-sm line-clamp-3">
+                {item.description}
+              </p>
             )}
             <p className="text-xs text-gray-400 mt-3">
               Added {new Date(item.created_at).toLocaleDateString()}
@@ -158,8 +181,8 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editDescription, setEditDescription] = useState('');
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingItemId, setPendingItemId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -168,19 +191,20 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
   const loadPortfolio = useCallback(async () => {
     try {
       const data = await getProviderPortfolio(providerId);
       // Map backend response (images) to frontend interface (image_urls)
-      const mappedData = data?.map(item => ({
-        ...item,
-        image_urls: item.images
-      })) || [];
+      const mappedData =
+        data?.map((item) => ({
+          ...item,
+          image_urls: item.images,
+        })) || [];
       setItems(mappedData as PortfolioItem[]);
     } catch (error) {
-      console.error('Failed to load portfolio:', error);
+      console.error("Failed to load portfolio:", error);
     } finally {
       setLoading(false);
     }
@@ -188,8 +212,6 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
   useEffect(() => {
     loadPortfolio();
   }, [providerId, loadPortfolio]);
-
-
 
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
@@ -201,7 +223,7 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
         const newItems = arrayMove(items, oldIndex, newIndex);
 
         // Update order on server
-        saveOrder(newItems.map(item => item.id));
+        saveOrder(newItems.map((item) => item.id));
 
         return newItems;
       });
@@ -212,15 +234,15 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
     try {
       await reorderPortfolio(providerId, orderedIds);
     } catch (error) {
-      console.error('Failed to save order:', error);
-      toast.error('Failed to save new order');
+      console.error("Failed to save order:", error);
+      toast.error("Failed to save new order");
     }
   };
 
   const handleEdit = (item: PortfolioItem) => {
     setEditingItem(item);
     setEditTitle(item.title);
-    setEditDescription(item.description || '');
+    setEditDescription(item.description || "");
   };
 
   const saveEdit = async () => {
@@ -229,14 +251,14 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
     try {
       await updatePortfolioItem(providerId, editingItem.id, {
         title: editTitle,
-        description: editDescription || undefined
+        description: editDescription || undefined,
       });
 
       setEditingItem(null);
       loadPortfolio();
     } catch (error) {
-      console.error('Failed to update portfolio item:', error);
-      toast.error('Failed to update portfolio item');
+      console.error("Failed to update portfolio item:", error);
+      toast.error("Failed to update portfolio item");
     }
   };
 
@@ -252,8 +274,8 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
       await deletePortfolioItem(providerId, pendingItemId);
       loadPortfolio();
     } catch (error) {
-      console.error('Failed to delete portfolio item:', error);
-      toast.error('Failed to delete portfolio item');
+      console.error("Failed to delete portfolio item:", error);
+      toast.error("Failed to delete portfolio item");
     } finally {
       setDeleting(false);
       setDeleteConfirmOpen(false);
@@ -284,8 +306,9 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
           <>
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                💡 <strong>Tip:</strong> Drag and drop items to reorder your portfolio.
-                The order you set here is how visitors will see your work.
+                💡 <strong>Tip:</strong> Drag and drop items to reorder your
+                portfolio. The order you set here is how visitors will see your
+                work.
               </p>
             </div>
 
@@ -295,7 +318,7 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={items.map(item => item.id)}
+                items={items.map((item) => item.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -323,7 +346,9 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
               className="bg-white rounded-lg max-w-2xl w-full p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-xl font-semibold mb-6">Edit Portfolio Item</h3>
+              <h3 className="text-xl font-semibold mb-6">
+                Edit Portfolio Item
+              </h3>
 
               <div className="space-y-4">
                 <div>
@@ -374,7 +399,10 @@ export function PortfolioGallery({ providerId }: { providerId: string }) {
       </div>
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
-        onClose={() => { setDeleteConfirmOpen(false); setPendingItemId(null); }}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setPendingItemId(null);
+        }}
         onConfirm={handleConfirmDelete}
         title="Delete Portfolio Item"
         message="Are you sure you want to delete this portfolio item? This action cannot be undone."

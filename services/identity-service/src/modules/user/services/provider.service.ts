@@ -24,7 +24,7 @@ import { UserRepository } from "../repositories/user.repository";
 @Injectable()
 export class ProviderService {
   private readonly defaultLimit: number;
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     private readonly providerRepo: ProviderRepository,
@@ -35,7 +35,8 @@ export class ProviderService {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly notificationClient: NotificationClient,
     private readonly userRepo: UserRepository,
-    @InjectQueue('identity.notification') private readonly notificationQueue: Queue,
+    @InjectQueue("identity.notification")
+    private readonly notificationQueue: Queue,
   ) {
     this.defaultLimit = parseInt(
       this.configService.get<string>("DEFAULT_PAGE_LIMIT", "20"),
@@ -44,12 +45,19 @@ export class ProviderService {
     // defaultLimit may be overridden per-request from system_settings (defaultLimit is kept as fallback)
   }
 
-  private sendEmailNotification(payload: { to: string; template: string; variables: Record<string, any> }): void {
+  private sendEmailNotification(payload: {
+    to: string;
+    template: string;
+    variables: Record<string, any>;
+  }): void {
     const dispatch = this.workersEnabled
-      ? this.notificationQueue.add('send-email', payload)
+      ? this.notificationQueue.add("send-email", payload)
       : this.notificationClient.sendEmail(payload);
     dispatch.catch((err: any) => {
-      this.logger.error(`Failed to send email (${payload.template}) to ${payload.to}: ${err.message}`, 'ProviderService');
+      this.logger.error(
+        `Failed to send email (${payload.template}) to ${payload.to}: ${err.message}`,
+        "ProviderService",
+      );
     });
   }
 
@@ -71,9 +79,14 @@ export class ProviderService {
     });
 
     // Check if new provider registrations are currently enabled
-    const providerRegEnabled = await this.providerRepo.getSystemSetting('provider_registration_enabled', 'true');
-    if (providerRegEnabled === 'false') {
-      throw new BadRequestException('New provider registrations are currently disabled. Please try again later.');
+    const providerRegEnabled = await this.providerRepo.getSystemSetting(
+      "provider_registration_enabled",
+      "true",
+    );
+    if (providerRegEnabled === "false") {
+      throw new BadRequestException(
+        "New provider registrations are currently disabled. Please try again later.",
+      );
     }
 
     // Check if provider already exists for this user
@@ -120,11 +133,11 @@ export class ProviderService {
     if (providerUser?.email) {
       this.sendEmailNotification({
         to: providerUser.email,
-        template: 'MARKETPLACE_WELCOME',
+        template: "MARKETPLACE_WELCOME",
         variables: {
           name: business_name,
           email: providerUser.email,
-          dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/provider/dashboard`,
+          dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/provider/dashboard`,
         },
       });
     } else {
@@ -171,7 +184,10 @@ export class ProviderService {
     // Update service categories
     if (service_categories !== undefined) {
       // Enforce max_services_per_provider system setting
-      const maxServicesStr = await this.providerRepo.getSystemSetting('max_services_per_provider', '10');
+      const maxServicesStr = await this.providerRepo.getSystemSetting(
+        "max_services_per_provider",
+        "10",
+      );
       const maxServices = Math.max(1, parseInt(maxServicesStr, 10) || 10);
       if (service_categories.length > maxServices) {
         throw new BadRequestException(
@@ -268,13 +284,12 @@ export class ProviderService {
     // Cache the result
     if (this.redisService.isCacheEnabled()) {
       const cacheKey = `provider:${provider.id}`;
-      const cacheTtlStr = await this.providerRepo.getSystemSetting('provider_cache_ttl_seconds', '300');
-      const cacheTtl = parseInt(cacheTtlStr, 10) || 300;
-      await this.redisService.set(
-        cacheKey,
-        JSON.stringify(response),
-        cacheTtl,
+      const cacheTtlStr = await this.providerRepo.getSystemSetting(
+        "provider_cache_ttl_seconds",
+        "300",
       );
+      const cacheTtl = parseInt(cacheTtlStr, 10) || 300;
+      await this.redisService.set(cacheKey, JSON.stringify(response), cacheTtl);
     }
 
     return response;
@@ -420,18 +435,28 @@ export class ProviderService {
     return responses;
   }
 
-  async addProviderService(providerId: string, categoryId: string): Promise<any> {
+  async addProviderService(
+    providerId: string,
+    categoryId: string,
+  ): Promise<any> {
     const provider = await this.providerRepo.findById(providerId);
     if (!provider) {
       throw new NotFoundException("Provider not found");
     }
 
-    const existingServices = await this.providerServiceRepo.findByProviderId(provider.id);
-    if (existingServices.some(s => s.category_id === categoryId)) {
-      throw new ConflictException("Service category already mapped to this provider");
+    const existingServices = await this.providerServiceRepo.findByProviderId(
+      provider.id,
+    );
+    if (existingServices.some((s) => s.category_id === categoryId)) {
+      throw new ConflictException(
+        "Service category already mapped to this provider",
+      );
     }
 
-    const newService = await this.providerServiceRepo.create(provider.id, categoryId);
+    const newService = await this.providerServiceRepo.create(
+      provider.id,
+      categoryId,
+    );
 
     if (this.redisService.isCacheEnabled()) {
       await this.redisService.del(`provider:${provider.id}`);
@@ -440,11 +465,14 @@ export class ProviderService {
     return {
       id: newService.id,
       provider_id: provider.id,
-      category_id: categoryId
+      category_id: categoryId,
     };
   }
 
-  async removeProviderService(providerId: string, serviceId: string): Promise<void> {
+  async removeProviderService(
+    providerId: string,
+    serviceId: string,
+  ): Promise<void> {
     await this.providerServiceRepo.deleteById(serviceId);
 
     if (this.redisService.isCacheEnabled()) {
@@ -457,11 +485,13 @@ export class ProviderService {
     if (!provider) {
       throw new NotFoundException("Provider not found");
     }
-    const services = await this.providerServiceRepo.findByProviderId(provider.id);
-    return services.map(s => ({
+    const services = await this.providerServiceRepo.findByProviderId(
+      provider.id,
+    );
+    return services.map((s) => ({
       id: s.id,
       provider_id: provider.id,
-      category_id: s.category_id
+      category_id: s.category_id,
     }));
   }
 
@@ -512,28 +542,34 @@ export class ProviderService {
     }
 
     // Send approval or rejection email to the provider
-    if (status === 'verified' || status === 'rejected') {
-      const providerUser = await this.userRepo.findById(updated.user_id).catch(() => null);
+    if (status === "verified" || status === "rejected") {
+      const providerUser = await this.userRepo
+        .findById(updated.user_id)
+        .catch(() => null);
       if (providerUser?.email) {
-        if (status === 'verified') {
+        if (status === "verified") {
           this.sendEmailNotification({
             to: providerUser.email,
-            template: 'MARKETPLACE_PROVIDER_APPROVED',
+            template: "MARKETPLACE_PROVIDER_APPROVED",
             variables: {
               businessName: updated.business_name,
               email: providerUser.email,
-              dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/provider/dashboard`,
+              dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/provider/dashboard`,
             },
           });
         } else {
           this.sendEmailNotification({
             to: providerUser.email,
-            template: 'MARKETPLACE_PROVIDER_REJECTED',
+            template: "MARKETPLACE_PROVIDER_REJECTED",
             variables: {
-              businessName: updated.business_name || providerUser.name || providerUser.email.split('@')[0],
+              businessName:
+                updated.business_name ||
+                providerUser.name ||
+                providerUser.email.split("@")[0],
               email: providerUser.email,
-              reason: 'Your application did not meet our current provider requirements.',
-              supportUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/contact`,
+              reason:
+                "Your application did not meet our current provider requirements.",
+              supportUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/contact`,
             },
           });
         }

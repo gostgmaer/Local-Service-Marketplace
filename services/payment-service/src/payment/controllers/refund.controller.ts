@@ -18,8 +18,15 @@ import { RefundRepository } from "../repositories/refund.repository";
 import { PaymentRepository } from "../repositories/payment.repository";
 import { RequestRefundDto } from "../dto/request-refund.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
-import { ForbiddenException, NotFoundException } from "@/common/exceptions/http.exceptions";
+import {
+  PermissionsGuard as RolesGuard,
+  Roles,
+  RequirePermissions,
+} from "@/common/rbac";
+import {
+  ForbiddenException,
+  NotFoundException,
+} from "@/common/exceptions/http.exceptions";
 
 @Controller("refunds")
 export class RefundController {
@@ -43,18 +50,21 @@ export class RefundController {
   ) {
     // Ownership validation - ensure user owns the payment
     const payment = await this.paymentRepository.getPaymentById(paymentId);
-    
+
     if (!payment) {
       throw new NotFoundException("Payment not found");
     }
-    
+
     // Only the payment owner or admin can request refunds
-    if (payment.user_id !== req.user.userId && !req.user.permissions?.includes('payments.manage')) {
+    if (
+      payment.user_id !== req.user.userId &&
+      !req.user.permissions?.includes("payments.manage")
+    ) {
       throw new ForbiddenException(
-        "You do not have permission to request a refund for this payment"
+        "You do not have permission to request a refund for this payment",
       );
     }
-    
+
     const refund = await this.refundService.createRefund(
       paymentId,
       requestRefundDto.amount,
@@ -81,12 +91,17 @@ export class RefundController {
     const refund = await this.refundService.getRefundById(id);
 
     // Ownership validation - ensure user owns the payment
-    const payment = await this.paymentRepository.getPaymentById(refund.payment_id);
-    
+    const payment = await this.paymentRepository.getPaymentById(
+      refund.payment_id,
+    );
+
     // Only the payment owner or admin can view refund details
-    if (payment.user_id !== req.user.userId && !req.user.permissions?.includes('payments.manage')) {
+    if (
+      payment.user_id !== req.user.userId &&
+      !req.user.permissions?.includes("payments.manage")
+    ) {
       throw new ForbiddenException(
-        "You do not have permission to view this refund"
+        "You do not have permission to view this refund",
       );
     }
 
@@ -109,18 +124,21 @@ export class RefundController {
   ) {
     // Ownership validation - ensure user owns the payment
     const payment = await this.paymentRepository.getPaymentById(paymentId);
-    
+
     if (!payment) {
       throw new NotFoundException("Payment not found");
     }
-    
+
     // Only the payment owner or admin can view refunds for a payment
-    if (payment.user_id !== req.user.userId && !req.user.permissions?.includes('payments.manage')) {
+    if (
+      payment.user_id !== req.user.userId &&
+      !req.user.permissions?.includes("payments.manage")
+    ) {
       throw new ForbiddenException(
-        "You do not have permission to view refunds for this payment"
+        "You do not have permission to view refunds for this payment",
       );
     }
-    
+
     const refunds = await this.refundService.getRefundsByPaymentId(paymentId);
 
     return {
@@ -136,7 +154,7 @@ export class RefundController {
    */
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @RequirePermissions('refunds.manage')
+  @RequirePermissions("refunds.manage")
   @HttpCode(HttpStatus.OK)
   async getAllRefunds(
     @Query("limit") limit: string = "50",

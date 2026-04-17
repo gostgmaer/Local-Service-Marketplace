@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { SearchBar } from '@/components/shared/SearchBar';
+import React from "react";
+import { SearchBar } from "@/components/shared/SearchBar";
 
 interface ProviderSearchProps {
   value: string;
@@ -9,7 +9,11 @@ interface ProviderSearchProps {
   onClear: () => void;
 }
 
-export function ProviderSearch({ value, onChange, onClear }: ProviderSearchProps) {
+export function ProviderSearch({
+  value,
+  onChange,
+  onClear,
+}: ProviderSearchProps) {
   return (
     <SearchBar
       value={value}

@@ -12,21 +12,21 @@
  * Source: services/auth-service/src/modules/auth/dto/auth-response.dto.ts
  */
 export interface BackendAuthResponse {
-	accessToken: string;
-	refreshToken: string;
-	user: {
-		id: string;
-		email: string;
-		name?: string;
-		role: string;
-		email_verified: boolean;
-		phone_verified: boolean;
-		profile_picture_url?: string;
-		timezone: string;
-		language: string;
-		last_login_at?: Date;
-		provider_verification_status?: string;
-	};
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+    role: string;
+    email_verified: boolean;
+    phone_verified: boolean;
+    profile_picture_url?: string;
+    timezone: string;
+    language: string;
+    last_login_at?: Date;
+    provider_verification_status?: string;
+  };
 }
 
 /**
@@ -48,14 +48,14 @@ export interface BackendUser {
   email: string;
   name?: string;
   phone?: string;
-  role: 'customer' | 'provider' | 'admin';
+  role: "customer" | "provider" | "admin";
   email_verified: boolean;
   phone_verified: boolean;
   profile_picture_url?: string;
   timezone: string;
   language: string;
   last_login_at?: Date;
-  status: 'active' | 'suspended' | 'deleted';
+  status: "active" | "suspended" | "deleted";
   created_at: Date;
   updated_at?: Date;
 }
@@ -85,21 +85,21 @@ export interface BackendSession {
  * Source: frontend/types/next-auth.d.ts
  */
 export interface FrontendSession {
-	user: {
-		id: string;
-		email?: string | null;
-		name?: string | null;
-		image?: string | null;
-		role: string;
-		emailVerified: boolean;
-		phoneVerified: boolean;
-		timezone: string | null;
-		language: string | null;
-	};
-	expires: string; // ISO date string
-	accessToken?: string;
-	accessTokenExpires?: number; // Unix timestamp
-	error?: "RefreshAccessTokenError";
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+    role: string;
+    emailVerified: boolean;
+    phoneVerified: boolean;
+    timezone: string | null;
+    language: string | null;
+  };
+  expires: string; // ISO date string
+  accessToken?: string;
+  accessTokenExpires?: number; // Unix timestamp
+  error?: "RefreshAccessTokenError";
 }
 
 /**
@@ -120,7 +120,7 @@ export interface FrontendJWT {
   accessToken?: string;
   refreshToken?: string;
   accessTokenExpires?: number; // Unix timestamp
-  error?: 'RefreshAccessTokenError';
+  error?: "RefreshAccessTokenError";
   iat?: number;
   exp?: number;
   jti?: string;
@@ -133,42 +133,46 @@ export interface FrontendJWT {
 /**
  * Type guard to verify backend auth response
  */
-export function isValidBackendAuthResponse(data: any): data is BackendAuthResponse {
+export function isValidBackendAuthResponse(
+  data: any,
+): data is BackendAuthResponse {
   return (
     data &&
-    typeof data === 'object' &&
-    typeof data.accessToken === 'string' &&
-    typeof data.refreshToken === 'string' &&
+    typeof data === "object" &&
+    typeof data.accessToken === "string" &&
+    typeof data.refreshToken === "string" &&
     data.user &&
-    typeof data.user.id === 'string' &&
-    typeof data.user.email === 'string' &&
-    typeof data.user.role === 'string' &&
-    typeof data.user.email_verified === 'boolean' &&
-    typeof data.user.phone_verified === 'boolean' &&
-    typeof data.user.timezone === 'string' &&
-    typeof data.user.language === 'string'
+    typeof data.user.id === "string" &&
+    typeof data.user.email === "string" &&
+    typeof data.user.role === "string" &&
+    typeof data.user.email_verified === "boolean" &&
+    typeof data.user.phone_verified === "boolean" &&
+    typeof data.user.timezone === "string" &&
+    typeof data.user.language === "string"
   );
 }
 
 /**
  * Type guard to verify backend refresh response
  */
-export function isValidBackendRefreshResponse(data: any): data is BackendRefreshResponse {
+export function isValidBackendRefreshResponse(
+  data: any,
+): data is BackendRefreshResponse {
   return (
-    data &&
-    typeof data === 'object' &&
-    typeof data.accessToken === 'string'
+    data && typeof data === "object" && typeof data.accessToken === "string"
   );
 }
 
 /**
  * Transform backend user to frontend format
  */
-export function transformBackendUserToFrontend(backendUser: BackendAuthResponse['user']) {
+export function transformBackendUserToFrontend(
+  backendUser: BackendAuthResponse["user"],
+) {
   return {
     id: backendUser.id,
     email: backendUser.email,
-    name: backendUser.name || backendUser.email.split('@')[0],
+    name: backendUser.name || backendUser.email.split("@")[0],
     image: backendUser.profile_picture_url || null,
     role: backendUser.role,
     emailVerified: backendUser.email_verified,
@@ -186,44 +190,47 @@ export function transformBackendUserToFrontend(backendUser: BackendAuthResponse[
  * Token expiration times (must match backend config)
  * Backend: services/auth-service/.env.example
  */
-const _accessTokenMins = parseInt(process.env.NEXT_PUBLIC_ACCESS_TOKEN_EXPIRATION_MINS ?? '15', 10);
+const _accessTokenMins = parseInt(
+  process.env.NEXT_PUBLIC_ACCESS_TOKEN_EXPIRATION_MINS ?? "15",
+  10,
+);
 export const TOKEN_CONFIG = {
   ACCESS_TOKEN_EXPIRATION: _accessTokenMins * 60 * 1000, // ACCESS_TOKEN_EXPIRATION_MINS env (default 15) in milliseconds
   REFRESH_TOKEN_EXPIRATION: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
   ACCESS_TOKEN_EXPIRATION_STRING: `${_accessTokenMins}m`,
-  REFRESH_TOKEN_EXPIRATION_STRING: '90d',
+  REFRESH_TOKEN_EXPIRATION_STRING: "90d",
 } as const;
 
 /**
  * JWT Secret keys (for reference - actual values in .env)
  */
 export const JWT_SECRETS = {
-  ACCESS_TOKEN: 'JWT_SECRET',
-  REFRESH_TOKEN: 'JWT_REFRESH_SECRET',
-  NEXTAUTH: 'AUTH_SECRET',
+  ACCESS_TOKEN: "JWT_SECRET",
+  REFRESH_TOKEN: "JWT_REFRESH_SECRET",
+  NEXTAUTH: "AUTH_SECRET",
 } as const;
 
 /**
  * API Endpoints (must match backend routes)
  */
 export const AUTH_ENDPOINTS = {
-	SIGNUP: "/api/v1/user/auth/signup",
-	LOGIN: "/api/v1/user/auth/login",
-	LOGOUT: "/api/v1/user/auth/logout",
-	REFRESH: "/api/v1/user/auth/refresh",
-	VERIFY_EMAIL: "/api/v1/user/auth/verify-email",
-	REQUEST_PASSWORD_RESET: "/api/v1/user/auth/password-reset/request",
-	CONFIRM_PASSWORD_RESET: "/api/v1/user/auth/password-reset/confirm",
-	PROFILE: "/api/v1/user/auth/me",
+  SIGNUP: "/api/v1/user/auth/signup",
+  LOGIN: "/api/v1/user/auth/login",
+  LOGOUT: "/api/v1/user/auth/logout",
+  REFRESH: "/api/v1/user/auth/refresh",
+  VERIFY_EMAIL: "/api/v1/user/auth/verify-email",
+  REQUEST_PASSWORD_RESET: "/api/v1/user/auth/password-reset/request",
+  CONFIRM_PASSWORD_RESET: "/api/v1/user/auth/password-reset/confirm",
+  PROFILE: "/api/v1/user/auth/me",
 } as const;
 
 /**
  * User roles (must match database constraint)
  */
 export const USER_ROLES = {
-  CUSTOMER: 'customer',
-  PROVIDER: 'provider',
-  ADMIN: 'admin',
+  CUSTOMER: "customer",
+  PROVIDER: "provider",
+  ADMIN: "admin",
 } as const;
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
@@ -232,9 +239,9 @@ export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
  * User status (must match database constraint)
  */
 export const USER_STATUS = {
-  ACTIVE: 'active',
-  SUSPENDED: 'suspended',
-  DELETED: 'deleted',
+  ACTIVE: "active",
+  SUSPENDED: "suspended",
+  DELETED: "deleted",
 } as const;
 
 export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
@@ -261,14 +268,14 @@ export interface BackendErrorResponse {
  * Common error codes from backend
  */
 export const ERROR_CODES = {
-  UNAUTHORIZED: 'UNAUTHORIZED',
-  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
-  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
-  INVALID_REFRESH_TOKEN: 'INVALID_REFRESH_TOKEN',
-  USER_NOT_FOUND: 'USER_NOT_FOUND',
-  EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
-  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
-  ACCOUNT_NOT_ACTIVE: 'ACCOUNT_NOT_ACTIVE',
+  UNAUTHORIZED: "UNAUTHORIZED",
+  INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
+  TOKEN_EXPIRED: "TOKEN_EXPIRED",
+  INVALID_REFRESH_TOKEN: "INVALID_REFRESH_TOKEN",
+  USER_NOT_FOUND: "USER_NOT_FOUND",
+  EMAIL_ALREADY_EXISTS: "EMAIL_ALREADY_EXISTS",
+  TOO_MANY_REQUESTS: "TOO_MANY_REQUESTS",
+  ACCOUNT_NOT_ACTIVE: "ACCOUNT_NOT_ACTIVE",
 } as const;
 
 // ============================================
@@ -282,11 +289,15 @@ export const ERROR_CODES = {
 
 // Verify that backend user fields can be transformed to frontend user
 type BackendUserFields = keyof BackendUser;
-type FrontendUserFields = keyof FrontendSession['user'];
+type FrontendUserFields = keyof FrontendSession["user"];
 
 // Verify token field types are compatible
-type AccessTokenType = BackendAuthResponse['accessToken'] extends string ? true : never;
-type RefreshTokenType = BackendAuthResponse['refreshToken'] extends string ? true : never;
+type AccessTokenType = BackendAuthResponse["accessToken"] extends string
+  ? true
+  : never;
+type RefreshTokenType = BackendAuthResponse["refreshToken"] extends string
+  ? true
+  : never;
 
 // ============================================
 // Runtime Validation Examples
@@ -297,7 +308,7 @@ type RefreshTokenType = BackendAuthResponse['refreshToken'] extends string ? tru
  */
 export function validateLoginResponse(response: unknown): BackendAuthResponse {
   if (!isValidBackendAuthResponse(response)) {
-    throw new Error('Invalid login response format');
+    throw new Error("Invalid login response format");
   }
   return response;
 }
@@ -305,9 +316,11 @@ export function validateLoginResponse(response: unknown): BackendAuthResponse {
 /**
  * Example: Validate refresh response
  */
-export function validateRefreshResponse(response: unknown): BackendRefreshResponse {
+export function validateRefreshResponse(
+  response: unknown,
+): BackendRefreshResponse {
   if (!isValidBackendRefreshResponse(response)) {
-    throw new Error('Invalid refresh response format');
+    throw new Error("Invalid refresh response format");
   }
   return response;
 }
@@ -316,14 +329,14 @@ export function validateRefreshResponse(response: unknown): BackendRefreshRespon
  * Example: Safe user transformation with validation
  */
 export function safeTransformUser(backendUser: unknown) {
-  if (!backendUser || typeof backendUser !== 'object') {
-    throw new Error('Invalid user data');
+  if (!backendUser || typeof backendUser !== "object") {
+    throw new Error("Invalid user data");
   }
 
-  const user = backendUser as BackendAuthResponse['user'];
+  const user = backendUser as BackendAuthResponse["user"];
 
   if (!user.id || !user.email || !user.role) {
-    throw new Error('Missing required user fields');
+    throw new Error("Missing required user fields");
   }
 
   return transformBackendUserToFrontend(user);

@@ -9,7 +9,7 @@ export class SocialAccountRepository {
   constructor(
     @Inject("DATABASE_POOL") private readonly pool: Pool,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-  ) { }
+  ) {}
 
   /**
    * Find social account by provider and provider user ID

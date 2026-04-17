@@ -16,18 +16,18 @@ export interface SiteConfig {
 }
 
 export const SITE_CONFIG_DEFAULTS: SiteConfig = {
-  supportEmail: 'support@marketplace.com',
-  contactPhone: '',
-  contactAddress: '',
+  supportEmail: "support@marketplace.com",
+  contactPhone: "",
+  contactAddress: "",
   maxFileUploadSizeMb: 10,
-  allowedFileTypes: 'image/jpeg,image/png,image/webp,application/pdf',
+  allowedFileTypes: "image/jpeg,image/png,image/webp,application/pdf",
   gstRate: 18,
   platformFeePercentage: 15,
-  currency: 'INR',
+  currency: "INR",
   defaultPageLimit: 20,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3700';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
 
 /**
  * Fetches site config from the backend.

@@ -19,7 +19,7 @@ export class SubscriptionService {
   constructor(
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly pricingPlanRepository: PricingPlanRepository,
-  ) { }
+  ) {}
 
   async createSubscription(
     providerId: string,
@@ -29,8 +29,13 @@ export class SubscriptionService {
     actorPermissions?: string[],
     actorProviderId?: string,
   ): Promise<Subscription> {
-    if (!actorPermissions?.includes('subscriptions.manage') && actorProviderId !== providerId) {
-      throw new ForbiddenException("You can only create subscriptions for your own provider account");
+    if (
+      !actorPermissions?.includes("subscriptions.manage") &&
+      actorProviderId !== providerId
+    ) {
+      throw new ForbiddenException(
+        "You can only create subscriptions for your own provider account",
+      );
     }
     const plan = await this.pricingPlanRepository.findById(planId);
 
@@ -152,8 +157,13 @@ export class SubscriptionService {
       throw new NotFoundException("Subscription not found");
     }
 
-    if (!actorPermissions?.includes('subscriptions.manage') && actorProviderId !== subscription.provider_id) {
-      throw new ForbiddenException("You can only cancel your own provider subscription");
+    if (
+      !actorPermissions?.includes("subscriptions.manage") &&
+      actorProviderId !== subscription.provider_id
+    ) {
+      throw new ForbiddenException(
+        "You can only cancel your own provider subscription",
+      );
     }
     if (subscription.status === "cancelled") {
       throw new BadRequestException("Subscription is already cancelled");
@@ -175,8 +185,13 @@ export class SubscriptionService {
     actorPermissions?: string[],
     actorProviderId?: string,
   ): Promise<Subscription> {
-    if (!actorPermissions?.includes('subscriptions.manage') && actorProviderId !== providerId) {
-      throw new ForbiddenException("You can only upgrade your own provider subscription");
+    if (
+      !actorPermissions?.includes("subscriptions.manage") &&
+      actorProviderId !== providerId
+    ) {
+      throw new ForbiddenException(
+        "You can only upgrade your own provider subscription",
+      );
     }
 
     // Get current subscription

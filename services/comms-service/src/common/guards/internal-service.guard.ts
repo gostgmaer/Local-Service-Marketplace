@@ -22,7 +22,9 @@ export class InternalServiceGuard implements CanActivate {
     }
 
     if (!secret || secret !== expected) {
-      throw new UnauthorizedException("Invalid or missing internal service secret");
+      throw new UnauthorizedException(
+        "Invalid or missing internal service secret",
+      );
     }
 
     return true;

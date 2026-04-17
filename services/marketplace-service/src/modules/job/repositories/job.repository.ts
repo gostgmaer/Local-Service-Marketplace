@@ -8,12 +8,12 @@ import { resolveId } from "@/common/utils/resolve-id.util";
 
 @Injectable()
 export class JobRepository {
-  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
-        'SELECT value FROM system_settings WHERE key = $1',
+        "SELECT value FROM system_settings WHERE key = $1",
         [key],
       );
       return res.rows[0]?.value ?? defaultValue;
@@ -451,5 +451,4 @@ export class JobRepository {
     const result = await this.pool.query(query, [amount, jobId]);
     return result.rows[0] || null;
   }
-
 }

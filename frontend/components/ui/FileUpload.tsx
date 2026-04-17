@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useRef, useState, ChangeEvent } from 'react';
-import { Upload, X, FileIcon, ImageIcon } from 'lucide-react';
-import { cn } from '@/utils/helpers';
-import { usePublicSettings } from '@/hooks/usePublicSettings';
+import React, { useRef, useState, ChangeEvent } from "react";
+import { Upload, X, FileIcon, ImageIcon } from "lucide-react";
+import { cn } from "@/utils/helpers";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 interface FileUploadProps {
   accept?: string;
@@ -30,10 +30,12 @@ export function FileUpload({
 
   // Resolve defaults from system settings when props are omitted
   const resolvedMaxSize = maxSize ?? config.maxFileUploadSizeMb * 1024 * 1024;
-  const resolvedAccept  = accept  ?? config.allowedFileTypes
-    .split(',')
-    .map((t) => t.trim())
-    .join(',');
+  const resolvedAccept =
+    accept ??
+    config.allowedFileTypes
+      .split(",")
+      .map((t) => t.trim())
+      .join(",");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ export function FileUpload({
 
   const handleFiles = (files: FileList) => {
     const fileArray = Array.from(files);
-    
+
     if (fileArray.length + selectedFiles.length > maxFiles) {
       onError?.(`Maximum ${maxFiles} files allowed`);
       return;
@@ -66,7 +68,7 @@ export function FileUpload({
     });
 
     if (errors.length > 0) {
-      onError?.(errors.join(', '));
+      onError?.(errors.join(", "));
     }
 
     if (validFiles.length > 0) {
@@ -85,9 +87,9 @@ export function FileUpload({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     if (disabled) return;
-    
+
     if (e.dataTransfer.files) {
       handleFiles(e.dataTransfer.files);
     }
@@ -110,10 +112,10 @@ export function FileUpload({
     onFilesSelected(newFiles);
   };
 
-  const isImage = (file: File) => file.type.startsWith('image/');
+  const isImage = (file: File) => file.type.startsWith("image/");
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn("space-y-4", className)}>
       {/* Drop Zone */}
       <div
         onDrop={handleDrop}
@@ -121,19 +123,19 @@ export function FileUpload({
         onDragLeave={handleDragLeave}
         onClick={() => !disabled && inputRef.current?.click()}
         className={cn(
-          'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
+          "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
           isDragging
-            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-            : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500',
-          disabled && 'opacity-50 cursor-not-allowed',
+            ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+            : "border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500",
+          disabled && "opacity-50 cursor-not-allowed",
         )}
       >
         <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
         <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {isDragging ? 'Drop files here' : 'Click to upload or drag and drop'}
+          {isDragging ? "Drop files here" : "Click to upload or drag and drop"}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {multiple ? `Up to ${maxFiles} files, ` : 'Single file, '}
+          {multiple ? `Up to ${maxFiles} files, ` : "Single file, "}
           max {(resolvedMaxSize / 1024 / 1024).toFixed(0)}MB each
         </p>
         <input

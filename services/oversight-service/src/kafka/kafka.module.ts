@@ -1,5 +1,5 @@
-import { Module, Global, DynamicModule } from '@nestjs/common';
-import { KafkaService } from './kafka.service';
+import { Module, Global, DynamicModule } from "@nestjs/common";
+import { KafkaService } from "./kafka.service";
 
 /**
  * Kafka event-bus module — follows the same conditional-loading pattern as BullMQ.
@@ -15,7 +15,7 @@ import { KafkaService } from './kafka.service';
 @Module({})
 export class KafkaModule {
   static register(): DynamicModule {
-    const isEnabled = process.env.EVENT_BUS_ENABLED === 'true';
+    const isEnabled = process.env.EVENT_BUS_ENABLED === "true";
 
     return {
       module: KafkaModule,

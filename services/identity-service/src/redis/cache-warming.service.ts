@@ -16,7 +16,7 @@ export class CacheWarmingService implements OnModuleInit {
     private readonly providerRepo: ProviderRepository,
     private readonly providerServiceRepo: ProviderServiceRepository,
     private readonly providerAvailabilityRepo: ProviderAvailabilityRepository,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     if (!this.redisService.isCacheEnabled()) {

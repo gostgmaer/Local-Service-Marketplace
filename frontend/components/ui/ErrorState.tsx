@@ -1,20 +1,20 @@
-import React from 'react';
-import { AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
-import { Button } from './Button';
-import { cn } from '@/utils/helpers';
+import React from "react";
+import { AlertTriangle, XCircle, RefreshCw } from "lucide-react";
+import { Button } from "./Button";
+import { cn } from "@/utils/helpers";
 
 interface ErrorStateProps {
   title?: string;
   message?: string;
-  type?: 'error' | 'warning' | 'network';
+  type?: "error" | "warning" | "network";
   retry?: () => void;
   className?: string;
 }
 
 export function ErrorState({
-  title = 'Something went wrong',
-  message = 'An error occurred while loading this content.',
-  type = 'error',
+  title = "Something went wrong",
+  message = "An error occurred while loading this content.",
+  type = "error",
   retry,
   className,
 }: ErrorStateProps) {
@@ -25,9 +25,9 @@ export function ErrorState({
   };
 
   const colorMap = {
-    error: 'text-red-500',
-    warning: 'text-yellow-500',
-    network: 'text-blue-500',
+    error: "text-red-500",
+    warning: "text-yellow-500",
+    network: "text-blue-500",
   };
 
   const Icon = iconMap[type];
@@ -35,11 +35,11 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center py-12 px-4 text-center',
+        "flex flex-col items-center justify-center py-12 px-4 text-center",
         className,
       )}
     >
-      <div className={cn('mb-4', colorMap[type])}>
+      <div className={cn("mb-4", colorMap[type])}>
         <Icon className="h-12 w-12" />
       </div>
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>

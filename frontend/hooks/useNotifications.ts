@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { notificationService } from '@/services/notification-service';
-import { isNotificationsEnabled } from '@/config/features';
+import { useState, useEffect } from "react";
+import { notificationService } from "@/services/notification-service";
+import { isNotificationsEnabled } from "@/config/features";
 
 interface NotificationCount {
   unreadCount: number;
@@ -13,7 +13,7 @@ interface UseNotificationsOptions {
 /**
  * Hook to fetch real-time unread notification count
  * Polls the API every 30 seconds for updates
- * 
+ *
  * @param options - Configuration options
  * @param options.enabled - Whether to enable fetching (default: true)
  * @returns {Object} { unreadCount, isLoading, refetch }
@@ -38,7 +38,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       setUnreadCount(response.count || 0);
       setIsLoading(false);
     } catch (error) {
-      console.error('Failed to fetch notification count:', error);
+      console.error("Failed to fetch notification count:", error);
       setUnreadCount(0); // Reset count on error
       setIsLoading(false);
     }
@@ -64,6 +64,6 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   return {
     unreadCount,
     isLoading,
-    refetch: fetchUnreadCount
+    refetch: fetchUnreadCount,
   };
 }

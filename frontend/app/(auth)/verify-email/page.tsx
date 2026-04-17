@@ -10,158 +10,178 @@ import { authService } from "@/services/auth-service";
 import { ROUTES } from "@/config/constants";
 
 function VerifyEmailContent() {
-	const router = useRouter();
-	const { data: session, update } = useSession();
-	const searchParams = useSearchParams();
-	const token = searchParams.get("token");
+  const router = useRouter();
+  const { data: session, update } = useSession();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
 
-	const [status, setStatus] = useState<"verifying" | "success" | "error" | "no-token">("verifying");
-	const [errorMessage, setErrorMessage] = useState("");
-	const hasVerified = useRef(false);
+  const [status, setStatus] = useState<
+    "verifying" | "success" | "error" | "no-token"
+  >("verifying");
+  const [errorMessage, setErrorMessage] = useState("");
+  const hasVerified = useRef(false);
 
-	useEffect(() => {
-		if (!token || hasVerified.current) {
-			if (!token) setStatus("no-token");
-			return;
-		}
+  useEffect(() => {
+    if (!token || hasVerified.current) {
+      if (!token) setStatus("no-token");
+      return;
+    }
 
-		hasVerified.current = true;
+    hasVerified.current = true;
 
-		authService
-			.verifyEmail(token)
-			.then(async () => {
-				setStatus("success");
+    authService
+      .verifyEmail(token)
+      .then(async () => {
+        setStatus("success");
 
-				// If user is logged in, force refresh their session to update emailVerified flag
-				if (session) {
-					await update();
-					// Wait a bit to ensure session is refreshed and propagated
-					await new Promise((res) => setTimeout(res, 500));
-				}
+        // If user is logged in, force refresh their session to update emailVerified flag
+        if (session) {
+          await update();
+          // Wait a bit to ensure session is refreshed and propagated
+          await new Promise((res) => setTimeout(res, 500));
+        }
 
-				// Redirect based on auth status and role
-				let redirectPath: string;
-				if (!session) {
-					redirectPath = ROUTES.LOGIN + "?verified=1";
-				} else if (session.user.role === "admin") {
-					redirectPath = "/dashboard/admin";
-				} else if (session.user.role === "provider") {
-					redirectPath = "/onboarding";
-				} else {
-					redirectPath = "/dashboard";
-				}
+        // Redirect based on auth status and role
+        let redirectPath: string;
+        if (!session) {
+          redirectPath = ROUTES.LOGIN + "?verified=1";
+        } else if (session.user.role === "admin") {
+          redirectPath = "/dashboard/admin";
+        } else if (session.user.role === "provider") {
+          redirectPath = "/onboarding";
+        } else {
+          redirectPath = "/dashboard";
+        }
 
-				// Add a small delay to ensure session update is reflected before redirect
-				setTimeout(() => router.push(redirectPath), 1000);
-			})
-			.catch((err: any) => {
-				const msg =
-					err?.response?.data?.error?.message ||
-					err?.response?.data?.message ||
-					"The verification link is invalid or has expired.";
-				setErrorMessage(msg);
-				setStatus("error");
-			});
-	}, [token, router]);
+        // Add a small delay to ensure session update is reflected before redirect
+        setTimeout(() => router.push(redirectPath), 1000);
+      })
+      .catch((err: any) => {
+        const msg =
+          err?.response?.data?.error?.message ||
+          err?.response?.data?.message ||
+          "The verification link is invalid or has expired.";
+        setErrorMessage(msg);
+        setStatus("error");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, router]);
 
-	return (
-		<div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4'>
-			<div className='max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center'>
-				{status === "verifying" && (
-					<>
-						<Loader2 className='mx-auto h-16 w-16 text-primary-600 animate-spin mb-4' />
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>Verifying your email…</h1>
-						<p className='text-gray-600 dark:text-gray-400'>Please wait a moment.</p>
-					</>
-				)}
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+        {status === "verifying" && (
+          <>
+            <Loader2 className="mx-auto h-16 w-16 text-primary-600 animate-spin mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Verifying your email…
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Please wait a moment.
+            </p>
+          </>
+        )}
 
-				{status === "success" && (
-					<>
-						<CheckCircle className='mx-auto h-16 w-16 text-green-500 mb-4' />
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>Email Verified!</h1>
-						<p className='text-gray-600 dark:text-gray-400 mb-6'>
-							Your email has been successfully verified. You'll be redirected{" "}
-							{session?.user?.role === "provider" ?
-								"to continue your onboarding"
-							: session ?
-								"to your dashboard"
-							:	"to login"}{" "}
-							shortly.
-						</p>
-						<Link
-							href={
-								!session ? ROUTES.LOGIN
-								: session.user.role === "admin" ?
-									"/dashboard/admin"
-								: session.user.role === "provider" ?
-									"/onboarding"
-								:	"/dashboard"
-							}>
-							<Button className='w-full'>
-								{session?.user?.role === "provider" ?
-									"Continue Onboarding"
-								: session ?
-									"Go to Dashboard"
-								:	"Go to Login"}
-							</Button>
-						</Link>
-					</>
-				)}
+        {status === "success" && (
+          <>
+            <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Email Verified!
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Your email has been successfully verified. You'll be redirected{" "}
+              {session?.user?.role === "provider"
+                ? "to continue your onboarding"
+                : session
+                  ? "to your dashboard"
+                  : "to login"}{" "}
+              shortly.
+            </p>
+            <Link
+              href={
+                !session
+                  ? ROUTES.LOGIN
+                  : session.user.role === "admin"
+                    ? "/dashboard/admin"
+                    : session.user.role === "provider"
+                      ? "/onboarding"
+                      : "/dashboard"
+              }
+            >
+              <Button className="w-full">
+                {session?.user?.role === "provider"
+                  ? "Continue Onboarding"
+                  : session
+                    ? "Go to Dashboard"
+                    : "Go to Login"}
+              </Button>
+            </Link>
+          </>
+        )}
 
-				{status === "error" && (
-					<>
-						<XCircle className='mx-auto h-16 w-16 text-red-500 mb-4' />
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>Verification Failed</h1>
-						<p className='text-gray-600 dark:text-gray-400 mb-6'>{errorMessage}</p>
-						<div className='space-y-3'>
-							<Link href={ROUTES.LOGIN}>
-								<Button className='w-full'>Back to Login</Button>
-							</Link>
-							<p className='text-sm text-gray-500 dark:text-gray-400'>
-								Need a new link?{" "}
-								<Link
-									href={ROUTES.LOGIN}
-									className='text-primary-600 dark:text-primary-400 hover:underline font-medium'>
-									Sign in and we'll send another.
-								</Link>
-							</p>
-						</div>
-					</>
-				)}
+        {status === "error" && (
+          <>
+            <XCircle className="mx-auto h-16 w-16 text-red-500 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Verification Failed
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {errorMessage}
+            </p>
+            <div className="space-y-3">
+              <Link href={ROUTES.LOGIN}>
+                <Button className="w-full">Back to Login</Button>
+              </Link>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Need a new link?{" "}
+                <Link
+                  href={ROUTES.LOGIN}
+                  className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                >
+                  Sign in and we'll send another.
+                </Link>
+              </p>
+            </div>
+          </>
+        )}
 
-				{status === "no-token" && (
-					<>
-						<Mail className='mx-auto h-16 w-16 text-gray-400 mb-4' />
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>Check Your Email</h1>
-						<p className='text-gray-600 dark:text-gray-400 mb-6'>
-							We've sent a verification link to your email address. Click the link in the email to verify your account.
-						</p>
-						<Link href={ROUTES.LOGIN}>
-							<Button
-								variant='outline'
-								className='w-full'>
-								Back to Login
-							</Button>
-						</Link>
-					</>
-				)}
-			</div>
-		</div>
-	);
+        {status === "no-token" && (
+          <>
+            <Mail className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Check Your Email
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              We've sent a verification link to your email address. Click the
+              link in the email to verify your account.
+            </p>
+            <Link href={ROUTES.LOGIN}>
+              <Button variant="outline" className="w-full">
+                Back to Login
+              </Button>
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function VerifyEmailPage() {
-	return (
-		<Suspense
-			fallback={
-				<div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4'>
-					<div className='max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center'>
-						<Loader2 className='mx-auto h-16 w-16 text-primary-600 animate-spin mb-4' />
-						<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>Loading…</h1>
-					</div>
-				</div>
-			}>
-			<VerifyEmailContent />
-		</Suspense>
-	);
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+          <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+            <Loader2 className="mx-auto h-16 w-16 text-primary-600 animate-spin mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Loading…
+            </h1>
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
+  );
 }

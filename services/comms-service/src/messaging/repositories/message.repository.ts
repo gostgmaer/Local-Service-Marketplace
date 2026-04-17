@@ -74,7 +74,10 @@ export class MessageRepository {
   }
 
   /** Returns the user_id of the other participant in the job (not the sender). */
-  async getJobRecipientId(jobId: string, senderId: string): Promise<string | null> {
+  async getJobRecipientId(
+    jobId: string,
+    senderId: string,
+  ): Promise<string | null> {
     const query = `
       SELECT customer_id, provider_id
       FROM jobs

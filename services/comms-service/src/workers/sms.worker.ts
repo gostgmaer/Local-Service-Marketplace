@@ -1,10 +1,10 @@
-import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Inject, LoggerService, Optional } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { Job } from 'bullmq';
-import { SmsClient } from '../notification/clients/sms.client';
-import { NotificationDeliveryRepository } from '../notification/repositories/notification-delivery.repository';
-import { DeadLetterQueueService } from '../common/dlq/dead-letter-queue.service';
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
+import { Inject, LoggerService, Optional } from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { Job } from "bullmq";
+import { SmsClient } from "../notification/clients/sms.client";
+import { NotificationDeliveryRepository } from "../notification/repositories/notification-delivery.repository";
+import { DeadLetterQueueService } from "../common/dlq/dead-letter-queue.service";
 
 export interface DeliverSmsJobData {
   phone: string;
@@ -25,8 +25,8 @@ export interface DeliverOtpJobData {
  *   deliver-sms  : send a plain SMS message
  *   deliver-otp  : send an OTP via SMS
  */
-@Processor('comms.sms', {
-  concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
+@Processor("comms.sms", {
+  concurrency: parseInt(process.env.WORKER_CONCURRENCY || "5", 10),
 })
 export class SmsWorker extends WorkerHost {
   constructor(
@@ -41,12 +41,15 @@ export class SmsWorker extends WorkerHost {
 
   async process(job: Job<any, any, string>): Promise<any> {
     switch (job.name) {
-      case 'deliver-sms':
+      case "deliver-sms":
         return this.handleDeliverSms(job as Job<DeliverSmsJobData>);
-      case 'deliver-otp':
+      case "deliver-otp":
         return this.handleDeliverOtp(job as Job<DeliverOtpJobData>);
       default:
-        this.logger.warn(`SmsWorker: unknown job name "${job.name}"`, 'SmsWorker');
+        this.logger.warn(
+          `SmsWorker: unknown job name "${job.name}"`,
+          "SmsWorker",
+        );
     }
   }
 
@@ -57,30 +60,33 @@ export class SmsWorker extends WorkerHost {
 
     this.logger.log(
       `SmsWorker: sending SMS to ${phone} (attempt ${job.attemptsMade + 1})`,
-      'SmsWorker',
+      "SmsWorker",
     );
 
     try {
       await this.smsClient.sendSms(phone, message);
 
       if (deliveryId) {
-        await this.deliveryRepository.updateDeliveryStatus(deliveryId, 'sent');
+        await this.deliveryRepository.updateDeliveryStatus(deliveryId, "sent");
       }
 
-      this.logger.log(`SmsWorker: SMS sent to ${phone}`, 'SmsWorker');
+      this.logger.log(`SmsWorker: SMS sent to ${phone}`, "SmsWorker");
     } catch (error: any) {
       this.logger.error(
         `SmsWorker: SMS to ${phone} failed — ${error.message}`,
         error.stack,
-        'SmsWorker',
+        "SmsWorker",
       );
       if (deliveryId) {
-        await this.deliveryRepository.updateDeliveryStatus(deliveryId, 'failed');
+        await this.deliveryRepository.updateDeliveryStatus(
+          deliveryId,
+          "failed",
+        );
       }
 
       // Capture in DLQ if max retries reached
       if (this.dlqService && job.attemptsMade >= 3) {
-        await this.dlqService.captureFailedJob('comms.sms', job, error);
+        await this.dlqService.captureFailedJob("comms.sms", job, error);
       }
 
       throw error;
@@ -92,22 +98,22 @@ export class SmsWorker extends WorkerHost {
 
     this.logger.log(
       `SmsWorker: sending OTP to ${phone} (purpose: ${purpose}, attempt ${job.attemptsMade + 1})`,
-      'SmsWorker',
+      "SmsWorker",
     );
 
     try {
       await this.smsClient.sendOtp(phone, purpose);
-      this.logger.log(`SmsWorker: OTP sent to ${phone}`, 'SmsWorker');
+      this.logger.log(`SmsWorker: OTP sent to ${phone}`, "SmsWorker");
     } catch (error: any) {
       this.logger.error(
         `SmsWorker: OTP to ${phone} failed — ${error.message}`,
         error.stack,
-        'SmsWorker',
+        "SmsWorker",
       );
 
       // Capture in DLQ if max retries reached
       if (this.dlqService && job.attemptsMade >= 3) {
-        await this.dlqService.captureFailedJob('comms.sms', job, error);
+        await this.dlqService.captureFailedJob("comms.sms", job, error);
       }
 
       throw error;
@@ -118,32 +124,39 @@ export class SmsWorker extends WorkerHost {
   // Worker lifecycle hooks
   // ─────────────────────────────────────────────────────────────────
 
-  @OnWorkerEvent('active')
+  @OnWorkerEvent("active")
   onActive(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`, 'SmsWorker');
-  }
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" completed`, 'SmsWorker');
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job | undefined, error: Error): void {
-    this.logger.error(
-      `Job "${job?.name ?? 'unknown'}/${job?.id ?? '?'}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
-      error.stack,
-      'SmsWorker',
+    this.logger.log(
+      `Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`,
+      "SmsWorker",
     );
   }
 
-  @OnWorkerEvent('error')
-  onError(error: Error): void {
-    this.logger.error(`Worker error: ${error.message}`, error.stack, 'SmsWorker');
+  @OnWorkerEvent("completed")
+  onCompleted(job: Job): void {
+    this.logger.log(`Job "${job.name}/${job.id}" completed`, "SmsWorker");
   }
 
-  @OnWorkerEvent('stalled')
+  @OnWorkerEvent("failed")
+  onFailed(job: Job | undefined, error: Error): void {
+    this.logger.error(
+      `Job "${job?.name ?? "unknown"}/${job?.id ?? "?"}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+      error.stack,
+      "SmsWorker",
+    );
+  }
+
+  @OnWorkerEvent("error")
+  onError(error: Error): void {
+    this.logger.error(
+      `Worker error: ${error.message}`,
+      error.stack,
+      "SmsWorker",
+    );
+  }
+
+  @OnWorkerEvent("stalled")
   onStalled(jobId: string): void {
-    this.logger.warn(`Job ${jobId} stalled and will be requeued`, 'SmsWorker');
+    this.logger.warn(`Job ${jobId} stalled and will be requeued`, "SmsWorker");
   }
 }

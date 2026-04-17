@@ -1,5 +1,5 @@
-import { useState, useCallback, ChangeEvent } from 'react';
-import { useDebounce } from './useDebounce';
+import { useState, useCallback, ChangeEvent } from "react";
+import { useDebounce } from "./useDebounce";
 
 interface UseSearchOptions {
   debounceDelay?: number;
@@ -8,8 +8,8 @@ interface UseSearchOptions {
 
 export function useSearch(options: UseSearchOptions = {}) {
   const { debounceDelay = 300, minLength = 0 } = options;
-  
-  const [query, setQuery] = useState('');
+
+  const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, debounceDelay);
 
   const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -17,7 +17,7 @@ export function useSearch(options: UseSearchOptions = {}) {
   }, []);
 
   const clear = useCallback(() => {
-    setQuery('');
+    setQuery("");
   }, []);
 
   const isSearching = debouncedQuery.length >= minLength;

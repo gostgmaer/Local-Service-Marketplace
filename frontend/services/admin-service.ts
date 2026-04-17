@@ -1,56 +1,56 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 export interface User {
-	id: string;
-	display_id?: string;
-	email: string;
-	name?: string;
-	phone?: string;
-	role: string;
-	status: "active" | "suspended" | "deleted";
-	email_verified?: boolean;
-	profile_picture_url?: string;
-	timezone?: string;
-	language?: string;
-	last_login_at?: string;
-	created_at: string;
-	updated_at?: string;
+  id: string;
+  display_id?: string;
+  email: string;
+  name?: string;
+  phone?: string;
+  role: string;
+  status: "active" | "suspended" | "deleted";
+  email_verified?: boolean;
+  profile_picture_url?: string;
+  timezone?: string;
+  language?: string;
+  last_login_at?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
-type ApiUser = Partial<User> & { 
-	createdAt?: string; 
-	displayId?: string;
-	emailVerified?: boolean;
-	profilePictureUrl?: string;
-	lastLoginAt?: string;
+type ApiUser = Partial<User> & {
+  createdAt?: string;
+  displayId?: string;
+  emailVerified?: boolean;
+  profilePictureUrl?: string;
+  lastLoginAt?: string;
 };
 
 const normalizeUser = (user: ApiUser): User => ({
-	id: String(user.id || ""),
-	display_id: user.display_id || user.displayId,
-	email: String(user.email || ""),
-	name: user.name || undefined,
-	phone: user.phone || undefined,
-	role: String(user.role || "customer"),
-	status: (user.status as User["status"]) || "active",
-	email_verified: user.email_verified ?? user.emailVerified,
-	profile_picture_url: user.profile_picture_url || user.profilePictureUrl,
-	timezone: user.timezone,
-	language: user.language,
-	last_login_at: user.last_login_at || user.lastLoginAt,
-	created_at: String(user.created_at || user.createdAt || ""),
+  id: String(user.id || ""),
+  display_id: user.display_id || user.displayId,
+  email: String(user.email || ""),
+  name: user.name || undefined,
+  phone: user.phone || undefined,
+  role: String(user.role || "customer"),
+  status: (user.status as User["status"]) || "active",
+  email_verified: user.email_verified ?? user.emailVerified,
+  profile_picture_url: user.profile_picture_url || user.profilePictureUrl,
+  timezone: user.timezone,
+  language: user.language,
+  last_login_at: user.last_login_at || user.lastLoginAt,
+  created_at: String(user.created_at || user.createdAt || ""),
 });
 
 export interface AdminCreateUserPayload {
-	email: string;
-	password: string;
-	name: string;
-	phone?: string;
-	role: "customer" | "provider" | "admin";
-	emailVerified?: boolean;
-	timezone?: string;
-	language?: string;
-	status?: "active" | "suspended";
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+  role: "customer" | "provider" | "admin";
+  emailVerified?: boolean;
+  timezone?: string;
+  language?: string;
+  status?: "active" | "suspended";
 }
 
 export interface Dispute {
@@ -59,7 +59,7 @@ export interface Dispute {
   job_id: string;
   opened_by: string;
   reason: string;
-  status: 'open' | 'investigating' | 'resolved' | 'closed';
+  status: "open" | "investigating" | "resolved" | "closed";
   resolution?: string;
   resolved_by?: string;
   resolved_at?: string;
@@ -78,281 +78,403 @@ export interface AuditLog {
 }
 
 class AdminService {
-	async getUsers(params?: {
-		cursor?: string;
-		limit?: number;
-		status?: string;
-		role?: string;
-		search?: string;
-		sortBy?: string;
-		sortOrder?: "asc" | "desc";
-		page?: number;
-	}): Promise<{ data: User[]; total: number }> {
-		const searchParams = new URLSearchParams();
-		if (params?.cursor) searchParams.append("cursor", params.cursor);
-		if (params?.limit) searchParams.append("limit", params.limit.toString());
-		if (params?.status) searchParams.append("status", params.status);
-		if (params?.role) searchParams.append("role", params.role);
-		if (params?.search) searchParams.append("search", params.search);
-		if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
-		if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
-		if (params?.page) searchParams.append("page", params.page.toString());
+  async getUsers(params?: {
+    cursor?: string;
+    limit?: number;
+    status?: string;
+    role?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+    page?: number;
+  }): Promise<{ data: User[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.cursor) searchParams.append("cursor", params.cursor);
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    if (params?.status) searchParams.append("status", params.status);
+    if (params?.role) searchParams.append("role", params.role);
+    if (params?.search) searchParams.append("search", params.search);
+    if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+    if (params?.page) searchParams.append("page", params.page.toString());
 
-		const response = await apiClient.get<{ data: ApiUser[]; total: number }>(`/users?${searchParams.toString()}`);
-		// API client unwraps standardized response and returns { data, total } for paginated responses
-		return { data: (response.data?.data || []).map(normalizeUser), total: response.data?.total || 0 };
-	}
+    const response = await apiClient.get<{ data: ApiUser[]; total: number }>(
+      `/users?${searchParams.toString()}`,
+    );
+    // API client unwraps standardized response and returns { data, total } for paginated responses
+    return {
+      data: (response.data?.data || []).map(normalizeUser),
+      total: response.data?.total || 0,
+    };
+  }
 
-	async getUserById(id: string): Promise<User> {
-		const response = await apiClient.get<ApiUser>(`/users/${id}`);
-		return normalizeUser(response.data || {});
-	}
+  async getUserById(id: string): Promise<User> {
+    const response = await apiClient.get<ApiUser>(`/users/${id}`);
+    return normalizeUser(response.data || {});
+  }
 
-	async createUser(payload: AdminCreateUserPayload): Promise<User> {
-		const response = await apiClient.post<ApiUser>("/users", payload);
-		return normalizeUser(response.data || {});
-	}
+  async createUser(payload: AdminCreateUserPayload): Promise<User> {
+    const response = await apiClient.post<ApiUser>("/users", payload);
+    return normalizeUser(response.data || {});
+  }
 
-	async suspendUser(id: string, reason: string): Promise<User> {
-		const response = await apiClient.patch<ApiUser>(`/users/${id}/suspend`, { reason });
-		return normalizeUser(response.data || {});
-	}
+  async suspendUser(id: string, reason: string): Promise<User> {
+    const response = await apiClient.patch<ApiUser>(`/users/${id}/suspend`, {
+      reason,
+    });
+    return normalizeUser(response.data || {});
+  }
 
-	async activateUser(id: string): Promise<User> {
-		const response = await apiClient.patch<ApiUser>(`/users/${id}/activate`, {});
-		return normalizeUser(response.data || {});
-	}
+  async activateUser(id: string): Promise<User> {
+    const response = await apiClient.patch<ApiUser>(
+      `/users/${id}/activate`,
+      {},
+    );
+    return normalizeUser(response.data || {});
+  }
 
-	async resetUserPassword(id: string, newPassword: string, reason?: string): Promise<{ success: true }> {
-		const response = await apiClient.patch<{ success: true }>(`/users/${id}/reset-password`, { newPassword, reason });
-		return response.data;
-	}
+  async resetUserPassword(
+    id: string,
+    newPassword: string,
+    reason?: string,
+  ): Promise<{ success: true }> {
+    const response = await apiClient.patch<{ success: true }>(
+      `/users/${id}/reset-password`,
+      { newPassword, reason },
+    );
+    return response.data;
+  }
 
-	async deleteUser(id: string): Promise<User> {
-		const response = await apiClient.delete<ApiUser>(`/users/${id}`);
-		return normalizeUser(response.data || {});
-	}
+  async deleteUser(id: string): Promise<User> {
+    const response = await apiClient.delete<ApiUser>(`/users/${id}`);
+    return normalizeUser(response.data || {});
+  }
 
-	async restoreUser(id: string): Promise<User> {
-		const response = await apiClient.patch<ApiUser>(`/users/${id}/restore`, {});
-		return normalizeUser(response.data || {});
-	}
+  async restoreUser(id: string): Promise<User> {
+    const response = await apiClient.patch<ApiUser>(`/users/${id}/restore`, {});
+    return normalizeUser(response.data || {});
+  }
 
-	async getDisputes(params?: {
-		status?: string;
-		cursor?: string;
-		limit?: number;
-		jobId?: string;
-		openedBy?: string;
-		sortBy?: string;
-		sortOrder?: "asc" | "desc";
-		page?: number;
-	}): Promise<{ data: Dispute[]; total: number }> {
-		const searchParams = new URLSearchParams();
-		if (params?.status) searchParams.append("status", params.status);
-		if (params?.cursor) searchParams.append("cursor", params.cursor);
-		if (params?.limit) searchParams.append("limit", params.limit.toString());
-		if (params?.jobId) searchParams.append("jobId", params.jobId);
-		if (params?.openedBy) searchParams.append("openedBy", params.openedBy);
-		if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
-		if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
-		if (params?.page) searchParams.append("page", params.page.toString());
+  async getDisputes(params?: {
+    status?: string;
+    cursor?: string;
+    limit?: number;
+    jobId?: string;
+    openedBy?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+    page?: number;
+  }): Promise<{ data: Dispute[]; total: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append("status", params.status);
+    if (params?.cursor) searchParams.append("cursor", params.cursor);
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    if (params?.jobId) searchParams.append("jobId", params.jobId);
+    if (params?.openedBy) searchParams.append("openedBy", params.openedBy);
+    if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+    if (params?.page) searchParams.append("page", params.page.toString());
 
-		const response = await apiClient.get<{ data: Dispute[]; total: number }>(
-			`/admin/disputes?${searchParams.toString()}`,
-		);
-		// API client unwraps standardized response and returns { data, total } for paginated responses
-		return response.data;
-	}
+    const response = await apiClient.get<{ data: Dispute[]; total: number }>(
+      `/admin/disputes?${searchParams.toString()}`,
+    );
+    // API client unwraps standardized response and returns { data, total } for paginated responses
+    return response.data;
+  }
 
-	async getDisputeById(id: string): Promise<Dispute> {
-		const response = await apiClient.get<Dispute>(`/admin/disputes/${id}`);
-		return response.data;
-	}
+  async getDisputeById(id: string): Promise<Dispute> {
+    const response = await apiClient.get<Dispute>(`/admin/disputes/${id}`);
+    return response.data;
+  }
 
-	async updateDispute(id: string, data: { status: string; resolution?: string }): Promise<Dispute> {
-		const response = await apiClient.patch<Dispute>(`/admin/disputes/${id}`, data);
-		return response.data;
-	}
+  async updateDispute(
+    id: string,
+    data: { status: string; resolution?: string },
+  ): Promise<Dispute> {
+    const response = await apiClient.patch<Dispute>(
+      `/admin/disputes/${id}`,
+      data,
+    );
+    return response.data;
+  }
 
-	async getAuditLogs(params?: {
-		user_id?: string;
-		action?: string;
-		cursor?: string;
-		limit?: number;
-	}): Promise<AuditLog[]> {
-		const searchParams = new URLSearchParams();
-		if (params?.user_id) searchParams.append("user_id", params.user_id);
-		if (params?.action) searchParams.append("action", params.action);
-		if (params?.cursor) searchParams.append("cursor", params.cursor);
-		if (params?.limit) searchParams.append("limit", params.limit.toString());
+  async getAuditLogs(params?: {
+    user_id?: string;
+    action?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<AuditLog[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.user_id) searchParams.append("user_id", params.user_id);
+    if (params?.action) searchParams.append("action", params.action);
+    if (params?.cursor) searchParams.append("cursor", params.cursor);
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
 
-		const response = await apiClient.get<AuditLog[]>(`/admin/audit-logs?${searchParams.toString()}`);
-		// API client unwraps standardized response
-		return response.data || [];
-	}
+    const response = await apiClient.get<AuditLog[]>(
+      `/admin/audit-logs?${searchParams.toString()}`,
+    );
+    // API client unwraps standardized response
+    return response.data || [];
+  }
 
-	async getSystemStats(): Promise<{
-		total: number;
-		byStatus: { active: number; suspended: number };
-		byRole: { customer: number; provider: number; admin: number };
-	}> {
-		const response = await apiClient.get<{
-			total: number;
-			byStatus: { active: number; suspended: number };
-			byRole: { customer: number; provider: number; admin: number };
-		}>("/users/stats");
-		return response.data;
-	}
+  async getSystemStats(): Promise<{
+    total: number;
+    byStatus: { active: number; suspended: number };
+    byRole: { customer: number; provider: number; admin: number };
+  }> {
+    const response = await apiClient.get<{
+      total: number;
+      byStatus: { active: number; suspended: number };
+      byRole: { customer: number; provider: number; admin: number };
+    }>("/users/stats");
+    return response.data;
+  }
 
-	async getDisputeStats(): Promise<{
-		total: number;
-		byStatus: { open: number; investigating: number; resolved: number; closed: number };
-	}> {
-		const response = await apiClient.get<{
-			total: number;
-			byStatus: { open: number; investigating: number; resolved: number; closed: number };
-		}>("/admin/disputes/stats");
-		return response.data;
-	}
+  async getDisputeStats(): Promise<{
+    total: number;
+    byStatus: {
+      open: number;
+      investigating: number;
+      resolved: number;
+      closed: number;
+    };
+  }> {
+    const response = await apiClient.get<{
+      total: number;
+      byStatus: {
+        open: number;
+        investigating: number;
+        resolved: number;
+        closed: number;
+      };
+    }>("/admin/disputes/stats");
+    return response.data;
+  }
 
-	async getJobStats(): Promise<{
-		total: number;
-		byStatus: { scheduled: number; in_progress: number; completed: number; cancelled: number; disputed: number };
-	}> {
-		const response = await apiClient.get<{
-			total: number;
-			byStatus: { scheduled: number; in_progress: number; completed: number; cancelled: number; disputed: number };
-		}>("/jobs/stats");
-		return response.data;
-	}
+  async getJobStats(): Promise<{
+    total: number;
+    byStatus: {
+      scheduled: number;
+      in_progress: number;
+      completed: number;
+      cancelled: number;
+      disputed: number;
+    };
+  }> {
+    const response = await apiClient.get<{
+      total: number;
+      byStatus: {
+        scheduled: number;
+        in_progress: number;
+        completed: number;
+        cancelled: number;
+        disputed: number;
+      };
+    }>("/jobs/stats");
+    return response.data;
+  }
 
-	async getRequestStats(): Promise<{
-		total: number;
-		byStatus: { open: number; assigned: number; completed: number; cancelled: number };
-	}> {
-		const response = await apiClient.get<{
-			total: number;
-			byStatus: { open: number; assigned: number; completed: number; cancelled: number };
-		}>("/requests/stats");
-		return response.data;
-	}
+  async getRequestStats(): Promise<{
+    total: number;
+    byStatus: {
+      open: number;
+      assigned: number;
+      completed: number;
+      cancelled: number;
+    };
+  }> {
+    const response = await apiClient.get<{
+      total: number;
+      byStatus: {
+        open: number;
+        assigned: number;
+        completed: number;
+        cancelled: number;
+      };
+    }>("/requests/stats");
+    return response.data;
+  }
 
-	async getPaymentStats(): Promise<{
-		total: number;
-		totalRevenue: number;
-		byStatus: { pending: number; completed: number; failed: number; refunded: number };
-	}> {
-		const response = await apiClient.get<{
-			total: number;
-			totalRevenue: number;
-			byStatus: { pending: number; completed: number; failed: number; refunded: number };
-		}>("/payments/stats");
-		return response.data;
-	}
+  async getPaymentStats(): Promise<{
+    total: number;
+    totalRevenue: number;
+    byStatus: {
+      pending: number;
+      completed: number;
+      failed: number;
+      refunded: number;
+    };
+  }> {
+    const response = await apiClient.get<{
+      total: number;
+      totalRevenue: number;
+      byStatus: {
+        pending: number;
+        completed: number;
+        failed: number;
+        refunded: number;
+      };
+    }>("/payments/stats");
+    return response.data;
+  }
 
-	async getProviders(params?: { page?: number; limit?: number; status?: string }): Promise<{ data: any[]; total: number }> {
-		const qs = new URLSearchParams();
-		if (params?.page) qs.append('page', String(params.page));
-		if (params?.limit) qs.append('limit', String(params.limit));
-		qs.append('verification_status', params?.status || 'pending');
-		const response = await apiClient.get<any>(`/providers?${qs.toString()}`);
-		const raw = response.data;
-		return { data: raw?.data ?? [], total: raw?.total ?? 0 };
-	}
+  async getProviders(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<{ data: any[]; total: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.append("page", String(params.page));
+    if (params?.limit) qs.append("limit", String(params.limit));
+    qs.append("verification_status", params?.status || "pending");
+    const response = await apiClient.get<any>(`/providers?${qs.toString()}`);
+    const raw = response.data;
+    return { data: raw?.data ?? [], total: raw?.total ?? 0 };
+  }
 
-	async getProviderDocuments(providerId: string): Promise<any[]> {
-		// Backend: GET /provider-documents/provider/:providerId
-		const response = await apiClient.get<any>(`/provider-documents/provider/${providerId}`);
-		return apiClient.extractList<any>(response.data);
-	}
+  async getProviderDocuments(providerId: string): Promise<any[]> {
+    // Backend: GET /provider-documents/provider/:providerId
+    const response = await apiClient.get<any>(
+      `/provider-documents/provider/${providerId}`,
+    );
+    return apiClient.extractList<any>(response.data);
+  }
 
-	async verifyProvider(providerId: string): Promise<any> {
-		const response = await apiClient.patch<any>(`/providers/${providerId}/verify`, { status: 'verified' });
-		return response.data;
-	}
+  async verifyProvider(providerId: string): Promise<any> {
+    const response = await apiClient.patch<any>(
+      `/providers/${providerId}/verify`,
+      { status: "verified" },
+    );
+    return response.data;
+  }
 
-	async rejectProvider(providerId: string, reason: string): Promise<any> {
-		const response = await apiClient.patch<any>(`/providers/${providerId}/verify`, { status: 'rejected', reason });
-		return response.data;
-	}
+  async rejectProvider(providerId: string, reason: string): Promise<any> {
+    const response = await apiClient.patch<any>(
+      `/providers/${providerId}/verify`,
+      { status: "rejected", reason },
+    );
+    return response.data;
+  }
 
-	async verifyDocument(documentId: string): Promise<any> {
-		// Backend: POST /provider-documents/verify/:documentId
-		const response = await apiClient.post<any>(`/provider-documents/verify/${documentId}`, { verified: true });
-		return response.data;
-	}
+  async verifyDocument(documentId: string): Promise<any> {
+    // Backend: POST /provider-documents/verify/:documentId
+    const response = await apiClient.post<any>(
+      `/provider-documents/verify/${documentId}`,
+      { verified: true },
+    );
+    return response.data;
+  }
 
-	async rejectDocument(documentId: string, reason: string): Promise<any> {
-		// Backend: POST /provider-documents/reject/:documentId
-		const response = await apiClient.post<any>(`/provider-documents/reject/${documentId}`, { reason });
-		return response.data;
-	}
+  async rejectDocument(documentId: string, reason: string): Promise<any> {
+    // Backend: POST /provider-documents/reject/:documentId
+    const response = await apiClient.post<any>(
+      `/provider-documents/reject/${documentId}`,
+      { reason },
+    );
+    return response.data;
+  }
 
-	async toggleAadhaarVerified(providerId: string, verified: boolean): Promise<any> {
-		const response = await apiClient.patch<any>(`/providers/${providerId}`, { aadhar_verified: verified });
-		return response.data;
-	}
+  async toggleAadhaarVerified(
+    providerId: string,
+    verified: boolean,
+  ): Promise<any> {
+    const response = await apiClient.patch<any>(`/providers/${providerId}`, {
+      aadhar_verified: verified,
+    });
+    return response.data;
+  }
 
-	async getCategories(): Promise<any[]> {
-		const response = await apiClient.get<any>('/categories');
-		return apiClient.extractList<any>(response.data);
-	}
+  async getCategories(): Promise<any[]> {
+    const response = await apiClient.get<any>("/categories");
+    return apiClient.extractList<any>(response.data);
+  }
 
-	async createCategory(data: { name: string; description?: string; icon?: string }): Promise<any> {
-		const response = await apiClient.post<any>('/categories', data);
-		return response.data;
-	}
+  async createCategory(data: {
+    name: string;
+    description?: string;
+    icon?: string;
+  }): Promise<any> {
+    const response = await apiClient.post<any>("/categories", data);
+    return response.data;
+  }
 
-	async updateCategory(id: string, data: { name?: string; description?: string; icon?: string; active?: boolean }): Promise<any> {
-		const response = await apiClient.patch<any>(`/categories/${id}`, data);
-		return response.data;
-	}
+  async updateCategory(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      icon?: string;
+      active?: boolean;
+    },
+  ): Promise<any> {
+    const response = await apiClient.patch<any>(`/categories/${id}`, data);
+    return response.data;
+  }
 
-	async deleteCategory(id: string): Promise<void> {
-		await apiClient.delete(`/categories/${id}`);
-	}
+  async deleteCategory(id: string): Promise<void> {
+    await apiClient.delete(`/categories/${id}`);
+  }
 
-	async getDailyMetrics(params?: { days?: number }): Promise<any[]> {
-		// Backend: GET /analytics/metrics?limit=N (returns daily_metrics rows)
-		const qs = new URLSearchParams();
-		qs.append('limit', String(params?.days ?? 30));
-		const response = await apiClient.get<any>(`/analytics/metrics?${qs.toString()}`);
-		return apiClient.extractList<any>(response.data);
-	}
+  async getDailyMetrics(params?: { days?: number }): Promise<any[]> {
+    // Backend: GET /analytics/metrics?limit=N (returns daily_metrics rows)
+    const qs = new URLSearchParams();
+    qs.append("limit", String(params?.days ?? 30));
+    const response = await apiClient.get<any>(
+      `/analytics/metrics?${qs.toString()}`,
+    );
+    return apiClient.extractList<any>(response.data);
+  }
 
-	async getAnalyticsSummary(): Promise<any> {
-		// Backend: GET /analytics/metrics?limit=1 (latest day summary)
-		const response = await apiClient.get<any>('/analytics/metrics?limit=30');
-		const rows = apiClient.extractList<any>(response.data);
-		// Compute totals across all returned rows for a summary
-		const summary = rows.reduce(
-			(acc, row) => ({
-				total_users: Math.max(acc.total_users, row.total_users ?? 0),
-				total_requests: acc.total_requests + (row.total_requests ?? 0),
-				total_proposals: acc.total_proposals + (row.total_proposals ?? 0),
-				total_jobs: acc.total_jobs + (row.total_jobs ?? 0),
-				total_payments: acc.total_payments + (row.total_payments ?? 0),
-			}),
-			{ total_users: 0, total_requests: 0, total_proposals: 0, total_jobs: 0, total_payments: 0 },
-		);
-		return summary;
-	}
+  async getAnalyticsSummary(): Promise<any> {
+    // Backend: GET /analytics/metrics?limit=1 (latest day summary)
+    const response = await apiClient.get<any>("/analytics/metrics?limit=30");
+    const rows = apiClient.extractList<any>(response.data);
+    // Compute totals across all returned rows for a summary
+    const summary = rows.reduce(
+      (acc, row) => ({
+        total_users: Math.max(acc.total_users, row.total_users ?? 0),
+        total_requests: acc.total_requests + (row.total_requests ?? 0),
+        total_proposals: acc.total_proposals + (row.total_proposals ?? 0),
+        total_jobs: acc.total_jobs + (row.total_jobs ?? 0),
+        total_payments: acc.total_payments + (row.total_payments ?? 0),
+      }),
+      {
+        total_users: 0,
+        total_requests: 0,
+        total_proposals: 0,
+        total_jobs: 0,
+        total_payments: 0,
+      },
+    );
+    return summary;
+  }
 
-	async updateSystemSetting(key: string, value: string): Promise<any> {
-		const response = await apiClient.patch<any>(`/admin/settings/${key}`, { value });
-		return response.data;
-	}
+  async updateSystemSetting(key: string, value: string): Promise<any> {
+    const response = await apiClient.patch<any>(`/admin/settings/${key}`, {
+      value,
+    });
+    return response.data;
+  }
 
-	async createSystemSetting(key: string, value: string, description?: string, type?: string): Promise<any> {
-		const response = await apiClient.post<any>('/admin/settings', { key, value, description, type });
-		return response.data;
-	}
+  async createSystemSetting(
+    key: string,
+    value: string,
+    description?: string,
+    type?: string,
+  ): Promise<any> {
+    const response = await apiClient.post<any>("/admin/settings", {
+      key,
+      value,
+      description,
+      type,
+    });
+    return response.data;
+  }
 
-	async getSystemSettings(): Promise<any[]> {
-		const response = await apiClient.get<any>('/admin/settings');
-		return apiClient.extractList<any>(response.data);
-	}
+  async getSystemSettings(): Promise<any[]> {
+    const response = await apiClient.get<any>("/admin/settings");
+    return apiClient.extractList<any>(response.data);
+  }
 }
 
 export const adminService = new AdminService();

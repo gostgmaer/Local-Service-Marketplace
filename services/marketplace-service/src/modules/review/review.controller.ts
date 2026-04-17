@@ -23,10 +23,17 @@ import { UpdateReviewDto } from "./dto/update-review.dto";
 import { RespondReviewDto } from "./dto/respond-review.dto";
 import { ReviewQueryDto } from "./dto/review-query.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  Roles,
+  RequirePermissions,
+} from "@/common/rbac";
 import { OwnershipGuard } from "@/common/guards/ownership.guard";
 import { Ownership } from "@/common/decorators/ownership.decorator";
-import { ForbiddenException, ConflictException } from "@/common/exceptions/http.exceptions";
+import {
+  ForbiddenException,
+  ConflictException,
+} from "@/common/exceptions/http.exceptions";
 
 @Controller("reviews")
 export class ReviewController {
@@ -35,7 +42,7 @@ export class ReviewController {
     private readonly reviewRepository: ReviewRepository,
   ) {}
 
-  @RequirePermissions('reviews.create')
+  @RequirePermissions("reviews.create")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -62,7 +69,11 @@ export class ReviewController {
   ) {
     const userId = req.user.userId;
     const offset = (page - 1) * limit;
-    const result = await this.reviewService.getReviewsByUser(userId, limit, offset);
+    const result = await this.reviewService.getReviewsByUser(
+      userId,
+      limit,
+      offset,
+    );
     return {
       success: true,
       data: result.data ?? result,
@@ -99,8 +110,10 @@ export class ReviewController {
     const isCustomer = review.user_id === req.user.userId;
     // For provider, we might need providerId or userId depending on how it's stored
     // In this system, provider_id on review usually matches the provider's userId
-    const isProvider = review.provider_id === req.user.userId || (req.user.providerId && review.provider_id === req.user.providerId);
-    const isAdmin = req.user.permissions?.includes('reviews.manage');
+    const isProvider =
+      review.provider_id === req.user.userId ||
+      (req.user.providerId && review.provider_id === req.user.providerId);
+    const isAdmin = req.user.permissions?.includes("reviews.manage");
 
     if (!isCustomer && !isProvider && !isAdmin) {
       throw new ForbiddenException(
@@ -147,9 +160,14 @@ export class ReviewController {
     @Param("id", StrictUuidPipe) id: string,
     @Request() req: any,
   ) {
-    const review = await this.reviewRepository.incrementHelpfulCount(id, req.user.userId);
+    const review = await this.reviewRepository.incrementHelpfulCount(
+      id,
+      req.user.userId,
+    );
     if (!review) {
-      throw new ConflictException("You have already marked this review as helpful");
+      throw new ConflictException(
+        "You have already marked this review as helpful",
+      );
     }
     return review;
   }
@@ -215,7 +233,7 @@ export class ReviewController {
       id,
       updateReviewDto,
     );
-    
+
     return {
       success: true,
       message: "Review updated successfully",
@@ -236,7 +254,7 @@ export class ReviewController {
     @Request() req: any,
   ) {
     await this.reviewService.deleteReview(id);
-    
+
     return {
       success: true,
       message: "Review deleted successfully",

@@ -1,23 +1,29 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/utils/permissions';
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
-import { Loading } from '@/components/ui/Loading';
+import { Loading } from "@/components/ui/Loading";
 import { analytics } from "@/utils/analytics";
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/services/api-client';
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/services/api-client";
 
-const CustomerDashboard = dynamic(() => import("@/components/dashboard/CustomerDashboard"), {
-  loading: () => <Loading />,
-});
-const ProviderDashboard = dynamic(() => import("@/components/dashboard/ProviderDashboard"), {
-  loading: () => <Loading />,
-});
+const CustomerDashboard = dynamic(
+  () => import("@/components/dashboard/CustomerDashboard"),
+  {
+    loading: () => <Loading />,
+  },
+);
+const ProviderDashboard = dynamic(
+  () => import("@/components/dashboard/ProviderDashboard"),
+  {
+    loading: () => <Loading />,
+  },
+);
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -30,8 +36,10 @@ export default function DashboardPage() {
     queryKey: ["provider-profile-check", user?.id],
     queryFn: async () => {
       const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-      if (response.data?.data && response.data.data.length > 0) return response.data.data[0];
-      if (Array.isArray(response.data) && response.data.length > 0) return response.data[0];
+      if (response.data?.data && response.data.data.length > 0)
+        return response.data.data[0];
+      if (Array.isArray(response.data) && response.data.length > 0)
+        return response.data[0];
       return null;
     },
     enabled: isAuthenticated && isProvider,
@@ -44,26 +52,29 @@ export default function DashboardPage() {
   }, [isAuthenticated, authLoading, router]);
 
   useEffect(() => {
-    if (isAuthenticated && isProvider && !providerLoading && provider === null) {
+    if (
+      isAuthenticated &&
+      isProvider &&
+      !providerLoading &&
+      provider === null
+    ) {
       router.replace(ROUTES.ONBOARDING);
     }
   }, [isAuthenticated, isProvider, provider, providerLoading, router]);
 
   useEffect(() => {
-		if (isAuthenticated && user?.role) {
+    if (isAuthenticated && user?.role) {
       if (isAdmin) {
-				router.replace(ROUTES.DASHBOARD_ADMIN);
-			}
-			analytics.pageview({
-				path: "/dashboard",
-				title: `${
-					isAdmin ? "Admin"
-					: isProvider ? "Provider"
-					: "Customer"
-				} Dashboard`,
-			});
-		}
-	}, [isAuthenticated, user?.role, isAdmin, isProvider, router]);
+        router.replace(ROUTES.DASHBOARD_ADMIN);
+      }
+      analytics.pageview({
+        path: "/dashboard",
+        title: `${
+          isAdmin ? "Admin" : isProvider ? "Provider" : "Customer"
+        } Dashboard`,
+      });
+    }
+  }, [isAuthenticated, user?.role, isAdmin, isProvider, router]);
 
   if (authLoading || (isProvider && providerLoading)) {
     return <Loading />;
@@ -72,8 +83,8 @@ export default function DashboardPage() {
   if (!isAuthenticated) return null;
 
   if (isProvider) {
-		return <ProviderDashboard />;
-	}
+    return <ProviderDashboard />;
+  }
 
-	return <CustomerDashboard />;
+  return <CustomerDashboard />;
 }

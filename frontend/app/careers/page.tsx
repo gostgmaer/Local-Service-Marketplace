@@ -1,110 +1,171 @@
-import type { Metadata } from 'next';
-import { Layout } from '@/components/layout/Layout';
-import { Briefcase, Users, TrendingUp, Heart, Globe, Award } from 'lucide-react';
+import type { Metadata } from "next";
+import { Layout } from "@/components/layout/Layout";
+import {
+  Briefcase,
+  Users,
+  TrendingUp,
+  Heart,
+  Globe,
+  Award,
+} from "lucide-react";
 
 export const metadata: Metadata = {
-	title: 'Careers',
-	description:
-		'Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.',
-	alternates: { canonical: '/careers' },
-	openGraph: {
-		title: 'Careers at Local Service Marketplace',
-		description:
-			'Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.',
-		url: '/careers',
-		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
-	},
-	twitter: {
-		card: 'summary_large_image',
-		title: 'Careers at Local Service Marketplace',
-		description:
-			'Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.',
-	},
+  title: "Careers",
+  description:
+    "Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.",
+  alternates: { canonical: "/careers" },
+  openGraph: {
+    title: "Careers at Local Service Marketplace",
+    description:
+      "Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.",
+    url: "/careers",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Local Service Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Careers at Local Service Marketplace",
+    description:
+      "Join the Local Service Marketplace team. View open positions and help connect communities with trusted local service providers.",
+  },
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://localservicemarketplace.com";
 
 const careersJsonLd = {
-	'@context': 'https://schema.org',
-	'@type': 'ItemList',
-	name: 'Open Positions at Local Service Marketplace',
-	url: `${SITE_URL}/careers`,
-	itemListElement: [
-		{
-			'@type': 'JobPosting',
-			title: 'Senior Full Stack Developer',
-			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
-			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'Remote' } },
-			employmentType: 'FULL_TIME',
-			datePosted: '2024-01-01',
-			description: 'Build and scale our microservices platform using NestJS, Next.js, and PostgreSQL.',
-		},
-		{
-			'@type': 'JobPosting',
-			title: 'Product Manager',
-			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
-			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'New York', addressRegion: 'NY' } },
-			employmentType: 'FULL_TIME',
-			datePosted: '2024-01-01',
-			description: 'Lead product strategy and roadmap for our local services marketplace platform.',
-		},
-		{
-			'@type': 'JobPosting',
-			title: 'Customer Success Manager',
-			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
-			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'Remote' } },
-			employmentType: 'FULL_TIME',
-			datePosted: '2024-01-01',
-			description: 'Help customers and service providers succeed on the Local Service Marketplace platform.',
-		},
-		{
-			'@type': 'JobPosting',
-			title: 'Marketing Specialist',
-			hiringOrganization: { '@type': 'Organization', name: 'Local Service Marketplace', sameAs: SITE_URL },
-			jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: 'Mumbai', addressRegion: 'MH', addressCountry: 'IN' } },
-			employmentType: 'FULL_TIME',
-			datePosted: '2024-01-01',
-			description: 'Drive user acquisition and brand awareness for our marketplace platform.',
-		},
-	],
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Open Positions at Local Service Marketplace",
+  url: `${SITE_URL}/careers`,
+  itemListElement: [
+    {
+      "@type": "JobPosting",
+      title: "Senior Full Stack Developer",
+      hiringOrganization: {
+        "@type": "Organization",
+        name: "Local Service Marketplace",
+        sameAs: SITE_URL,
+      },
+      jobLocation: {
+        "@type": "Place",
+        address: { "@type": "PostalAddress", addressLocality: "Remote" },
+      },
+      employmentType: "FULL_TIME",
+      datePosted: "2024-01-01",
+      description:
+        "Build and scale our microservices platform using NestJS, Next.js, and PostgreSQL.",
+    },
+    {
+      "@type": "JobPosting",
+      title: "Product Manager",
+      hiringOrganization: {
+        "@type": "Organization",
+        name: "Local Service Marketplace",
+        sameAs: SITE_URL,
+      },
+      jobLocation: {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "New York",
+          addressRegion: "NY",
+        },
+      },
+      employmentType: "FULL_TIME",
+      datePosted: "2024-01-01",
+      description:
+        "Lead product strategy and roadmap for our local services marketplace platform.",
+    },
+    {
+      "@type": "JobPosting",
+      title: "Customer Success Manager",
+      hiringOrganization: {
+        "@type": "Organization",
+        name: "Local Service Marketplace",
+        sameAs: SITE_URL,
+      },
+      jobLocation: {
+        "@type": "Place",
+        address: { "@type": "PostalAddress", addressLocality: "Remote" },
+      },
+      employmentType: "FULL_TIME",
+      datePosted: "2024-01-01",
+      description:
+        "Help customers and service providers succeed on the Local Service Marketplace platform.",
+    },
+    {
+      "@type": "JobPosting",
+      title: "Marketing Specialist",
+      hiringOrganization: {
+        "@type": "Organization",
+        name: "Local Service Marketplace",
+        sameAs: SITE_URL,
+      },
+      jobLocation: {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "Mumbai",
+          addressRegion: "MH",
+          addressCountry: "IN",
+        },
+      },
+      employmentType: "FULL_TIME",
+      datePosted: "2024-01-01",
+      description:
+        "Drive user acquisition and brand awareness for our marketplace platform.",
+    },
+  ],
 };
 
 export default function CareersPage() {
   const jobOpenings = [
     {
-      title: 'Senior Full Stack Developer',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Full-time',
+      title: "Senior Full Stack Developer",
+      department: "Engineering",
+      location: "Remote",
+      type: "Full-time",
     },
     {
-      title: 'Product Manager',
-      department: 'Product',
-      location: 'Bengaluru, KA',
-      type: 'Full-time',
+      title: "Product Manager",
+      department: "Product",
+      location: "Bengaluru, KA",
+      type: "Full-time",
     },
     {
-      title: 'Customer Success Manager',
-      department: 'Customer Success',
-      location: 'Remote',
-      type: 'Full-time',
+      title: "Customer Success Manager",
+      department: "Customer Success",
+      location: "Remote",
+      type: "Full-time",
     },
     {
-      title: 'Marketing Specialist',
-      department: 'Marketing',
-      location: 'Mumbai, MH',
-      type: 'Full-time',
+      title: "Marketing Specialist",
+      department: "Marketing",
+      location: "Mumbai, MH",
+      type: "Full-time",
     },
   ];
 
   return (
     <Layout>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(careersJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(careersJsonLd) }}
+      />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Join Our Team</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Join Our Team
+            </h1>
             <p className="text-xl text-primary-100">
               Help us build the future of local services
             </p>
@@ -251,7 +312,8 @@ export default function CareersPage() {
                   No open positions at the moment
                 </p>
                 <p className="text-gray-500 dark:text-gray-500">
-                  Check back soon or send us your resume to be considered for future opportunities
+                  Check back soon or send us your resume to be considered for
+                  future opportunities
                 </p>
               </div>
             )}
@@ -266,14 +328,16 @@ export default function CareersPage() {
                 Our Culture
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
-                We foster an inclusive, collaborative environment where everyone's voice matters.
-                Our team is passionate about making a difference in local communities while
-                building innovative technology.
+                We foster an inclusive, collaborative environment where
+                everyone's voice matters. Our team is passionate about making a
+                difference in local communities while building innovative
+                technology.
               </p>
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
-                We value transparency, continuous learning, and work-life balance. Whether you're
-                working remotely or in one of our offices, you'll be part of a supportive team
-                that celebrates wins together.
+                We value transparency, continuous learning, and work-life
+                balance. Whether you're working remotely or in one of our
+                offices, you'll be part of a supportive team that celebrates
+                wins together.
               </p>
             </div>
             <div className="bg-primary-50 dark:bg-primary-900/20 p-8 rounded-lg">
@@ -282,31 +346,41 @@ export default function CareersPage() {
               </h3>
               <ul className="space-y-3">
                 <li className="flex items-start">
-                  <span className="text-primary-600 dark:text-primary-400 mr-2">✓</span>
+                  <span className="text-primary-600 dark:text-primary-400 mr-2">
+                    ✓
+                  </span>
                   <span className="text-gray-600 dark:text-gray-300">
                     Customer obsession - we put users first
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-primary-600 dark:text-primary-400 mr-2">✓</span>
+                  <span className="text-primary-600 dark:text-primary-400 mr-2">
+                    ✓
+                  </span>
                   <span className="text-gray-600 dark:text-gray-300">
                     Innovation - we challenge the status quo
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-primary-600 dark:text-primary-400 mr-2">✓</span>
+                  <span className="text-primary-600 dark:text-primary-400 mr-2">
+                    ✓
+                  </span>
                   <span className="text-gray-600 dark:text-gray-300">
                     Integrity - we do what's right, always
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-primary-600 dark:text-primary-400 mr-2">✓</span>
+                  <span className="text-primary-600 dark:text-primary-400 mr-2">
+                    ✓
+                  </span>
                   <span className="text-gray-600 dark:text-gray-300">
                     Collaboration - we win as a team
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-primary-600 dark:text-primary-400 mr-2">✓</span>
+                  <span className="text-primary-600 dark:text-primary-400 mr-2">
+                    ✓
+                  </span>
                   <span className="text-gray-600 dark:text-gray-300">
                     Diversity - we celebrate different perspectives
                   </span>
@@ -319,7 +393,9 @@ export default function CareersPage() {
         {/* CTA Section */}
         <div className="bg-primary-600 dark:bg-primary-700 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">Don't See the Right Role?</h2>
+            <h2 className="text-3xl font-bold mb-4">
+              Don't See the Right Role?
+            </h2>
             <p className="text-xl text-primary-100 mb-8">
               We're always looking for talented people. Send us your resume!
             </p>

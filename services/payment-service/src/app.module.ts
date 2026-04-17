@@ -13,7 +13,8 @@ import { PaymentModule } from "./payment/payment.module";
 import { HealthController } from "./common/health/health.controller";
 import { AnalyticsModule } from "./common/analytics/analytics.module";
 
-const conditionalModules = process.env.WORKERS_ENABLED === "true" ? [WorkersModule] : [];
+const conditionalModules =
+  process.env.WORKERS_ENABLED === "true" ? [WorkersModule] : [];
 
 @Module({
   imports: [

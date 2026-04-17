@@ -1,64 +1,113 @@
-import type { Metadata } from 'next';
-import { Layout } from '@/components/layout/Layout';
-import { Search, UserCheck, MessageCircle, CheckCircle, Star, Shield } from 'lucide-react';
+import type { Metadata } from "next";
+import { Layout } from "@/components/layout/Layout";
+import {
+  Search,
+  UserCheck,
+  MessageCircle,
+  CheckCircle,
+  Star,
+  Shield,
+} from "lucide-react";
 
 export const metadata: Metadata = {
-	title: 'How It Works',
-	description:
-		'Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.',
-	alternates: { canonical: '/how-it-works' },
-	openGraph: {
-		title: 'How It Works',
-		description:
-			'Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.',
-		url: '/how-it-works',
-		type: 'website',
-		locale: 'en_IN',
-		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
-	},
-	twitter: {
-		card: 'summary_large_image',
-		title: 'How It Works',
-		description:
-			'Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.',
-	},
+  title: "How It Works",
+  description:
+    "Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.",
+  alternates: { canonical: "/how-it-works" },
+  openGraph: {
+    title: "How It Works",
+    description:
+      "Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.",
+    url: "/how-it-works",
+    type: "website",
+    locale: "en_IN",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Local Service Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "How It Works",
+    description:
+      "Discover how Local Service Marketplace works — post a request, get proposals from verified providers, and hire the best fit.",
+  },
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://localservicemarketplace.com";
 
 const howToJsonLd = {
-	'@context': 'https://schema.org',
-	'@type': 'HowTo',
-	name: 'How to Hire a Local Service Provider',
-	description: 'Find and hire trusted local service providers in four simple steps.',
-	url: `${SITE_URL}/how-it-works`,
-	step: [
-		{ '@type': 'HowToStep', position: 1, name: 'Post Your Request', text: 'Describe the service you need and set your budget.' },
-		{ '@type': 'HowToStep', position: 2, name: 'Receive Proposals', text: 'Get quotes from verified service providers in your area.' },
-		{ '@type': 'HowToStep', position: 3, name: 'Compare & Hire', text: 'Review profiles, ratings, and choose the best fit for your needs.' },
-		{ '@type': 'HowToStep', position: 4, name: 'Get It Done', text: 'Work gets completed and you pay securely through our platform.' },
-	],
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "How to Hire a Local Service Provider",
+  description:
+    "Find and hire trusted local service providers in four simple steps.",
+  url: `${SITE_URL}/how-it-works`,
+  step: [
+    {
+      "@type": "HowToStep",
+      position: 1,
+      name: "Post Your Request",
+      text: "Describe the service you need and set your budget.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 2,
+      name: "Receive Proposals",
+      text: "Get quotes from verified service providers in your area.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 3,
+      name: "Compare & Hire",
+      text: "Review profiles, ratings, and choose the best fit for your needs.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 4,
+      name: "Get It Done",
+      text: "Work gets completed and you pay securely through our platform.",
+    },
+  ],
 };
 
 const breadcrumbJsonLd = {
-	'@context': 'https://schema.org',
-	'@type': 'BreadcrumbList',
-	itemListElement: [
-		{ '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-		{ '@type': 'ListItem', position: 2, name: 'How It Works', item: `${SITE_URL}/how-it-works` },
-	],
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "How It Works",
+      item: `${SITE_URL}/how-it-works`,
+    },
+  ],
 };
 
 export default function HowItWorksPage() {
   return (
     <Layout>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">How It Works</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              How It Works
+            </h1>
             <p className="text-xl text-primary-100">
               Finding and hiring local service providers has never been easier
             </p>
@@ -147,7 +196,8 @@ export default function HowItWorksPage() {
                 For Service Providers
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300">
-                Grow your business by connecting with customers who need your services
+                Grow your business by connecting with customers who need your
+                services
               </p>
             </div>
 
@@ -221,8 +271,8 @@ export default function HowItWorksPage() {
                   Secure Payments
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  All payments are processed securely. Money is held in escrow until the job is
-                  completed to your satisfaction.
+                  All payments are processed securely. Money is held in escrow
+                  until the job is completed to your satisfaction.
                 </p>
               </div>
             </div>
@@ -236,8 +286,8 @@ export default function HowItWorksPage() {
                   Verified Providers
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  All service providers go through a verification process including background
-                  checks and credential verification.
+                  All service providers go through a verification process
+                  including background checks and credential verification.
                 </p>
               </div>
             </div>
@@ -251,7 +301,8 @@ export default function HowItWorksPage() {
                   Ratings & Reviews
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Make informed decisions based on real reviews and ratings from other customers.
+                  Make informed decisions based on real reviews and ratings from
+                  other customers.
                 </p>
               </div>
             </div>
@@ -265,7 +316,8 @@ export default function HowItWorksPage() {
                   Direct Communication
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Chat directly with service providers to discuss your needs and expectations.
+                  Chat directly with service providers to discuss your needs and
+                  expectations.
                 </p>
               </div>
             </div>

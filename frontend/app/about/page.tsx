@@ -1,65 +1,92 @@
-import type { Metadata } from 'next';
-import { Layout } from '@/components/layout/Layout';
-import { Users, Target, Award, Heart } from 'lucide-react';
+import type { Metadata } from "next";
+import { Layout } from "@/components/layout/Layout";
+import { Users, Target, Award, Heart } from "lucide-react";
 
 export const metadata: Metadata = {
-	title: 'About Us',
-	description:
-		'Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.',
-	alternates: { canonical: '/about' },
-	openGraph: {
-		title: 'About Us',
-		description:
-			'Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.',
-		url: '/about',
-		type: 'website',
-		locale: 'en_IN',
-		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
-	},
-	twitter: {
-		card: 'summary_large_image',
-		title: 'About Us',
-		description:
-			'Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.',
-	},
+  title: "About Us",
+  description:
+    "Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.",
+  alternates: { canonical: "/about" },
+  openGraph: {
+    title: "About Us",
+    description:
+      "Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.",
+    url: "/about",
+    type: "website",
+    locale: "en_IN",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Local Service Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Us",
+    description:
+      "Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.",
+  },
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://localservicemarketplace.com";
 
 const organizationJsonLd = {
-	'@context': 'https://schema.org',
-	'@type': 'Organization',
-	name: 'Local Service Marketplace',
-	url: SITE_URL,
-	logo: `${SITE_URL}/logo.png`,
-	description: 'Connecting communities with trusted local service providers.',
-	foundingDate: '2023',
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Local Service Marketplace",
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  description: "Connecting communities with trusted local service providers.",
+  foundingDate: "2023",
 };
 
 const aboutPageJsonLd = {
-	'@context': 'https://schema.org',
-	'@type': 'AboutPage',
-	name: 'About Local Service Marketplace',
-	url: `${SITE_URL}/about`,
-	description: 'Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.',
-	isPartOf: { '@type': 'WebSite', name: 'Local Service Marketplace', url: SITE_URL },
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  name: "About Local Service Marketplace",
+  url: `${SITE_URL}/about`,
+  description:
+    "Learn about Local Service Marketplace — our mission, team, and how we connect local service providers with customers.",
+  isPartOf: {
+    "@type": "WebSite",
+    name: "Local Service Marketplace",
+    url: SITE_URL,
+  },
 };
 
 const breadcrumbJsonLd = {
-	'@context': 'https://schema.org',
-	'@type': 'BreadcrumbList',
-	itemListElement: [
-		{ '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-		{ '@type': 'ListItem', position: 2, name: 'About Us', item: `${SITE_URL}/about` },
-	],
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "About Us",
+      item: `${SITE_URL}/about`,
+    },
+  ],
 };
 
 export default function AboutPage() {
   return (
     <Layout>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
@@ -79,13 +106,15 @@ export default function AboutPage() {
                 Our Mission
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
-                We believe in empowering local communities by making it easy to find and hire
-                trusted service providers. Our platform connects homeowners and businesses with
-                skilled professionals for everything from home repairs to personal services.
+                We believe in empowering local communities by making it easy to
+                find and hire trusted service providers. Our platform connects
+                homeowners and businesses with skilled professionals for
+                everything from home repairs to personal services.
               </p>
               <p className="text-lg text-gray-600 dark:text-gray-300">
-                We're committed to building a marketplace that values quality, transparency,
-                and trust - where both customers and service providers can thrive.
+                We're committed to building a marketplace that values quality,
+                transparency, and trust - where both customers and service
+                providers can thrive.
               </p>
             </div>
             <div className="bg-primary-50 dark:bg-primary-900/20 p-8 rounded-lg">
@@ -97,7 +126,8 @@ export default function AboutPage() {
                       Our Vision
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300">
-                      To become the most trusted local service marketplace globally
+                      To become the most trusted local service marketplace
+                      globally
                     </p>
                   </div>
                 </div>
@@ -125,25 +155,33 @@ export default function AboutPage() {
                 <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
                   10K+
                 </div>
-                <div className="text-gray-600 dark:text-gray-300">Service Providers</div>
+                <div className="text-gray-600 dark:text-gray-300">
+                  Service Providers
+                </div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
                   50K+
                 </div>
-                <div className="text-gray-600 dark:text-gray-300">Happy Customers</div>
+                <div className="text-gray-600 dark:text-gray-300">
+                  Happy Customers
+                </div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
                   100K+
                 </div>
-                <div className="text-gray-600 dark:text-gray-300">Jobs Completed</div>
+                <div className="text-gray-600 dark:text-gray-300">
+                  Jobs Completed
+                </div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">
                   4.8/5
                 </div>
-                <div className="text-gray-600 dark:text-gray-300">Average Rating</div>
+                <div className="text-gray-600 dark:text-gray-300">
+                  Average Rating
+                </div>
               </div>
             </div>
           </div>
@@ -163,7 +201,8 @@ export default function AboutPage() {
                 Verified Professionals
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                All service providers are thoroughly vetted and verified for your peace of mind
+                All service providers are thoroughly vetted and verified for
+                your peace of mind
               </p>
             </div>
             <div className="text-center p-6">
@@ -174,7 +213,8 @@ export default function AboutPage() {
                 Community Driven
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Real reviews from real customers help you make informed decisions
+                Real reviews from real customers help you make informed
+                decisions
               </p>
             </div>
             <div className="text-center p-6">

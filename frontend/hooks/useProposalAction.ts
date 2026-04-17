@@ -1,10 +1,10 @@
-import { useOptimisticMutation } from './useOptimisticMutation';
-import { proposalService, Proposal } from '@/services/proposal-service';
-import toast from 'react-hot-toast';
+import { useOptimisticMutation } from "./useOptimisticMutation";
+import { proposalService, Proposal } from "@/services/proposal-service";
+import toast from "react-hot-toast";
 
 interface ProposalActionVariables {
   proposalId: string;
-  action: 'accept' | 'reject';
+  action: "accept" | "reject";
   requestId: string;
 }
 
@@ -14,9 +14,9 @@ interface ProposalActionVariables {
  */
 export function useProposalAction() {
   return useOptimisticMutation<Proposal, ProposalActionVariables>({
-    queryKey: ['proposals'],
+    queryKey: ["proposals"],
     mutationFn: async ({ proposalId, action }) => {
-      if (action === 'accept') {
+      if (action === "accept") {
         return await proposalService.acceptProposal(proposalId);
       } else {
         return await proposalService.rejectProposal(proposalId);
@@ -27,15 +27,18 @@ export function useProposalAction() {
 
       return oldData.map((proposal) =>
         proposal.id === proposalId
-          ? { ...proposal, status: action === 'accept' ? 'accepted' : 'rejected' }
+          ? {
+              ...proposal,
+              status: action === "accept" ? "accepted" : "rejected",
+            }
           : proposal,
       );
     },
-    successMessage: 'Proposal updated successfully',
-    errorMessage: 'Failed to update proposal',
+    successMessage: "Proposal updated successfully",
+    errorMessage: "Failed to update proposal",
     onSuccess: (data, variables) => {
       // Show specific success message based on action
-      const message = `Proposal ${variables.action === 'accept' ? 'accepted' : 'rejected'} successfully`;
+      const message = `Proposal ${variables.action === "accept" ? "accepted" : "rejected"} successfully`;
       toast.success(message);
     },
   });

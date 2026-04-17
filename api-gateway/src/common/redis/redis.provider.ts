@@ -11,7 +11,7 @@ export function getRedisClient(): Redis | null {
   if (redisClient) return redisClient;
 
   // Explicit opt-out — set REDIS_RATE_LIMIT_ENABLED=false to force in-memory rate limiting
-  if (process.env.REDIS_RATE_LIMIT_ENABLED === 'false') return null;
+  if (process.env.REDIS_RATE_LIMIT_ENABLED === "false") return null;
 
   const host = process.env.REDIS_HOST;
   const port = parseInt(process.env.REDIS_PORT || "6379", 10);
