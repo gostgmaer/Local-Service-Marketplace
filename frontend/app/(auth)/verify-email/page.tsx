@@ -32,26 +32,27 @@ function VerifyEmailContent() {
 			.then(async () => {
 				setStatus("success");
 
-				// If user is logged in, refresh their session to update emailVerified flag
+				// If user is logged in, force refresh their session to update emailVerified flag
 				if (session) {
 					await update();
+					// Wait a bit to ensure session is refreshed and propagated
+					await new Promise((res) => setTimeout(res, 500));
 				}
 
 				// Redirect based on auth status and role
-				// Providers are sent back to onboarding to continue their setup
 				let redirectPath: string;
 				if (!session) {
 					redirectPath = ROUTES.LOGIN + "?verified=1";
 				} else if (session.user.role === "admin") {
 					redirectPath = "/dashboard/admin";
 				} else if (session.user.role === "provider") {
-					// After email verification, provider continues onboarding
 					redirectPath = "/onboarding";
 				} else {
 					redirectPath = "/dashboard";
 				}
 
-				setTimeout(() => router.push(redirectPath), 3000);
+				// Add a small delay to ensure session update is reflected before redirect
+				setTimeout(() => router.push(redirectPath), 1000);
 			})
 			.catch((err: any) => {
 				const msg =
