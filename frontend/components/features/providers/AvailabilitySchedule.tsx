@@ -1,7 +1,7 @@
-import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { DAYS_OF_WEEK } from '@/config/constants';
-import { Clock } from 'lucide-react';
+import React from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { DAYS_OF_WEEK } from "@/config/constants";
+import { Clock } from "lucide-react";
 
 interface Availability {
   id: string;
@@ -14,7 +14,9 @@ interface AvailabilityScheduleProps {
   availability: Availability[];
 }
 
-export function AvailabilitySchedule({ availability }: AvailabilityScheduleProps) {
+export function AvailabilitySchedule({
+  availability,
+}: AvailabilityScheduleProps) {
   if (!availability || availability.length === 0) {
     return (
       <Card>
@@ -32,13 +34,16 @@ export function AvailabilitySchedule({ availability }: AvailabilityScheduleProps
   }
 
   // Group availability by day
-  const scheduleByDay = availability.reduce((acc, slot) => {
-    if (!acc[slot.day_of_week]) {
-      acc[slot.day_of_week] = [];
-    }
-    acc[slot.day_of_week].push(slot);
-    return acc;
-  }, {} as Record<number, Availability[]>);
+  const scheduleByDay = availability.reduce(
+    (acc, slot) => {
+      if (!acc[slot.day_of_week]) {
+        acc[slot.day_of_week] = [];
+      }
+      acc[slot.day_of_week].push(slot);
+      return acc;
+    },
+    {} as Record<number, Availability[]>,
+  );
 
   return (
     <Card>
@@ -54,7 +59,9 @@ export function AvailabilitySchedule({ availability }: AvailabilityScheduleProps
             const slots = scheduleByDay[day.value];
             return (
               <div key={day.value} className="flex justify-between items-start">
-                <span className="font-medium text-gray-700 w-24">{day.label}</span>
+                <span className="font-medium text-gray-700 w-24">
+                  {day.label}
+                </span>
                 <div className="flex-1">
                   {slots ? (
                     <div className="space-y-1">

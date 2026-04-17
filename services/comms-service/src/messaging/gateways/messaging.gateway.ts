@@ -29,7 +29,8 @@ type AuthenticatedSocket = Socket & {
   namespace: "/messaging",
 })
 export class MessagingGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
+{
   @WebSocketServer()
   server: Server;
 

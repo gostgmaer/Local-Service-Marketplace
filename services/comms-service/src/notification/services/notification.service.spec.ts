@@ -66,7 +66,10 @@ describe("NotificationService", () => {
         { provide: getQueueToken("comms.email"), useValue: mockEmailQueue },
         { provide: getQueueToken("comms.sms"), useValue: mockSmsQueue },
         { provide: getQueueToken("comms.push"), useValue: mockPushQueue },
-        { provide: getQueueToken("comms.whatsapp"), useValue: mockWhatsappQueue },
+        {
+          provide: getQueueToken("comms.whatsapp"),
+          useValue: mockWhatsappQueue,
+        },
         { provide: NotificationRepository, useValue: mockNotifRepo },
         { provide: NotificationDeliveryRepository, useValue: mockDeliveryRepo },
         { provide: UnsubscribeRepository, useValue: mockUnsubscribeRepo },

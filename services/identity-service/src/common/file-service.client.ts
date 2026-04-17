@@ -1,10 +1,15 @@
-import { Injectable, Inject, BadRequestException, ServiceUnavailableException } from "@nestjs/common";
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
-import { firstValueFrom, retry, timeout, catchError } from "rxjs";
-import * as FormData from "form-data";
+import { firstValueFrom, retry, catchError } from "rxjs";
+import FormData from "form-data";
 import "multer";
 
 export interface FileUploadOptions {
@@ -12,6 +17,8 @@ export interface FileUploadOptions {
   description?: string;
   title?: string;
   altText?: string;
+  author?: string;
+  language?: string;
   visibility?: "public" | "private" | "unlisted";
   linkedEntityType?: string;
   linkedEntityId?: string;
@@ -20,30 +27,40 @@ export interface FileUploadOptions {
 
 export interface UploadedFile {
   id: string;
-  filename: string;
+  tenantId?: string;
   originalName: string;
-  path: string;
+  storageKey: string;
   url: string;
   size: number;
   mimeType: string;
+  extension?: string;
+  uploader?: string;
   category: string;
-  uploadedBy?: string;
-  linkedEntityType?: string;
-  linkedEntityId?: string;
+  status?: string;
+  metadata?: {
+    description?: string;
+    tags?: string[];
+    title?: string;
+    altText?: string;
+    author?: string;
+    language?: string;
+    isPublic?: boolean;
+    linkedTo?: { entityType?: string; entityId?: string };
+  };
+  versions?: any[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface FileUploadResponse {
   success: boolean;
-  count: number;
-  files: UploadedFile[];
+  data: UploadedFile[];
 }
 
 /**
  * Client for interacting with external file-upload-service
  * This service handles all file uploads to the centralized file storage
- * 
+ *
  * Error Handling:
  * - Service unreachable: Returns ServiceUnavailableException
  * - Timeout: Returns ServiceUnavailableException after 3 retries
@@ -66,7 +83,10 @@ export class FileServiceClient {
       "https://your-file-service.vercel.app";
     this.defaultTenantId =
       this.configService.get<string>("DEFAULT_TENANT_ID") || "default";
-    this.requestTimeout = this.configService.get<number>("REQUEST_TIMEOUT_MS", 72000); // Default to 72 seconds
+    this.requestTimeout = this.configService.get<number>(
+      "REQUEST_TIMEOUT_MS",
+      72000,
+    ); // Default to 72 seconds
     this.maxRetries = 3; // Retry 3 times on failure
   }
 
@@ -95,109 +115,120 @@ export class FileServiceClient {
         formData.append("description", options.description);
       if (options.title) formData.append("title", options.title);
       if (options.altText) formData.append("altText", options.altText);
-      if (options.visibility)
-        formData.append("visibility", options.visibility);
+      if (options.author) formData.append("author", options.author);
+      if (options.language) formData.append("language", options.language);
+      if (options.visibility !== undefined)
+        formData.append(
+          "isPublic",
+          options.visibility === "public" ? "true" : "false",
+        );
       if (options.linkedEntityType)
         formData.append("linkedEntityType", options.linkedEntityType);
       if (options.linkedEntityId)
         formData.append("linkedEntityId", options.linkedEntityId);
       if (options.tags)
-        formData.append("tags", options.tags.join(","));
+        options.tags.forEach((tag) => formData.append("tags", tag));
 
       // Make request to file service with retry logic
       const response = await firstValueFrom(
-        this.httpService.post<FileUploadResponse>(
-          `${this.fileServiceUrl}/api/files/upload`,
-          formData,
-          {
-            headers: {
-              ...formData.getHeaders(),
-              "X-User-Id": userId || "anonymous",
-              "X-User-Role": userRole,
-              "X-Tenant-Id": this.defaultTenantId,
+        this.httpService
+          .post<FileUploadResponse>(
+            `${this.fileServiceUrl}/api/files/upload`,
+            formData,
+            {
+              headers: {
+                ...formData.getHeaders(),
+                "X-User-Id": userId || "anonymous",
+                "X-User-Role": userRole,
+                "X-Tenant-Id": this.defaultTenantId,
+              },
+              timeout: this.requestTimeout,
             },
-            timeout: this.requestTimeout,
-          },
-        ).pipe(
-          retry({
-            count: this.maxRetries,
-            delay: (error, retryCount) => {
-              this.logger.warn(
-                `File upload attempt ${retryCount} failed, retrying...`,
-                {
-                  context: "FileServiceClient",
-                  error: error.message,
-                  category: options.category,
-                  userId,
-                }
-              );
-              // Exponential backoff: 1s, 2s, 4s
-              return new Promise(resolve =>
-                setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000)
-              );
-            },
-          }),
-          catchError((error) => {
-            throw error;
-          })
-        ),
+          )
+          .pipe(
+            retry({
+              count: this.maxRetries,
+              delay: (error, retryCount) => {
+                this.logger.warn(
+                  `File upload attempt ${retryCount} failed, retrying...`,
+                  {
+                    context: "FileServiceClient",
+                    error: error.message,
+                    category: options.category,
+                    userId,
+                  },
+                );
+                // Exponential backoff: 1s, 2s, 4s
+                return new Promise((resolve) =>
+                  setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000),
+                );
+              },
+            }),
+            catchError((error) => {
+              throw error;
+            }),
+          ),
       );
 
-      if (!response.data?.files?.[0]) {
-        throw new BadRequestException("File upload failed - invalid response from file service");
+      if (!response.data?.data?.[0]) {
+        throw new BadRequestException(
+          "File upload failed - invalid response from file service",
+        );
       }
 
       this.logger.info("File uploaded successfully", {
         context: "FileServiceClient",
-        fileId: response.data.files[0].id,
+        fileId: response.data.data[0].id,
         category: options.category,
         userId,
       });
 
-      return response.data.files[0];
+      return response.data.data[0];
     } catch (error: any) {
       this.logger.error("File upload failed after all retries", {
         context: "FileServiceClient",
         error: error.message,
+        responseStatus: error.response?.status,
+        responseBody: error.response?.data,
         stack: error.stack,
         category: options.category,
         fileServiceUrl: this.fileServiceUrl,
       });
 
       // Handle specific error types
-      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new ServiceUnavailableException(
-          `File upload service is currently unavailable. Please try again later. (Service: ${this.fileServiceUrl})`
+          `File upload service is currently unavailable. Please try again later. (Service: ${this.fileServiceUrl})`,
         );
       }
 
-      if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      if (error.code === "ETIMEDOUT" || error.message?.includes("timeout")) {
         throw new ServiceUnavailableException(
-          'File upload service request timed out. The service may be experiencing high load. Please try again.'
+          "File upload service request timed out. The service may be experiencing high load. Please try again.",
         );
       }
 
       if (error.response?.status === 413) {
         throw new BadRequestException(
-          'File size exceeds maximum allowed size. Please upload a smaller file.'
+          "File size exceeds maximum allowed size. Please upload a smaller file.",
         );
       }
 
       if (error.response?.status === 415) {
         throw new BadRequestException(
-          'File type not allowed. Please upload a valid file format.'
+          "File type not allowed. Please upload a valid file format.",
         );
       }
 
       if (error.response?.data?.error) {
         throw new BadRequestException(
-          `File upload failed: ${error.response.data.error}`
+          `File upload failed: ${error.response.data.error}`,
         );
       }
 
       // Generic fallback error
       throw new ServiceUnavailableException(
-        `Unable to upload file at this time. Please try again later. If the problem persists, contact support.`
+        `Unable to upload file at this time. Please try again later. If the problem persists, contact support.`,
       );
     }
   }
@@ -236,65 +267,75 @@ export class FileServiceClient {
       if (options.description)
         formData.append("description", options.description);
       if (options.title) formData.append("title", options.title);
-      if (options.visibility)
-        formData.append("visibility", options.visibility);
+      if (options.altText) formData.append("altText", options.altText);
+      if (options.author) formData.append("author", options.author);
+      if (options.language) formData.append("language", options.language);
+      if (options.visibility !== undefined)
+        formData.append(
+          "isPublic",
+          options.visibility === "public" ? "true" : "false",
+        );
       if (options.linkedEntityType)
         formData.append("linkedEntityType", options.linkedEntityType);
       if (options.linkedEntityId)
         formData.append("linkedEntityId", options.linkedEntityId);
       if (options.tags)
-        formData.append("tags", options.tags.join(","));
+        options.tags.forEach((tag) => formData.append("tags", tag));
 
       // Make request to file service with retry logic
       const response = await firstValueFrom(
-        this.httpService.post<FileUploadResponse>(
-          `${this.fileServiceUrl}/api/files/upload`,
-          formData,
-          {
-            headers: {
-              ...formData.getHeaders(),
-              "X-User-Id": userId || "anonymous",
-              "X-User-Role": userRole,
-              "X-Tenant-Id": this.defaultTenantId,
+        this.httpService
+          .post<FileUploadResponse>(
+            `${this.fileServiceUrl}/api/files/upload`,
+            formData,
+            {
+              headers: {
+                ...formData.getHeaders(),
+                "X-User-Id": userId || "anonymous",
+                "X-User-Role": userRole,
+                "X-Tenant-Id": this.defaultTenantId,
+              },
+              timeout: this.requestTimeout, // Increased timeout from configuration
             },
-            timeout: this.requestTimeout, // Increased timeout from configuration
-          },
-        ).pipe(
-          retry({
-            count: this.maxRetries,
-            delay: (error, retryCount) => {
-              this.logger.warn(
-                `Multiple file upload attempt ${retryCount} failed, retrying...`,
-                {
-                  context: "FileServiceClient",
-                  error: error.message,
-                  fileCount: files.length,
-                  category: options.category,
-                }
-              );
-              return new Promise(resolve =>
-                setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000)
-              );
-            },
-          }),
-          catchError((error) => {
-            throw error;
-          })
-        ),
+          )
+          .pipe(
+            retry({
+              count: this.maxRetries,
+              delay: (error, retryCount) => {
+                this.logger.warn(
+                  `Multiple file upload attempt ${retryCount} failed, retrying...`,
+                  {
+                    context: "FileServiceClient",
+                    error: error.message,
+                    fileCount: files.length,
+                    category: options.category,
+                  },
+                );
+                return new Promise((resolve) =>
+                  setTimeout(resolve, Math.pow(2, retryCount - 1) * 1000),
+                );
+              },
+            }),
+            catchError((error) => {
+              throw error;
+            }),
+          ),
       );
 
-      if (!response.data?.files || response.data.files.length === 0) {
-        throw new BadRequestException("File upload failed - invalid response from file service");
+      if (!response.data?.data || response.data.data.length === 0) {
+        throw new BadRequestException(
+          "File upload failed - invalid response from file service",
+        );
       }
 
       this.logger.info("Multiple files uploaded successfully", {
         context: "FileServiceClient",
-        count: response.data.files.length,
+        count: response.data.data.length,
         category: options.category,
         userId,
       });
 
-      return response.data.files;
+      return response.data.data;
     } catch (error: any) {
       this.logger.error("Multiple file upload failed after all retries", {
         context: "FileServiceClient",
@@ -306,33 +347,33 @@ export class FileServiceClient {
       });
 
       // Handle specific error types
-      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new ServiceUnavailableException(
-          `File upload service is currently unavailable. Please try again later. (Service: ${this.fileServiceUrl})`
+          `File upload service is currently unavailable. Please try again later. (Service: ${this.fileServiceUrl})`,
         );
       }
 
-      if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      if (error.code === "ETIMEDOUT" || error.message?.includes("timeout")) {
         throw new ServiceUnavailableException(
-          'File upload service request timed out. The service may be experiencing high load. Please try again.'
+          "File upload service request timed out. The service may be experiencing high load. Please try again.",
         );
       }
 
       if (error.response?.status === 413) {
         throw new BadRequestException(
-          'Combined file size exceeds maximum allowed size. Please upload fewer or smaller files.'
+          "Combined file size exceeds maximum allowed size. Please upload fewer or smaller files.",
         );
       }
 
       if (error.response?.data?.error) {
         throw new BadRequestException(
-          `File upload failed: ${error.response.data.error}`
+          `File upload failed: ${error.response.data.error}`,
         );
       }
 
       // Generic fallback error
       throw new ServiceUnavailableException(
-        `Unable to upload files at this time. Please try again later. If the problem persists, contact support.`
+        `Unable to upload files at this time. Please try again later. If the problem persists, contact support.`,
       );
     }
   }
@@ -343,7 +384,7 @@ export class FileServiceClient {
   async getFileById(fileId: string): Promise<UploadedFile> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<UploadedFile>(
+        this.httpService.get<{ success: boolean; data: UploadedFile }>(
           `${this.fileServiceUrl}/api/files/${fileId}`,
           {
             headers: {
@@ -353,7 +394,7 @@ export class FileServiceClient {
         ),
       );
 
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       this.logger.error("Failed to get file metadata", {
         context: "FileServiceClient",
@@ -374,10 +415,7 @@ export class FileServiceClient {
   /**
    * Delete a file (admin only)
    */
-  async deleteFile(
-    fileId: string,
-    adminUserId: string,
-  ): Promise<void> {
+  async deleteFile(fileId: string, adminUserId: string): Promise<void> {
     try {
       await firstValueFrom(
         this.httpService.delete(`${this.fileServiceUrl}/api/files/${fileId}`, {
@@ -413,21 +451,21 @@ export class FileServiceClient {
   ): Promise<UploadedFile[]> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<{ files: UploadedFile[] }>(
-          `${this.fileServiceUrl}/api/files`,
-          {
-            params: {
-              linkedEntityType: entityType,
-              linkedEntityId: entityId,
-            },
-            headers: {
-              "X-Tenant-Id": this.defaultTenantId,
-            },
+        this.httpService.get<{
+          success: boolean;
+          data: { files: UploadedFile[] };
+        }>(`${this.fileServiceUrl}/api/files`, {
+          params: {
+            linkedEntityType: entityType,
+            linkedEntityId: entityId,
           },
-        ),
+          headers: {
+            "X-Tenant-Id": this.defaultTenantId,
+          },
+        }),
       );
 
-      return response.data.files || [];
+      return response.data.data?.files || [];
     } catch (error: any) {
       this.logger.error("Failed to get files by entity", {
         context: "FileServiceClient",

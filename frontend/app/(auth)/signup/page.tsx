@@ -1,22 +1,26 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuth } from '@/hooks/useAuth';
-import { ROUTES } from '@/config/constants';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { PasswordInput } from '@/components/ui/PasswordInput';
-import { signupSchema, SignupFormData } from '@/schemas/auth.schema';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@/hooks/useAuth";
+import { ROUTES } from "@/config/constants";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { signupSchema, SignupFormData } from "@/schemas/auth.schema";
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup, loginWithGoogle, loginWithFacebook, isAuthenticated } = useAuth();
+  const { signup, loginWithGoogle, loginWithFacebook, isAuthenticated } =
+    useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  // Tracks whether signup was just submitted to prevent the isAuthenticated
+  // effect from overriding the router.push(ROUTES.ONBOARDING) below.
+  const signupJustCompletedRef = useRef(false);
 
   const {
     register,
@@ -26,46 +30,56 @@ export default function SignupPage() {
     setFocus,
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    mode: 'onChange', // Enable real-time validation
+    mode: "onChange", // Enable real-time validation
     defaultValues: {
-      email: '',
-      password: '',
-      name: '',
-      userType: 'customer',
-      phone: '',
+      email: "",
+      password: "",
+      name: "",
+      userType: "customer",
+      phone: "",
     },
   });
 
-  const watchPassword = watch('password');
+  const watchPassword = watch("password");
 
   // Auto-focus name field on mount
   useEffect(() => {
-    setFocus('name');
+    setFocus("name");
   }, [setFocus]);
 
-  // Redirect to dashboard if already authenticated
+  // Redirect to dashboard if already authenticated (visitor who is already logged in).
+  // Suppressed after a fresh signup so the onboarding redirect is not overridden.
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !signupJustCompletedRef.current) {
       router.push(ROUTES.DASHBOARD);
     }
   }, [isAuthenticated, router]);
 
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
+    // Prevent the isAuthenticated effect from redirecting to /dashboard
+    // while we explicitly navigate to /onboarding after signup.
+    signupJustCompletedRef.current = true;
 
     try {
       await signup(data);
-      toast.success('🎉 Account created successfully! Welcome aboard!');
+      toast.success("🎉 Account created successfully! Welcome aboard!");
       // Redirect to onboarding after successful signup
       router.push(ROUTES.ONBOARDING);
     } catch (error: any) {
+      // Reset flag so the guard works normally if signup fails
+      signupJustCompletedRef.current = false;
       // Handle different error types
-      let errorMessage = 'Signup failed. Please try again.';
+      let errorMessage = "Signup failed. Please try again.";
 
-      if (error.message?.includes('email') && error.message?.includes('exists')) {
-        errorMessage = 'This email is already registered. Try logging in instead.';
-      } else if (error.message?.includes('phone')) {
-        errorMessage = 'Invalid phone number format.';
+      if (
+        error.message?.includes("email") &&
+        error.message?.includes("exists")
+      ) {
+        errorMessage =
+          "This email is already registered. Try logging in instead.";
+      } else if (error.message?.includes("phone")) {
+        errorMessage = "Invalid phone number format.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -73,18 +87,18 @@ export default function SignupPage() {
       toast.error(errorMessage);
 
       // Set focus to first error field
-      if (errors.name) setFocus('name');
-      else if (errors.email) setFocus('email');
-      else if (errors.password) setFocus('password');
+      if (errors.name) setFocus("name");
+      else if (errors.email) setFocus("email");
+      else if (errors.password) setFocus("password");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialSignup = async (provider: 'google' | 'facebook') => {
+  const handleSocialSignup = async (provider: "google" | "facebook") => {
     try {
       // Use backend OAuth endpoints
-      if (provider === 'google') {
+      if (provider === "google") {
         loginWithGoogle();
       } else {
         loginWithFacebook();
@@ -108,21 +122,26 @@ export default function SignupPage() {
     return strength;
   };
 
-  const passwordStrength = watchPassword ? getPasswordStrength(watchPassword) : 0;
+  const passwordStrength = watchPassword
+    ? getPasswordStrength(watchPassword)
+    : 0;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div>
-          <Link href='/' className='block text-center text-xl font-bold text-primary-600 dark:text-primary-400 mb-6 hover:text-primary-500 dark:hover:text-primary-300 transition-colors'>
+          <Link
+            href="/"
+            className="block text-center text-xl font-bold text-primary-600 dark:text-primary-400 mb-6 hover:text-primary-500 dark:hover:text-primary-300 transition-colors"
+          >
             Local Service Marketplace
           </Link>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Link
               href="/login"
               className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus:outline-none focus:underline"
@@ -133,23 +152,33 @@ export default function SignupPage() {
         </div>
 
         {/* Signup Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form
+          className="mt-8 space-y-6"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+        >
           <div className="space-y-4">
             {/* Name Field */}
             <div>
               <Input
                 label="Full Name"
                 type="text"
-                {...register('name')}
+                {...register("name")}
                 autoComplete="name"
                 autoFocus
-                aria-invalid={errors.name ? 'true' : 'false'}
-                aria-describedby={errors.name ? 'name-error' : undefined}
+                aria-invalid={errors.name ? "true" : "false"}
+                aria-describedby={errors.name ? "name-error" : undefined}
                 disabled={isLoading}
-                className={errors.name ? 'border-red-500 focus:ring-red-500' : ''}
+                className={
+                  errors.name ? "border-red-500 focus:ring-red-500" : ""
+                }
               />
               {errors.name && (
-                <p id="name-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                <p
+                  id="name-error"
+                  className="mt-1 text-sm text-red-600 dark:text-red-400"
+                  role="alert"
+                >
                   {errors.name.message}
                 </p>
               )}
@@ -160,16 +189,22 @@ export default function SignupPage() {
               <Input
                 label="Email address"
                 type="email"
-                {...register('email')}
+                {...register("email")}
                 autoComplete="email"
-                aria-invalid={errors.email ? 'true' : 'false'}
-                aria-describedby={errors.email ? 'email-error' : undefined}
+                aria-invalid={errors.email ? "true" : "false"}
+                aria-describedby={errors.email ? "email-error" : undefined}
                 disabled={isLoading}
                 required
-                className={errors.email ? 'border-red-500 focus:ring-red-500' : ''}
+                className={
+                  errors.email ? "border-red-500 focus:ring-red-500" : ""
+                }
               />
               {errors.email && (
-                <p id="email-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                <p
+                  id="email-error"
+                  className="mt-1 text-sm text-red-600 dark:text-red-400"
+                  role="alert"
+                >
                   {errors.email.message}
                 </p>
               )}
@@ -180,20 +215,31 @@ export default function SignupPage() {
               <Input
                 label="Phone (optional)"
                 type="tel"
-                {...register('phone')}
+                {...register("phone")}
                 autoComplete="tel"
                 placeholder="+1234567890"
-                aria-invalid={errors.phone ? 'true' : 'false'}
-                aria-describedby={errors.phone ? 'phone-error phone-help' : 'phone-help'}
+                aria-invalid={errors.phone ? "true" : "false"}
+                aria-describedby={
+                  errors.phone ? "phone-error phone-help" : "phone-help"
+                }
                 disabled={isLoading}
-                className={errors.phone ? 'border-red-500 focus:ring-red-500' : ''}
+                className={
+                  errors.phone ? "border-red-500 focus:ring-red-500" : ""
+                }
               />
               {errors.phone ? (
-                <p id="phone-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                <p
+                  id="phone-error"
+                  className="mt-1 text-sm text-red-600 dark:text-red-400"
+                  role="alert"
+                >
                   {errors.phone.message}
                 </p>
               ) : (
-                <p id="phone-help" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p
+                  id="phone-help"
+                  className="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                >
                   Format: +[country code][number]
                 </p>
               )}
@@ -201,25 +247,35 @@ export default function SignupPage() {
 
             {/* User Type Field */}
             <div>
-              <label htmlFor="userType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="userType"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 I am a <span className="text-red-500">*</span>
               </label>
               <select
                 id="userType"
-                {...register('userType')}
-                aria-invalid={errors.userType ? 'true' : 'false'}
-                aria-describedby={errors.userType ? 'userType-error' : undefined}
+                {...register("userType")}
+                aria-invalid={errors.userType ? "true" : "false"}
+                aria-describedby={
+                  errors.userType ? "userType-error" : undefined
+                }
                 disabled={isLoading}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${errors.userType
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                  errors.userType
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 dark:border-gray-600"
+                }`}
               >
                 <option value="customer">Looking for services</option>
                 <option value="provider">Offering services</option>
               </select>
               {errors.userType && (
-                <p id="userType-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                <p
+                  id="userType-error"
+                  className="mt-1 text-sm text-red-600 dark:text-red-400"
+                  role="alert"
+                >
                   {errors.userType.message}
                 </p>
               )}
@@ -229,19 +285,30 @@ export default function SignupPage() {
             <div>
               <PasswordInput
                 label="Password"
-                {...register('password')}
+                {...register("password")}
                 autoComplete="new-password"
-                aria-invalid={errors.password ? 'true' : 'false'}
-                aria-describedby={errors.password ? 'password-error password-help' : 'password-help'}
+                aria-invalid={errors.password ? "true" : "false"}
+                aria-describedby={
+                  errors.password
+                    ? "password-error password-help"
+                    : "password-help"
+                }
                 disabled={isLoading}
                 required
               />
               {errors.password ? (
-                <p id="password-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                <p
+                  id="password-error"
+                  className="mt-1 text-sm text-red-600 dark:text-red-400"
+                  role="alert"
+                >
                   {errors.password.message}
                 </p>
               ) : (
-                <p id="password-help" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p
+                  id="password-help"
+                  className="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                >
                   Min 8 characters, 1 uppercase, 1 lowercase, 1 number
                 </p>
               )}
@@ -253,27 +320,31 @@ export default function SignupPage() {
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                   Password strength:
                 </p>
-                <div className="flex gap-1" aria-label={`Password strength: ${passwordStrength} out of 4`}>
+                <div
+                  className="flex gap-1"
+                  aria-label={`Password strength: ${passwordStrength} out of 4`}
+                >
                   {[1, 2, 3, 4].map((level) => (
                     <div
                       key={level}
-                      className={`h-1.5 flex-1 rounded transition-colors ${level <= passwordStrength
-                        ? passwordStrength === 4
-                          ? 'bg-green-500 dark:bg-green-400'
-                          : passwordStrength === 3
-                            ? 'bg-yellow-500 dark:bg-yellow-400'
-                            : 'bg-orange-500 dark:bg-orange-400'
-                        : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
+                      className={`h-1.5 flex-1 rounded transition-colors ${
+                        level <= passwordStrength
+                          ? passwordStrength === 4
+                            ? "bg-green-500 dark:bg-green-400"
+                            : passwordStrength === 3
+                              ? "bg-yellow-500 dark:bg-yellow-400"
+                              : "bg-orange-500 dark:bg-orange-400"
+                          : "bg-gray-300 dark:bg-gray-600"
+                      }`}
                       aria-hidden="true"
                     />
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {passwordStrength === 4 && '✓ Strong password'}
-                  {passwordStrength === 3 && '⚠ Good password'}
-                  {passwordStrength === 2 && '⚠ Fair password'}
-                  {passwordStrength === 1 && '⚠ Weak password'}
+                  {passwordStrength === 4 && "✓ Strong password"}
+                  {passwordStrength === 3 && "⚠ Good password"}
+                  {passwordStrength === 2 && "⚠ Fair password"}
+                  {passwordStrength === 1 && "⚠ Weak password"}
                 </p>
               </div>
             )}
@@ -285,9 +356,9 @@ export default function SignupPage() {
             className="w-full"
             isLoading={isLoading}
             disabled={isSubmitDisabled}
-            aria-label={isLoading ? 'Creating account...' : 'Create account'}
+            aria-label={isLoading ? "Creating account..." : "Create account"}
           >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? "Creating Account..." : "Create Account"}
           </Button>
 
           {/* Social Signup Divider */}
@@ -306,12 +377,16 @@ export default function SignupPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => handleSocialSignup('google')}
+              onClick={() => handleSocialSignup("google")}
               disabled={isLoading}
               className="flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               aria-label="Sign up with Google"
             >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                className="w-5 h-5 mr-2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -334,12 +409,17 @@ export default function SignupPage() {
 
             <button
               type="button"
-              onClick={() => handleSocialSignup('facebook')}
+              onClick={() => handleSocialSignup("facebook")}
               disabled={isLoading}
               className="flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               aria-label="Sign up with Facebook"
             >
-              <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="#1877F2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
               </svg>
               Facebook
@@ -348,12 +428,18 @@ export default function SignupPage() {
 
           {/* Terms & Privacy */}
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            By signing up, you agree to our{' '}
-            <Link href="/terms" className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus:outline-none focus:underline">
+            By signing up, you agree to our{" "}
+            <Link
+              href="/terms"
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus:outline-none focus:underline"
+            >
               Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus:outline-none focus:underline">
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="/privacy"
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus:outline-none focus:underline"
+            >
               Privacy Policy
             </Link>
           </p>

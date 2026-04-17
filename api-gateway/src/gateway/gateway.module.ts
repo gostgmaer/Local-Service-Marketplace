@@ -32,12 +32,12 @@ export class GatewayModule implements NestModule {
     // Maintenance check runs first — before auth or rate limiting
     consumer.apply(MaintenanceMiddleware).forRoutes("*");
 
-    // Apply logging middleware to all routes
-    consumer.apply(LoggingMiddleware).forRoutes("*");
-
-    // Apply JWT authentication middleware to all routes
+    // Apply JWT authentication middleware BEFORE logging so req.user is populated
     // Public routes are defined in publicRoutes (services.config.ts)
     consumer.apply(JwtAuthMiddleware).forRoutes("*");
+
+    // Apply logging middleware after auth so User: <id> is correctly shown
+    consumer.apply(LoggingMiddleware).forRoutes("*");
 
     // Apply rate limiting middleware to all routes
     consumer.apply(RateLimitMiddleware).forRoutes("*");
@@ -45,16 +45,20 @@ export class GatewayModule implements NestModule {
     // Apply stricter rate limiting to authentication endpoints (10 req/15 min per IP).
     // Paths must include the /api/v1 prefix that controllers add, otherwise the
     // middleware path-matching never fires.
-    consumer
-      .apply(AuthRateLimitMiddleware)
-      .forRoutes(
-        { path: "/api/v1/user/auth/login", method: RequestMethod.POST },
-        { path: "/api/v1/user/auth/register", method: RequestMethod.POST },
-        { path: "/api/v1/user/auth/refresh", method: RequestMethod.POST },
-        { path: "/api/v1/user/auth/forgot-password", method: RequestMethod.POST },
-        { path: "/api/v1/user/auth/reset-password", method: RequestMethod.POST },
-        { path: "/api/v1/user/auth/verify-otp", method: RequestMethod.POST },
-        { path: "/api/v1/user/auth/send-otp", method: RequestMethod.POST },
-      );
+    consumer.apply(AuthRateLimitMiddleware).forRoutes(
+      { path: "/api/v1/user/auth/login", method: RequestMethod.POST },
+      { path: "/api/v1/user/auth/register", method: RequestMethod.POST },
+      { path: "/api/v1/user/auth/refresh", method: RequestMethod.POST },
+      {
+        path: "/api/v1/user/auth/forgot-password",
+        method: RequestMethod.POST,
+      },
+      {
+        path: "/api/v1/user/auth/reset-password",
+        method: RequestMethod.POST,
+      },
+      { path: "/api/v1/user/auth/verify-otp", method: RequestMethod.POST },
+      { path: "/api/v1/user/auth/send-otp", method: RequestMethod.POST },
+    );
   }
 }

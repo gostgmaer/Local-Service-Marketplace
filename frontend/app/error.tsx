@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { AlertTriangle } from 'lucide-react';
+import { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { AlertTriangle } from "lucide-react";
 
 export default function Error({
   error,
@@ -13,7 +13,7 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Route Error:', error);
+    console.error("Route Error:", error);
   }, [error]);
 
   return (
@@ -25,7 +25,7 @@ export default function Error({
             Something went wrong!
           </h1>
           <p className="text-gray-600">
-            {error.message || 'An unexpected error occurred'}
+            {error.message || "An unexpected error occurred"}
           </p>
           {error.digest && (
             <p className="text-sm text-gray-500 mt-2">
@@ -39,7 +39,7 @@ export default function Error({
           </Button>
           <Button
             variant="outline"
-            onClick={() => (window.location.href = '/')}
+            onClick={() => (window.location.href = "/")}
             className="w-full"
           >
             Go to Home

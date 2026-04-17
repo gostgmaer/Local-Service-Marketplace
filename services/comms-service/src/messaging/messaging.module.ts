@@ -28,6 +28,11 @@ import { UserModule } from "../common/user/user.module";
     MessagingGateway,
     FileServiceClient,
   ],
-  exports: [MessageService, AttachmentService, MessagingGateway, FileServiceClient],
+  exports: [
+    MessageService,
+    AttachmentService,
+    MessagingGateway,
+    FileServiceClient,
+  ],
 })
 export class MessagingModule {}

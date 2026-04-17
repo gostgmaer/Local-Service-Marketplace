@@ -1,13 +1,13 @@
-import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Inject, LoggerService } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { NotificationClient } from '../common/notification/notification.client';
-import { UserClient } from '../common/user/user.client';
-import { DisputeRepository } from '../admin/repositories/dispute.repository';
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
+import { Inject, LoggerService } from "@nestjs/common";
+import { Job } from "bullmq";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { NotificationClient } from "../common/notification/notification.client";
+import { UserClient } from "../common/user/user.client";
+import { DisputeRepository } from "../admin/repositories/dispute.repository";
 
-@Processor('oversight.notification', {
-  concurrency: parseInt(process.env.WORKER_CONCURRENCY || '3', 10),
+@Processor("oversight.notification", {
+  concurrency: parseInt(process.env.WORKER_CONCURRENCY || "3", 10),
 })
 export class DisputeNotificationWorker extends WorkerHost {
   constructor(
@@ -23,9 +23,9 @@ export class DisputeNotificationWorker extends WorkerHost {
   async process(job: Job<any, any, string>): Promise<any> {
     try {
       switch (job.name) {
-        case 'notify-dispute-created':
+        case "notify-dispute-created":
           return this.handleDisputeCreated(job.data);
-        case 'notify-dispute-status-changed':
+        case "notify-dispute-status-changed":
           return this.handleDisputeStatusChanged(job.data);
         default:
           throw new Error(`Unknown job name: ${job.name}`);
@@ -34,7 +34,7 @@ export class DisputeNotificationWorker extends WorkerHost {
       this.logger.error(
         `Job "${job.name}/${job.id}" threw: ${error.message}`,
         error.stack,
-        'DisputeNotificationWorker',
+        "DisputeNotificationWorker",
       );
       throw error;
     }
@@ -46,12 +46,12 @@ export class DisputeNotificationWorker extends WorkerHost {
     if (!emailTo) return;
     await this.notificationClient.sendEmail({
       to: emailTo,
-      template: 'MESSAGE_RECEIVED',
+      template: "MESSAGE_RECEIVED",
       variables: {
-        recipientName: emailTo.split('@')[0],
-        senderName: 'LocalServices Support',
+        recipientName: emailTo.split("@")[0],
+        senderName: "LocalServices Support",
         messagePreview: `A dispute #${disputeId} has been opened for job #${jobId}. Our team will review it shortly.`,
-        replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/disputes/${disputeId}`,
+        replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/disputes/${disputeId}`,
       },
     });
   }
@@ -62,40 +62,47 @@ export class DisputeNotificationWorker extends WorkerHost {
     if (!emailTo) return;
     await this.notificationClient.sendEmail({
       to: emailTo,
-      template: 'MESSAGE_RECEIVED',
+      template: "MESSAGE_RECEIVED",
       variables: {
-        recipientName: emailTo.split('@')[0],
-        senderName: 'LocalServices Support',
-        messagePreview: `Your dispute #${disputeId} status has been updated to: ${newStatus}. ${resolution ? 'Resolution: ' + resolution : ''}`,
-        replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/disputes/${disputeId}`,
+        recipientName: emailTo.split("@")[0],
+        senderName: "LocalServices Support",
+        messagePreview: `Your dispute #${disputeId} status has been updated to: ${newStatus}. ${resolution ? "Resolution: " + resolution : ""}`,
+        replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/disputes/${disputeId}`,
       },
     });
   }
 
-  @OnWorkerEvent('active')
+  @OnWorkerEvent("active")
   onActive(job: Job): void {
     this.logger.log(
       `Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`,
-      'DisputeNotificationWorker',
+      "DisputeNotificationWorker",
     );
   }
 
-  @OnWorkerEvent('completed')
+  @OnWorkerEvent("completed")
   onCompleted(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" completed`, 'DisputeNotificationWorker');
+    this.logger.log(
+      `Job "${job.name}/${job.id}" completed`,
+      "DisputeNotificationWorker",
+    );
   }
 
-  @OnWorkerEvent('failed')
+  @OnWorkerEvent("failed")
   onFailed(job: Job | undefined, error: Error): void {
     this.logger.error(
-      `Job "${job?.name ?? 'unknown'}/${job?.id ?? '?'}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+      `Job "${job?.name ?? "unknown"}/${job?.id ?? "?"}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
       error.stack,
-      'DisputeNotificationWorker',
+      "DisputeNotificationWorker",
     );
   }
 
-  @OnWorkerEvent('error')
+  @OnWorkerEvent("error")
   onError(error: Error): void {
-    this.logger.error(`Worker error: ${error.message}`, error.stack, 'DisputeNotificationWorker');
+    this.logger.error(
+      `Worker error: ${error.message}`,
+      error.stack,
+      "DisputeNotificationWorker",
+    );
   }
 }

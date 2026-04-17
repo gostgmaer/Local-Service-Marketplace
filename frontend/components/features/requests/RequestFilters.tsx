@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Dropdown } from '@/components/ui/Dropdown';
-import type { DropdownOption } from '@/components/ui/Dropdown';
-import { Input } from '@/components/ui/Input';
-import { X, Filter } from 'lucide-react';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui/Dropdown";
+import type { DropdownOption } from "@/components/ui/Dropdown";
+import { Input } from "@/components/ui/Input";
+import { X, Filter } from "lucide-react";
 
 interface RequestFiltersProps {
   onFilterChange: (_f: Record<string, any>) => void;
@@ -22,32 +22,32 @@ export function RequestFilters({
   const [isOpen, setIsOpen] = useState(false);
 
   const statusOptions: DropdownOption[] = [
-    { label: 'All Status', value: '' },
-    { label: 'Open', value: 'open' },
-    { label: 'In Progress', value: 'in_progress' },
-    { label: 'Completed', value: 'completed' },
-    { label: 'Cancelled', value: 'cancelled' },
+    { label: "All Status", value: "" },
+    { label: "Open", value: "open" },
+    { label: "In Progress", value: "in_progress" },
+    { label: "Completed", value: "completed" },
+    { label: "Cancelled", value: "cancelled" },
   ];
 
   const categoryOptions: DropdownOption[] = [
-    { label: 'All Categories', value: '' },
-    { label: 'Plumbing', value: 'plumbing' },
-    { label: 'Electrical', value: 'electrical' },
-    { label: 'Carpentry', value: 'carpentry' },
-    { label: 'Cleaning', value: 'cleaning' },
-    { label: 'Painting', value: 'painting' },
-    { label: 'Landscaping', value: 'landscaping' },
+    { label: "All Categories", value: "" },
+    { label: "Plumbing", value: "plumbing" },
+    { label: "Electrical", value: "electrical" },
+    { label: "Carpentry", value: "carpentry" },
+    { label: "Cleaning", value: "cleaning" },
+    { label: "Painting", value: "painting" },
+    { label: "Landscaping", value: "landscaping" },
   ];
 
   const sortOptions: DropdownOption[] = [
-    { label: 'Most Recent', value: 'recent' },
-    { label: 'Highest Budget', value: 'budget_desc' },
-    { label: 'Lowest Budget', value: 'budget_asc' },
+    { label: "Most Recent", value: "recent" },
+    { label: "Highest Budget", value: "budget_desc" },
+    { label: "Lowest Budget", value: "budget_asc" },
   ];
 
   const handleFilterChange = (key: string, value: any) => {
     const newFilters = { ...activeFilters };
-    if (value !== '' && value !== null && value !== undefined) {
+    if (value !== "" && value !== null && value !== undefined) {
       newFilters[key] = value;
     } else {
       delete newFilters[key];
@@ -95,8 +95,8 @@ export function RequestFilters({
                 </label>
                 <Dropdown
                   options={statusOptions}
-                  value={activeFilters.status || ''}
-                  onChange={(value) => handleFilterChange('status', value)}
+                  value={activeFilters.status || ""}
+                  onChange={(value) => handleFilterChange("status", value)}
                   placeholder="Select status"
                 />
               </div>
@@ -108,8 +108,8 @@ export function RequestFilters({
                 </label>
                 <Dropdown
                   options={categoryOptions}
-                  value={activeFilters.category_id || ''}
-                  onChange={(value) => handleFilterChange('category_id', value)}
+                  value={activeFilters.category_id || ""}
+                  onChange={(value) => handleFilterChange("category_id", value)}
                   placeholder="Select category"
                 />
               </div>
@@ -121,8 +121,8 @@ export function RequestFilters({
                 </label>
                 <Dropdown
                   options={sortOptions}
-                  value={activeFilters.sort || ''}
-                  onChange={(value) => handleFilterChange('sort', value)}
+                  value={activeFilters.sort || ""}
+                  onChange={(value) => handleFilterChange("sort", value)}
                   placeholder="Select order"
                 />
               </div>
@@ -135,9 +135,12 @@ export function RequestFilters({
                 <Input
                   type="number"
                   placeholder="0"
-                  value={activeFilters.max_budget || ''}
+                  value={activeFilters.max_budget || ""}
                   onChange={(e) =>
-                    handleFilterChange('max_budget', e.target.value ? Number(e.target.value) : '')
+                    handleFilterChange(
+                      "max_budget",
+                      e.target.value ? Number(e.target.value) : "",
+                    )
                   }
                   min="0"
                 />

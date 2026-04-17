@@ -16,13 +16,17 @@ import { PricingPlanService } from "../services/pricing-plan.service";
 import { CreatePricingPlanDto } from "../dto/create-pricing-plan.dto";
 import { UpdatePricingPlanDto } from "../dto/update-pricing-plan.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  Roles,
+  RequirePermissions,
+} from "@/common/rbac";
 
 @Controller("pricing-plans")
 export class PricingPlanController {
   constructor(private readonly pricingPlanService: PricingPlanService) {}
 
-  @RequirePermissions('subscriptions.manage')
+  @RequirePermissions("subscriptions.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -87,7 +91,7 @@ export class PricingPlanController {
     };
   }
 
-  @RequirePermissions('subscriptions.manage')
+  @RequirePermissions("subscriptions.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(":planId")
   async updatePlan(
@@ -104,7 +108,7 @@ export class PricingPlanController {
     };
   }
 
-  @RequirePermissions('subscriptions.manage')
+  @RequirePermissions("subscriptions.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(":planId/deactivate")
   async deactivatePlan(

@@ -16,6 +16,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { RequestService } from "../services/request.service";
@@ -27,7 +28,11 @@ import {
   PaginatedRequestResponseDto,
 } from "../dto/request-response.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  Roles,
+  RequirePermissions,
+} from "@/common/rbac";
 import { OwnershipGuard } from "@/common/guards/ownership.guard";
 import { Ownership } from "@/common/decorators/ownership.decorator";
 import { ForbiddenException } from "../../../common/exceptions/http.exceptions";
@@ -41,7 +46,7 @@ export class RequestController {
     private readonly fileServiceClient: FileServiceClient,
   ) {}
 
-  @RequirePermissions('requests.create')
+  @RequirePermissions("requests.create")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -55,7 +60,7 @@ export class RequestController {
 
   // Admin stats endpoint
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @RequirePermissions('requests.view_stats')
+  @RequirePermissions("requests.view_stats")
   @Get("stats")
   @HttpCode(HttpStatus.OK)
   async getRequestStats() {
@@ -102,7 +107,7 @@ export class RequestController {
   @Ownership({ resourceType: "request", userIdField: "user_id" })
   @Post(":id/images")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FilesInterceptor("files", 10))
+  @UseInterceptors(FilesInterceptor("files", 10, { storage: multer.memoryStorage() }))
   async uploadRequestImages(
     @Param("id", StrictUuidPipe) requestId: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -131,7 +136,7 @@ export class RequestController {
         linkedEntityType: "request",
       },
       req.user.userId,
-      req.user.role
+      req.user.role,
     );
 
     return {
@@ -180,7 +185,7 @@ export class RequestController {
 
   // Admin only — hard delete
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @RequirePermissions('requests.manage')
+  @RequirePermissions("requests.manage")
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteRequest(@Param("id", StrictUuidPipe) id: string): Promise<void> {
@@ -200,8 +205,13 @@ export class RequestController {
     page: number;
     limit: number;
   }> {
-    if (!req.user.permissions?.includes('requests.manage') && req.user.userId !== userId) {
-      throw new ForbiddenException("You can only view service requests belonging to your own account");
+    if (
+      !req.user.permissions?.includes("requests.manage") &&
+      req.user.userId !== userId
+    ) {
+      throw new ForbiddenException(
+        "You can only view service requests belonging to your own account",
+      );
     }
     const result = await this.requestService.getRequestsByUser(userId);
     return { ...result, page: 1, limit: result.data.length || 1 };

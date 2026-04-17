@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 export interface Dispute {
   id: string;
@@ -7,7 +7,7 @@ export interface Dispute {
   opened_by: string;
   reason: string;
   description?: string;
-  status: 'open' | 'investigating' | 'resolved' | 'closed';
+  status: "open" | "investigating" | "resolved" | "closed";
   resolution?: string;
   resolved_by?: string;
   resolved_at?: string;
@@ -24,18 +24,24 @@ export interface CreateDisputeData {
 
 class DisputeService {
   async createDispute(data: CreateDisputeData): Promise<Dispute> {
-    const response = await apiClient.post<Dispute>('/disputes', {
+    const response = await apiClient.post<Dispute>("/disputes", {
       job_id: data.job_id,
-      reason: data.description ? `${data.reason}: ${data.description}` : data.reason,
+      reason: data.description
+        ? `${data.reason}: ${data.description}`
+        : data.reason,
     });
     return response.data;
   }
 
-  async getMyDisputes(params?: { status?: string; page?: number; limit?: number }): Promise<{ data: Dispute[]; total: number }> {
+  async getMyDisputes(params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Dispute[]; total: number }> {
     const qs = new URLSearchParams();
-    if (params?.status) qs.append('status', params.status);
-    if (params?.page) qs.append('page', String(params.page));
-    if (params?.limit) qs.append('limit', String(params.limit));
+    if (params?.status) qs.append("status", params.status);
+    if (params?.page) qs.append("page", String(params.page));
+    if (params?.limit) qs.append("limit", String(params.limit));
     const response = await apiClient.get<any>(`/disputes/my?${qs.toString()}`);
     const raw = response.data;
     if (Array.isArray(raw)) return { data: raw, total: raw.length };

@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 export interface Notification {
   id: string;
@@ -24,47 +24,56 @@ class NotificationService {
   ): Promise<Notification[]> {
     const params = new URLSearchParams();
     if (filters?.read !== undefined)
-      params.append('read', filters.read.toString());
-    if (filters?.type) params.append('type', filters.type);
-    if (filters?.cursor) params.append('cursor', filters.cursor);
-    if (filters?.limit) params.append('limit', filters.limit.toString());
+      params.append("read", filters.read.toString());
+    if (filters?.type) params.append("type", filters.type);
+    if (filters?.cursor) params.append("cursor", filters.cursor);
+    if (filters?.limit) params.append("limit", filters.limit.toString());
 
-    const response = await apiClient.get<{ notifications: Notification[]; unreadCount: number }>(
-      `/notifications?${params.toString()}`,
-    );
+    const response = await apiClient.get<{
+      notifications: Notification[];
+      unreadCount: number;
+    }>(`/notifications?${params.toString()}`);
     const payload: any = response.data;
 
-		if (Array.isArray(payload)) {
-			return payload as Notification[];
-		}
+    if (Array.isArray(payload)) {
+      return payload as Notification[];
+    }
 
-		if (payload?.notifications && Array.isArray(payload.notifications)) {
-			return payload.notifications as Notification[];
-		}
+    if (payload?.notifications && Array.isArray(payload.notifications)) {
+      return payload.notifications as Notification[];
+    }
 
-		if (payload?.data?.notifications && Array.isArray(payload.data.notifications)) {
-			return payload.data.notifications as Notification[];
-		}
+    if (
+      payload?.data?.notifications &&
+      Array.isArray(payload.data.notifications)
+    ) {
+      return payload.data.notifications as Notification[];
+    }
 
-		if (payload?.data && Array.isArray(payload.data)) {
-			return payload.data as Notification[];
-		}
+    if (payload?.data && Array.isArray(payload.data)) {
+      return payload.data as Notification[];
+    }
 
-		return [];
+    return [];
   }
 
   async markAsRead(id: string): Promise<void> {
-    const response = await apiClient.patch<void>(`/notifications/${id}/read`, {});
+    const response = await apiClient.patch<void>(
+      `/notifications/${id}/read`,
+      {},
+    );
     return response.data;
   }
 
   async markAllAsRead(): Promise<void> {
-    const response = await apiClient.patch<void>('/notifications/read-all', {});
+    const response = await apiClient.patch<void>("/notifications/read-all", {});
     return response.data;
   }
 
   async getUnreadCount(): Promise<{ count: number }> {
-    const response = await apiClient.get<{ count: number }>('/notifications/unread-count');
+    const response = await apiClient.get<{ count: number }>(
+      "/notifications/unread-count",
+    );
     return response.data;
   }
 
@@ -76,40 +85,45 @@ class NotificationService {
   // ------------------ Notification Preferences ------------------
 
   async getNotificationPreferences(): Promise<NotificationPreferences> {
-    const response = await apiClient.get<NotificationPreferences>('/notification-preferences');
+    const response = await apiClient.get<NotificationPreferences>(
+      "/notification-preferences",
+    );
     return response.data;
   }
 
   async updateNotificationPreferences(
-    preferences: Partial<NotificationPreferences>
+    preferences: Partial<NotificationPreferences>,
   ): Promise<NotificationPreferences> {
     const response = await apiClient.put<NotificationPreferences>(
-      '/notification-preferences',
-      preferences
+      "/notification-preferences",
+      preferences,
     );
     return response.data;
   }
 
   async enableAllNotifications(): Promise<NotificationPreferences> {
     const response = await apiClient.put<NotificationPreferences>(
-      '/notification-preferences/enable-all'
+      "/notification-preferences/enable-all",
     );
     return response.data;
   }
 
   async disableAllNotifications(): Promise<NotificationPreferences> {
     const response = await apiClient.put<NotificationPreferences>(
-      '/notification-preferences/disable-all'
+      "/notification-preferences/disable-all",
     );
     return response.data;
   }
 
   // ------------------ Unsubscribe ------------------
 
-  async unsubscribe(email: string, reason?: string): Promise<{ message: string }> {
+  async unsubscribe(
+    email: string,
+    reason?: string,
+  ): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(
-      '/notifications/unsubscribe',
-      { email, reason }
+      "/notifications/unsubscribe",
+      { email, reason },
     );
     return response.data;
   }

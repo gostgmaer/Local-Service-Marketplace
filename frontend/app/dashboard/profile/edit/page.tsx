@@ -1,23 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { useAuth } from '@/hooks/useAuth';
-import { ROUTES } from '@/config/constants';
-import { Layout } from '@/components/layout/Layout';
-import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { FileUpload } from '@/components/ui/FileUpload';
-import { Loading } from '@/components/ui/Loading';
-import { getUserProfile, updateUserProfile, uploadUserProfilePicture } from '@/services/user-service';
-import { usePublicSettings } from '@/hooks/usePublicSettings';
-import { analytics } from '@/utils/analytics';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { useAuth } from "@/hooks/useAuth";
+import { ROUTES } from "@/config/constants";
+import { Layout } from "@/components/layout/Layout";
+import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { FileUpload } from "@/components/ui/FileUpload";
+import { Loading } from "@/components/ui/Loading";
+import {
+  getUserProfile,
+  updateUserProfile,
+  uploadUserProfilePicture,
+} from "@/services/user-service";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
+import { analytics } from "@/utils/analytics";
+import toast from "react-hot-toast";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save } from "lucide-react";
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -33,20 +37,28 @@ export default function ProfileEditPage() {
   }, [isAuthenticated, authLoading, router]);
 
   const {
-		data: profile,
-		isLoading,
-		error,
-		refetch,
-	} = useQuery({ queryKey: ["user-profile"], queryFn: getUserProfile, enabled: isAuthenticated });
+    data: profile,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: getUserProfile,
+    enabled: isAuthenticated,
+  });
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     defaultValues: {
-      email: profile?.email || '',
-      phone: profile?.phone || '',
+      email: profile?.email || "",
+      phone: profile?.phone || "",
     },
     values: {
-      email: profile?.email || '',
-      phone: profile?.phone || '',
+      email: profile?.email || "",
+      phone: profile?.phone || "",
     },
   });
 
@@ -58,19 +70,20 @@ export default function ProfileEditPage() {
       }
     },
     onSuccess: () => {
-      toast.success('Profile updated successfully!');
+      toast.success("Profile updated successfully!");
       analytics.event({
-        action: 'profile_updated',
-        category: 'engagement',
-        label: 'Profile Edit',
+        action: "profile_updated",
+        category: "engagement",
+        label: "Profile Edit",
       });
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       router.push(ROUTES.DASHBOARD);
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update profile';
+      const errorMessage =
+        error.response?.data?.message || "Failed to update profile";
       toast.error(errorMessage);
-      analytics.trackError(errorMessage, 'ProfileEdit');
+      analytics.trackError(errorMessage, "ProfileEdit");
     },
   });
 
@@ -99,18 +112,18 @@ export default function ProfileEditPage() {
   }
 
   if (error) {
-		return (
-			<Layout>
-				<div className='container-custom py-8'>
-					<ErrorState
-						title='Failed to load profile'
-						message="We couldn't load your profile data. Please try again."
-						retry={() => refetch()}
-					/>
-				</div>
-			</Layout>
-		);
-	}
+    return (
+      <Layout>
+        <div className="container-custom py-8">
+          <ErrorState
+            title="Failed to load profile"
+            message="We couldn't load your profile data. Please try again."
+            retry={() => refetch()}
+          />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -157,11 +170,13 @@ export default function ProfileEditPage() {
                   <Input
                     label="Email"
                     type="email"
-                    {...register('email', { required: 'Email is required' })}
+                    {...register("email", { required: "Email is required" })}
                     placeholder="your.email@example.com"
                   />
                   {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.email.message}
+                    </p>
                   )}
                 </div>
 
@@ -170,11 +185,13 @@ export default function ProfileEditPage() {
                   <Input
                     label="Phone"
                     type="tel"
-                    {...register('phone')}
+                    {...register("phone")}
                     placeholder="+1 (555) 123-4567"
                   />
                   {errors.phone && (
-                    <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.phone.message}
+                    </p>
                   )}
                 </div>
 

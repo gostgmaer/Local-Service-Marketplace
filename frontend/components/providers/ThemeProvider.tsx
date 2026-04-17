@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { useThemeStore } from '@/store/themeStore';
+import React, { useEffect } from "react";
+import { useThemeStore } from "@/store/themeStore";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useThemeStore();
@@ -11,15 +11,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(theme);
 
     // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
-      if (theme === 'system') {
-        setTheme('system');
+      if (theme === "system") {
+        setTheme("system");
       }
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, [theme, setTheme]);
 
   return <>{children}</>;

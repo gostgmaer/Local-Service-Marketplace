@@ -18,11 +18,15 @@ import {
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { FileInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { ProviderDocumentService } from "../services/provider-document.service";
 import { UploadDocumentDto } from "../dto/upload-document.dto";
 import { VerifyDocumentDto } from "../dto/verify-document.dto";
 import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  RequirePermissions,
+} from "@/common/rbac";
 import { FileServiceClient } from "../../../common/file-service.client";
 
 @UseGuards(JwtAuthGuard)
@@ -33,10 +37,12 @@ export class ProviderDocumentController {
     private readonly fileServiceClient: FileServiceClient,
   ) {}
 
-  @RequirePermissions('provider_documents.manage')
+  @RequirePermissions("provider_documents.manage")
   @UseGuards(RolesGuard)
   @Post("upload/:providerId")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(
+    FileInterceptor("files", { storage: multer.memoryStorage() }),
+  )
   @HttpCode(HttpStatus.CREATED)
   async uploadDocument(
     @Param("providerId", StrictUuidPipe) providerId: string,
@@ -89,7 +95,7 @@ export class ProviderDocumentController {
     };
   }
 
-  @RequirePermissions('providers.verify')
+  @RequirePermissions("providers.verify")
   @UseGuards(RolesGuard)
   @Post("verify/:documentId")
   @HttpCode(HttpStatus.OK)
@@ -111,7 +117,7 @@ export class ProviderDocumentController {
     };
   }
 
-  @RequirePermissions('providers.verify')
+  @RequirePermissions("providers.verify")
   @UseGuards(RolesGuard)
   @Post("reject/:documentId")
   @HttpCode(HttpStatus.OK)
@@ -125,33 +131,40 @@ export class ProviderDocumentController {
       req.user.userId,
       reason || "Rejected by admin",
     );
-    return { success: true, data: document, message: "Document rejected successfully" };
+    return {
+      success: true,
+      data: document,
+      message: "Document rejected successfully",
+    };
   }
 
-  @RequirePermissions('provider_documents.manage')
+  @RequirePermissions("provider_documents.manage")
   @UseGuards(RolesGuard)
   @Get("provider/:providerId")
   async getProviderDocuments(
     @Param("providerId", FlexibleIdPipe) providerId: string,
     @Request() req: any,
   ) {
-    if (!req.user.permissions?.includes('providers.manage') && req.user.providerId !== providerId) {
+    if (
+      !req.user.permissions?.includes("providers.manage") &&
+      req.user.providerId !== providerId
+    ) {
       throw new ForbiddenException("You can only view your own documents");
     }
     return this.documentService.getProviderDocuments(providerId);
   }
 
-  @RequirePermissions('providers.verify')
+  @RequirePermissions("providers.verify")
   @UseGuards(RolesGuard)
   @Get("pending")
   async getPendingDocuments() {
     return this.documentService.getPendingDocuments();
   }
 
-  @RequirePermissions('providers.verify')
+  @RequirePermissions("providers.verify")
   @UseGuards(RolesGuard)
   @Get("expiring")
-  async getExpiringDocuments(@Request() req: any) {
+  async getExpiringDocuments() {
     return this.documentService.getExpiringDocuments(30);
   }
 
@@ -165,7 +178,7 @@ export class ProviderDocumentController {
     return { success: true, data: status };
   }
 
-  @RequirePermissions('provider_documents.manage')
+  @RequirePermissions("provider_documents.manage")
   @UseGuards(RolesGuard)
   @Delete(":documentId")
   async deleteDocument(

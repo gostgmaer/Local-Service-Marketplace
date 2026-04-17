@@ -14,18 +14,19 @@ import { UserClient } from "../../common/user/user.client";
 
 @Injectable()
 export class RefundService {
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     @InjectQueue("payment.refund") private readonly refundQueue: Queue,
-    @InjectQueue("payment.notification") private readonly notificationQueue: Queue,
+    @InjectQueue("payment.notification")
+    private readonly notificationQueue: Queue,
     private readonly refundRepository: RefundRepository,
     private readonly paymentRepository: PaymentRepository,
     private readonly notificationClient: NotificationClient,
     private readonly userClient: UserClient,
-  ) { }
+  ) {}
 
   async createRefund(paymentId: string, amount?: number): Promise<Refund> {
     this.logger.log(
@@ -46,12 +47,17 @@ export class RefundService {
 
     // Enforce refund window: reject if paid_at is older than refund_window_days
     if (payment.paid_at) {
-      const windowDaysStr = await this.paymentRepository.getSystemSetting('refund_window_days', '30');
+      const windowDaysStr = await this.paymentRepository.getSystemSetting(
+        "refund_window_days",
+        "30",
+      );
       const windowDays = parseInt(windowDaysStr, 10) || 30;
-      const ageDays = (Date.now() - new Date(payment.paid_at).getTime()) / (1000 * 60 * 60 * 24);
+      const ageDays =
+        (Date.now() - new Date(payment.paid_at).getTime()) /
+        (1000 * 60 * 60 * 24);
       if (ageDays > windowDays) {
         throw new BadRequestException(
-          `Refunds can only be requested within ${windowDays} day${windowDays === 1 ? '' : 's'} of payment. This payment was made ${Math.floor(ageDays)} day${Math.floor(ageDays) === 1 ? '' : 's'} ago.`,
+          `Refunds can only be requested within ${windowDays} day${windowDays === 1 ? "" : "s"} of payment. This payment was made ${Math.floor(ageDays)} day${Math.floor(ageDays) === 1 ? "" : "s"} ago.`,
         );
       }
     }
@@ -86,15 +92,12 @@ export class RefundService {
     );
 
     // Queue refund processing job for background processing
-    await this.refundQueue.add(
-      "process-refund",
-      {
-        refundId: refund.id,
-        paymentId,
-        amount: refundAmount,
-        reason: "Customer requested refund",
-      },
-    );
+    await this.refundQueue.add("process-refund", {
+      refundId: refund.id,
+      paymentId,
+      amount: refundAmount,
+      reason: "Customer requested refund",
+    });
 
     this.logger.log(
       `Refund created and queued for processing: ${refund.id}`,
@@ -106,22 +109,22 @@ export class RefundService {
     if (userEmail) {
       const refundPayload = {
         to: userEmail,
-        template: 'PAYMENT_REFUNDED',
+        template: "PAYMENT_REFUNDED",
         variables: {
-          username: userEmail.split('@')[0],
+          username: userEmail.split("@")[0],
           amount: `₹${refundAmount}`,
           transactionId: payment.transaction_id,
           refundId: refund.id,
-          refundDate: new Date().toLocaleDateString('en-IN'),
+          refundDate: new Date().toLocaleDateString("en-IN"),
         },
       };
       const refundDispatch = this.workersEnabled
-        ? this.notificationQueue.add('send-refund-notification', refundPayload)
+        ? this.notificationQueue.add("send-refund-notification", refundPayload)
         : this.notificationClient.sendEmail(refundPayload);
       refundDispatch.catch((err: any) => {
         this.logger.warn(
           `Failed to send refund notification: ${err.message}`,
-          'RefundService',
+          "RefundService",
         );
       });
     }

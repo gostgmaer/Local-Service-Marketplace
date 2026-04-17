@@ -1,7 +1,7 @@
-import { Injectable, Inject, LoggerService } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { RateLimitRepository } from '../repositories/rate-limit.repository';
-import { RedisService } from '../../redis/redis.service';
+import { Injectable, Inject, LoggerService } from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { RateLimitRepository } from "../repositories/rate-limit.repository";
+import { RedisService } from "../../redis/redis.service";
 
 @Injectable()
 export class RateLimitService {
@@ -13,7 +13,7 @@ export class RateLimitService {
     private readonly logger: LoggerService,
     private readonly rateLimitRepository: RateLimitRepository,
     private readonly redisService: RedisService,
-  ) { }
+  ) {}
 
   async checkRateLimit(
     key: string,
@@ -40,7 +40,10 @@ export class RateLimitService {
         const ttl = client ? await client.ttl(redisKey) : windowSeconds;
         const accurateResetAt = new Date(Date.now() + ttl * 1000);
 
-        this.logger.log(`Rate limit exceeded for key: ${key}`, 'RateLimitService');
+        this.logger.log(
+          `Rate limit exceeded for key: ${key}`,
+          "RateLimitService",
+        );
         return { allowed: false, remaining: 0, resetAt: accurateResetAt };
       }
 
@@ -49,7 +52,7 @@ export class RateLimitService {
       this.logger.error(
         `Failed to check rate limit: ${error.message}`,
         error.stack,
-        'RateLimitService',
+        "RateLimitService",
       );
       // On error, allow request to prevent blocking legitimate traffic
       return {
@@ -66,15 +69,12 @@ export class RateLimitService {
       await this.redisService.del(redisKey);
       await this.rateLimitRepository.deleteRateLimit(key);
 
-      this.logger.log(
-        `Rate limit reset for key: ${key}`,
-        'RateLimitService',
-      );
+      this.logger.log(`Rate limit reset for key: ${key}`, "RateLimitService");
     } catch (error: any) {
       this.logger.error(
         `Failed to reset rate limit: ${error.message}`,
         error.stack,
-        'RateLimitService',
+        "RateLimitService",
       );
       throw error;
     }
@@ -85,15 +85,12 @@ export class RateLimitService {
       const expiryTime = new Date(Date.now() - this.RATE_LIMIT_WINDOW * 1000);
       await this.rateLimitRepository.deleteExpiredRateLimits(expiryTime);
 
-      this.logger.log(
-        'Cleaned up expired rate limits',
-        'RateLimitService',
-      );
+      this.logger.log("Cleaned up expired rate limits", "RateLimitService");
     } catch (error: any) {
       this.logger.error(
         `Failed to cleanup expired limits: ${error.message}`,
         error.stack,
-        'RateLimitService',
+        "RateLimitService",
       );
       throw error;
     }

@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsOptional, Min, Max, IsEnum } from "class-validator";
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  Min,
+  Max,
+  IsEnum,
+} from "class-validator";
 
 export class CreatePaymentDto {
   @IsString()
@@ -17,7 +24,13 @@ export class CreatePaymentDto {
 
   @IsOptional()
   @IsEnum(["card", "bank_transfer", "wallet", "cash", "upi", "netbanking"])
-  payment_method?: "card" | "bank_transfer" | "wallet" | "cash" | "upi" | "netbanking";
+  payment_method?:
+    | "card"
+    | "bank_transfer"
+    | "wallet"
+    | "cash"
+    | "upi"
+    | "netbanking";
 
   @IsOptional()
   @IsString()

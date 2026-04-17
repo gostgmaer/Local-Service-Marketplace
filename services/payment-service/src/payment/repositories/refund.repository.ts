@@ -65,10 +65,14 @@ export class RefundRepository {
     });
   }
 
-  async getAllRefunds(limit: number = 50, offset: number = 0): Promise<{ refunds: Refund[]; total: number }> {
-    const countResult = await this.pool.query('SELECT COUNT(*) FROM refunds');
+  async getAllRefunds(
+    limit: number = 50,
+    offset: number = 0,
+  ): Promise<{ refunds: Refund[]; total: number }> {
+    const countResult = await this.pool.query("SELECT COUNT(*) FROM refunds");
     const total = parseInt(countResult.rows[0].count, 10);
-    const query = 'SELECT * FROM refunds ORDER BY created_at DESC LIMIT $1 OFFSET $2';
+    const query =
+      "SELECT * FROM refunds ORDER BY created_at DESC LIMIT $1 OFFSET $2";
     const result = await this.pool.query(query, [limit, offset]);
     const refunds = result.rows.map(
       (row) =>

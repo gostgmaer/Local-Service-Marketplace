@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 export interface RolePermission {
   id: string;
@@ -41,7 +41,7 @@ export interface AssignPermissionsPayload {
 export const rbacService = {
   // ── Roles ───────────────────────────────────────────────────────────────
   async getRoles(): Promise<Role[]> {
-    const res = await apiClient.get('/identity/roles');
+    const res = await apiClient.get("/identity/roles");
     return res.data?.data ?? res.data ?? [];
   },
 
@@ -51,7 +51,7 @@ export const rbacService = {
   },
 
   async createRole(payload: CreateRolePayload): Promise<Role> {
-    const res = await apiClient.post('/identity/roles', payload);
+    const res = await apiClient.post("/identity/roles", payload);
     return res.data?.data ?? res.data;
   },
 
@@ -66,7 +66,7 @@ export const rbacService = {
 
   // ── Permissions ─────────────────────────────────────────────────────────
   async getPermissions(): Promise<RolePermission[]> {
-    const res = await apiClient.get('/identity/permissions');
+    const res = await apiClient.get("/identity/permissions");
     return res.data?.data ?? res.data ?? [];
   },
 
@@ -76,7 +76,10 @@ export const rbacService = {
     return res.data?.data ?? res.data ?? [];
   },
 
-  async assignPermissions(roleId: string, payload: AssignPermissionsPayload): Promise<void> {
+  async assignPermissions(
+    roleId: string,
+    payload: AssignPermissionsPayload,
+  ): Promise<void> {
     await apiClient.put(`/identity/roles/${roleId}/permissions`, payload);
   },
 };

@@ -16,8 +16,8 @@ import { FileServiceClient } from "../../common/file-service.client";
 @Module({
   imports: [
     BullModule.registerQueue(
-      { name: 'marketplace.notification' },
-      { name: 'marketplace.analytics' },
+      { name: "marketplace.notification" },
+      { name: "marketplace.analytics" },
     ),
     DatabaseModule,
     NotificationModule,
@@ -36,6 +36,11 @@ import { FileServiceClient } from "../../common/file-service.client";
     LocationRepository,
     FileServiceClient,
   ],
-  exports: [RequestService, CategoryService, CategoryRepository, FileServiceClient],
+  exports: [
+    RequestService,
+    CategoryService,
+    CategoryRepository,
+    FileServiceClient,
+  ],
 })
 export class RequestModule {}

@@ -1,11 +1,11 @@
-import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Inject, LoggerService, OnModuleInit, Optional } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { RefundRepository } from '../payment/repositories/refund.repository';
-import { PaymentRepository } from '../payment/repositories/payment.repository';
-import { PaymentGatewayService } from '../payment/gateway/payment-gateway.service';
-import { DeadLetterQueueService } from '../common/dlq/dead-letter-queue.service';
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
+import { Inject, LoggerService, OnModuleInit, Optional } from "@nestjs/common";
+import { Job } from "bullmq";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { RefundRepository } from "../payment/repositories/refund.repository";
+import { PaymentRepository } from "../payment/repositories/payment.repository";
+import { PaymentGatewayService } from "../payment/gateway/payment-gateway.service";
+import { DeadLetterQueueService } from "../common/dlq/dead-letter-queue.service";
 
 export interface ProcessRefundJobData {
   refundId: string;
@@ -14,8 +14,8 @@ export interface ProcessRefundJobData {
   reason: string;
 }
 
-@Processor('payment.refund', {
-  concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
+@Processor("payment.refund", {
+  concurrency: parseInt(process.env.WORKER_CONCURRENCY || "5", 10),
 })
 export class RefundWorker extends WorkerHost implements OnModuleInit {
   constructor(
@@ -35,47 +35,67 @@ export class RefundWorker extends WorkerHost implements OnModuleInit {
 
   async process(job: Job<any, any, string>): Promise<any> {
     switch (job.name) {
-      case 'process-refund':
+      case "process-refund":
         return this.handleProcessRefund(job as Job<ProcessRefundJobData>);
       default:
         throw new Error(`Unknown job name: ${job.name}`);
     }
   }
 
-  private async handleProcessRefund(job: Job<ProcessRefundJobData>): Promise<void> {
+  private async handleProcessRefund(
+    job: Job<ProcessRefundJobData>,
+  ): Promise<void> {
     const { refundId, paymentId, amount } = job.data;
-    this.logger.log(`Processing refund ${refundId} for payment ${paymentId}`, 'RefundWorker');
+    this.logger.log(
+      `Processing refund ${refundId} for payment ${paymentId}`,
+      "RefundWorker",
+    );
 
     try {
       // Fetch payment to determine which gateway to refund through
       const payment = await this.paymentRepository.getPaymentById(paymentId);
       if (!payment) {
-        throw new Error(`Payment ${paymentId} not found — cannot process refund`);
+        throw new Error(
+          `Payment ${paymentId} not found — cannot process refund`,
+        );
       }
 
       if (!payment.transaction_id) {
-        throw new Error(`Payment ${paymentId} has no transaction_id — cannot initiate gateway refund`);
+        throw new Error(
+          `Payment ${paymentId} has no transaction_id — cannot initiate gateway refund`,
+        );
       }
 
       // Call actual gateway refund API
-      await this.paymentGateway.refundWith(payment.gateway ?? 'mock', {
+      await this.paymentGateway.refundWith(payment.gateway ?? "mock", {
         transactionId: payment.transaction_id,
         amount,
         reason: job.data.reason,
       });
 
-      await this.refundRepository.updateRefundStatus(refundId, 'completed');
-      await this.paymentRepository.updatePaymentStatus(paymentId, 'refunded', null);
+      await this.refundRepository.updateRefundStatus(refundId, "completed");
+      await this.paymentRepository.updatePaymentStatus(
+        paymentId,
+        "refunded",
+        null,
+      );
 
-      this.logger.log(`Refund ${refundId} completed successfully via ${payment.gateway}`, 'RefundWorker');
+      this.logger.log(
+        `Refund ${refundId} completed successfully via ${payment.gateway}`,
+        "RefundWorker",
+      );
     } catch (error: any) {
       const err = error as Error;
-      this.logger.error(`Refund ${refundId} failed: ${err.message}`, err.stack, 'RefundWorker');
-      await this.refundRepository.updateRefundStatus(refundId, 'failed');
+      this.logger.error(
+        `Refund ${refundId} failed: ${err.message}`,
+        err.stack,
+        "RefundWorker",
+      );
+      await this.refundRepository.updateRefundStatus(refundId, "failed");
 
       // Capture in DLQ if max attempts reached
       if (this.dlqService && job.attemptsMade >= 3) {
-        await this.dlqService.captureFailedJob('payment.refund', job, err);
+        await this.dlqService.captureFailedJob("payment.refund", job, err);
       }
 
       throw error;
@@ -86,32 +106,42 @@ export class RefundWorker extends WorkerHost implements OnModuleInit {
   // Worker lifecycle hooks
   // ─────────────────────────────────────────────────────────────────
 
-  @OnWorkerEvent('active')
+  @OnWorkerEvent("active")
   onActive(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`, 'RefundWorker');
-  }
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" completed`, 'RefundWorker');
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job | undefined, error: Error): void {
-    this.logger.error(
-      `Job "${job?.name ?? 'unknown'}/${job?.id ?? '?'}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
-      error.stack,
-      'RefundWorker',
+    this.logger.log(
+      `Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`,
+      "RefundWorker",
     );
   }
 
-  @OnWorkerEvent('error')
-  onError(error: Error): void {
-    this.logger.error(`Worker error: ${error.message}`, error.stack, 'RefundWorker');
+  @OnWorkerEvent("completed")
+  onCompleted(job: Job): void {
+    this.logger.log(`Job "${job.name}/${job.id}" completed`, "RefundWorker");
   }
 
-  @OnWorkerEvent('stalled')
+  @OnWorkerEvent("failed")
+  onFailed(job: Job | undefined, error: Error): void {
+    this.logger.error(
+      `Job "${job?.name ?? "unknown"}/${job?.id ?? "?"}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+      error.stack,
+      "RefundWorker",
+    );
+  }
+
+  @OnWorkerEvent("error")
+  onError(error: Error): void {
+    this.logger.error(
+      `Worker error: ${error.message}`,
+      error.stack,
+      "RefundWorker",
+    );
+  }
+
+  @OnWorkerEvent("stalled")
   onStalled(jobId: string): void {
-    this.logger.warn(`Job ${jobId} stalled and will be requeued`, 'RefundWorker');
+    this.logger.warn(
+      `Job ${jobId} stalled and will be requeued`,
+      "RefundWorker",
+    );
   }
 }

@@ -20,13 +20,13 @@ export interface FailedJobRecord {
 
 /**
  * DeadLetterQueueService - Manages failed jobs across all BullMQ queues
- * 
+ *
  * Features:
  * - Captures failed jobs after max retries
  * - Stores in database for admin review
  * - Provides replay/discard functionality
  * - Prevents job loss
- * 
+ *
  * Usage:
  * In worker error handlers, call captureFailedJob() when job.attemptsMade >= maxAttempts
  */
@@ -36,7 +36,7 @@ export class DeadLetterQueueService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     @Inject("DATABASE_POOL") private readonly pool: Pool,
-  ) { }
+  ) {}
 
   /**
    * Capture a failed job and store in DLQ
@@ -150,7 +150,7 @@ export class DeadLetterQueueService {
 
   /**
    * Replay a failed job by re-queuing it
-   * 
+   *
    * @param failedJobId - ID of the failed job record
    * @param queue - BullMQ queue instance to replay to
    */
@@ -238,7 +238,8 @@ export class DeadLetterQueueService {
     byQueue: { queue_name: string; count: number }[];
     byStatus: { status: string; count: number }[];
   }> {
-    const totalQuery = "SELECT COUNT(*) FROM failed_jobs WHERE status = 'failed'";
+    const totalQuery =
+      "SELECT COUNT(*) FROM failed_jobs WHERE status = 'failed'";
     const totalResult = await this.pool.query(totalQuery);
 
     const byQueueQuery = `

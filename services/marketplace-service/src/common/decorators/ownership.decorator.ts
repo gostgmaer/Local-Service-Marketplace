@@ -4,11 +4,11 @@ export const OWNERSHIP_KEY = "ownership";
 
 /**
  * Ownership decorator - marks endpoints that require resource ownership validation
- * 
+ *
  * Usage:
  * @Ownership({ resourceType: 'request', userIdField: 'user_id' })
  * @Ownership({ resourceType: 'proposal', userIdField: 'provider_id' })
- * 
+ *
  * The guard will:
  * 1. Extract resource ID from route params
  * 2. Fetch the resource from the specified service

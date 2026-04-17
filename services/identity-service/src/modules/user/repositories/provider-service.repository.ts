@@ -5,7 +5,7 @@ import { ProviderService } from "../entities/provider-service.entity";
 
 @Injectable()
 export class ProviderServiceRepository {
-  constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) { }
+  constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
 
   async create(
     providerId: string,

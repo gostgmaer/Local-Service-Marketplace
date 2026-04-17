@@ -1,12 +1,10 @@
-'use client';
+"use client";
 
-import { Moon, Sun, Monitor } from 'lucide-react';
-import { useThemeStore } from '@/store/themeStore';
+import { Moon, Sun, Monitor } from "lucide-react";
+import { useThemeStore } from "@/store/themeStore";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useThemeStore();
-
-
 
   const icons = {
     light: Sun,
@@ -20,7 +18,8 @@ export function ThemeToggle() {
     <div className="relative">
       <button
         onClick={() => {
-          const newTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+          const newTheme =
+            theme === "light" ? "dark" : theme === "dark" ? "system" : "light";
           setTheme(newTheme);
         }}
         className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

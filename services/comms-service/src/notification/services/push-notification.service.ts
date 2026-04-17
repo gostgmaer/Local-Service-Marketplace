@@ -13,9 +13,9 @@ export interface PushNotificationPayload {
 
 /**
  * PushNotificationService - Firebase Cloud Messaging (FCM) integration
- * 
+ *
  * Supports both FCM (Android/Web) and APNs (iOS via FCM)
- * 
+ *
  * Environment Variables:
  * - FIREBASE_PROJECT_ID
  * - FIREBASE_PRIVATE_KEY (base64 encoded or raw)
@@ -88,11 +88,13 @@ export class PushNotificationService {
 
   /**
    * Send push notification to a user
-   * 
+   *
    * @param payload - Notification payload
    * @returns true if sent successfully, false otherwise
    */
-  async sendPushNotification(payload: PushNotificationPayload): Promise<boolean> {
+  async sendPushNotification(
+    payload: PushNotificationPayload,
+  ): Promise<boolean> {
     const { userId, title, body, data, deviceToken } = payload;
 
     if (!this.fcmEnabled) {
@@ -116,8 +118,15 @@ export class PushNotificationService {
           return false;
         }
         // Send to all registered devices via multicast
-        const tokens = devices.map((d) => (d as any).device_token ?? d.device_id).filter(Boolean);
-        return (await this.sendMulticastPushNotification({ userId, title, body, data }, tokens)) > 0;
+        const tokens = devices
+          .map((d) => (d as any).device_token ?? d.device_id)
+          .filter(Boolean);
+        return (
+          (await this.sendMulticastPushNotification(
+            { userId, title, body, data },
+            tokens,
+          )) > 0
+        );
       }
 
       const message: admin.messaging.Message = {
@@ -170,7 +179,7 @@ export class PushNotificationService {
 
   /**
    * Send push notification to multiple devices
-   * 
+   *
    * @param payload - Notification payload
    * @param deviceTokens - Array of device tokens
    * @returns Count of successfully sent notifications
@@ -205,7 +214,9 @@ export class PushNotificationService {
         tokens: deviceTokens,
       };
 
-      const response = await admin.messaging(this.fcmApp).sendEachForMulticast(message);
+      const response = await admin
+        .messaging(this.fcmApp)
+        .sendEachForMulticast(message);
 
       this.logger.log(
         `Multicast notification sent: ${response.successCount}/${deviceTokens.length} successful`,

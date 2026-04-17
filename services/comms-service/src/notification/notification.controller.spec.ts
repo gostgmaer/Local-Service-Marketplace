@@ -10,7 +10,6 @@ import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { ForbiddenException, BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
-
 const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
 const mockConfig = {
@@ -20,7 +19,6 @@ const mockConfig = {
     return null;
   }),
 };
-
 
 const mockNotification = {
   id: "notif-uuid-1",
@@ -94,7 +92,11 @@ describe("NotificationController", () => {
         mockNotification,
       ]);
       mockNotifService.getUnreadCount.mockResolvedValue(1);
-      const result = await controller.getNotifications({ user: null } as any, "user-uuid-1", 50);
+      const result = await controller.getNotifications(
+        { user: null } as any,
+        "user-uuid-1",
+        50,
+      );
       expect(result.success).toBe(true);
       expect(result.data.notifications).toHaveLength(1);
       expect(result.data.unreadCount).toBe(1);
@@ -127,7 +129,10 @@ describe("NotificationController", () => {
   describe("markAllAsRead", () => {
     it("should mark all as read", async () => {
       mockNotifService.markAllAsRead.mockResolvedValue(undefined);
-      const result = await controller.markAllAsRead({ user: null } as any, "user-uuid-1");
+      const result = await controller.markAllAsRead(
+        { user: null } as any,
+        "user-uuid-1",
+      );
       expect(result.message).toContain("marked as read");
     });
   });
@@ -146,7 +151,11 @@ describe("NotificationController", () => {
     it("should throw when in-app notifications disabled", async () => {
       mockFeatureFlags.inAppNotificationsEnabled = false;
       await expect(
-        controller.getNotification("notif-uuid-1", { user: null } as any, "user-uuid-1"),
+        controller.getNotification(
+          "notif-uuid-1",
+          { user: null } as any,
+          "user-uuid-1",
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -155,7 +164,11 @@ describe("NotificationController", () => {
     it("should mark notification as read", async () => {
       const readNotif = { ...mockNotification, read: true };
       mockNotifService.markAsRead.mockResolvedValue(readNotif);
-      const result = await controller.markAsRead("notif-uuid-1", { user: null } as any, "user-uuid-1");
+      const result = await controller.markAsRead(
+        "notif-uuid-1",
+        { user: null } as any,
+        "user-uuid-1",
+      );
       expect(result.read).toBe(true);
     });
   });
@@ -163,7 +176,11 @@ describe("NotificationController", () => {
   describe("deleteNotification", () => {
     it("should delete notification", async () => {
       mockNotifService.deleteNotification.mockResolvedValue(undefined);
-      await controller.deleteNotification("notif-uuid-1", { user: null } as any, "user-uuid-1");
+      await controller.deleteNotification(
+        "notif-uuid-1",
+        { user: null } as any,
+        "user-uuid-1",
+      );
       expect(mockNotifService.deleteNotification).toHaveBeenCalledWith(
         "notif-uuid-1",
         "user-uuid-1",

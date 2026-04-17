@@ -1,11 +1,16 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useForm, UseFormReturn, FieldValues, SubmitHandler } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ZodType } from 'zod';
-import { Button } from '@/components/ui/Button';
-import { cn } from '@/utils/helpers';
+import React from "react";
+import {
+  useForm,
+  UseFormReturn,
+  FieldValues,
+  SubmitHandler,
+} from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ZodType } from "zod";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/utils/helpers";
 
 interface FormProps<T extends FieldValues> {
   onSubmit: SubmitHandler<T>;
@@ -26,8 +31,8 @@ export function Form<T extends FieldValues>({
   defaultValues,
   children,
   className,
-  submitLabel = 'Submit',
-  cancelLabel = 'Cancel',
+  submitLabel = "Submit",
+  cancelLabel = "Cancel",
   onCancel,
   isLoading = false,
   showActions = true,
@@ -49,17 +54,13 @@ export function Form<T extends FieldValues>({
   return (
     <form
       onSubmit={handleSubmit(onSubmit as any)}
-      className={cn('space-y-6', className)}
+      className={cn("space-y-6", className)}
     >
       {children(methods as unknown as UseFormReturn<T>)}
-      
+
       {showActions && (
         <div className="flex items-center gap-3 pt-4">
-          <Button
-            type="submit"
-            isLoading={loading}
-            disabled={loading}
-          >
+          <Button type="submit" isLoading={loading} disabled={loading}>
             {submitLabel}
           </Button>
           {onCancel && (
@@ -95,7 +96,7 @@ export function FormField({
   className,
 }: FormFieldProps) {
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn("space-y-2", className)}>
       {label && (
         <label className="block text-sm font-medium text-gray-700">
           {label}
@@ -103,9 +104,7 @@ export function FormField({
         </label>
       )}
       {children}
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }

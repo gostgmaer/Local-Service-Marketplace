@@ -36,7 +36,9 @@ export class CouponService {
     // Check global usage cap
     const maxUses = (coupon as any).max_uses;
     if (maxUses != null) {
-      const usageCount = await this.couponRepository.getCouponUsageCount(coupon.id);
+      const usageCount = await this.couponRepository.getCouponUsageCount(
+        coupon.id,
+      );
       if (usageCount >= maxUses) {
         throw new BadRequestException("Coupon usage limit has been reached");
       }

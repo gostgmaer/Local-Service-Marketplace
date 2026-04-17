@@ -1,17 +1,22 @@
-import React from 'react';
-import { ProviderCard } from './ProviderCard';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { SkeletonCard } from '@/components/ui/Skeleton';
+import React from "react";
+import { ProviderCard } from "./ProviderCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 
 interface Provider {
-	id: string;
-	display_id?: string;
-	business_name: string;
-	description?: string;
-	rating?: number | string | null;
-	user_id: string;
-	services?: Array<{ id: string; category_id: string }>;
-	availability?: Array<{ id: string; day_of_week: number; start_time: string; end_time: string }>;
+  id: string;
+  display_id?: string;
+  business_name: string;
+  description?: string;
+  rating?: number | string | null;
+  user_id: string;
+  services?: Array<{ id: string; category_id: string }>;
+  availability?: Array<{
+    id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+  }>;
 }
 
 interface ProviderListProps {

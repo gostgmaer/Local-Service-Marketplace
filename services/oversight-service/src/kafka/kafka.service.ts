@@ -1,6 +1,12 @@
-import { Injectable, Inject, LoggerService, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { Kafka, Consumer, Producer } from 'kafkajs';
+import {
+  Injectable,
+  Inject,
+  LoggerService,
+  OnModuleInit,
+  OnModuleDestroy,
+} from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { Kafka, Consumer, Producer } from "kafkajs";
 
 @Injectable()
 export class KafkaService implements OnModuleInit, OnModuleDestroy {
@@ -11,12 +17,13 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private isConnected: boolean = false;
 
   constructor(
-    @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
+    @Inject(WINSTON_MODULE_NEST_PROVIDER)
+    private readonly logger: LoggerService,
   ) {
-    this.isEnabled = process.env.EVENT_BUS_ENABLED === 'true';
+    this.isEnabled = process.env.EVENT_BUS_ENABLED === "true";
 
     if (this.isEnabled) {
-      const brokers = process.env.KAFKA_BROKERS?.split(',') || ['kafka:29092'];
+      const brokers = process.env.KAFKA_BROKERS?.split(",") || ["kafka:29092"];
       const clientId = process.env.KAFKA_CLIENT_ID || "oversight-service";
 
       this.kafka = new Kafka({
@@ -28,7 +35,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      this.consumer = this.kafka.consumer({ groupId: "oversight-service-group" });
+      this.consumer = this.kafka.consumer({
+        groupId: "oversight-service-group",
+      });
       this.producer = this.kafka.producer();
     }
   }
@@ -41,22 +50,30 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
         // Subscribe to all event topics
         await this.consumer.subscribe({
-          topics: ['request-events', 'proposal-events', 'job-events', 'payment-events'],
-          fromBeginning: false
+          topics: [
+            "request-events",
+            "proposal-events",
+            "job-events",
+            "payment-events",
+          ],
+          fromBeginning: false,
         });
 
         this.isConnected = true;
-        this.logger.log('Kafka consumer connected successfully', 'KafkaService');
+        this.logger.log(
+          "Kafka consumer connected successfully",
+          "KafkaService",
+        );
       } catch (error: any) {
         this.logger.error(
           `Failed to connect to Kafka: ${error.message}. Events will not be consumed.`,
           error.stack,
-          'KafkaService',
+          "KafkaService",
         );
         this.isEnabled = false;
       }
     } else {
-      this.logger.log('Kafka event bus is disabled', 'KafkaService');
+      this.logger.log("Kafka event bus is disabled", "KafkaService");
     }
   }
 
@@ -64,13 +81,16 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     if (this.isConnected) {
       await this.producer.disconnect();
       await this.consumer.disconnect();
-      this.logger.log('Kafka disconnected', 'KafkaService');
+      this.logger.log("Kafka disconnected", "KafkaService");
     }
   }
 
   async startConsuming(callback: (event: any) => Promise<void>): Promise<void> {
     if (!this.isEnabled || !this.isConnected) {
-      this.logger.log('Kafka consumer not started - event bus disabled', 'KafkaService');
+      this.logger.log(
+        "Kafka consumer not started - event bus disabled",
+        "KafkaService",
+      );
       return;
     }
 
@@ -80,14 +100,14 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
           const event = JSON.parse(message.value.toString());
           this.logger.log(
             `Received event from ${topic}: ${event.eventType}`,
-            'KafkaService',
+            "KafkaService",
           );
           await callback(event);
         } catch (error: any) {
           this.logger.error(
             `Failed to process event: ${error.message}`,
             error.stack,
-            'KafkaService',
+            "KafkaService",
           );
         }
       },
@@ -100,7 +120,10 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   async emit(topic: string, event: any): Promise<void> {
     if (!this.isEnabled || !this.isConnected) {
-      this.logger.debug(`Kafka disabled - event not emitted: ${topic}`, 'KafkaService');
+      this.logger.debug(
+        `Kafka disabled - event not emitted: ${topic}`,
+        "KafkaService",
+      );
       return;
     }
 
@@ -115,9 +138,16 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
           },
         ],
       });
-      this.logger.log(`Event emitted to ${topic}: ${event.event}`, 'KafkaService');
+      this.logger.log(
+        `Event emitted to ${topic}: ${event.event}`,
+        "KafkaService",
+      );
     } catch (error: any) {
-      this.logger.error(`Failed to emit event to ${topic}: ${error.message}`, error.stack, 'KafkaService');
+      this.logger.error(
+        `Failed to emit event to ${topic}: ${error.message}`,
+        error.stack,
+        "KafkaService",
+      );
     }
   }
 }

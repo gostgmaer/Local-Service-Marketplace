@@ -17,7 +17,7 @@ export class ProviderRepository {
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
-        'SELECT value FROM system_settings WHERE key = $1',
+        "SELECT value FROM system_settings WHERE key = $1",
         [key],
       );
       return res.rows[0]?.value ?? defaultValue;

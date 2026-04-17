@@ -1,6 +1,6 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
-import * as crypto from 'crypto';
-import { UnauthorizedException } from '../exceptions/http.exceptions';
+import { Injectable, CanActivate, ExecutionContext } from "@nestjs/common";
+import * as crypto from "crypto";
+import { UnauthorizedException } from "../exceptions/http.exceptions";
 
 /**
  * InternalServiceGuard
@@ -18,23 +18,25 @@ import { UnauthorizedException } from '../exceptions/http.exceptions';
 export class InternalServiceGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const secret = request.headers['x-internal-secret'];
+    const secret = request.headers["x-internal-secret"];
     const expected = process.env.GATEWAY_INTERNAL_SECRET;
 
     if (!expected) {
       // If the secret is not configured, reject all internal calls to avoid silent bypass
-      throw new UnauthorizedException('Internal service secret not configured');
+      throw new UnauthorizedException("Internal service secret not configured");
     }
 
     // Use timing-safe comparison to prevent timing attacks (CWE-208)
-    const secretBuf = Buffer.from(secret ?? '', 'utf8');
-    const expectedBuf = Buffer.from(expected, 'utf8');
+    const secretBuf = Buffer.from(secret ?? "", "utf8");
+    const expectedBuf = Buffer.from(expected, "utf8");
     const isValid =
       secretBuf.length === expectedBuf.length &&
       crypto.timingSafeEqual(secretBuf, expectedBuf);
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid or missing internal service secret');
+      throw new UnauthorizedException(
+        "Invalid or missing internal service secret",
+      );
     }
 
     return true;

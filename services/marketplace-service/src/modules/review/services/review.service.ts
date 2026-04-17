@@ -6,14 +6,18 @@ import { ReviewRepository } from "../repositories/review.repository";
 import { CreateReviewDto } from "../dto/create-review.dto";
 import { UpdateReviewDto } from "../dto/update-review.dto";
 import { Review } from "../entities/review.entity";
-import { NotFoundException, BadRequestException, ForbiddenException } from "../../../common/exceptions/http.exceptions";
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "../../../common/exceptions/http.exceptions";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserClient } from "../../../common/user/user.client";
 import { KafkaService } from "../../../kafka/kafka.service";
 
 @Injectable()
 export class ReviewService {
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     private readonly reviewRepository: ReviewRepository,
@@ -22,9 +26,10 @@ export class ReviewService {
     private readonly notificationClient: NotificationClient,
     private readonly userClient: UserClient,
     private readonly kafkaService: KafkaService,
-    @InjectQueue('marketplace.notification') private readonly notificationQueue: Queue,
-    @InjectQueue('marketplace.rating') private readonly ratingQueue: Queue,
-  ) { }
+    @InjectQueue("marketplace.notification")
+    private readonly notificationQueue: Queue,
+    @InjectQueue("marketplace.rating") private readonly ratingQueue: Queue,
+  ) {}
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
     this.logger.log(
@@ -33,7 +38,9 @@ export class ReviewService {
     );
 
     // 1. Validate that the referenced job is completed before allowing a review
-    const job = await this.reviewRepository.getJobForReview(createReviewDto.job_id);
+    const job = await this.reviewRepository.getJobForReview(
+      createReviewDto.job_id,
+    );
     if (!job) {
       throw new NotFoundException("Job not found");
     }
@@ -52,9 +59,15 @@ export class ReviewService {
     createReviewDto.provider_id = job.provider_id;
 
     // 4. Enforce minimum review comment length from system settings
-    const minLengthStr = await this.reviewRepository.getSystemSetting('min_review_length', '10');
+    const minLengthStr = await this.reviewRepository.getSystemSetting(
+      "min_review_length",
+      "10",
+    );
     const minLength = Math.max(1, parseInt(minLengthStr, 10) || 10);
-    if (!createReviewDto.comment || createReviewDto.comment.trim().length < minLength) {
+    if (
+      !createReviewDto.comment ||
+      createReviewDto.comment.trim().length < minLength
+    ) {
       throw new BadRequestException(
         `Review comment must be at least ${minLength} characters long`,
       );
@@ -63,7 +76,9 @@ export class ReviewService {
     // 5. Atomically prevent duplicate reviews via ON CONFLICT in the insert
     const review = await this.reviewRepository.createReview(createReviewDto);
     if (!review) {
-      throw new BadRequestException("You have already submitted a review for this job");
+      throw new BadRequestException(
+        "You have already submitted a review for this job",
+      );
     }
 
     this.logger.log(
@@ -74,8 +89,8 @@ export class ReviewService {
     // Publish review_submitted event to Kafka (non-blocking)
     if (this.kafkaService.isKafkaEnabled()) {
       this.kafkaService
-        .publishEvent('review-events', {
-          eventType: 'review_submitted',
+        .publishEvent("review-events", {
+          eventType: "review_submitted",
           eventId: review.id,
           timestamp: new Date().toISOString(),
           data: {
@@ -89,7 +104,7 @@ export class ReviewService {
         .catch((err: any) => {
           this.logger.warn(
             `Failed to publish review_submitted event: ${err.message}`,
-            'ReviewService',
+            "ReviewService",
           );
         });
     }
@@ -97,7 +112,7 @@ export class ReviewService {
     // Notify provider about new review — queue if workers enabled, else inline
     if (this.workersEnabled) {
       this.notificationQueue
-        .add('notify-review-created', {
+        .add("notify-review-created", {
           providerId: createReviewDto.provider_id,
           reviewId: review.id,
           rating: review.rating,
@@ -105,33 +120,38 @@ export class ReviewService {
         .catch((err: any) => {
           this.logger.warn(
             `Failed to enqueue review notification: ${err.message}`,
-            'ReviewService',
+            "ReviewService",
           );
         });
     } else {
-      this.userClient.getUserEmail(createReviewDto.provider_id).then((email) => {
-        if (!email) return;
-        this.notificationClient.sendEmail({
-          to: email,
-          template: 'REVIEW_REMINDER',
-          variables: {
-            username: email.split('@')[0],
-            productName: `Job review`,
-            orderId: review.id,
-            purchaseDate: new Date().toLocaleDateString('en-IN'),
-          },
+      this.userClient
+        .getUserEmail(createReviewDto.provider_id)
+        .then((email) => {
+          if (!email) return;
+          this.notificationClient.sendEmail({
+            to: email,
+            template: "REVIEW_REMINDER",
+            variables: {
+              username: email.split("@")[0],
+              productName: `Job review`,
+              orderId: review.id,
+              purchaseDate: new Date().toLocaleDateString("en-IN"),
+            },
+          });
+        })
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to send review notification: ${err.message}`,
+            "ReviewService",
+          );
         });
-      }).catch((err: any) => {
-        this.logger.warn(
-          `Failed to send review notification: ${err.message}`,
-          'ReviewService',
-        );
-      });
     }
 
     // Enqueue rating recalculation (non-blocking)
     this.ratingQueue
-      .add('recalculate-provider-rating', { providerId: createReviewDto.provider_id })
+      .add("recalculate-provider-rating", {
+        providerId: createReviewDto.provider_id,
+      })
       .catch(() => null);
 
     return review;
@@ -141,8 +161,8 @@ export class ReviewService {
     providerId: string,
     limit: number = 20,
     offset: number = 0,
-    sortBy: string = 'created_at',
-    sortOrder: string = 'desc',
+    sortBy: string = "created_at",
+    sortOrder: string = "desc",
     minRating?: number,
     maxRating?: number,
   ): Promise<{ data: Review[]; total: number; averageRating: number }> {
@@ -209,7 +229,8 @@ export class ReviewService {
     }
 
     const daysSinceCreation = Math.floor(
-      (Date.now() - new Date(existing.created_at).getTime()) / (1000 * 60 * 60 * 24),
+      (Date.now() - new Date(existing.created_at).getTime()) /
+        (1000 * 60 * 60 * 24),
     );
     if (daysSinceCreation > 30) {
       throw new BadRequestException(
@@ -217,7 +238,10 @@ export class ReviewService {
       );
     }
 
-    const review = await this.reviewRepository.updateReview(id, updateReviewDto);
+    const review = await this.reviewRepository.updateReview(
+      id,
+      updateReviewDto,
+    );
 
     if (!review) {
       throw new NotFoundException("Review not found");

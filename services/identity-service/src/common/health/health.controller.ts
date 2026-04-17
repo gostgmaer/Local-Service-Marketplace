@@ -3,7 +3,7 @@ import { Pool } from "pg";
 
 @Controller("health")
 export class HealthController {
-  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
   @Get()
   async check() {

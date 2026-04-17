@@ -15,7 +15,7 @@ import { KafkaService } from "./kafka.service";
 @Module({})
 export class KafkaModule {
   static register(): DynamicModule {
-    const isEnabled = process.env.EVENT_BUS_ENABLED === 'true';
+    const isEnabled = process.env.EVENT_BUS_ENABLED === "true";
 
     return {
       module: KafkaModule,

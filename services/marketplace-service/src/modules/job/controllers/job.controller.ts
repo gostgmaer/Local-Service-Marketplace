@@ -16,6 +16,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { JobService } from "../services/job.service";
@@ -28,7 +29,11 @@ import {
 } from "../dto/job-response.dto";
 import { JobQueryDto } from "../dto/job-query.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  Roles,
+  RequirePermissions,
+} from "@/common/rbac";
 import { ForbiddenException } from "../../../common/exceptions/http.exceptions";
 import { FileServiceClient } from "../../../common/file-service.client";
 import "multer";
@@ -41,7 +46,7 @@ export class JobController {
     private readonly fileServiceClient: FileServiceClient,
   ) {}
 
-  @RequirePermissions('jobs.create')
+  @RequirePermissions("jobs.create")
   @UseGuards(RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -54,7 +59,7 @@ export class JobController {
     return this.jobService.createJob(createJobDto);
   }
 
-  @RequirePermissions('jobs.view_stats')
+  @RequirePermissions("jobs.view_stats")
   @UseGuards(RolesGuard)
   @Get("stats")
   @HttpCode(HttpStatus.OK)
@@ -98,7 +103,7 @@ export class JobController {
     return this.jobService.getJobById(id);
   }
 
-  @RequirePermissions('jobs.update_status')
+  @RequirePermissions("jobs.update_status")
   @UseGuards(RolesGuard)
   @Patch(":id/status")
   @HttpCode(HttpStatus.OK)
@@ -116,7 +121,7 @@ export class JobController {
     );
   }
 
-  @RequirePermissions('jobs.update_status')
+  @RequirePermissions("jobs.update_status")
   @UseGuards(RolesGuard)
   @Post(":id/complete")
   @HttpCode(HttpStatus.OK)
@@ -124,13 +129,18 @@ export class JobController {
     @Param("id", StrictUuidPipe) id: string,
     @Request() req: any,
   ): Promise<JobResponseDto> {
-    return this.jobService.completeJob(id, req.user.userId, req.user.role, req.user.permissions);
+    return this.jobService.completeJob(
+      id,
+      req.user.userId,
+      req.user.role,
+      req.user.permissions,
+    );
   }
 
   // Authenticated — provider or customer can upload completion photos for jobs
   @Post(":id/photos")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FilesInterceptor("files", 10))
+  @UseInterceptors(FilesInterceptor("files", 10, { storage: multer.memoryStorage() }))
   async uploadJobPhotos(
     @Param("id", StrictUuidPipe) jobId: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -151,7 +161,7 @@ export class JobController {
     const job = await this.jobService.getJobById(jobId);
     const isProvider = job.provider_id === req.user.userId;
     const isCustomer = job.customer_id === req.user.userId;
-    const isAdmin = req.user.permissions?.includes('jobs.manage');
+    const isAdmin = req.user.permissions?.includes("jobs.manage");
 
     if (!isProvider && !isCustomer && !isAdmin) {
       throw new ForbiddenException(
@@ -168,7 +178,7 @@ export class JobController {
         linkedEntityType: "job",
       },
       req.user.userId,
-      req.user.role
+      req.user.role,
     );
 
     return {
@@ -193,8 +203,13 @@ export class JobController {
     limit: number;
   }> {
     // RBAC check: only admin or the provider themselves can list their jobs here
-    if (!req.user.permissions?.includes('jobs.manage') && req.user.providerId !== providerId) {
-      throw new ForbiddenException("You can only view jobs assigned to your own provider account");
+    if (
+      !req.user.permissions?.includes("jobs.manage") &&
+      req.user.providerId !== providerId
+    ) {
+      throw new ForbiddenException(
+        "You can only view jobs assigned to your own provider account",
+      );
     }
     const result = await this.jobService.getJobsByProvider(providerId);
     return { ...result, page: 1, limit: result.data.length || 1 };
@@ -215,7 +230,7 @@ export class JobController {
     return { ...result, page: 1, limit: result.data.length || 1 };
   }
 
-  @RequirePermissions('jobs.create')
+  @RequirePermissions("jobs.create")
   @UseGuards(RolesGuard)
   @Delete(":id")
   @HttpCode(HttpStatus.OK)
@@ -224,7 +239,13 @@ export class JobController {
     @Request() req: any,
     @Body() body?: CancelJobDto,
   ): Promise<{ success: boolean; message: string }> {
-    await this.jobService.deleteJob(id, req.user.userId, req.user.role, body?.reason, req.user.permissions);
+    await this.jobService.deleteJob(
+      id,
+      req.user.userId,
+      req.user.role,
+      body?.reason,
+      req.user.permissions,
+    );
     return {
       success: true,
       message: "Job cancelled successfully",

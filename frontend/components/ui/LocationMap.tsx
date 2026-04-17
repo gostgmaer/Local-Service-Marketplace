@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from "react";
 
 // Declare google as a global variable
 declare const google: any;
@@ -15,10 +15,10 @@ interface LocationMapProps {
 
 /**
  * LocationMap - Read-only Google Maps display component
- * 
+ *
  * Shows a location marker on Google Maps with optional address info window.
  * Used for displaying saved locations on request details, job pages, etc.
- * 
+ *
  * @param latitude - Latitude coordinate
  * @param longitude - Longitude coordinate
  * @param address - Optional address to display in info window
@@ -29,8 +29,8 @@ export default function LocationMap({
   latitude,
   longitude,
   address,
-  height = '300px',
-  zoom = 14
+  height = "300px",
+  zoom = 14,
 }: LocationMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -59,7 +59,7 @@ export default function LocationMap({
     markerRef.current = new google.maps.Marker({
       position: position,
       map: mapInstanceRef.current,
-      title: address || 'Service Location',
+      title: address || "Service Location",
     });
 
     // Create info window if address provided
@@ -69,7 +69,7 @@ export default function LocationMap({
       });
 
       // Show info window on marker click
-      markerRef.current.addListener('click', () => {
+      markerRef.current.addListener("click", () => {
         infoWindowRef.current.open(mapInstanceRef.current, markerRef.current);
       });
 
@@ -89,9 +89,13 @@ export default function LocationMap({
         console.warn("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set.");
         return;
       }
-      
-      if (!document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')) {
-        const script = document.createElement('script');
+
+      if (
+        !document.querySelector(
+          'script[src*="maps.googleapis.com/maps/api/js"]',
+        )
+      ) {
+        const script = document.createElement("script");
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
         script.async = true;
         script.defer = true;
@@ -122,17 +126,19 @@ export default function LocationMap({
 
   return (
     <div className="relative">
-      <div 
-        ref={mapRef} 
-        style={{ height }} 
+      <div
+        ref={mapRef}
+        style={{ height }}
         className="w-full rounded-lg border border-gray-300 dark:border-gray-700"
       />
       {!latitude && !longitude && (
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg"
           style={{ height }}
         >
-          <p className="text-gray-500 dark:text-gray-400">No location available</p>
+          <p className="text-gray-500 dark:text-gray-400">
+            No location available
+          </p>
         </div>
       )}
     </div>

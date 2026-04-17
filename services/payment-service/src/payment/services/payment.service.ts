@@ -29,13 +29,14 @@ import {
 
 @Injectable()
 export class PaymentService {
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-    @InjectQueue('payment.notification') private readonly notificationQueue: Queue,
-    @InjectQueue('payment.analytics') private readonly analyticsQueue: Queue,
+    @InjectQueue("payment.notification")
+    private readonly notificationQueue: Queue,
+    @InjectQueue("payment.analytics") private readonly analyticsQueue: Queue,
     private readonly paymentRepository: PaymentRepository,
     private readonly couponService: CouponService,
     private readonly kafkaService: KafkaService,
@@ -44,7 +45,7 @@ export class PaymentService {
     private readonly jobClient: JobClient,
     private readonly analyticsClient: AnalyticsClient,
     private readonly paymentGateway: PaymentGatewayService,
-  ) { }
+  ) {}
 
   async createPayment(
     jobId: string,
@@ -64,7 +65,9 @@ export class PaymentService {
         throw new BadRequestException("You are not the customer for this job");
       }
       if (job.provider_id !== providerId) {
-        throw new BadRequestException("Provider ID does not match the job's assigned provider");
+        throw new BadRequestException(
+          "Provider ID does not match the job's assigned provider",
+        );
       }
       if (job.actual_amount && Math.abs(amount - job.actual_amount) > 0.01) {
         throw new BadRequestException(
@@ -74,12 +77,15 @@ export class PaymentService {
     }
 
     // Idempotency guard: prevent double-charging for the same job
-    const existingPayments = await this.paymentRepository.getPaymentsByJobId(jobId);
+    const existingPayments =
+      await this.paymentRepository.getPaymentsByJobId(jobId);
     const active = existingPayments.find(
       (p) => p.status === "completed" || p.status === "pending",
     );
     if (active) {
-      throw new ConflictException(`A payment already exists for this job (status: ${active.status})`);
+      throw new ConflictException(
+        `A payment already exists for this job (status: ${active.status})`,
+      );
     }
 
     let finalAmount = amount;
@@ -148,7 +154,7 @@ export class PaymentService {
     if (userEmail) {
       if (this.workersEnabled) {
         this.notificationQueue
-          .add('notify-payment-completed', {
+          .add("notify-payment-completed", {
             paymentId: payment.id,
             userId,
             amount: finalAmount,
@@ -156,22 +162,30 @@ export class PaymentService {
             transactionId: chargeResult.transactionId,
           })
           .catch((err: any) => {
-            this.logger.warn(`Failed to enqueue payment confirmation: ${err.message}`, 'PaymentService');
+            this.logger.warn(
+              `Failed to enqueue payment confirmation: ${err.message}`,
+              "PaymentService",
+            );
           });
       } else {
-        this.notificationClient.sendEmail({
-          to: userEmail,
-          template: 'PAYMENT_SUCCESS',
-          variables: {
-            username: userEmail.split('@')[0],
-            amount: `₹${finalAmount}`,
-            transactionId: chargeResult.transactionId,
-            paymentMethod: 'Online Payment',
-            date: new Date().toLocaleDateString('en-IN'),
-          },
-        }).catch((err: any) => {
-          this.logger.warn(`Failed to send payment confirmation: ${err.message}`, 'PaymentService');
-        });
+        this.notificationClient
+          .sendEmail({
+            to: userEmail,
+            template: "PAYMENT_SUCCESS",
+            variables: {
+              username: userEmail.split("@")[0],
+              amount: `₹${finalAmount}`,
+              transactionId: chargeResult.transactionId,
+              paymentMethod: "Online Payment",
+              date: new Date().toLocaleDateString("en-IN"),
+            },
+          })
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to send payment confirmation: ${err.message}`,
+              "PaymentService",
+            );
+          });
       }
     }
 
@@ -212,12 +226,17 @@ export class PaymentService {
 
     // Track analytics via queue (non-blocking)
     this.analyticsQueue
-      .add('track-payment-completed', {
+      .add("track-payment-completed", {
         userId,
-        action: 'payment_completed',
-        resource: 'payment',
+        action: "payment_completed",
+        resource: "payment",
         resourceId: payment.id,
-        metadata: { jobId: payment.job_id, amount: finalAmount, currency, providerId },
+        metadata: {
+          jobId: payment.job_id,
+          amount: finalAmount,
+          currency,
+          providerId,
+        },
       })
       .catch(() => null);
 

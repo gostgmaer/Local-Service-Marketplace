@@ -1,12 +1,13 @@
-import { Suspense } from 'react';
-import { Layout } from '@/components/layout/Layout';
-import { CreateRequestForm } from '@/components/forms/CreateRequestForm';
-import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
-import type { Metadata } from 'next';
+import { Suspense } from "react";
+import { Layout } from "@/components/layout/Layout";
+import { CreateRequestForm } from "@/components/forms/CreateRequestForm";
+import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Post a Service Request',
-  description: 'Describe your project, set your budget, and get proposals from verified local providers.',
+  title: "Post a Service Request",
+  description:
+    "Describe your project, set your budget, and get proposals from verified local providers.",
 };
 
 export default function CreateRequestPage() {
@@ -19,7 +20,8 @@ export default function CreateRequestPage() {
               Post a Service Request
             </h1>
             <p className="text-gray-500 dark:text-gray-400">
-              Describe your project and receive competitive proposals from verified providers.
+              Describe your project and receive competitive proposals from
+              verified providers.
             </p>
           </div>
           <Suspense>

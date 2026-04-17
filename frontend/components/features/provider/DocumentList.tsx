@@ -1,22 +1,31 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 import {
   getProviderDocuments,
   getDocumentVerificationStatus,
   deleteProviderDocument,
   type ProviderDocument,
-  type VerificationStatus
-} from '@/services/user-service';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { FileText, Check, X, Clock, AlertTriangle, Calendar, Eye } from 'lucide-react';
+  type VerificationStatus,
+} from "@/services/user-service";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import {
+  FileText,
+  Check,
+  X,
+  Clock,
+  AlertTriangle,
+  Calendar,
+  Eye,
+} from "lucide-react";
 
 export function DocumentList({ providerId }: { providerId?: string }) {
   const [documents, setDocuments] = useState<ProviderDocument[]>([]);
   const [status, setStatus] = useState<VerificationStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDocument, setSelectedDocument] = useState<ProviderDocument | null>(null);
+  const [selectedDocument, setSelectedDocument] =
+    useState<ProviderDocument | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -26,7 +35,7 @@ export function DocumentList({ providerId }: { providerId?: string }) {
       const data = await getProviderDocuments(providerId);
       setDocuments(data || []);
     } catch (error) {
-      console.error('Failed to load documents:', error);
+      console.error("Failed to load documents:", error);
     } finally {
       setLoading(false);
     }
@@ -38,7 +47,7 @@ export function DocumentList({ providerId }: { providerId?: string }) {
       const data = await getDocumentVerificationStatus(providerId);
       setStatus(data);
     } catch (error) {
-      console.error('Failed to load status:', error);
+      console.error("Failed to load status:", error);
     }
   }, [providerId]);
   useEffect(() => {
@@ -49,8 +58,6 @@ export function DocumentList({ providerId }: { providerId?: string }) {
     loadDocuments();
     loadVerificationStatus();
   }, [providerId, loadDocuments, loadVerificationStatus]);
-
-
 
   const handleDeleteClick = (documentId: string) => {
     setPendingDocId(documentId);
@@ -65,8 +72,8 @@ export function DocumentList({ providerId }: { providerId?: string }) {
       loadDocuments();
       loadVerificationStatus();
     } catch (error) {
-      console.error('Failed to delete document:', error);
-      toast.error('Failed to delete document');
+      console.error("Failed to delete document:", error);
+      toast.error("Failed to delete document");
     } finally {
       setDeleting(false);
       setDeleteConfirmOpen(false);
@@ -102,16 +109,19 @@ export function DocumentList({ providerId }: { providerId?: string }) {
   };
 
   const formatDocumentType = (type: string) => {
-    return type.split('_').map(word =>
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+    return type
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   const isExpiring = (expiryDate?: string) => {
     if (!expiryDate) return false;
     const expiry = new Date(expiryDate);
     const now = new Date();
-    const daysUntilExpiry = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiry = Math.ceil(
+      (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+    );
     return daysUntilExpiry > 0 && daysUntilExpiry <= 30;
   };
 
@@ -133,10 +143,13 @@ export function DocumentList({ providerId }: { providerId?: string }) {
       <div className="space-y-6">
         {/* Verification Status Card */}
         {status && (
-          <div className={`p-6 rounded-lg border-2 ${status.fully_verified
-            ? 'bg-green-50 border-green-200'
-            : 'bg-yellow-50 border-yellow-200'
-            }`}>
+          <div
+            className={`p-6 rounded-lg border-2 ${
+              status.fully_verified
+                ? "bg-green-50 border-green-200"
+                : "bg-yellow-50 border-yellow-200"
+            }`}
+          >
             <div className="flex items-start gap-4">
               {status.fully_verified ? (
                 <Check className="w-8 h-8 text-green-600 flex-shrink-0" />
@@ -145,16 +158,22 @@ export function DocumentList({ providerId }: { providerId?: string }) {
               )}
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-2">
-                  {status.fully_verified ? 'Fully Verified' : 'Verification Incomplete'}
+                  {status.fully_verified
+                    ? "Fully Verified"
+                    : "Verification Incomplete"}
                 </h3>
                 <div className="grid sm:grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Verified Documents</p>
-                    <p className="text-2xl font-bold text-green-600">{status.verified_count}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {status.verified_count}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Pending Review</p>
-                    <p className="text-2xl font-bold text-yellow-600">{status.pending_count}</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {status.pending_count}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Missing Required</p>
@@ -164,16 +183,21 @@ export function DocumentList({ providerId }: { providerId?: string }) {
                   </div>
                 </div>
 
-                {status.missing_required_documents && status.missing_required_documents.length > 0 && (
-                  <div className="mt-4 p-3 bg-white rounded border border-yellow-300">
-                    <p className="font-medium text-sm mb-2">Missing Required Documents:</p>
-                    <ul className="list-disc list-inside text-sm text-gray-700">
-                      {status.missing_required_documents.map((docType: string) => (
-                        <li key={docType}>{formatDocumentType(docType)}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {status.missing_required_documents &&
+                  status.missing_required_documents.length > 0 && (
+                    <div className="mt-4 p-3 bg-white rounded border border-yellow-300">
+                      <p className="font-medium text-sm mb-2">
+                        Missing Required Documents:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700">
+                        {status.missing_required_documents.map(
+                          (docType: string) => (
+                            <li key={docType}>{formatDocumentType(docType)}</li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -189,12 +213,17 @@ export function DocumentList({ providerId }: { providerId?: string }) {
             <div className="p-12 text-center text-gray-500">
               <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <p>No documents uploaded yet</p>
-              <p className="text-sm mt-2">Upload your verification documents to get started</p>
+              <p className="text-sm mt-2">
+                Upload your verification documents to get started
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {documents.map(doc => (
-                <div key={doc.id} className="p-6 hover:bg-gray-50 transition-colors">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="p-6 hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
                       <FileText className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
@@ -215,14 +244,19 @@ export function DocumentList({ providerId }: { providerId?: string }) {
                         {doc.expiry_date && (
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="w-4 h-4" />
-                            <span className={`${isExpired(doc.expiry_date)
-                              ? 'text-red-600 font-medium'
-                              : isExpiring(doc.expiry_date)
-                                ? 'text-orange-600 font-medium'
-                                : 'text-gray-600'
-                              }`}>
-                              {isExpired(doc.expiry_date) && 'Expired: '}
-                              {isExpiring(doc.expiry_date) && !isExpired(doc.expiry_date) && 'Expires: '}
+                            <span
+                              className={`${
+                                isExpired(doc.expiry_date)
+                                  ? "text-red-600 font-medium"
+                                  : isExpiring(doc.expiry_date)
+                                    ? "text-orange-600 font-medium"
+                                    : "text-gray-600"
+                              }`}
+                            >
+                              {isExpired(doc.expiry_date) && "Expired: "}
+                              {isExpiring(doc.expiry_date) &&
+                                !isExpired(doc.expiry_date) &&
+                                "Expires: "}
                               {new Date(doc.expiry_date).toLocaleDateString()}
                             </span>
                           </div>
@@ -230,7 +264,8 @@ export function DocumentList({ providerId }: { providerId?: string }) {
 
                         {doc.verified_at && (
                           <p className="text-sm text-gray-500 mt-2">
-                            Verified on {new Date(doc.verified_at).toLocaleDateString()}
+                            Verified on{" "}
+                            {new Date(doc.verified_at).toLocaleDateString()}
                           </p>
                         )}
 
@@ -239,7 +274,9 @@ export function DocumentList({ providerId }: { providerId?: string }) {
                             <p className="text-sm font-medium text-red-900 mb-1">
                               Rejection Reason:
                             </p>
-                            <p className="text-sm text-red-800">{doc.rejection_reason}</p>
+                            <p className="text-sm text-red-800">
+                              {doc.rejection_reason}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -305,7 +342,10 @@ export function DocumentList({ providerId }: { providerId?: string }) {
       </div>
       <ConfirmDialog
         isOpen={deleteConfirmOpen}
-        onClose={() => { setDeleteConfirmOpen(false); setPendingDocId(null); }}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setPendingDocId(null);
+        }}
         onConfirm={handleConfirmDelete}
         title="Delete Document"
         message="Are you sure you want to delete this document? This action cannot be undone."

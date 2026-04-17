@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString, IsBoolean, IsInt, Min, Max } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsBoolean,
+  IsInt,
+  Min,
+  Max,
+} from "class-validator";
 
 export class CreateFeatureFlagDto {
   @IsNotEmpty()

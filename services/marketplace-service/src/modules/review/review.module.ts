@@ -14,8 +14,8 @@ import { KafkaModule } from "../../kafka/kafka.module";
 @Module({
   imports: [
     BullModule.registerQueue(
-      { name: 'marketplace.notification' },
-      { name: 'marketplace.rating' },
+      { name: "marketplace.notification" },
+      { name: "marketplace.rating" },
     ),
     DatabaseModule,
     KafkaModule,

@@ -1,11 +1,11 @@
-import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Inject, LoggerService, OnModuleInit } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Job, Queue } from 'bullmq';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { PaymentRepository } from '../payment/repositories/payment.repository';
-import { PaymentGatewayService } from '../payment/gateway/payment-gateway.service';
-import { DEFAULT_JOB_OPTIONS } from '../bullmq/bullmq-default-options';
+import { Processor, WorkerHost, OnWorkerEvent } from "@nestjs/bullmq";
+import { Inject, LoggerService, OnModuleInit } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Job, Queue } from "bullmq";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { PaymentRepository } from "../payment/repositories/payment.repository";
+import { PaymentGatewayService } from "../payment/gateway/payment-gateway.service";
+import { DEFAULT_JOB_OPTIONS } from "../bullmq/bullmq-default-options";
 
 export interface PaymentRetryJobData {
   paymentId: string;
@@ -14,14 +14,14 @@ export interface PaymentRetryJobData {
   currency: string;
 }
 
-@Processor('payment.retry', {
-  concurrency: parseInt(process.env.WORKER_CONCURRENCY || '3', 10),
+@Processor("payment.retry", {
+  concurrency: parseInt(process.env.WORKER_CONCURRENCY || "3", 10),
 })
 export class PaymentWorker extends WorkerHost implements OnModuleInit {
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-    @InjectQueue('payment.retry') private readonly retryQueue: Queue,
+    @InjectQueue("payment.retry") private readonly retryQueue: Queue,
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentGateway: PaymentGatewayService,
   ) {
@@ -34,16 +34,21 @@ export class PaymentWorker extends WorkerHost implements OnModuleInit {
 
   async process(job: Job<any, any, string>): Promise<any> {
     switch (job.name) {
-      case 'retry-payment':
+      case "retry-payment":
         return this.handleRetryPayment(job as Job<PaymentRetryJobData>);
       default:
         throw new Error(`Unknown job name: ${job.name}`);
     }
   }
 
-  private async handleRetryPayment(job: Job<PaymentRetryJobData>): Promise<void> {
+  private async handleRetryPayment(
+    job: Job<PaymentRetryJobData>,
+  ): Promise<void> {
     const { paymentId, amount, currency } = job.data;
-    this.logger.log(`Retrying payment ${paymentId} (attempt ${job.attemptsMade + 1})`, 'PaymentWorker');
+    this.logger.log(
+      `Retrying payment ${paymentId} (attempt ${job.attemptsMade + 1})`,
+      "PaymentWorker",
+    );
 
     try {
       // Fetch original payment to find the gateway used
@@ -54,7 +59,7 @@ export class PaymentWorker extends WorkerHost implements OnModuleInit {
 
       // Charge via the same gateway as the original payment
       const chargeResult = await this.paymentGateway.chargeWith(
-        (payment as any).gateway ?? 'mock',
+        (payment as any).gateway ?? "mock",
         {
           amount,
           currency,
@@ -65,14 +70,25 @@ export class PaymentWorker extends WorkerHost implements OnModuleInit {
 
       await this.paymentRepository.updatePaymentStatus(
         paymentId,
-        chargeResult.status === 'succeeded' ? 'completed' : 'pending',
+        chargeResult.status === "succeeded" ? "completed" : "pending",
         chargeResult.transactionId,
       );
-      this.logger.log(`Payment retry successful for ${paymentId}, txn: ${chargeResult.transactionId}`, 'PaymentWorker');
+      this.logger.log(
+        `Payment retry successful for ${paymentId}, txn: ${chargeResult.transactionId}`,
+        "PaymentWorker",
+      );
     } catch (error: any) {
       const err = error as Error;
-      this.logger.error(`Payment retry failed for ${paymentId}: ${err.message}`, err.stack, 'PaymentWorker');
-      await this.paymentRepository.updatePaymentStatus(paymentId, 'failed', null);
+      this.logger.error(
+        `Payment retry failed for ${paymentId}: ${err.message}`,
+        err.stack,
+        "PaymentWorker",
+      );
+      await this.paymentRepository.updatePaymentStatus(
+        paymentId,
+        "failed",
+        null,
+      );
       throw error;
     }
   }
@@ -81,32 +97,42 @@ export class PaymentWorker extends WorkerHost implements OnModuleInit {
   // Worker lifecycle hooks
   // ─────────────────────────────────────────────────────────────────
 
-  @OnWorkerEvent('active')
+  @OnWorkerEvent("active")
   onActive(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`, 'PaymentWorker');
-  }
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job): void {
-    this.logger.log(`Job "${job.name}/${job.id}" completed`, 'PaymentWorker');
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job | undefined, error: Error): void {
-    this.logger.error(
-      `Job "${job?.name ?? 'unknown'}/${job?.id ?? '?'}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
-      error.stack,
-      'PaymentWorker',
+    this.logger.log(
+      `Job "${job.name}/${job.id}" started (attempt ${job.attemptsMade + 1})`,
+      "PaymentWorker",
     );
   }
 
-  @OnWorkerEvent('error')
-  onError(error: Error): void {
-    this.logger.error(`Worker error: ${error.message}`, error.stack, 'PaymentWorker');
+  @OnWorkerEvent("completed")
+  onCompleted(job: Job): void {
+    this.logger.log(`Job "${job.name}/${job.id}" completed`, "PaymentWorker");
   }
 
-  @OnWorkerEvent('stalled')
+  @OnWorkerEvent("failed")
+  onFailed(job: Job | undefined, error: Error): void {
+    this.logger.error(
+      `Job "${job?.name ?? "unknown"}/${job?.id ?? "?"}" failed (attempt ${job?.attemptsMade ?? 0}): ${error.message}`,
+      error.stack,
+      "PaymentWorker",
+    );
+  }
+
+  @OnWorkerEvent("error")
+  onError(error: Error): void {
+    this.logger.error(
+      `Worker error: ${error.message}`,
+      error.stack,
+      "PaymentWorker",
+    );
+  }
+
+  @OnWorkerEvent("stalled")
   onStalled(jobId: string): void {
-    this.logger.warn(`Job ${jobId} stalled and will be requeued`, 'PaymentWorker');
+    this.logger.warn(
+      `Job ${jobId} stalled and will be requeued`,
+      "PaymentWorker",
+    );
   }
 }

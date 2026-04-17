@@ -214,7 +214,9 @@ export class JwtAuthMiddleware implements NestMiddleware {
         userId: decoded.sub || decoded.userId || decoded.id,
         email: decoded.email,
         role: decoded.role || "user",
-        permissions: Array.isArray(decoded.permissions) ? decoded.permissions : [],
+        permissions: Array.isArray(decoded.permissions)
+          ? decoded.permissions
+          : [],
         name: decoded.name,
         phone: decoded.phone,
         providerId: decoded.providerId,
@@ -242,7 +244,10 @@ export class JwtAuthMiddleware implements NestMiddleware {
               "x-gateway-secret": this.gatewaySecret,
               "Content-Type": "application/json",
             },
-            timeout: this.configService.get<number>("REQUEST_TIMEOUT_MS", 72000),
+            timeout: this.configService.get<number>(
+              "REQUEST_TIMEOUT_MS",
+              72000,
+            ),
           },
         ),
       );

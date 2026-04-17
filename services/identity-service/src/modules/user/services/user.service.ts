@@ -20,21 +20,29 @@ import { NotificationClient } from "../../../common/notification/notification.cl
 @Injectable()
 export class UserService {
   private readonly saltRounds = 12;
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     private readonly userRepository: UserRepository,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     private readonly notificationClient: NotificationClient,
-    @InjectQueue('identity.notification') private readonly notificationQueue: Queue,
-  ) { }
+    @InjectQueue("identity.notification")
+    private readonly notificationQueue: Queue,
+  ) {}
 
-  private sendEmailNotification(payload: { to: string; template: string; variables: Record<string, any> }): void {
+  private sendEmailNotification(payload: {
+    to: string;
+    template: string;
+    variables: Record<string, any>;
+  }): void {
     const dispatch = this.workersEnabled
-      ? this.notificationQueue.add('send-email', payload)
+      ? this.notificationQueue.add("send-email", payload)
       : this.notificationClient.sendEmail(payload);
     dispatch.catch((err: any) => {
-      this.logger.error(`Failed to send email (${payload.template}) to ${payload.to}: ${err.message}`, 'UserService');
+      this.logger.error(
+        `Failed to send email (${payload.template}) to ${payload.to}: ${err.message}`,
+        "UserService",
+      );
     });
   }
 
@@ -99,12 +107,12 @@ export class UserService {
     // Send suspension email notification
     this.sendEmailNotification({
       to: updated.email,
-      template: 'USER_SUSPENDED',
+      template: "USER_SUSPENDED",
       variables: {
         userId: updated.id,
-        username: updated.name || updated.email.split('@')[0],
+        username: updated.name || updated.email.split("@")[0],
         email: updated.email,
-        reason: reason || 'Violation of terms and conditions',
+        reason: reason || "Violation of terms and conditions",
         timestamp: new Date().toISOString(),
       },
     });
@@ -121,10 +129,10 @@ export class UserService {
     // Send account reactivation email
     this.sendEmailNotification({
       to: updated.email,
-      template: 'USER_REINSTATED',
+      template: "USER_REINSTATED",
       variables: {
         userId: updated.id,
-        username: updated.name || updated.email.split('@')[0],
+        username: updated.name || updated.email.split("@")[0],
         email: updated.email,
         timestamp: new Date().toISOString(),
       },
@@ -149,12 +157,12 @@ export class UserService {
     // Send banning email notification
     this.sendEmailNotification({
       to: updated.email,
-      template: 'USER_BANNED',
+      template: "USER_BANNED",
       variables: {
         userId: updated.id,
-        username: updated.name || updated.email.split('@')[0],
+        username: updated.name || updated.email.split("@")[0],
         email: updated.email,
-        reason: reason || 'Serious violation of community guidelines',
+        reason: reason || "Serious violation of community guidelines",
         timestamp: new Date().toISOString(),
       },
     });
@@ -179,10 +187,10 @@ export class UserService {
     // Notify user that their password was reset by an admin
     this.sendEmailNotification({
       to: updated.email,
-      template: 'MARKETPLACE_PASSWORD_RESET',
+      template: "MARKETPLACE_PASSWORD_RESET",
       variables: {
-        name: updated.name || updated.email.split('@')[0],
-        resetLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+        name: updated.name || updated.email.split("@")[0],
+        resetLink: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
       },
     });
 
@@ -198,13 +206,13 @@ export class UserService {
     // Notify user that their account was removed
     this.sendEmailNotification({
       to: deleted.email,
-      template: 'USER_DELETED',
+      template: "USER_DELETED",
       variables: {
         userId: deleted.id,
-        username: deleted.name || deleted.email.split('@')[0],
+        username: deleted.name || deleted.email.split("@")[0],
         email: deleted.email,
         timestamp: new Date().toISOString(),
-        reason: 'removed by administrator',
+        reason: "removed by administrator",
       },
     });
 

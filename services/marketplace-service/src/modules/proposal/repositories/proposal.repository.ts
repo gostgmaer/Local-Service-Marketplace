@@ -12,13 +12,13 @@ import { BadRequestException } from "@/common/exceptions/http.exceptions";
 
 @Injectable()
 export class ProposalRepository {
-  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) { }
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
   /** Reads a system setting from the shared system_settings table with a safe fallback. */
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
-        'SELECT value FROM system_settings WHERE key = $1',
+        "SELECT value FROM system_settings WHERE key = $1",
         [key],
       );
       return res.rows[0]?.value ?? defaultValue;
@@ -120,7 +120,9 @@ export class ProposalRepository {
 
     const result = await this.pool.query(query, [id]);
     if (result.rowCount === 0) {
-      throw new BadRequestException("Proposal is no longer pending or does not exist");
+      throw new BadRequestException(
+        "Proposal is no longer pending or does not exist",
+      );
     }
     return result.rows[0];
   }
@@ -130,7 +132,10 @@ export class ProposalRepository {
    * Called after acceptProposal so competing providers are notified and the request
    * cannot appear to have multiple accepted proposals simultaneously.
    */
-  async rejectSiblingProposals(requestId: string, acceptedProposalId: string): Promise<void> {
+  async rejectSiblingProposals(
+    requestId: string,
+    acceptedProposalId: string,
+  ): Promise<void> {
     const query = `
       UPDATE proposals
       SET status = 'rejected', updated_at = NOW()

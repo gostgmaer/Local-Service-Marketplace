@@ -1,13 +1,15 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { UserActivityLog } from '../entities/user-activity-log.entity';
-import { TrackActivityDto } from '../dto/track-activity.dto';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { UserActivityLog } from "../entities/user-activity-log.entity";
+import { TrackActivityDto } from "../dto/track-activity.dto";
 
 @Injectable()
 export class UserActivityRepository {
-  constructor(@Inject('DATABASE_POOL') private readonly pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
-  async trackActivity(trackActivityDto: TrackActivityDto): Promise<UserActivityLog> {
+  async trackActivity(
+    trackActivityDto: TrackActivityDto,
+  ): Promise<UserActivityLog> {
     const query = `
       INSERT INTO user_activity_logs (user_id, action, metadata, ip_address)
       VALUES ($1, $2, $3, $4)
@@ -87,7 +89,7 @@ export class UserActivityRepository {
 
   async deleteOlderThan(cutoff: Date): Promise<number> {
     const result = await this.pool.query(
-      'DELETE FROM user_activity_logs WHERE created_at < $1',
+      "DELETE FROM user_activity_logs WHERE created_at < $1",
       [cutoff],
     );
     return result.rowCount ?? 0;

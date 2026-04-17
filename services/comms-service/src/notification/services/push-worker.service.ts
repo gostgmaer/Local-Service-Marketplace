@@ -10,7 +10,7 @@ export class PushWorkerService {
     private readonly logger: LoggerService,
     private readonly deliveryRepository: NotificationDeliveryRepository,
     private readonly notificationRepository: NotificationRepository,
-  ) { }
+  ) {}
 
   async processPendingPushNotifications(): Promise<void> {
     this.logger.log(
@@ -92,4 +92,3 @@ export class PushWorkerService {
     }
   }
 }
-

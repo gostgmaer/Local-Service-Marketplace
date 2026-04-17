@@ -21,6 +21,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -98,25 +99,37 @@ export class MessagingController {
 
   @Post("attachments")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor("file", {
-    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max
-    fileFilter: (_req, file, cb) => {
-      const allowedMimeTypes = [
-        "image/jpeg", "image/png", "image/gif", "image/webp",
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.ms-excel",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "text/plain",
-        "video/mp4", "video/quicktime",
-      ];
-      if (!allowedMimeTypes.includes(file.mimetype)) {
-        return cb(new BadRequestException(`File type '${file.mimetype}' is not allowed`), false);
-      }
-      cb(null, true);
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor("files", {
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max
+      fileFilter: (_req, file, cb) => {
+        const allowedMimeTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "text/plain",
+          "video/mp4",
+          "video/quicktime",
+        ];
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+          return cb(
+            new BadRequestException(
+              `File type '${file.mimetype}' is not allowed`,
+            ),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
   async createAttachment(
     @Body() createAttachmentDto: CreateAttachmentDto,
     @UploadedFile() file: Express.Multer.File,
@@ -198,7 +211,7 @@ export class MessagingController {
     const attachment = await this.attachmentService.getAttachmentById(id);
 
     // Verify the requesting user is a participant in the job this attachment belongs to
-    if (!req.user.permissions?.includes('messages.manage')) {
+    if (!req.user.permissions?.includes("messages.manage")) {
       await this.messageService.getMessageById(
         attachment.message_id,
         req.user.userId,
@@ -213,7 +226,10 @@ export class MessagingController {
   }
 
   @Get(":id")
-  async getMessage(@Param("id", FlexibleIdPipe) id: string, @Request() req: any) {
+  async getMessage(
+    @Param("id", FlexibleIdPipe) id: string,
+    @Request() req: any,
+  ) {
     this.logger.log(`GET /messages/${id} - Get message`, "MessagingController");
     const item = await this.messageService.getMessageById(id, req.user.userId);
     return {
@@ -225,12 +241,18 @@ export class MessagingController {
 
   @Patch(":id/read")
   @HttpCode(HttpStatus.OK)
-  async markAsRead(@Param("id", StrictUuidPipe) id: string, @Request() req: any) {
+  async markAsRead(
+    @Param("id", StrictUuidPipe) id: string,
+    @Request() req: any,
+  ) {
     this.logger.log(
       `PATCH /messages/${id}/read - Mark as read`,
       "MessagingController",
     );
-    const item = await this.messageService.markMessageAsRead(id, req.user.userId);
+    const item = await this.messageService.markMessageAsRead(
+      id,
+      req.user.userId,
+    );
     return { success: true, data: item, message: "Message marked as read" };
   }
 
@@ -254,10 +276,11 @@ export class MessagingController {
     const message = await this.messageService.getMessageById(id);
 
     // Only sender can edit
-    if (message.sender_id !== req.user.userId && !req.user.permissions?.includes('messages.manage')) {
-      throw new ForbiddenException(
-        "You can only edit your own messages",
-      );
+    if (
+      message.sender_id !== req.user.userId &&
+      !req.user.permissions?.includes("messages.manage")
+    ) {
+      throw new ForbiddenException("You can only edit your own messages");
     }
 
     // Check if message is still editable (within 15 minutes)
@@ -265,7 +288,10 @@ export class MessagingController {
       (Date.now() - new Date(message.created_at).getTime()) / (1000 * 60),
     );
 
-    if (minutesSinceCreation > 15 && !req.user.permissions?.includes('messages.manage')) {
+    if (
+      minutesSinceCreation > 15 &&
+      !req.user.permissions?.includes("messages.manage")
+    ) {
       throw new ForbiddenException(
         "Messages can only be edited within 15 minutes of sending",
       );
@@ -302,10 +328,11 @@ export class MessagingController {
     const message = await this.messageService.getMessageById(id);
 
     // Only sender or admin can delete
-    if (message.sender_id !== req.user.userId && !req.user.permissions?.includes('messages.manage')) {
-      throw new ForbiddenException(
-        "You can only delete your own messages",
-      );
+    if (
+      message.sender_id !== req.user.userId &&
+      !req.user.permissions?.includes("messages.manage")
+    ) {
+      throw new ForbiddenException("You can only delete your own messages");
     }
 
     await this.messageService.deleteMessage(id);

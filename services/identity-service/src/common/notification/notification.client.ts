@@ -33,7 +33,8 @@ export class NotificationClient {
     this.smsEnabled =
       this.configService.get<string>("SMS_ENABLED", "false") === "true";
     this.whatsappEnabled =
-      this.configService.get<string>("WHATSAPP_OTP_ENABLED", "false") === "true";
+      this.configService.get<string>("WHATSAPP_OTP_ENABLED", "false") ===
+      "true";
 
     this.client = axios.create({
       baseURL: notificationServiceUrl,
@@ -159,13 +160,13 @@ export class NotificationClient {
    */
   async sendWhatsAppOtp(phone: string, otp: string): Promise<boolean> {
     if (!this.whatsappEnabled) {
-      this.logger.debug('WhatsApp OTP disabled, skipping');
+      this.logger.debug("WhatsApp OTP disabled, skipping");
       return false;
     }
 
     try {
       this.logger.log(`Sending WhatsApp OTP to ${phone}`);
-      await this.client.post('/notifications/whatsapp/otp', { phone, otp });
+      await this.client.post("/notifications/whatsapp/otp", { phone, otp });
       this.logger.log(`WhatsApp OTP enqueued for ${phone}`);
       return true;
     } catch (error: any) {

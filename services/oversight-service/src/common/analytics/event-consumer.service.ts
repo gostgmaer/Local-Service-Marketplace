@@ -1,25 +1,37 @@
-import { Injectable, Inject, LoggerService, OnModuleInit } from '@nestjs/common';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { KafkaService } from '../../kafka/kafka.service';
-import { UserActivityRepository } from '../../analytics/repositories/user-activity.repository';
+import {
+  Injectable,
+  Inject,
+  LoggerService,
+  OnModuleInit,
+} from "@nestjs/common";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { KafkaService } from "../../kafka/kafka.service";
+import { UserActivityRepository } from "../../analytics/repositories/user-activity.repository";
 
 @Injectable()
 export class EventConsumerService implements OnModuleInit {
   constructor(
-    @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
+    @Inject(WINSTON_MODULE_NEST_PROVIDER)
+    private readonly logger: LoggerService,
     private readonly kafkaService: KafkaService,
     private readonly userActivityRepository: UserActivityRepository,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     if (this.kafkaService.isKafkaEnabled()) {
-      this.logger.log('Starting Kafka event consumer for analytics', 'EventConsumerService');
+      this.logger.log(
+        "Starting Kafka event consumer for analytics",
+        "EventConsumerService",
+      );
       await this.kafkaService.startConsuming(this.handleEvent.bind(this));
     }
   }
 
   private async handleEvent(event: any): Promise<void> {
-    this.logger.log(`Processing analytics event: ${event.eventType}`, 'EventConsumerService');
+    this.logger.log(
+      `Processing analytics event: ${event.eventType}`,
+      "EventConsumerService",
+    );
 
     try {
       // Log all events as user activity
@@ -27,20 +39,20 @@ export class EventConsumerService implements OnModuleInit {
 
       // Process specific metrics
       switch (event.eventType) {
-        case 'request_created':
+        case "request_created":
           await this.trackRequestMetrics(event);
           break;
-        case 'proposal_submitted':
-        case 'proposal_accepted':
-        case 'proposal_rejected':
+        case "proposal_submitted":
+        case "proposal_accepted":
+        case "proposal_rejected":
           await this.trackProposalMetrics(event);
           break;
-        case 'job_created':
-        case 'job_started':
-        case 'job_completed':
+        case "job_created":
+        case "job_started":
+        case "job_completed":
           await this.trackJobMetrics(event);
           break;
-        case 'payment_completed':
+        case "payment_completed":
           await this.trackPaymentMetrics(event);
           break;
       }
@@ -48,7 +60,7 @@ export class EventConsumerService implements OnModuleInit {
       this.logger.error(
         `Error processing analytics event ${event.eventType}: ${error.message}`,
         error.stack,
-        'EventConsumerService',
+        "EventConsumerService",
       );
     }
   }
@@ -67,22 +79,34 @@ export class EventConsumerService implements OnModuleInit {
   }
 
   private async trackRequestMetrics(event: any): Promise<void> {
-    this.logger.log(`Tracking request metrics for: ${event.data.requestId}`, 'EventConsumerService');
+    this.logger.log(
+      `Tracking request metrics for: ${event.data.requestId}`,
+      "EventConsumerService",
+    );
     // Additional request-specific metrics tracking
   }
 
   private async trackProposalMetrics(event: any): Promise<void> {
-    this.logger.log(`Tracking proposal metrics for: ${event.data.proposalId}`, 'EventConsumerService');
+    this.logger.log(
+      `Tracking proposal metrics for: ${event.data.proposalId}`,
+      "EventConsumerService",
+    );
     // Additional proposal-specific metrics tracking
   }
 
   private async trackJobMetrics(event: any): Promise<void> {
-    this.logger.log(`Tracking job metrics for: ${event.data.jobId}`, 'EventConsumerService');
+    this.logger.log(
+      `Tracking job metrics for: ${event.data.jobId}`,
+      "EventConsumerService",
+    );
     // Additional job-specific metrics tracking
   }
 
   private async trackPaymentMetrics(event: any): Promise<void> {
-    this.logger.log(`Tracking payment metrics: ${event.data.amount} ${event.data.currency}`, 'EventConsumerService');
+    this.logger.log(
+      `Tracking payment metrics: ${event.data.amount} ${event.data.currency}`,
+      "EventConsumerService",
+    );
     // Additional payment-specific metrics tracking
   }
 }

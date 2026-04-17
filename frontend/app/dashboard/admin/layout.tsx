@@ -1,8 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: {
-    default: 'Admin Panel',
-    template: '%s - Admin | Local Service Marketplace',
+    default: "Admin Panel",
+    template: "%s - Admin | Local Service Marketplace",
   },
 };
-export default function Layout({ children }: { children: React.ReactNode }) { return children; }
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return children;
+}

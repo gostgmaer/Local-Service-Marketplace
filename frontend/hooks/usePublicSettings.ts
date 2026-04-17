@@ -1,7 +1,11 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { getSiteConfig, SITE_CONFIG_DEFAULTS, type SiteConfig } from '@/services/public-settings-service';
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSiteConfig,
+  SITE_CONFIG_DEFAULTS,
+  type SiteConfig,
+} from "@/services/public-settings-service";
 
 /**
  * React Query hook that provides the public site configuration (contact info,
@@ -15,12 +19,15 @@ import { getSiteConfig, SITE_CONFIG_DEFAULTS, type SiteConfig } from '@/services
  * const { config } = usePublicSettings();
  * <p>Email: {config.supportEmail}</p>
  */
-export function usePublicSettings(): { config: SiteConfig; isLoading: boolean } {
+export function usePublicSettings(): {
+  config: SiteConfig;
+  isLoading: boolean;
+} {
   const { data, isLoading } = useQuery<SiteConfig>({
-    queryKey: ['public-site-config'],
+    queryKey: ["public-site-config"],
     queryFn: getSiteConfig,
-    staleTime: 5 * 60 * 1000,   // 5 minutes
-    gcTime:    10 * 60 * 1000,  // keep in cache for 10 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // keep in cache for 10 minutes
     placeholderData: SITE_CONFIG_DEFAULTS,
     retry: 1,
   });

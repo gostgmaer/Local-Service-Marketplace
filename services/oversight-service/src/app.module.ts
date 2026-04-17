@@ -9,19 +9,20 @@ import { HealthController } from "./common/health/health.controller";
 import { BullMQCoreModule } from "./bullmq/bullmq.module";
 import { WorkersModule } from "./workers/workers.module";
 
-const conditionalModules = process.env.WORKERS_ENABLED === 'true' ? [WorkersModule] : [];
+const conditionalModules =
+  process.env.WORKERS_ENABLED === "true" ? [WorkersModule] : [];
 
 @Module({
-	imports: [
-		ConfigModule.forRoot({ isGlobal: true, envFilePath: ".env" }),
-		LoggerModule,
-		DatabaseModule,
-		BullMQCoreModule,
-		KafkaModule.register(),
-		AdminModule,
-		AnalyticsModule,
-		...conditionalModules,
-	],
-	controllers: [HealthController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ".env" }),
+    LoggerModule,
+    DatabaseModule,
+    BullMQCoreModule,
+    KafkaModule.register(),
+    AdminModule,
+    AnalyticsModule,
+    ...conditionalModules,
+  ],
+  controllers: [HealthController],
 })
 export class AppModule {}

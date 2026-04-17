@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsUUID, IsOptional, IsObject } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsObject,
+} from "class-validator";
 
 export class TrackActivityDto {
   @IsNotEmpty()

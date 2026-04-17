@@ -13,7 +13,7 @@ import { RateLimitConfigService } from "../services/rate-limit-config.service";
 
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
-  private readonly storeOptions: Record<string, any>;
+  private readonly limiter: ReturnType<typeof rateLimit>;
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
@@ -22,7 +22,7 @@ export class RateLimitMiddleware implements NestMiddleware {
   ) {
     const redisClient = getRedisClient();
 
-    this.storeOptions = redisClient
+    const storeOptions: Record<string, any> = redisClient
       ? {
           store: new RedisStore({
             sendCommand: (...args: string[]) =>
@@ -40,16 +40,14 @@ export class RateLimitMiddleware implements NestMiddleware {
         "RateLimitMiddleware",
       );
     }
-  }
 
-  use(req: Request, res: Response, next: NextFunction) {
-    const limiter = rateLimit({
+    this.limiter = rateLimit({
       windowMs: this.rateLimitConfigService.getWindowMs(),
       max: this.rateLimitConfigService.getMaxRequests(),
       message: "Too many requests from this IP, please try again later.",
       standardHeaders: true,
       legacyHeaders: false,
-      ...this.storeOptions,
+      ...storeOptions,
       keyGenerator: (req: Request) => {
         const user = (req as any).user;
         return user?.userId || req.ip;
@@ -68,7 +66,9 @@ export class RateLimitMiddleware implements NestMiddleware {
         });
       },
     });
-    limiter(req, res, next);
+  }
+
+  use(req: Request, res: Response, next: NextFunction) {
+    this.limiter(req, res, next);
   }
 }
-

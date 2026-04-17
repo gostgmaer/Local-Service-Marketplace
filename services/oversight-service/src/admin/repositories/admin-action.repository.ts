@@ -1,10 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Pool } from 'pg';
-import { AdminAction } from '../entities/admin-action.entity';
+import { Injectable, Inject } from "@nestjs/common";
+import { Pool } from "pg";
+import { AdminAction } from "../entities/admin-action.entity";
 
 @Injectable()
 export class AdminActionRepository {
-  constructor(@Inject('DATABASE_POOL') private readonly pool: Pool) {}
+  constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
   async createAdminAction(
     adminId: string,

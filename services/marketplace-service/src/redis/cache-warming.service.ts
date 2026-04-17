@@ -17,7 +17,7 @@ export class CacheWarmingService implements OnModuleInit {
     private readonly logger: LoggerService,
     private readonly redisService: RedisService,
     private readonly categoryRepository: CategoryRepository,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     if (!this.redisService.isCacheEnabled()) {

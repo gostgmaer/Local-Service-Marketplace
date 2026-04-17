@@ -1,15 +1,15 @@
-import { IsOptional, IsInt, Min, Max, IsEnum, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsInt, Min, Max, IsEnum, IsString } from "class-validator";
+import { Type } from "class-transformer";
 
 export enum ReviewSortBy {
-  CREATED_AT = 'created_at',
-  RATING = 'rating',
-  HELPFUL_COUNT = 'helpful_count',
+  CREATED_AT = "created_at",
+  RATING = "rating",
+  HELPFUL_COUNT = "helpful_count",
 }
 
 export enum ReviewSortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
+  ASC = "asc",
+  DESC = "desc",
 }
 
 export class ReviewQueryDto {

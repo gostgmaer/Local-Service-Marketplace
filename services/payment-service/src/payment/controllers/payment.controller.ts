@@ -16,6 +16,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { Response } from "express";
@@ -26,7 +27,11 @@ import { CreatePaymentDto } from "../dto/create-payment.dto";
 import { RequestRefundDto } from "@/payment/dto/request-refund.dto";
 import { TransactionQueryDto } from "../dto/transaction-query.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
-import { PermissionsGuard as RolesGuard, Roles, RequirePermissions } from '@/common/rbac';
+import {
+  PermissionsGuard as RolesGuard,
+  Roles,
+  RequirePermissions,
+} from "@/common/rbac";
 import { ForbiddenException } from "@/common/exceptions/http.exceptions";
 import { FileServiceClient } from "../../common/file-service.client";
 import "multer";
@@ -38,7 +43,7 @@ export class PaymentController {
     private readonly refundService: RefundService,
     private readonly invoiceService: InvoiceService,
     private readonly fileServiceClient: FileServiceClient,
-  ) { }
+  ) {}
 
   /**
    * Create a payment for a job
@@ -46,7 +51,7 @@ export class PaymentController {
    */
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @RequirePermissions('payments.create')
+  @RequirePermissions("payments.create")
   @HttpCode(HttpStatus.CREATED)
   async createPayment(
     @Body() createPaymentDto: CreatePaymentDto,
@@ -72,7 +77,7 @@ export class PaymentController {
    */
   @Get("stats")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @RequirePermissions('payments.manage')
+  @RequirePermissions("payments.manage")
   @HttpCode(HttpStatus.OK)
   async getPaymentStats() {
     return this.paymentService.getPaymentStats();
@@ -103,9 +108,14 @@ export class PaymentController {
     const payments = await this.paymentService.getPaymentsByJobId(jobId);
 
     // RBAC: Check if the user is authorized to view payments for this job
-    if (payments.length > 0 && !req.user.permissions?.includes('payments.manage')) {
+    if (
+      payments.length > 0 &&
+      !req.user.permissions?.includes("payments.manage")
+    ) {
       const isCustomer = payments.some((p) => p.user_id === req.user.userId);
-      const isProvider = payments.some((p) => p.provider_id === req.user.userId);
+      const isProvider = payments.some(
+        (p) => p.provider_id === req.user.userId,
+      );
       if (!isCustomer && !isProvider) {
         throw new ForbiddenException(
           "You are not authorized to view payments for this job",
@@ -129,8 +139,13 @@ export class PaymentController {
     @Query("start_date") startDate?: string,
     @Query("end_date") endDate?: string,
   ) {
-    if (!req.user.permissions?.includes('payments.manage') && req.user.providerId !== providerId) {
-      throw new ForbiddenException("You can only view your own earnings summary");
+    if (
+      !req.user.permissions?.includes("payments.manage") &&
+      req.user.providerId !== providerId
+    ) {
+      throw new ForbiddenException(
+        "You can only view your own earnings summary",
+      );
     }
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
@@ -149,8 +164,13 @@ export class PaymentController {
     @Request() req: any,
     @Query() queryDto: TransactionQueryDto,
   ) {
-    if (!req.user.permissions?.includes('payments.manage') && req.user.providerId !== providerId) {
-      throw new ForbiddenException("You can only view your own transaction history");
+    if (
+      !req.user.permissions?.includes("payments.manage") &&
+      req.user.providerId !== providerId
+    ) {
+      throw new ForbiddenException(
+        "You can only view your own transaction history",
+      );
     }
     return this.paymentService.getProviderTransactions(providerId, queryDto);
   }
@@ -161,7 +181,10 @@ export class PaymentController {
     @Param("providerId", FlexibleIdPipe) providerId: string,
     @Request() req: any,
   ) {
-    if (!req.user.permissions?.includes('payments.manage') && req.user.providerId !== providerId) {
+    if (
+      !req.user.permissions?.includes("payments.manage") &&
+      req.user.providerId !== providerId
+    ) {
       throw new ForbiddenException("You can only view your own payout history");
     }
     const payouts = await this.paymentService.getProviderPayouts(providerId);
@@ -181,11 +204,13 @@ export class PaymentController {
   ) {
     const payment = await this.paymentService.getPaymentById(id);
     if (
-      !req.user.permissions?.includes('payments.manage') &&
+      !req.user.permissions?.includes("payments.manage") &&
       payment.user_id !== req.user.userId &&
       payment.provider_id !== req.user.userId
     ) {
-      throw new ForbiddenException("You can only view payments you are involved in");
+      throw new ForbiddenException(
+        "You can only view payments you are involved in",
+      );
     }
     return payment;
   }
@@ -206,11 +231,13 @@ export class PaymentController {
   ) {
     const payment = await this.paymentService.getPaymentById(id);
     if (
-      !req.user.permissions?.includes('payments.manage') &&
+      !req.user.permissions?.includes("payments.manage") &&
       payment.user_id !== req.user.userId &&
       payment.provider_id !== req.user.userId
     ) {
-      throw new ForbiddenException("You can only check the status of payments you are involved in");
+      throw new ForbiddenException(
+        "You can only check the status of payments you are involved in",
+      );
     }
 
     return {
@@ -237,7 +264,10 @@ export class PaymentController {
     @Request() req: any,
   ) {
     const payment = await this.paymentService.getPaymentById(id);
-    if (!req.user.permissions?.includes('payments.manage') && payment.user_id !== req.user.userId) {
+    if (
+      !req.user.permissions?.includes("payments.manage") &&
+      payment.user_id !== req.user.userId
+    ) {
       throw new ForbiddenException(
         "Only the customer who made this payment can request a refund",
       );
@@ -267,17 +297,23 @@ export class PaymentController {
   ) {
     const payment = await this.paymentService.getPaymentById(id);
     if (
-      !req.user.permissions?.includes('payments.manage') &&
+      !req.user.permissions?.includes("payments.manage") &&
       payment.user_id !== req.user.userId &&
       payment.provider_id !== req.user.userId
     ) {
-      throw new ForbiddenException("You can only view invoices for payments you are involved in");
+      throw new ForbiddenException(
+        "You can only view invoices for payments you are involved in",
+      );
     }
     const invoice = await this.invoiceService.generateInvoice(
       id,
       req.user.userId,
     );
-    return { success: true, message: "Invoice retrieved successfully", data: invoice };
+    return {
+      success: true,
+      message: "Invoice retrieved successfully",
+      data: invoice,
+    };
   }
 
   /**
@@ -293,11 +329,13 @@ export class PaymentController {
   ) {
     const payment = await this.paymentService.getPaymentById(id);
     if (
-      !req.user.permissions?.includes('payments.manage') &&
+      !req.user.permissions?.includes("payments.manage") &&
       payment.user_id !== req.user.userId &&
       payment.provider_id !== req.user.userId
     ) {
-      throw new ForbiddenException("You can only download invoices for payments you are involved in");
+      throw new ForbiddenException(
+        "You can only download invoices for payments you are involved in",
+      );
     }
     const invoice = await this.invoiceService.generateInvoice(
       id,
@@ -320,7 +358,7 @@ export class PaymentController {
   @Post(":id/receipt")
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("files", { storage: multer.memoryStorage() }))
   async uploadReceipt(
     @Param("id", StrictUuidPipe) paymentId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -341,7 +379,7 @@ export class PaymentController {
     const payment = await this.paymentService.getPaymentById(paymentId);
     const isCustomer = payment.user_id === req.user.userId;
     const isProvider = payment.provider_id === req.user.userId;
-    const isAdmin = req.user.permissions?.includes('payments.manage');
+    const isAdmin = req.user.permissions?.includes("payments.manage");
 
     if (!isCustomer && !isProvider && !isAdmin) {
       throw new ForbiddenException(
@@ -358,7 +396,7 @@ export class PaymentController {
         linkedEntityType: "payment",
       },
       req.user.userId,
-      req.user.role
+      req.user.role,
     );
 
     return {

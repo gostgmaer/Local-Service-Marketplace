@@ -11,13 +11,13 @@ import { resolveId } from "../../common/utils/resolve-id.util";
 
 @Injectable()
 export class PaymentRepository {
-  constructor(@Inject("DATABASE_POOL") private pool: Pool) { }
+  constructor(@Inject("DATABASE_POOL") private pool: Pool) {}
 
   /** Reads a system setting from the shared system_settings table with a safe fallback. */
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
-        'SELECT value FROM system_settings WHERE key = $1',
+        "SELECT value FROM system_settings WHERE key = $1",
         [key],
       );
       return res.rows[0]?.value ?? defaultValue;
@@ -44,15 +44,16 @@ export class PaymentRepository {
 
     // Read platform fee and GST rate from system settings (fall back to 15% and 18% if not set)
     const [feeRateStr, gstRateStr] = await Promise.all([
-      this.getSystemSetting('platform_fee_percentage', '15'),
-      this.getSystemSetting('gst_rate', '18'),
+      this.getSystemSetting("platform_fee_percentage", "15"),
+      this.getSystemSetting("gst_rate", "18"),
     ]);
-    const feeRate = Math.max(0, Math.min(100, parseFloat(feeRateStr) || 15)) / 100;
+    const feeRate =
+      Math.max(0, Math.min(100, parseFloat(feeRateStr) || 15)) / 100;
     const gstRate = Math.max(0, Math.min(100, parseFloat(gstRateStr) || 18));
 
     const platformFee = Math.floor(amount * feeRate);
     const providerAmount = amount - platformFee;
-    const gstAmount = parseFloat((platformFee * gstRate / 100).toFixed(2));
+    const gstAmount = parseFloat(((platformFee * gstRate) / 100).toFixed(2));
 
     const query = `
       INSERT INTO payments (
@@ -95,8 +96,8 @@ export class PaymentRepository {
       status: result.rows[0].status,
       transaction_id: result.rows[0].transaction_id,
       failed_reason: result.rows[0].failed_reason,
-      gst_rate: parseFloat(result.rows[0].gst_rate ?? '18'),
-      gst_amount: parseFloat(result.rows[0].gst_amount ?? '0'),
+      gst_rate: parseFloat(result.rows[0].gst_rate ?? "18"),
+      gst_amount: parseFloat(result.rows[0].gst_amount ?? "0"),
       created_at: result.rows[0].created_at,
     });
   }

@@ -6,19 +6,19 @@ declare module "next-auth" {
    * Returned by `useSession`, `auth`, etc.
    */
   interface Session {
-		user: {
-			id: string;
-			role: string;
-			permissions: string[];
-			emailVerified: boolean;
-			phoneVerified: boolean;
-			timezone: string | null;
-			language: string | null;
-		} & DefaultSession["user"];
-		accessToken?: string;
-		accessTokenExpires?: number; // Timestamp when access token expires
-		error?: "RefreshAccessTokenError";
-	}
+    user: {
+      id: string;
+      role: string;
+      permissions: string[];
+      emailVerified: boolean;
+      phoneVerified: boolean;
+      timezone: string | null;
+      language: string | null;
+    } & DefaultSession["user"];
+    accessToken?: string;
+    accessTokenExpires?: number; // Timestamp when access token expires
+    error?: "RefreshAccessTokenError";
+  }
 
   /**
    * The shape of the user object returned in the OAuth providers' `profile` callback,

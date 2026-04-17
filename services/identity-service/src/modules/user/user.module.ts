@@ -26,7 +26,7 @@ import { FileServiceClient } from "../../common/file-service.client";
 @Module({
   imports: [
     NotificationModule,
-    BullModule.registerQueue({ name: 'identity.notification' }),
+    BullModule.registerQueue({ name: "identity.notification" }),
     HttpModule.register({
       timeout: Number(process.env.REQUEST_TIMEOUT_MS) || 72000,
       maxRedirects: 5,

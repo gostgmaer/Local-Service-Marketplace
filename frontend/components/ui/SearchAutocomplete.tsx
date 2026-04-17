@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { searchService, SearchResult } from '@/services/search-service';
-import { Search, Loader2, MapPin, Briefcase, Tag } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useDebounce } from '@/hooks/useDebounce';
-import { ROUTES } from '@/config/constants';
+import React, { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { searchService, SearchResult } from "@/services/search-service";
+import { Search, Loader2, MapPin, Briefcase, Tag } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useDebounce } from "@/hooks/useDebounce";
+import { ROUTES } from "@/config/constants";
 
 interface SearchAutocompleteProps {
   placeholder?: string;
@@ -15,12 +15,12 @@ interface SearchAutocompleteProps {
 }
 
 export function SearchAutocomplete({
-  placeholder = 'Search providers, categories...',
+  placeholder = "Search providers, categories...",
   onSelect,
-  className = '',
+  className = "",
 }: SearchAutocompleteProps) {
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,7 +28,7 @@ export function SearchAutocomplete({
 
   // Fetch search results
   const { data: results = [], isLoading } = useQuery({
-    queryKey: ['search', debouncedQuery],
+    queryKey: ["search", debouncedQuery],
     queryFn: () => searchService.searchAll(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
     staleTime: 60000, // Cache for 1 minute
@@ -47,8 +47,8 @@ export function SearchAutocomplete({
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Open dropdown when typing
@@ -61,16 +61,16 @@ export function SearchAutocomplete({
   }, [query]);
 
   const handleSelect = (result: SearchResult) => {
-    setQuery('');
+    setQuery("");
     setIsOpen(false);
 
     if (onSelect) {
       onSelect(result);
     } else {
       // Default navigation
-      if (result.type === 'provider') {
+      if (result.type === "provider") {
         router.push(ROUTES.PROVIDER_DETAIL(result.id));
-      } else if (result.type === 'category') {
+      } else if (result.type === "category") {
         router.push(`${ROUTES.PROVIDERS}?category=${result.id}`);
       }
     }
@@ -78,11 +78,11 @@ export function SearchAutocomplete({
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'provider':
+      case "provider":
         return <Briefcase className="h-4 w-4 text-blue-500" />;
-      case 'category':
+      case "category":
         return <Tag className="h-4 w-4 text-green-500" />;
-      case 'location':
+      case "location":
         return <MapPin className="h-4 w-4 text-purple-500" />;
       default:
         return <Search className="h-4 w-4 text-gray-400" />;

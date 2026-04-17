@@ -9,6 +9,8 @@ export interface JwtPayload {
   role: string;
   permissions?: string[];
   providerId?: string;
+  email_verified?: boolean;
+  phone_verified?: boolean;
 }
 
 @Injectable()
@@ -19,17 +21,31 @@ export class JwtService {
     private readonly rbacService: RbacService,
   ) {}
 
-  async generateAccessToken(userId: string, email: string, role: string, providerId?: string): Promise<string> {
+  async generateAccessToken(
+    userId: string,
+    email: string,
+    role: string,
+    providerId?: string,
+    emailVerified?: boolean,
+    phoneVerified?: boolean,
+  ): Promise<string> {
     const permissions = await this.rbacService.getPermissionsForRole(role);
     const payload: JwtPayload = { sub: userId, email, role, permissions };
     if (providerId) payload.providerId = providerId;
+    if (emailVerified !== undefined) payload.email_verified = emailVerified;
+    if (phoneVerified !== undefined) payload.phone_verified = phoneVerified;
     return this.jwtService.sign(payload, {
       secret: this.configService.get<string>("JWT_SECRET"),
       expiresIn: this.configService.get<string>("JWT_EXPIRATION", "15m"),
     });
   }
 
-  async generateRefreshToken(userId: string, email: string, role: string, providerId?: string): Promise<string> {
+  async generateRefreshToken(
+    userId: string,
+    email: string,
+    role: string,
+    providerId?: string,
+  ): Promise<string> {
     const payload: JwtPayload = { sub: userId, email, role };
     if (providerId) payload.providerId = providerId;
     return this.jwtService.sign(payload, {

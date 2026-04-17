@@ -39,9 +39,10 @@ export class JobService {
     private readonly analyticsClient: AnalyticsClient,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
-    @InjectQueue('marketplace.notification') private readonly notificationQueue: Queue,
+    @InjectQueue("marketplace.notification")
+    private readonly notificationQueue: Queue,
   ) {
-    this.workersEnabled = process.env.WORKERS_ENABLED === 'true';
+    this.workersEnabled = process.env.WORKERS_ENABLED === "true";
   }
 
   async createJob(dto: CreateJobDto): Promise<JobResponseDto> {
@@ -65,7 +66,7 @@ export class JobService {
     // Notify provider (job assigned) — queue if workers enabled, else inline
     if (this.workersEnabled) {
       this.notificationQueue
-        .add('notify-job-assigned', {
+        .add("notify-job-assigned", {
           providerId: job.provider_id,
           jobId: job.id,
           requestId: job.request_id,
@@ -77,27 +78,30 @@ export class JobService {
           );
         });
     } else {
-      this.userClient.getProviderEmail(dto.provider_id).then((providerEmail) => {
-        if (!providerEmail) return;
-        this.notificationClient.sendEmail({
-          to: providerEmail,
-          template: 'MARKETPLACE_JOB_ASSIGNED',
-          variables: {
-            providerName: providerEmail.split('@')[0],
-            requestTitle: 'Service Request',
-            customerName: 'Customer',
-            price: 'Agreed price',
-            startDate: new Date().toLocaleDateString('en-IN'),
-            jobDisplayId: job.id,
-            jobUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobs/${job.id}`,
-          },
+      this.userClient
+        .getProviderEmail(dto.provider_id)
+        .then((providerEmail) => {
+          if (!providerEmail) return;
+          this.notificationClient.sendEmail({
+            to: providerEmail,
+            template: "MARKETPLACE_JOB_ASSIGNED",
+            variables: {
+              providerName: providerEmail.split("@")[0],
+              requestTitle: "Service Request",
+              customerName: "Customer",
+              price: "Agreed price",
+              startDate: new Date().toLocaleDateString("en-IN"),
+              jobDisplayId: job.id,
+              jobUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/jobs/${job.id}`,
+            },
+          });
+        })
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to send job assigned email: ${err.message}`,
+            JobService.name,
+          );
         });
-      }).catch((err: any) => {
-        this.logger.warn(
-          `Failed to send job assigned email: ${err.message}`,
-          JobService.name,
-        );
-      });
     }
 
     // Publish event to Kafka if enabled
@@ -154,13 +158,12 @@ export class JobService {
     // Cache the result
     if (this.redisService.isCacheEnabled()) {
       const cacheKey = `job:${id}`;
-      const cacheTtlStr = await this.jobRepository.getSystemSetting('job_cache_ttl_seconds', '180');
-      const cacheTtl = parseInt(cacheTtlStr, 10) || 180;
-      await this.redisService.set(
-        cacheKey,
-        JSON.stringify(response),
-        cacheTtl,
+      const cacheTtlStr = await this.jobRepository.getSystemSetting(
+        "job_cache_ttl_seconds",
+        "180",
       );
+      const cacheTtl = parseInt(cacheTtlStr, 10) || 180;
+      await this.redisService.set(cacheKey, JSON.stringify(response), cacheTtl);
     }
 
     return response;
@@ -186,7 +189,7 @@ export class JobService {
 
     // Ownership check: only the customer, provider, or user with manage permission can update
     if (
-      !userPermissions?.includes('jobs.manage') &&
+      !userPermissions?.includes("jobs.manage") &&
       existingJob.customer_id !== userId &&
       existingJob.provider_id !== userId
     ) {
@@ -206,7 +209,7 @@ export class JobService {
     const isCustomer = existingJob.customer_id === userId;
     const isProvider = existingJob.provider_id === userId;
 
-    if (!userPermissions?.includes('jobs.manage')) {
+    if (!userPermissions?.includes("jobs.manage")) {
       const customerAllowed = ["completed", "disputed"];
       const providerAllowed = ["in_progress", "completed"];
 
@@ -217,7 +220,11 @@ export class JobService {
       }
 
       // Customer can only mark completed if the job is already in_progress
-      if (isCustomer && dto.status === "completed" && existingJob.status !== "in_progress") {
+      if (
+        isCustomer &&
+        dto.status === "completed" &&
+        existingJob.status !== "in_progress"
+      ) {
         throw new BadRequestException(
           "Job must be in progress before it can be marked as completed",
         );
@@ -230,7 +237,11 @@ export class JobService {
       }
 
       // Provider must move to in_progress first before completing
-      if (isProvider && dto.status === "completed" && existingJob.status !== "in_progress") {
+      if (
+        isProvider &&
+        dto.status === "completed" &&
+        existingJob.status !== "in_progress"
+      ) {
         throw new BadRequestException(
           "Job must be in progress before it can be marked as completed",
         );
@@ -267,12 +278,13 @@ export class JobService {
     });
 
     // Notify other party about status change — queue if workers enabled, else inline
-    const notifyUserId = existingJob.provider_id === userId
-      ? existingJob.customer_id
-      : existingJob.provider_id;
+    const notifyUserId =
+      existingJob.provider_id === userId
+        ? existingJob.customer_id
+        : existingJob.provider_id;
     if (this.workersEnabled) {
       this.notificationQueue
-        .add('notify-job-status-changed', {
+        .add("notify-job-status-changed", {
           userId: notifyUserId,
           jobId: job.id,
           newStatus: dto.status,
@@ -284,24 +296,27 @@ export class JobService {
           );
         });
     } else {
-      this.userClient.getUserEmail(notifyUserId).then((email) => {
-        if (!email) return;
-        this.notificationClient.sendEmail({
-          to: email,
-          template: 'MESSAGE_RECEIVED',
-          variables: {
-            recipientName: email.split('@')[0],
-            senderName: 'LocalServices',
-            messagePreview: `Your job #${job.id} status has been updated to: ${dto.status}`,
-            replyUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobs/${job.id}`,
-          },
+      this.userClient
+        .getUserEmail(notifyUserId)
+        .then((email) => {
+          if (!email) return;
+          this.notificationClient.sendEmail({
+            to: email,
+            template: "MESSAGE_RECEIVED",
+            variables: {
+              recipientName: email.split("@")[0],
+              senderName: "LocalServices",
+              messagePreview: `Your job #${job.id} status has been updated to: ${dto.status}`,
+              replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/jobs/${job.id}`,
+            },
+          });
+        })
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to send job status email: ${err.message}`,
+            JobService.name,
+          );
         });
-      }).catch((err: any) => {
-        this.logger.warn(
-          `Failed to send job status email: ${err.message}`,
-          JobService.name,
-        );
-      });
     }
 
     // Track analytics (HTTP fallback when Kafka is disabled)
@@ -332,7 +347,10 @@ export class JobService {
     }
 
     // Ownership check: only the customer or user with manage permission can complete a job
-    if (!userPermissions?.includes?.('jobs.manage') && existingJob.customer_id !== userId) {
+    if (
+      !userPermissions?.includes?.("jobs.manage") &&
+      existingJob.customer_id !== userId
+    ) {
       throw new ForbiddenException(
         "Only the customer or an admin can complete a job",
       );
@@ -375,7 +393,7 @@ export class JobService {
     // Notify both customer and provider — queue if workers enabled, else inline
     if (this.workersEnabled) {
       this.notificationQueue
-        .add('notify-job-completed', {
+        .add("notify-job-completed", {
           customerId: existingJob.customer_id,
           providerId: existingJob.provider_id,
           jobId: job.id,
@@ -390,39 +408,41 @@ export class JobService {
       Promise.all([
         this.userClient.getUserEmail(existingJob.customer_id),
         this.userClient.getUserEmail(existingJob.provider_id),
-      ]).then(([customerEmail, providerEmail]) => {
-        if (customerEmail) {
-          this.notificationClient.sendEmail({
-            to: customerEmail,
-            template: 'ORDER_DELIVERED',
-            variables: {
-              username: customerEmail.split('@')[0],
-              orderId: job.id,
-              deliveryDate: new Date().toLocaleDateString('en-IN'),
-              deliveryAddress: 'At your service location',
-            },
-          });
-        }
-        if (providerEmail) {
-          this.notificationClient.sendEmail({
-            to: providerEmail,
-            template: 'MARKETPLACE_PAYMENT_RECEIVED',
-            variables: {
-              providerName: providerEmail.split('@')[0],
-              amount: 'Agreed amount',
-              jobTitle: `Job #${job.id}`,
-              customerName: 'Customer',
-              paymentDisplayId: job.id,
-              dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/provider/dashboard`,
-            },
-          });
-        }
-      }).catch((err: any) => {
-        this.logger.warn(
-          `Failed to send job completion email: ${err.message}`,
-          JobService.name,
-        );
-      });
+      ])
+        .then(([customerEmail, providerEmail]) => {
+          if (customerEmail) {
+            this.notificationClient.sendEmail({
+              to: customerEmail,
+              template: "ORDER_DELIVERED",
+              variables: {
+                username: customerEmail.split("@")[0],
+                orderId: job.id,
+                deliveryDate: new Date().toLocaleDateString("en-IN"),
+                deliveryAddress: "At your service location",
+              },
+            });
+          }
+          if (providerEmail) {
+            this.notificationClient.sendEmail({
+              to: providerEmail,
+              template: "MARKETPLACE_PAYMENT_RECEIVED",
+              variables: {
+                providerName: providerEmail.split("@")[0],
+                amount: "Agreed amount",
+                jobTitle: `Job #${job.id}`,
+                customerName: "Customer",
+                paymentDisplayId: job.id,
+                dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/provider/dashboard`,
+              },
+            });
+          }
+        })
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to send job completion email: ${err.message}`,
+            JobService.name,
+          );
+        });
     }
 
     // Track analytics (HTTP fallback when Kafka is disabled)
@@ -461,7 +481,7 @@ export class JobService {
     );
 
     // RBAC: Restricted view — users with manage permission see all
-    if (user && !user.permissions?.includes('jobs.manage')) {
+    if (user && !user.permissions?.includes("jobs.manage")) {
       if (user.role === "customer") {
         const jobs = await this.jobRepository.getJobsByCustomer(user.userId);
         const data = jobs
@@ -521,7 +541,7 @@ export class JobService {
     );
 
     // RBAC: Enforce owner/participant filtering unless user has manage permission
-    if (user && !user.permissions?.includes('jobs.manage')) {
+    if (user && !user.permissions?.includes("jobs.manage")) {
       if (user.role === "customer") {
         queryDto.customer_id = user.userId;
       } else if (user.role === "provider") {
@@ -615,7 +635,7 @@ export class JobService {
     // Ownership check: customer, provider, or user with manage permission can cancel
     const isCustomer = existingJob.customer_id === userId;
     const isProvider = existingJob.provider_id === userId;
-    const isAdmin = userPermissions?.includes?.('jobs.manage');
+    const isAdmin = userPermissions?.includes?.("jobs.manage");
 
     if (!isCustomer && !isProvider && !isAdmin) {
       throw new ForbiddenException(
@@ -634,7 +654,11 @@ export class JobService {
     }
 
     // Cancel the job
-    await this.jobRepository.cancelJob(existingJob.id, userId, reason ?? 'Cancelled by user');
+    await this.jobRepository.cancelJob(
+      existingJob.id,
+      userId,
+      reason ?? "Cancelled by user",
+    );
 
     this.logger.log(
       `Job cancelled successfully: ${existingJob.id}`,
@@ -663,7 +687,7 @@ export class JobService {
     // Notify both parties — queue if workers enabled, else inline
     if (this.workersEnabled) {
       this.notificationQueue
-        .add('notify-job-cancelled', {
+        .add("notify-job-cancelled", {
           customerId: existingJob.customer_id,
           providerId: existingJob.provider_id,
           jobId: existingJob.id,
@@ -679,37 +703,39 @@ export class JobService {
       Promise.all([
         this.userClient.getUserEmail(existingJob.customer_id),
         this.userClient.getUserEmail(existingJob.provider_id),
-      ]).then(([customerEmail, providerEmail]) => {
-        if (customerEmail) {
-          this.notificationClient.sendEmail({
-            to: customerEmail,
-            template: 'ORDER_CANCELLED',
-            variables: {
-              username: customerEmail.split('@')[0],
-              orderId: existingJob.id,
-              cancelledBy: userId,
-              reason: 'Job cancelled',
-            },
-          });
-        }
-        if (providerEmail) {
-          this.notificationClient.sendEmail({
-            to: providerEmail,
-            template: 'ORDER_CANCELLED',
-            variables: {
-              username: providerEmail.split('@')[0],
-              orderId: existingJob.id,
-              cancelledBy: userId,
-              reason: 'Job cancelled',
-            },
-          });
-        }
-      }).catch((err: any) => {
-        this.logger.warn(
-          `Failed to send job cancellation email: ${err.message}`,
-          JobService.name,
-        );
-      });
+      ])
+        .then(([customerEmail, providerEmail]) => {
+          if (customerEmail) {
+            this.notificationClient.sendEmail({
+              to: customerEmail,
+              template: "ORDER_CANCELLED",
+              variables: {
+                username: customerEmail.split("@")[0],
+                orderId: existingJob.id,
+                cancelledBy: userId,
+                reason: "Job cancelled",
+              },
+            });
+          }
+          if (providerEmail) {
+            this.notificationClient.sendEmail({
+              to: providerEmail,
+              template: "ORDER_CANCELLED",
+              variables: {
+                username: providerEmail.split("@")[0],
+                orderId: existingJob.id,
+                cancelledBy: userId,
+                reason: "Job cancelled",
+              },
+            });
+          }
+        })
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to send job cancellation email: ${err.message}`,
+            JobService.name,
+          );
+        });
     }
 
     // Track analytics

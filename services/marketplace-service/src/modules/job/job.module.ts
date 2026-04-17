@@ -13,8 +13,8 @@ import { FileServiceClient } from "../../common/file-service.client";
 @Module({
   imports: [
     BullModule.registerQueue(
-      { name: 'marketplace.notification' },
-      { name: 'marketplace.analytics' },
+      { name: "marketplace.notification" },
+      { name: "marketplace.analytics" },
     ),
     DatabaseModule,
     NotificationModule,

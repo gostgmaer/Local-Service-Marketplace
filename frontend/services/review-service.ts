@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 // ------------------ Types ------------------
 
@@ -18,10 +18,10 @@ export interface Review {
 }
 
 export interface CreateReviewData {
-	job_id: string;
-	provider_id: string;
-	rating: number;
-	comment: string;
+  job_id: string;
+  provider_id: string;
+  rating: number;
+  comment: string;
 }
 
 export interface ReviewWithDetails extends Review {
@@ -36,7 +36,7 @@ export interface ReviewWithDetails extends Review {
  * Create a review after job completion
  */
 export const createReview = async (data: CreateReviewData): Promise<Review> => {
-  const response = await apiClient.post<Review>('/reviews', data);
+  const response = await apiClient.post<Review>("/reviews", data);
   return response.data;
 };
 
@@ -44,7 +44,9 @@ export const createReview = async (data: CreateReviewData): Promise<Review> => {
  * Get reviews for a provider
  * Backend returns: { success, data: { reviews[], averageRating }, meta }
  */
-export const getProviderReviews = async (providerId: string): Promise<ReviewWithDetails[]> => {
+export const getProviderReviews = async (
+  providerId: string,
+): Promise<ReviewWithDetails[]> => {
   const response = await apiClient.get<any>(`/reviews/provider/${providerId}`);
   // After apiClient unwraps the standard envelope, data is { reviews: [], averageRating: N }
   const payload = response.data;
@@ -76,21 +78,23 @@ export interface ReviewAggregate {
   provider_id: string;
   total_reviews: number;
   average_rating: number;
-  five_star_count: number;  // Transformed from rating_5_count
-  four_star_count: number;  // Transformed from rating_4_count
-  three_star_count: number;  // Transformed from rating_3_count
-  two_star_count: number;  // Transformed from rating_2_count
-  one_star_count: number;  // Transformed from rating_1_count
+  five_star_count: number; // Transformed from rating_5_count
+  four_star_count: number; // Transformed from rating_4_count
+  three_star_count: number; // Transformed from rating_3_count
+  two_star_count: number; // Transformed from rating_2_count
+  one_star_count: number; // Transformed from rating_1_count
   last_review_at?: string;
-  updated_at?: string;  // From database updated_at
+  updated_at?: string; // From database updated_at
 }
 
 /**
  * Get review aggregates for a provider
  */
-export const getProviderReviewAggregates = async (providerId: string): Promise<ReviewAggregate> => {
+export const getProviderReviewAggregates = async (
+  providerId: string,
+): Promise<ReviewAggregate> => {
   const response = await apiClient.get<ReviewAggregate>(
-    `/review-aggregates/provider/${providerId}`
+    `/review-aggregates/provider/${providerId}`,
   );
   return response.data;
 };
@@ -101,10 +105,13 @@ const reviewService = {
   getReview,
   getJobReview,
   getProviderReviewAggregates,
-  getMyReviews: async (params?: { page?: number; limit?: number }): Promise<{ data: ReviewWithDetails[]; total: number }> => {
+  getMyReviews: async (params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: ReviewWithDetails[]; total: number }> => {
     const qs = new URLSearchParams();
-    if (params?.page) qs.append('page', String(params.page));
-    if (params?.limit) qs.append('limit', String(params.limit));
+    if (params?.page) qs.append("page", String(params.page));
+    if (params?.limit) qs.append("limit", String(params.limit));
     const response = await apiClient.get<any>(`/reviews/my?${qs.toString()}`);
     const raw = response.data;
     if (Array.isArray(raw)) return { data: raw, total: raw.length };

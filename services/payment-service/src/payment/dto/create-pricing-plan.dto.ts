@@ -23,7 +23,7 @@ export class CreatePricingPlanDto {
 
   @IsOptional()
   @IsString()
-  currency?: string = 'INR';
+  currency?: string = "INR";
 
   @IsEnum(["monthly", "yearly"])
   billing_period: "monthly" | "yearly";

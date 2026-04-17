@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import { useMemo, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
-import { hasPermission, hasAnyPermission, hasAllPermissions } from '@/utils/permissions';
+import { useMemo, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import {
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+} from "@/utils/permissions";
 
 /**
  * Hook for checking user permissions in components.
@@ -21,7 +25,7 @@ export function usePermissions() {
     [session?.user?.permissions],
   );
 
-  const role = session?.user?.role ?? '';
+  const role = session?.user?.role ?? "";
 
   const can = useCallback(
     (permission: string) => hasPermission(permissions, permission),

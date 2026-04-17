@@ -23,13 +23,17 @@ import { UserClient } from "../common/user/user.client";
 @Module({
   imports: [
     BullModule.registerQueue(
-      { name: 'comms.email' },
-      { name: 'comms.sms' },
-      { name: 'comms.push' },
-      { name: 'comms.whatsapp' },
+      { name: "comms.email" },
+      { name: "comms.sms" },
+      { name: "comms.push" },
+      { name: "comms.whatsapp" },
     ),
   ],
-  controllers: [NotificationController, NotificationPreferencesController, DeviceController],
+  controllers: [
+    NotificationController,
+    NotificationPreferencesController,
+    DeviceController,
+  ],
   providers: [
     NotificationService,
     PushNotificationService,

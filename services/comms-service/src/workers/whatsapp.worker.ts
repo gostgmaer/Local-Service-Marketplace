@@ -169,10 +169,7 @@ export class WhatsAppWorker extends WorkerHost {
 
   @OnWorkerEvent("completed")
   onCompleted(job: Job): void {
-    this.logger.log(
-      `Job "${job.name}/${job.id}" completed`,
-      "WhatsAppWorker",
-    );
+    this.logger.log(`Job "${job.name}/${job.id}" completed`, "WhatsAppWorker");
   }
 
   @OnWorkerEvent("failed")
@@ -195,6 +192,9 @@ export class WhatsAppWorker extends WorkerHost {
 
   @OnWorkerEvent("stalled")
   onStalled(jobId: string): void {
-    this.logger.warn(`Job ${jobId} stalled and will be requeued`, "WhatsAppWorker");
+    this.logger.warn(
+      `Job ${jobId} stalled and will be requeued`,
+      "WhatsAppWorker",
+    );
   }
 }

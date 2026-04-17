@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { usePublicSettings } from './usePublicSettings';
+import { useState, useCallback } from "react";
+import { usePublicSettings } from "./usePublicSettings";
 
 interface UsePaginationProps {
   initialPage?: number;

@@ -19,7 +19,7 @@ export interface RegisterDeviceDto {
 
 /**
  * DeviceRepository - Manages user device tokens for push notifications
- * 
+ *
  * Table: user_devices
  */
 @Injectable()

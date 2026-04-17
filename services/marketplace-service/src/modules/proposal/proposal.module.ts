@@ -11,13 +11,18 @@ import { UserModule } from "../../common/user/user.module";
 
 @Module({
   imports: [
-    BullModule.registerQueue({ name: 'marketplace.notification' }),
+    BullModule.registerQueue({ name: "marketplace.notification" }),
     DatabaseModule,
     NotificationModule,
     UserModule,
   ],
   controllers: [ProposalController],
-  providers: [ProposalService, ProposalRepository, JobRepository, RequestRepository],
+  providers: [
+    ProposalService,
+    ProposalRepository,
+    JobRepository,
+    RequestRepository,
+  ],
   exports: [ProposalService],
 })
 export class ProposalModule {}

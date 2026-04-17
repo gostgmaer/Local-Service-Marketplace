@@ -12,8 +12,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Request body size limits
-  app.use(json({ limit: '1mb' }));
-  app.use(urlencoded({ extended: true, limit: '1mb' }));
+  app.use(json({ limit: "1mb" }));
+  app.use(urlencoded({ extended: true, limit: "1mb" }));
 
   // Security headers
   app.use(
@@ -115,7 +115,9 @@ async function bootstrap() {
 
   // Catch unhandled errors to prevent silent crashes
   process.on("unhandledRejection", (reason) => {
-    logger.error("Unhandled Rejection — initiating graceful shutdown", { reason });
+    logger.error("Unhandled Rejection — initiating graceful shutdown", {
+      reason,
+    });
     shutdown("unhandledRejection").catch(() => process.exit(1));
   });
   process.on("uncaughtException", (error: any) => {

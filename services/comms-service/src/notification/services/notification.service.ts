@@ -25,7 +25,7 @@ import { SendSmsDto } from "../dto/send-sms.dto";
 
 @Injectable()
 export class NotificationService {
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
@@ -40,7 +40,7 @@ export class NotificationService {
     private readonly emailClient: EmailClient,
     private readonly smsClient: SmsClient,
     private readonly featureFlags: FeatureFlagService,
-  ) { }
+  ) {}
 
   async createNotification(
     userId: string,
@@ -70,7 +70,7 @@ export class NotificationService {
     );
 
     // Queue email delivery — default options (3 retries, exp backoff) applied from queue defaults
-    await this.emailQueue.add('deliver-email', {
+    await this.emailQueue.add("deliver-email", {
       deliveryId: emailDelivery.id,
       notificationId: notification.id,
       userId,
@@ -79,7 +79,7 @@ export class NotificationService {
     });
 
     // Queue push delivery
-    await this.pushQueue.add('deliver-push', {
+    await this.pushQueue.add("deliver-push", {
       deliveryId: pushDelivery.id,
       notificationId: notification.id,
       userId,
@@ -105,7 +105,9 @@ export class NotificationService {
       throw new NotFoundException("Notification not found");
     }
     if (requestingUserId && notification.user_id !== requestingUserId) {
-      throw new ForbiddenException("You can only access your own notifications");
+      throw new ForbiddenException(
+        "You can only access your own notifications",
+      );
     }
     return notification;
   }
@@ -202,7 +204,11 @@ export class NotificationService {
         // Send via email
         const emailResult = await this.emailClient.sendEmail({
           to: dto.recipient,
-          subject: dto.subject || (dto.template ? `Notification: ${dto.template}` : "New Notification"),
+          subject:
+            dto.subject ||
+            (dto.template
+              ? `Notification: ${dto.template}`
+              : "New Notification"),
           text: dto.message,
           template: dto.template,
           variables: dto.variables,
@@ -225,7 +231,7 @@ export class NotificationService {
 
         // Send SMS — queue if workers enabled, else send directly
         if (this.workersEnabled) {
-          await this.smsQueue.add('deliver-sms', {
+          await this.smsQueue.add("deliver-sms", {
             phone: dto.recipient,
             message: dto.message,
           });
@@ -289,7 +295,9 @@ export class NotificationService {
 
     const result = await this.emailClient.sendEmail({
       to: dto.to,
-      subject: dto.subject || (dto.template ? `Notification: ${dto.template}` : "New Notification"),
+      subject:
+        dto.subject ||
+        (dto.template ? `Notification: ${dto.template}` : "New Notification"),
       text: dto.message,
       template: dto.template,
       variables: dto.variables,
@@ -317,7 +325,7 @@ export class NotificationService {
 
     // Send SMS — queue if workers enabled, else send directly
     if (this.workersEnabled) {
-      await this.smsQueue.add('deliver-sms', {
+      await this.smsQueue.add("deliver-sms", {
         phone: dto.phone,
         message: dto.message,
       });
@@ -346,7 +354,7 @@ export class NotificationService {
 
     // Send OTP — queue if workers enabled, else send directly
     if (this.workersEnabled) {
-      await this.smsQueue.add('deliver-otp', { phone, purpose });
+      await this.smsQueue.add("deliver-otp", { phone, purpose });
       return { queued: true };
     } else {
       await this.smsClient.sendOtp(phone, purpose);
@@ -381,16 +389,16 @@ export class NotificationService {
    */
   async enqueueWhatsAppOtp(phone: string, otp: string): Promise<void> {
     try {
-      await this.whatsappQueue.add('deliver-whatsapp-otp', { phone, otp });
+      await this.whatsappQueue.add("deliver-whatsapp-otp", { phone, otp });
       this.logger.log(
         `WhatsApp OTP enqueued for ${phone}`,
-        'NotificationService',
+        "NotificationService",
       );
     } catch (error: any) {
       this.logger.error(
         `Failed to enqueue WhatsApp OTP for ${phone}: ${error.message}`,
         error.stack,
-        'NotificationService',
+        "NotificationService",
       );
     }
   }

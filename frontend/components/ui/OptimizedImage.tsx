@@ -1,5 +1,5 @@
-import Image from 'next/image';
-import { cn } from '@/utils/helpers';
+import Image from "next/image";
+import { cn } from "@/utils/helpers";
 
 interface OptimizedImageProps {
   src: string;
@@ -9,7 +9,7 @@ interface OptimizedImageProps {
   fill?: boolean;
   priority?: boolean;
   className?: string;
-  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+  objectFit?: "contain" | "cover" | "fill" | "none" | "scale-down";
   quality?: number;
   sizes?: string;
   onLoadingComplete?: () => void;
@@ -23,7 +23,7 @@ export function OptimizedImage({
   fill = false,
   priority = false,
   className,
-  objectFit = 'cover',
+  objectFit = "cover",
   quality = 75,
   sizes,
   onLoadingComplete,
@@ -32,11 +32,9 @@ export function OptimizedImage({
     src,
     quality,
     priority,
-    className: cn('transition-opacity duration-300', className),
+    className: cn("transition-opacity duration-300", className),
     onLoadingComplete,
-    ...(fill
-      ? { fill: true, style: { objectFit } }
-      : { width, height }),
+    ...(fill ? { fill: true, style: { objectFit } } : { width, height }),
     ...(sizes && { sizes }),
   };
 
@@ -51,16 +49,19 @@ interface AvatarImageProps {
   className?: string;
 }
 
-export function AvatarImage({ 
-  src, 
-  alt, 
-  size = 40, 
-  className 
+export function AvatarImage({
+  src,
+  alt,
+  size = 40,
+  className,
 }: AvatarImageProps) {
   if (!src) return null;
 
   return (
-    <div className={cn('relative overflow-hidden rounded-full', className)} style={{ width: size, height: size }}>
+    <div
+      className={cn("relative overflow-hidden rounded-full", className)}
+      style={{ width: size, height: size }}
+    >
       <Image
         src={src}
         alt={alt}

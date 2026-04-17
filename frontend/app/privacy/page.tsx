@@ -1,48 +1,73 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Layout } from '@/components/layout/Layout';
-import { Shield, Lock, Eye, Database, UserCheck, AlertCircle } from 'lucide-react';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Layout } from "@/components/layout/Layout";
+import {
+  Shield,
+  Lock,
+  Eye,
+  Database,
+  UserCheck,
+  AlertCircle,
+} from "lucide-react";
 
 export const metadata: Metadata = {
-	title: 'Privacy Policy',
-	description:
-		'Read our privacy policy — how we collect, use, and protect your personal information on Local Service Marketplace.',
-	alternates: { canonical: '/privacy' },
-	openGraph: {
-		title: 'Privacy Policy',
-		description:
-			'Read our privacy policy — how we collect, use, and protect your personal information on Local Service Marketplace.',
-		url: '/privacy',
-		images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Local Service Marketplace' }],
-	},
-	twitter: {
-		card: 'summary_large_image',
-		title: 'Privacy Policy',
-		description:
-			'Read our privacy policy — how we collect, use, and protect your personal information on Local Service Marketplace.',
-	},
+  title: "Privacy Policy",
+  description:
+    "Read our privacy policy — how we collect, use, and protect your personal information on Local Service Marketplace.",
+  alternates: { canonical: "/privacy" },
+  openGraph: {
+    title: "Privacy Policy",
+    description:
+      "Read our privacy policy — how we collect, use, and protect your personal information on Local Service Marketplace.",
+    url: "/privacy",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Local Service Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy",
+    description:
+      "Read our privacy policy — how we collect, use, and protect your personal information on Local Service Marketplace.",
+  },
 };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localservicemarketplace.com';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://localservicemarketplace.com";
 
 const privacyJsonLd = {
-	'@context': 'https://schema.org',
-	'@type': 'WebPage',
-	name: 'Privacy Policy — Local Service Marketplace',
-	url: `${SITE_URL}/privacy`,
-	description: 'Read our privacy policy — how we collect, use, and protect your personal information.',
-	isPartOf: { '@type': 'WebSite', name: 'Local Service Marketplace', url: SITE_URL },
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: "Privacy Policy — Local Service Marketplace",
+  url: `${SITE_URL}/privacy`,
+  description:
+    "Read our privacy policy — how we collect, use, and protect your personal information.",
+  isPartOf: {
+    "@type": "WebSite",
+    name: "Local Service Marketplace",
+    url: SITE_URL,
+  },
 };
 
 export default function PrivacyPage() {
   return (
     <Layout>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(privacyJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(privacyJsonLd) }}
+      />
       <div className="bg-white dark:bg-gray-900">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Privacy Policy</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Privacy Policy
+            </h1>
             <p className="text-xl text-primary-100">
               Last updated: March 14, 2026
             </p>
@@ -57,9 +82,10 @@ export default function PrivacyPage() {
                 <Shield className="w-6 h-6 text-primary-600 dark:text-primary-400 mr-3 flex-shrink-0 mt-1" />
                 <div>
                   <p className="text-gray-700 dark:text-gray-300 mb-0">
-                    At Local Service Marketplace, we take your privacy seriously. This Privacy Policy
-                    explains how we collect, use, disclose, and safeguard your information when you
-                    use our platform.
+                    At Local Service Marketplace, we take your privacy
+                    seriously. This Privacy Policy explains how we collect, use,
+                    disclose, and safeguard your information when you use our
+                    platform.
                   </p>
                 </div>
               </div>
@@ -78,12 +104,18 @@ export default function PrivacyPage() {
                 Personal Information
               </h3>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                We collect information that you provide directly to us, including:
+                We collect information that you provide directly to us,
+                including:
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2 mb-6">
                 <li>Name, email address, phone number, and postal address</li>
-                <li>Profile information (photo, bio, skills, certifications)</li>
-                <li>Payment information (processed securely through third-party providers)</li>
+                <li>
+                  Profile information (photo, bio, skills, certifications)
+                </li>
+                <li>
+                  Payment information (processed securely through third-party
+                  providers)
+                </li>
                 <li>Communications with other users and customer support</li>
                 <li>Reviews, ratings, and feedback</li>
               </ul>
@@ -95,7 +127,10 @@ export default function PrivacyPage() {
                 When you use our platform, we automatically collect:
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2 mb-6">
-                <li>Device information (IP address, browser type, operating system)</li>
+                <li>
+                  Device information (IP address, browser type, operating
+                  system)
+                </li>
                 <li>Usage data (pages viewed, time spent, interactions)</li>
                 <li>Location data (with your permission)</li>
                 <li>Cookies and similar tracking technologies</li>
@@ -117,12 +152,22 @@ export default function PrivacyPage() {
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2 mb-6">
                 <li>Provide, maintain, and improve our services</li>
                 <li>Process transactions and send related information</li>
-                <li>Send you technical notices, updates, and support messages</li>
-                <li>Respond to your comments, questions, and customer service requests</li>
-                <li>Communicate with you about products, services, and promotional offers</li>
+                <li>
+                  Send you technical notices, updates, and support messages
+                </li>
+                <li>
+                  Respond to your comments, questions, and customer service
+                  requests
+                </li>
+                <li>
+                  Communicate with you about products, services, and promotional
+                  offers
+                </li>
                 <li>Monitor and analyze trends, usage, and activities</li>
                 <li>Detect, prevent, and address fraud and security issues</li>
-                <li>Personalize your experience and provide relevant content</li>
+                <li>
+                  Personalize your experience and provide relevant content
+                </li>
               </ul>
             </section>
 
@@ -140,24 +185,26 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2 mb-6">
                 <li>
-                  <strong>With Other Users:</strong> Your profile information and reviews are visible
-                  to other users
+                  <strong>With Other Users:</strong> Your profile information
+                  and reviews are visible to other users
                 </li>
                 <li>
-                  <strong>With Service Providers:</strong> We may share information with third-party
-                  vendors who perform services on our behalf
+                  <strong>With Service Providers:</strong> We may share
+                  information with third-party vendors who perform services on
+                  our behalf
                 </li>
                 <li>
-                  <strong>For Legal Reasons:</strong> We may disclose information if required by law
-                  or in response to valid legal requests
+                  <strong>For Legal Reasons:</strong> We may disclose
+                  information if required by law or in response to valid legal
+                  requests
                 </li>
                 <li>
-                  <strong>Business Transfers:</strong> If we are involved in a merger, acquisition,
-                  or sale of assets
+                  <strong>Business Transfers:</strong> If we are involved in a
+                  merger, acquisition, or sale of assets
                 </li>
                 <li>
-                  <strong>With Your Consent:</strong> We may share information when you give us
-                  explicit permission
+                  <strong>With Your Consent:</strong> We may share information
+                  when you give us explicit permission
                 </li>
               </ul>
 
@@ -181,15 +228,18 @@ export default function PrivacyPage() {
               </div>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                We implement appropriate technical and organizational measures to protect your
-                personal information against unauthorized access, alteration, disclosure, or
-                destruction. These measures include:
+                We implement appropriate technical and organizational measures
+                to protect your personal information against unauthorized
+                access, alteration, disclosure, or destruction. These measures
+                include:
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2 mb-6">
                 <li>Encryption of data in transit and at rest</li>
                 <li>Regular security assessments and audits</li>
                 <li>Access controls and authentication requirements</li>
-                <li>Secure payment processing through PCI-compliant providers</li>
+                <li>
+                  Secure payment processing through PCI-compliant providers
+                </li>
                 <li>Employee training on data protection and privacy</li>
               </ul>
             </section>
@@ -201,28 +251,35 @@ export default function PrivacyPage() {
               </h2>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                You have the following rights regarding your personal information:
+                You have the following rights regarding your personal
+                information:
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2 mb-6">
                 <li>
-                  <strong>Access:</strong> Request a copy of your personal information
+                  <strong>Access:</strong> Request a copy of your personal
+                  information
                 </li>
                 <li>
-                  <strong>Correction:</strong> Update or correct inaccurate information
+                  <strong>Correction:</strong> Update or correct inaccurate
+                  information
                 </li>
                 <li>
-                  <strong>Deletion:</strong> Request deletion of your account and data
+                  <strong>Deletion:</strong> Request deletion of your account
+                  and data
                 </li>
                 <li>
-                  <strong>Opt-Out:</strong> Unsubscribe from marketing communications
+                  <strong>Opt-Out:</strong> Unsubscribe from marketing
+                  communications
                 </li>
                 <li>
-                  <strong>Data Portability:</strong> Request your data in a portable format
+                  <strong>Data Portability:</strong> Request your data in a
+                  portable format
                 </li>
               </ul>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                To exercise these rights, please contact us at privacy@localservicemarketplace.com
+                To exercise these rights, please contact us at
+                privacy@localservicemarketplace.com
               </p>
             </section>
 
@@ -233,18 +290,25 @@ export default function PrivacyPage() {
               </h2>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                We use cookies and similar tracking technologies to track activity on our platform
-                and store certain information. You can instruct your browser to refuse all cookies
-                or to indicate when a cookie is being sent.
+                We use cookies and similar tracking technologies to track
+                activity on our platform and store certain information. You can
+                instruct your browser to refuse all cookies or to indicate when
+                a cookie is being sent.
               </p>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                For more information about cookies, please see our{' '}
-                <Link href="/cookies" className="text-primary-600 dark:text-primary-400 hover:underline">
+                For more information about cookies, please see our{" "}
+                <Link
+                  href="/cookies"
+                  className="text-primary-600 dark:text-primary-400 hover:underline"
+                >
                   Cookie Policy
                 </Link>
-                . You can also review our{' '}
-                <Link href="/terms" className="text-primary-600 dark:text-primary-400 hover:underline">
+                . You can also review our{" "}
+                <Link
+                  href="/terms"
+                  className="text-primary-600 dark:text-primary-400 hover:underline"
+                >
                   Terms of Service
                 </Link>
                 .
@@ -258,9 +322,10 @@ export default function PrivacyPage() {
               </h2>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Our services are not intended for individuals under the age of 18. We do not
-                knowingly collect personal information from children. If you are a parent or guardian
-                and believe your child has provided us with personal information, please contact us.
+                Our services are not intended for individuals under the age of
+                18. We do not knowingly collect personal information from
+                children. If you are a parent or guardian and believe your child
+                has provided us with personal information, please contact us.
               </p>
             </section>
 
@@ -271,9 +336,9 @@ export default function PrivacyPage() {
               </h2>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                We may update our Privacy Policy from time to time. We will notify you of any
-                changes by posting the new Privacy Policy on this page and updating the "Last
-                updated" date.
+                We may update our Privacy Policy from time to time. We will
+                notify you of any changes by posting the new Privacy Policy on
+                this page and updating the "Last updated" date.
               </p>
             </section>
 
@@ -284,13 +349,25 @@ export default function PrivacyPage() {
               </h2>
 
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                If you have any questions about this Privacy Policy, please contact us:
+                If you have any questions about this Privacy Policy, please
+                contact us:
               </p>
               <ul className="text-gray-600 dark:text-gray-300 space-y-2">
                 <li>Email: privacy@localservicemarketplace.com</li>
                 <li>Phone: +91 80456 78900 (Mon–Fri, 10 AM–6 PM IST)</li>
-                <li>Address: Local Service Marketplace Pvt. Ltd., 4th Floor, Tech Park, BKC, Mumbai – 400 051, Maharashtra, India</li>
-                <li>Grievance Officer: <a href="/grievance" className="text-primary-600 dark:text-primary-400 hover:underline">File a grievance →</a></li>
+                <li>
+                  Address: Local Service Marketplace Pvt. Ltd., 4th Floor, Tech
+                  Park, BKC, Mumbai – 400 051, Maharashtra, India
+                </li>
+                <li>
+                  Grievance Officer:{" "}
+                  <a
+                    href="/grievance"
+                    className="text-primary-600 dark:text-primary-400 hover:underline"
+                  >
+                    File a grievance →
+                  </a>
+                </li>
               </ul>
             </section>
           </div>

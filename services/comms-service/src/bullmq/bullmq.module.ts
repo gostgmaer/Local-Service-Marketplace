@@ -1,6 +1,6 @@
-import { BullModule } from '@nestjs/bullmq';
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from "@nestjs/bullmq";
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
 /**
  * Registers the BullMQ Redis connection once for the entire comms-service.
@@ -15,9 +15,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          host: configService.get<string>('REDIS_HOST', 'localhost'),
-          port: configService.get<number>('REDIS_PORT', 63790),
-          password: configService.get<string>('REDIS_PASSWORD') || undefined,
+          host: configService.get<string>("REDIS_HOST", "localhost"),
+          port: configService.get<number>("REDIS_PORT", 63790),
+          password: configService.get<string>("REDIS_PASSWORD") || undefined,
         },
       }),
     }),

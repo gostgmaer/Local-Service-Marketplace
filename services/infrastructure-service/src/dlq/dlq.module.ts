@@ -6,7 +6,7 @@ import { getQueueRegistrationOptions } from "../config/queue-config";
 
 /**
  * Dead Letter Queue Module
- * 
+ *
  * Registers queues that have DLQ protection enabled.
  * Uses centralized queue configurations for timeouts and priorities.
  */

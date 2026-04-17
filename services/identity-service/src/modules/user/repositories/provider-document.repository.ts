@@ -82,7 +82,11 @@ export class ProviderDocumentRepository {
       WHERE id = $3
       RETURNING *
     `;
-    const result = await this.pool.query(query, [reason, rejectedBy, documentId]);
+    const result = await this.pool.query(query, [
+      reason,
+      rejectedBy,
+      documentId,
+    ]);
     return result.rows[0];
   }
 

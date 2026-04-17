@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Layout } from '@/components/layout/Layout';
-import { Button } from '@/components/ui/Button';
-import { Home, ArrowLeft } from 'lucide-react';
-import { ROUTES } from '@/config/constants';
+import Link from "next/link";
+import { Layout } from "@/components/layout/Layout";
+import { Button } from "@/components/ui/Button";
+import { Home, ArrowLeft } from "lucide-react";
+import { ROUTES } from "@/config/constants";
 
 export default function NotFound() {
   return (
@@ -24,7 +24,8 @@ export default function NotFound() {
             Page Not Found
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-            Sorry, we couldn't find the page you're looking for. It might have been moved or doesn't exist.
+            Sorry, we couldn't find the page you're looking for. It might have
+            been moved or doesn't exist.
           </p>
 
           {/* Actions */}
@@ -51,16 +52,28 @@ export default function NotFound() {
               You might be looking for:
             </p>
             <div className="flex gap-4 justify-center flex-wrap text-sm">
-              <Link href={ROUTES.PROVIDERS} className="text-primary-600 hover:underline">
+              <Link
+                href={ROUTES.PROVIDERS}
+                className="text-primary-600 hover:underline"
+              >
                 Browse Providers
               </Link>
-              <Link href={ROUTES.CREATE_REQUEST} className="text-primary-600 hover:underline">
+              <Link
+                href={ROUTES.CREATE_REQUEST}
+                className="text-primary-600 hover:underline"
+              >
                 Post a Request
               </Link>
-              <Link href={ROUTES.HOW_IT_WORKS} className="text-primary-600 hover:underline">
+              <Link
+                href={ROUTES.HOW_IT_WORKS}
+                className="text-primary-600 hover:underline"
+              >
                 How It Works
               </Link>
-              <Link href={ROUTES.HELP} className="text-primary-600 hover:underline">
+              <Link
+                href={ROUTES.HELP}
+                className="text-primary-600 hover:underline"
+              >
                 Help Center
               </Link>
             </div>

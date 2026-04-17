@@ -1,17 +1,17 @@
-import 'dotenv/config';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
-import helmet from 'helmet';
+import "dotenv/config";
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { AppModule } from "./app.module";
+import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
+import { ResponseTransformInterceptor } from "./common/interceptors/response-transform.interceptor";
+import helmet from "helmet";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const allowedOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map((o) => o.trim())
+    ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
     : [];
   app.enableCors({
     origin: allowedOrigins.length > 0 ? allowedOrigins : false,
@@ -42,7 +42,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
   // Global exception filter with logger
-  const winstonLogger = app.get('winston');
+  const winstonLogger = app.get("winston");
   app.useGlobalFilters(new HttpExceptionFilter(winstonLogger));
 
   // CORS is handled by API Gateway - not needed in internal services
@@ -50,19 +50,24 @@ async function bootstrap() {
   // Graceful shutdown — drain in-flight requests before exit
   app.enableShutdownHooks();
   const shutdown = async (signal: string) => {
-    logger.log(`${signal} received — shutting down infrastructure-service gracefully`);
+    logger.log(
+      `${signal} received — shutting down infrastructure-service gracefully`,
+    );
     await app.close();
     process.exit(0);
   };
-  process.once('SIGTERM', () => shutdown('SIGTERM'));
-  process.once('SIGINT', () => shutdown('SIGINT'));
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
 
   // Catch unhandled errors to prevent silent crashes
-  process.on('unhandledRejection', (reason) => {
-    logger.error('Unhandled Rejection', { reason });
+  process.on("unhandledRejection", (reason) => {
+    logger.error("Unhandled Rejection", { reason });
   });
-  process.on('uncaughtException', (err: any) => {
-    logger.error('Uncaught Exception', { error: err.message, stack: err.stack });
+  process.on("uncaughtException", (err: any) => {
+    logger.error("Uncaught Exception", {
+      error: err.message,
+      stack: err.stack,
+    });
     process.exit(1);
   });
 

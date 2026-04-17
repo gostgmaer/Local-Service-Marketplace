@@ -168,28 +168,28 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string }> {
     this.logger.info("POST /auth/revoke-token", { context: "AuthController" });
-    
+
     // Extract token
     const token = authHeader?.substring(7); // Remove "Bearer "
     if (!token) {
       throw new UnauthorizedException("No token provided");
     }
-    
+
     // Get token expiration from decoded payload
     const user = req.user as any;
     const expiresIn = user.exp - Math.floor(Date.now() / 1000);
-    
+
     // Revoke in blacklist
     await this.tokenBlacklistService.revokeToken(token, expiresIn);
-    
+
     // Also logout from session
     if (user.sessionId) {
       await this.authService.logout(null, user.sub);
     }
-    
+
     // Clear cookies
     this.clearAuthCookies(res);
-    
+
     return { message: "Token revoked successfully" };
   }
 
@@ -208,23 +208,20 @@ export class AuthController {
       context: "AuthController",
       userId: req.user["sub"],
     });
-    
+
     const userId = req.user["sub"];
-    
+
     // Revoke all user tokens — use configured JWT expiry so blacklist TTL matches token lifetime
-    const jwtExpiry = process.env.JWT_EXPIRATION ?? '15m';
+    const jwtExpiry = process.env.JWT_EXPIRATION ?? "15m";
     const jwtTtlSeconds = this.parseJwtExpiry(jwtExpiry);
-    await this.tokenBlacklistService.revokeAllUserTokens(
-      userId,
-      jwtTtlSeconds,
-    );
-    
+    await this.tokenBlacklistService.revokeAllUserTokens(userId, jwtTtlSeconds);
+
     // Logout all sessions
     await this.authService.logout(null, userId);
-    
+
     // Clear cookies
     this.clearAuthCookies(res);
-    
+
     return { message: "All tokens revoked successfully" };
   }
 
@@ -240,7 +237,8 @@ export class AuthController {
     );
 
     // Update access token cookie
-    const accessTokenMaxAge = this.parseJwtExpiry(process.env.JWT_EXPIRES_IN ?? '15m') * 1000;
+    const accessTokenMaxAge =
+      this.parseJwtExpiry(process.env.JWT_EXPIRES_IN ?? "15m") * 1000;
     res.cookie("access_token", result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -919,7 +917,8 @@ export class AuthController {
     const isProduction = process.env.NODE_ENV === "production";
 
     // Set access token cookie (JWT_EXPIRES_IN env, default 15m)
-    const accessTokenMaxAge = this.parseJwtExpiry(process.env.JWT_EXPIRES_IN ?? '15m') * 1000;
+    const accessTokenMaxAge =
+      this.parseJwtExpiry(process.env.JWT_EXPIRES_IN ?? "15m") * 1000;
     res.cookie("access_token", accessToken, {
       httpOnly: true,
       secure: isProduction,
@@ -929,7 +928,7 @@ export class AuthController {
     });
 
     // Set refresh token cookie (SESSION_TTL_DAYS env, default 90 days)
-    const sessionTtlDays = parseInt(process.env.SESSION_TTL_DAYS ?? '90', 10);
+    const sessionTtlDays = parseInt(process.env.SESSION_TTL_DAYS ?? "90", 10);
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
       secure: isProduction,
@@ -950,11 +949,16 @@ export class AuthController {
     const value = parseInt(expiry.slice(0, -1), 10);
     if (isNaN(value)) return 15 * 60;
     switch (unit) {
-      case 's': return value;
-      case 'm': return value * 60;
-      case 'h': return value * 3600;
-      case 'd': return value * 86400;
-      default: return 15 * 60;
+      case "s":
+        return value;
+      case "m":
+        return value * 60;
+      case "h":
+        return value * 3600;
+      case "d":
+        return value * 86400;
+      default:
+        return 15 * 60;
     }
   }
 
