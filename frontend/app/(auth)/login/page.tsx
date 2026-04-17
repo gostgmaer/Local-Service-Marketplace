@@ -45,31 +45,31 @@ const formatPhoneNumber = (value: string): string => {
 };
 
 // Helper to detect if input is email or phone
-const detectInputType = (input: string): 'email' | 'phone' | 'unknown' => {
-  if (!input || input.trim().length === 0) {
-    return 'unknown';
-  }
-  
-  // Email validation: proper email format
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (emailRegex.test(input.trim())) {
-    return 'email';
-  }
-  
-  // Phone validation: at least 10 digits (with optional formatting)
-  const phoneRegex = /^[\d\s\-+()]+$/;
-  const digitsOnly = input.replace(/[\s\-()]/g, ''); // Remove formatting
-  
-  // Check if it's phone format AND has at least 10 digits
-  if (phoneRegex.test(input) && digitsOnly.length >= 10) {
-    // Must start with + or digit
-    if (input.trim().match(/^[+\d]/)) {
-      return 'phone';
-    }
-  }
-  
-  return 'unknown';
-};
+const detectInputType = (input: string): "email" | "phone" | "unknown" => {
+	if (!input || input.trim().length === 0) {
+		return "unknown";
+	}
+
+	// Email validation: proper email format (supports + in local part e.g. user+tag@example.com)
+	const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+	if (emailRegex.test(input.trim())) {
+		return "email";
+	}
+
+	// Phone validation: at least 10 digits (with optional formatting)
+	const phoneRegex = /^[\d\s\-+()]+$/;
+	const digitsOnly = input.replace(/[\s\-()]/g, ""); // Remove formatting
+
+	// Check if it's phone format AND has at least 10 digits
+	if (phoneRegex.test(input) && digitsOnly.length >= 10) {
+		// Must start with + or digit
+		if (input.trim().match(/^[+\d]/)) {
+			return "phone";
+		}
+	}
+
+	return "unknown";
+};;
 
 export default function LoginPage() {
 	return (
