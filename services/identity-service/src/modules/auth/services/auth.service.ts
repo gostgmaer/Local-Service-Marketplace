@@ -3,6 +3,7 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
+import * as crypto from "crypto";
 import { verifySync } from "otplib";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
@@ -37,7 +38,7 @@ import {
 export class AuthService {
   private readonly saltRounds = 12;
   private readonly maxLoginAttempts: number;
-  private readonly workersEnabled = process.env.WORKERS_ENABLED === 'true';
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
   constructor(
     private readonly userRepo: UserRepository,
@@ -55,7 +56,8 @@ export class AuthService {
     private readonly notificationClient: NotificationClient,
     private readonly configService: ConfigService,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-    @InjectQueue('identity.notification') private readonly notificationQueue: Queue,
+    @InjectQueue("identity.notification")
+    private readonly notificationQueue: Queue,
   ) {
     this.maxLoginAttempts = parseInt(
       this.configService.get<string>("MAX_LOGIN_ATTEMPTS", "5"),
@@ -66,8 +68,8 @@ export class AuthService {
   /** Reads session_ttl_days from system_settings (fail-open: env → 90). */
   private async getSessionTtlDays(): Promise<number> {
     const str = await this.userRepo.getSystemSetting(
-      'session_ttl_days',
-      String(this.configService.get<number>('SESSION_TTL_DAYS', 90)),
+      "session_ttl_days",
+      String(this.configService.get<number>("SESSION_TTL_DAYS", 90)),
     );
     return parseInt(str, 10) || 90;
   }
@@ -76,9 +78,14 @@ export class AuthService {
    * Resolves the provider entity ID for a user whose role is 'provider'.
    * Returns undefined for non-providers or when no provider record exists yet.
    */
-  private async resolveProviderId(userId: string, role: string): Promise<string | undefined> {
+  private async resolveProviderId(
+    userId: string,
+    role: string,
+  ): Promise<string | undefined> {
     if (role !== "provider") return undefined;
-    const provider = await this.providerRepo.findByUserId(userId).catch(() => null);
+    const provider = await this.providerRepo
+      .findByUserId(userId)
+      .catch(() => null);
     return provider?.id ?? undefined;
   }
 
@@ -146,7 +153,10 @@ export class AuthService {
 
     // Auto-generate password if not provided
     const passwordWasGenerated = !registerDto.password;
-    const pwLengthStr = await this.userRepo.getSystemSetting('auto_generated_password_length', '8');
+    const pwLengthStr = await this.userRepo.getSystemSetting(
+      "auto_generated_password_length",
+      "8",
+    );
     const pwLength = parseInt(pwLengthStr, 10) || 8;
     const rawPassword = registerDto.password || this.generatePassword(pwLength);
     const passwordHash = await bcrypt.hash(rawPassword, this.saltRounds);
@@ -177,7 +187,7 @@ export class AuthService {
       if (passwordWasGenerated) {
         const passwordPayload = {
           to: email,
-          template: 'MARKETPLACE_WELCOME',
+          template: "MARKETPLACE_WELCOME",
           variables: {
             name: displayName,
             email,
@@ -185,10 +195,15 @@ export class AuthService {
           },
         };
         const passwordDispatch = this.workersEnabled
-          ? this.notificationQueue.add('send-generated-password', passwordPayload)
+          ? this.notificationQueue.add(
+              "send-generated-password",
+              passwordPayload,
+            )
           : this.notificationClient.sendEmail(passwordPayload);
         passwordDispatch
-          .then(() => { emailSent = true; })
+          .then(() => {
+            emailSent = true;
+          })
           .catch((err: any) => {
             this.logger.error("Failed to send generated password email", {
               context: "AuthService",
@@ -201,17 +216,22 @@ export class AuthService {
       // Send email verification link (non-blocking)
       const verificationPayload = {
         to: email,
-        template: 'MARKETPLACE_EMAIL_VERIFICATION',
+        template: "MARKETPLACE_EMAIL_VERIFICATION",
         variables: {
           name: displayName,
           verificationLink: `${frontendUrl}/verify-email?token=${verificationToken}`,
         },
       };
       const verificationDispatch = this.workersEnabled
-        ? this.notificationQueue.add('send-email-verification', verificationPayload)
+        ? this.notificationQueue.add(
+            "send-email-verification",
+            verificationPayload,
+          )
         : this.notificationClient.sendEmail(verificationPayload);
       verificationDispatch
-        .then(() => { verificationEmailSent = true; })
+        .then(() => {
+          verificationEmailSent = true;
+        })
         .catch((err: any) => {
           this.logger.error("Failed to send verification email", {
             context: "AuthService",
@@ -259,9 +279,14 @@ export class AuthService {
     });
 
     // Check if registration is currently enabled
-    const registrationEnabled = await this.userRepo.getSystemSetting('registration_enabled', 'true');
-    if (registrationEnabled === 'false') {
-      throw new BadRequestException('New user registration is currently disabled. Please try again later.');
+    const registrationEnabled = await this.userRepo.getSystemSetting(
+      "registration_enabled",
+      "true",
+    );
+    if (registrationEnabled === "false") {
+      throw new BadRequestException(
+        "New user registration is currently disabled. Please try again later.",
+      );
     }
 
     // Check if user already exists
@@ -311,7 +336,7 @@ export class AuthService {
       },
     };
     const welcomeDispatch = this.workersEnabled
-      ? this.notificationQueue.add('send-welcome', welcomePayload)
+      ? this.notificationQueue.add("send-welcome", welcomePayload)
       : this.notificationClient.sendEmail(welcomePayload);
     welcomeDispatch.catch((err: any) => {
       this.logger.error("Failed to send welcome email", {
@@ -328,14 +353,17 @@ export class AuthService {
     );
     const verificationPayload = {
       to: user.email,
-      template: 'MARKETPLACE_EMAIL_VERIFICATION',
+      template: "MARKETPLACE_EMAIL_VERIFICATION",
       variables: {
-        name: name || user.email.split('@')[0],
+        name: name || user.email.split("@")[0],
         verificationLink: `${frontendUrl}/verify-email?token=${verificationToken}`,
       },
     };
     const verificationDispatch = this.workersEnabled
-      ? this.notificationQueue.add('send-email-verification', verificationPayload)
+      ? this.notificationQueue.add(
+          "send-email-verification",
+          verificationPayload,
+        )
       : this.notificationClient.sendEmail(verificationPayload);
     verificationDispatch.catch((err: any) => {
       this.logger.error("Failed to send verification email", {
@@ -346,17 +374,19 @@ export class AuthService {
     });
 
     // Auto-create a minimal provider profile so the JWT contains a valid providerId
-    if (role === 'provider') {
-      await this.providerRepo.create(
-        user.id,
-        name || user.email.split('@')[0],
-      ).catch((err: any) => {
-        this.logger.error('Failed to auto-create provider profile during signup', {
-          context: 'AuthService',
-          error: err.message,
-          userId: user.id,
+    if (role === "provider") {
+      await this.providerRepo
+        .create(user.id, name || user.email.split("@")[0])
+        .catch((err: any) => {
+          this.logger.error(
+            "Failed to auto-create provider profile during signup",
+            {
+              context: "AuthService",
+              error: err.message,
+              userId: user.id,
+            },
+          );
         });
-      });
     }
 
     // Generate tokens
@@ -366,6 +396,8 @@ export class AuthService {
       user.email,
       user.role,
       signupProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
     );
     const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
@@ -376,7 +408,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + await this.getSessionTtlDays());
+    expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -476,6 +508,8 @@ export class AuthService {
       user.email,
       user.role,
       loginProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
     );
     const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
@@ -486,7 +520,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + await this.getSessionTtlDays());
+    expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -546,12 +580,16 @@ export class AuthService {
       }
 
       // Generate new access token
-      const refreshProviderId = payload.providerId ?? await this.resolveProviderId(user.id, user.role);
+      const refreshProviderId =
+        payload.providerId ??
+        (await this.resolveProviderId(user.id, user.role));
       const accessToken = await this.jwtService.generateAccessToken(
         user.id,
         user.email,
         user.role,
         refreshProviderId,
+        user.email_verified,
+        user.phone_verified ?? false,
       );
 
       return { accessToken };
@@ -590,17 +628,20 @@ export class AuthService {
     });
 
     // Send password reset email — queue if workers enabled, else inline
-    const frontendUrl = this.configService.get<string>("FRONTEND_URL", "http://localhost:3000");
+    const frontendUrl = this.configService.get<string>(
+      "FRONTEND_URL",
+      "http://localhost:3000",
+    );
     const resetPayload = {
       to: user.email,
-      template: 'MARKETPLACE_PASSWORD_RESET',
+      template: "MARKETPLACE_PASSWORD_RESET",
       variables: {
-        name: user.name || user.email.split('@')[0],
+        name: user.name || user.email.split("@")[0],
         resetLink: `${frontendUrl}/reset-password?token=${resetToken}`,
       },
     };
     const resetDispatch = this.workersEnabled
-      ? this.notificationQueue.add('send-password-reset', resetPayload)
+      ? this.notificationQueue.add("send-password-reset", resetPayload)
       : this.notificationClient.sendEmail(resetPayload);
     resetDispatch.catch((err: any) =>
       this.logger.error("Failed to send password reset email", {
@@ -641,13 +682,24 @@ export class AuthService {
 
   async getProfile(userId: string): Promise<any> {
     if (!userId) {
-      throw new UnauthorizedException("User ID is required to retrieve profile");
+      throw new UnauthorizedException(
+        "User ID is required to retrieve profile",
+      );
     }
 
     const user = await this.userRepo.findById(userId);
 
     if (!user) {
       throw new NotFoundException("User not found");
+    }
+
+    // For provider users, include verification_status from the providers table
+    let provider_verification_status: string | undefined;
+    if (user.role === "provider") {
+      const provider = await this.providerRepo
+        .findByUserId(userId)
+        .catch(() => null);
+      provider_verification_status = provider?.verification_status;
     }
 
     return {
@@ -667,6 +719,9 @@ export class AuthService {
       created_at: user.created_at,
       updated_at: user.updated_at,
       deleted_at: user.deleted_at,
+      ...(provider_verification_status !== undefined && {
+        provider_verification_status,
+      }),
     };
   }
 
@@ -682,7 +737,9 @@ export class AuthService {
     if (updateUserDto.email) {
       const existingUser = await this.userRepo.findByEmail(updateUserDto.email);
       if (existingUser && existingUser.id !== userId) {
-        throw new ConflictException("Email address is already in use by another account");
+        throw new ConflictException(
+          "Email address is already in use by another account",
+        );
       }
     }
 
@@ -731,18 +788,18 @@ export class AuthService {
     if (verifiedUser?.email) {
       const verifiedPayload = {
         to: verifiedUser.email,
-        template: 'EMAIL_VERIFIED',
+        template: "EMAIL_VERIFIED",
         variables: {
-          username: verifiedUser.name || verifiedUser.email.split('@')[0],
+          username: verifiedUser.name || verifiedUser.email.split("@")[0],
           verifiedItem: verifiedUser.email,
         },
       };
       const verifiedDispatch = this.workersEnabled
-        ? this.notificationQueue.add('send-email-verified', verifiedPayload)
+        ? this.notificationQueue.add("send-email-verified", verifiedPayload)
         : this.notificationClient.sendEmail(verifiedPayload);
       verifiedDispatch.catch((err: any) => {
-        this.logger.error('Failed to send email verified confirmation', {
-          context: 'AuthService',
+        this.logger.error("Failed to send email verified confirmation", {
+          context: "AuthService",
           error: err.message,
           userId,
         });
@@ -838,6 +895,7 @@ export class AuthService {
 
         // Mark email as verified since OAuth provides verified email
         await this.userRepo.verifyEmail(user.id);
+        user.email_verified = true;
 
         // Create social account link
         socialAccount = await this.socialAccountRepo.create(
@@ -863,6 +921,8 @@ export class AuthService {
       user.email,
       user.role,
       oauthProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
     );
     const jwtRefreshToken = await this.jwtService.generateRefreshToken(
       user.id,
@@ -873,7 +933,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + await this.getSessionTtlDays());
+    expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
     await this.sessionRepo.create(
       user.id,
       jwtRefreshToken,
@@ -977,12 +1037,17 @@ export class AuthService {
     });
 
     // Generate tokens
-    const phoneLoginProviderId = await this.resolveProviderId(user.id, user.role);
+    const phoneLoginProviderId = await this.resolveProviderId(
+      user.id,
+      user.role,
+    );
     const accessToken = await this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
       phoneLoginProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
     );
     const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
@@ -993,7 +1058,7 @@ export class AuthService {
 
     // Store refresh token in session
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + await this.getSessionTtlDays());
+    expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     return {
@@ -1025,9 +1090,13 @@ export class AuthService {
     });
 
     // Rate limit: max 5 OTP requests per 15-minute window per phone number
-    const recentRequests = await this.loginAttemptRepo.countRecentFailedAttempts(phone);
+    const recentRequests =
+      await this.loginAttemptRepo.countRecentFailedAttempts(phone);
     if (recentRequests >= 5) {
-      this.logger.warn("Phone OTP rate limit exceeded", { context: "AuthService", phone });
+      this.logger.warn("Phone OTP rate limit exceeded", {
+        context: "AuthService",
+        phone,
+      });
       throw new TooManyRequestsException(
         "Too many OTP requests. Please wait before requesting another OTP.",
       );
@@ -1076,14 +1145,17 @@ export class AuthService {
 
       // WhatsApp OTP fallback (when WHATSAPP_OTP_ENABLED=true)
       if (this.notificationClient.isWhatsAppOtpEnabled()) {
-        const otp = this.configService.get<string>("CURRENT_PHONE_OTP_DEBUG") || "";
-        this.notificationClient.sendWhatsAppOtp(phone, otp).catch((err: any) => {
-          this.logger.warn("WhatsApp OTP fallback failed (non-fatal)", {
-            context: "AuthService",
-            phone,
-            error: err?.message,
+        const otp =
+          this.configService.get<string>("CURRENT_PHONE_OTP_DEBUG") || "";
+        this.notificationClient
+          .sendWhatsAppOtp(phone, otp)
+          .catch((err: any) => {
+            this.logger.warn("WhatsApp OTP fallback failed (non-fatal)", {
+              context: "AuthService",
+              phone,
+              error: err?.message,
+            });
           });
-        });
       }
 
       this.logger.info("OTP sent successfully", {
@@ -1169,13 +1241,24 @@ export class AuthService {
         phone,
       });
 
+      // Mark phone as verified since successful OTP login proves phone ownership
+      if (!user.phone_verified) {
+        await this.userRepo.verifyPhone(user.id);
+        user.phone_verified = true;
+      }
+
       // Generate tokens
-      const phoneOtpProviderId = await this.resolveProviderId(user.id, user.role);
+      const phoneOtpProviderId = await this.resolveProviderId(
+        user.id,
+        user.role,
+      );
       const accessToken = await this.jwtService.generateAccessToken(
         user.id,
         user.email,
         user.role,
         phoneOtpProviderId,
+        user.email_verified,
+        user.phone_verified,
       );
       const refreshToken = await this.jwtService.generateRefreshToken(
         user.id,
@@ -1186,7 +1269,7 @@ export class AuthService {
 
       // Store refresh token in session
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + await this.getSessionTtlDays());
+      expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
       await this.sessionRepo.create(
         user.id,
         refreshToken,
@@ -1240,9 +1323,13 @@ export class AuthService {
     });
 
     // Rate limit: max 5 OTP requests per 15-minute window per email
-    const recentRequests = await this.loginAttemptRepo.countRecentFailedAttempts(normalizedEmail);
+    const recentRequests =
+      await this.loginAttemptRepo.countRecentFailedAttempts(normalizedEmail);
     if (recentRequests >= 5) {
-      this.logger.warn("Email OTP rate limit exceeded", { context: "AuthService", email: normalizedEmail });
+      this.logger.warn("Email OTP rate limit exceeded", {
+        context: "AuthService",
+        email: normalizedEmail,
+      });
       throw new TooManyRequestsException(
         "Too many OTP requests. Please wait before requesting another OTP.",
       );
@@ -1275,12 +1362,12 @@ export class AuthService {
     void this.notificationClient
       .sendEmail({
         to: normalizedEmail,
-        template: 'otpEmailTemplate',
+        template: "otpEmailTemplate",
         variables: {
-          name: user.name || normalizedEmail.split('@')[0],
-          username: user.name || normalizedEmail.split('@')[0],
+          name: user.name || normalizedEmail.split("@")[0],
+          username: user.name || normalizedEmail.split("@")[0],
           otp,
-          purpose: 'login',
+          purpose: "login",
           expiryMinutes: 10,
         },
       })
@@ -1348,12 +1435,20 @@ export class AuthService {
       throw new UnauthorizedException("Invalid or expired OTP");
     }
 
+    // Mark email as verified since successful OTP login proves email ownership
+    if (!user.email_verified) {
+      await this.userRepo.verifyEmail(user.id);
+      user.email_verified = true;
+    }
+
     const emailOtpProviderId = await this.resolveProviderId(user.id, user.role);
     const accessToken = await this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
       emailOtpProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
     );
     const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
@@ -1363,7 +1458,7 @@ export class AuthService {
     );
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + await this.getSessionTtlDays());
+    expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
 
     this.logger.info("Email OTP login successful", {
@@ -1758,25 +1853,28 @@ export class AuthService {
     // Notify user that their password was changed
     const passwordChangedPayload = {
       to: user.email,
-      template: 'PASSWORD_CHANGED',
+      template: "PASSWORD_CHANGED",
       variables: {
-        name: user.name || user.email.split('@')[0],
-        username: user.name || user.email.split('@')[0],
+        name: user.name || user.email.split("@")[0],
+        username: user.name || user.email.split("@")[0],
       },
     };
     const passwordChangedDispatch = this.workersEnabled
-      ? this.notificationQueue.add('send-password-changed', passwordChangedPayload)
+      ? this.notificationQueue.add(
+          "send-password-changed",
+          passwordChangedPayload,
+        )
       : this.notificationClient.sendEmail(passwordChangedPayload);
     passwordChangedDispatch.catch((err: any) => {
-      this.logger.error('Failed to send password changed notification', {
-        context: 'AuthService',
+      this.logger.error("Failed to send password changed notification", {
+        context: "AuthService",
         error: err.message,
         userId,
       });
     });
 
-    this.logger.info('Password changed successfully', {
-      context: 'AuthService',
+    this.logger.info("Password changed successfully", {
+      context: "AuthService",
       userId,
     });
   }
@@ -1805,15 +1903,18 @@ export class AuthService {
 
     const verificationPayload = {
       to: email,
-      template: 'MARKETPLACE_EMAIL_VERIFICATION',
+      template: "MARKETPLACE_EMAIL_VERIFICATION",
       variables: {
-        name: user.name || email.split('@')[0],
+        name: user.name || email.split("@")[0],
         verificationLink: `${frontendUrl}/verify-email?token=${token}`,
       },
     };
 
     if (this.workersEnabled) {
-      await this.notificationQueue.add('send-email-verification', verificationPayload);
+      await this.notificationQueue.add(
+        "send-email-verification",
+        verificationPayload,
+      );
     } else {
       const sent = await this.notificationClient
         .sendEmail(verificationPayload)
@@ -1868,15 +1969,15 @@ export class AuthService {
     // Enqueue deactivation notification
     if (user.email) {
       this.notificationQueue
-        .add('send-account-deactivated', {
+        .add("send-account-deactivated", {
           to: user.email,
-          template: 'USER_SUSPENDED',
+          template: "USER_SUSPENDED",
           variables: {
             userId: user.id,
-            username: user.name || user.email.split('@')[0],
+            username: user.name || user.email.split("@")[0],
             email: user.email,
             timestamp: new Date().toISOString(),
-            reason: reason ?? 'Account deactivated',
+            reason: reason ?? "Account deactivated",
           },
         })
         .catch(() => null);
@@ -1908,15 +2009,15 @@ export class AuthService {
 
     // Enqueue deletion confirmation email (non-blocking)
     this.notificationQueue
-      .add('send-account-deletion-requested', {
+      .add("send-account-deletion-requested", {
         to: user.email,
-        template: 'USER_DELETED',
+        template: "USER_DELETED",
         variables: {
           userId: user.id,
-          username: user.name || user.email.split('@')[0],
+          username: user.name || user.email.split("@")[0],
           email: user.email,
           timestamp: new Date().toISOString(),
-          reason: reason ?? 'Account deletion requested',
+          reason: reason ?? "Account deletion requested",
         },
       })
       .catch((err: any) =>
@@ -2029,7 +2130,10 @@ export class AuthService {
 
     // Generate token
     const token = this.generateSecureToken(32);
-    const magicLinkHoursStr = await this.userRepo.getSystemSetting('magic_link_expiry_hours', '1');
+    const magicLinkHoursStr = await this.userRepo.getSystemSetting(
+      "magic_link_expiry_hours",
+      "1",
+    );
     const magicLinkHours = parseInt(magicLinkHoursStr, 10) || 1;
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + magicLinkHours);
@@ -2044,15 +2148,15 @@ export class AuthService {
 
     const magicLinkPayload = {
       to: email,
-      template: 'MAGIC_LINK',
+      template: "MAGIC_LINK",
       variables: {
-        username: user?.name || email.split('@')[0],
+        username: user?.name || email.split("@")[0],
         magicUrl: magicLink,
         expiryMinutes: 60,
       },
     };
     const magicDispatch = this.workersEnabled
-      ? this.notificationQueue.add('send-magic-link', magicLinkPayload)
+      ? this.notificationQueue.add("send-magic-link", magicLinkPayload)
       : this.notificationClient.sendEmail(magicLinkPayload);
     magicDispatch.catch((err: any) => {
       this.logger.error("Failed to send magic link email", {
@@ -2097,12 +2201,17 @@ export class AuthService {
     }
 
     // Generate tokens
-    const magicLinkProviderId = await this.resolveProviderId(user.id, user.role);
+    const magicLinkProviderId = await this.resolveProviderId(
+      user.id,
+      user.role,
+    );
     const accessToken = await this.jwtService.generateAccessToken(
       user.id,
       user.email,
       user.role,
       magicLinkProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
     );
     const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
@@ -2198,6 +2307,7 @@ export class AuthService {
           name,
         );
         await this.userRepo.verifyEmail(user.id); // Apple provides verified email
+        user.email_verified = true;
         await this.socialAccountRepo.create(
           user.id,
           "apple",
@@ -2215,6 +2325,8 @@ export class AuthService {
       user.email,
       user.role,
       appleProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
     );
     const refreshToken = await this.jwtService.generateRefreshToken(
       user.id,
@@ -2255,7 +2367,7 @@ export class AuthService {
   private generateRandomSecret(): string {
     // 32-character base32 secret for TOTP — uses CSPRNG
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    const bytes = require("crypto").randomBytes(32);
+    const bytes = crypto.randomBytes(32);
     let result = "";
     for (let i = 0; i < 32; i++) {
       result += chars[bytes[i] % chars.length];
@@ -2277,19 +2389,21 @@ export class AuthService {
 
   private _generateRandomBackupCode(): string {
     // Format: XXXX-XXXX-XXXX (12 digits) — uses CSPRNG
-    const bytes = require("crypto").randomBytes(6);
-    const digits = Array.from(bytes as Uint8Array).map((b) => b % 10).join("");
+    const bytes = crypto.randomBytes(6);
+    const digits = Array.from(bytes as Uint8Array)
+      .map((b) => b % 10)
+      .join("");
     return digits.replace(/(.{4})/g, "$1-").slice(0, -1);
   }
 
   private generateSecureToken(length: number): string {
     // Uses CSPRNG — safe for email verification tokens and magic links
-    return require("crypto").randomBytes(length).toString("hex").slice(0, length);
+    return crypto.randomBytes(length).toString("hex").slice(0, length);
   }
 
   private generateRandomPassword(): string {
     // Uses CSPRNG — safe for auto-generated temporary passwords
-    return require("crypto").randomBytes(16).toString("base64").slice(0, 16);
+    return crypto.randomBytes(16).toString("base64").slice(0, 16);
   }
 
   private async verifyAppleIdentityToken(

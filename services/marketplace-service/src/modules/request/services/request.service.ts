@@ -80,6 +80,16 @@ export class RequestService {
       }
     }
 
+    // Verify authenticated user has a verified email before creating a request
+    if (dto.user_id && this.userClient.isEnabled()) {
+      const requestingUser = await this.userClient.getUserById(dto.user_id);
+      if (requestingUser && requestingUser.email_verified === false) {
+        throw new BadRequestException(
+          'Cannot create a service request: please verify your email address first.',
+        );
+      }
+    }
+
     // Enforce active request cap for authenticated customers
     if (dto.user_id) {
       const maxActiveStr = await this.requestRepository.getSystemSetting('max_active_requests_per_customer', '10');

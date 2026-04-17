@@ -37,13 +37,22 @@ function VerifyEmailContent() {
 					await update();
 				}
 
-				// Redirect based on auth status
-				const redirectPath = session
-					? (session.user.role === "admin" ? "/dashboard/admin" : "/dashboard")
-					: ROUTES.LOGIN + "?verified=1";
+				// Redirect based on auth status and role
+				// Providers are sent back to onboarding to continue their setup
+				let redirectPath: string;
+				if (!session) {
+					redirectPath = ROUTES.LOGIN + "?verified=1";
+				} else if (session.user.role === "admin") {
+					redirectPath = "/dashboard/admin";
+				} else if (session.user.role === "provider") {
+					// After email verification, provider continues onboarding
+					redirectPath = "/onboarding";
+				} else {
+					redirectPath = "/dashboard";
+				}
 
 				setTimeout(() => router.push(redirectPath), 3000);
-			})
+			};)
 			.catch((err: any) => {
 				const msg =
 					err?.response?.data?.error?.message ||
@@ -70,10 +79,30 @@ function VerifyEmailContent() {
 						<CheckCircle className='mx-auto h-16 w-16 text-green-500 mb-4' />
 						<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-2'>Email Verified!</h1>
 						<p className='text-gray-600 dark:text-gray-400 mb-6'>
-							Your email has been successfully verified. You'll be redirected to {session ? 'your dashboard' : 'login'} shortly.
+							Your email has been successfully verified. You'll be redirected{" "}
+							{session?.user?.role === "provider" ?
+								"to continue your onboarding"
+							: session ?
+								"to your dashboard"
+							:	"to login"}{" "}
+							shortly.
 						</p>
-						<Link href={session ? (session.user.role === "admin" ? "/dashboard/admin" : "/dashboard") : ROUTES.LOGIN}>
-							<Button className='w-full'>Go to {session ? 'Dashboard' : 'Login'}</Button>
+						<Link
+							href={
+								!session ? ROUTES.LOGIN
+								: session.user.role === "admin" ?
+									"/dashboard/admin"
+								: session.user.role === "provider" ?
+									"/onboarding"
+								:	"/dashboard"
+							}>
+							<Button className='w-full'>
+								{session?.user?.role === "provider" ?
+									"Continue Onboarding"
+								: session ?
+									"Go to Dashboard"
+								:	"Go to Login"}
+							</Button>
 						</Link>
 					</>
 				)}

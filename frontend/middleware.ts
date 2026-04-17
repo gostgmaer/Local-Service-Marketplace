@@ -81,7 +81,7 @@ export async function middleware(req: NextRequest) {
 
 	const isLoggedIn = !!token;
 	const userRole = token?.role as string | undefined;
-	const userPermissions: string[] = Array.isArray(token?.permissions) ? token.permissions as string[] : [];
+	const userPermissions: string[] = Array.isArray(token?.permissions) ? (token.permissions as string[]) : [];
 	const pathname = nextUrl.pathname;
 
 	// ── 1. Bounce authenticated users away from login/signup ──────────────────
@@ -94,9 +94,7 @@ export async function middleware(req: NextRequest) {
 		return NextResponse.redirect(new URL(getDashboardHomeByRole(userRole), nextUrl));
 	}
 
-	const isProtected = AUTH_REQUIRED_PREFIXES.some(
-		(prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
-	);
+	const isProtected = AUTH_REQUIRED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
 
 	// ── 2. Unauthenticated → /login?callbackUrl=<path> ────────────────────────
 	if (isProtected && !isLoggedIn) {
@@ -126,6 +124,57 @@ export async function middleware(req: NextRequest) {
 				forbiddenUrl.searchParams.set("callbackUrl", pathname);
 				return NextResponse.redirect(forbiddenUrl);
 			}
+		}
+	}
+
+	// ── 4. Provider onboarding gate ─────────────────────────────────────────────
+	// Providers who have not verified either email or phone cannot access
+	// service-related routes until they complete the onboarding flow.
+	if (isLoggedIn && userRole === "provider" && pathname !== "/onboarding") {
+		const emailVerified = Boolean(token?.emailVerified);
+		const phoneVerified = Boolean(token?.phoneVerified);
+		const contactVerified = emailVerified || phoneVerified;
+		const providerVerificationStatus = token?.providerVerificationStatus as string | null | undefined;
+
+		// These routes require a verified provider account
+		const PROVIDER_GATED_PREFIXES = [
+			"/dashboard/browse-requests",
+			"/dashboard/my-proposals",
+			"/dashboard/earnings",
+			"/dashboard/availability",
+			"/dashboard/settings/subscription",
+		];
+		const isGatedPath = PROVIDER_GATED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+		if (isGatedPath && !contactVerified) {
+			const onboardingUrl = new URL("/onboarding", nextUrl);
+			onboardingUrl.searchParams.set("reason", "verify_contact");
+			return NextResponse.redirect(onboardingUrl);
+		}
+
+		// Providers with verified contact but pending admin approval cannot submit proposals.
+		// Redirect to onboarding with a clear reason so UX explains the wait.
+		if (isGatedPath && contactVerified && providerVerificationStatus === "pending") {
+			const onboardingUrl = new URL("/onboarding", nextUrl);
+			onboardingUrl.searchParams.set("reason", "pending_admin_review");
+			return NextResponse.redirect(onboardingUrl);
+		}
+	}
+
+	// ── 5. Customer email verification gate ──────────────────────────────────────
+	// Customers must verify email or phone before creating or managing service requests.
+	if (isLoggedIn && userRole === "customer") {
+		const emailVerified = Boolean(token?.emailVerified);
+		const phoneVerified = Boolean(token?.phoneVerified);
+		const contactVerified = emailVerified || phoneVerified;
+
+		const CUSTOMER_GATED_PREFIXES = ["/dashboard/requests"];
+		const isGatedPath = CUSTOMER_GATED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+		if (isGatedPath && !contactVerified) {
+			const verifyUrl = new URL("/verify-email", nextUrl);
+			verifyUrl.searchParams.set("reason", "create_request");
+			return NextResponse.redirect(verifyUrl);
 		}
 	}
 

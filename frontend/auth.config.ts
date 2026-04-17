@@ -24,12 +24,20 @@ async function refreshAccessToken(token: any) {
 		const data = await serverAuthService.refreshToken(token.refreshToken);
 		if (!data) throw new Error("Token refresh failed");
 
-		// Extract updated permissions from the new access token
+		// Extract updated permissions and verification status from the new access token
 		let permissions = token.permissions || [];
+		let emailVerified = token.emailVerified as boolean | undefined;
+		let phoneVerified = token.phoneVerified as boolean | undefined;
 		if (data.accessToken) {
 			const jwtPayload = decodeJwtPayload(data.accessToken);
 			if (Array.isArray(jwtPayload.permissions)) {
 				permissions = jwtPayload.permissions;
+			}
+			if (typeof jwtPayload.email_verified === "boolean") {
+				emailVerified = jwtPayload.email_verified;
+			}
+			if (typeof jwtPayload.phone_verified === "boolean") {
+				phoneVerified = jwtPayload.phone_verified;
 			}
 		}
 
@@ -39,6 +47,8 @@ async function refreshAccessToken(token: any) {
 			accessTokenExpires: Date.now() + TOKEN_CONFIG.ACCESS_TOKEN_EXPIRATION,
 			refreshToken: data.refreshToken ?? token.refreshToken,
 			permissions,
+			emailVerified,
+			phoneVerified,
 		};
 	} catch (error) {
 		console.error('Error refreshing access token:', error);
@@ -236,10 +246,12 @@ export const authOptions = {
 					image: profile?.profile_picture_url ?? user.image ?? null,
 					role: profile?.role ?? user.role,
 					permissions,
-					emailVerified: profile !== null
-						? Boolean(profile.email_verified)
-						: typeof user.emailVerified === "boolean" ? user.emailVerified : false,
+					emailVerified:
+						profile !== null ? Boolean(profile.email_verified)
+						: typeof user.emailVerified === "boolean" ? user.emailVerified
+						: false,
 					phoneVerified: profile !== null ? Boolean(profile.phone_verified) : false,
+					providerVerificationStatus: profile?.provider_verification_status ?? null,
 					timezone: profile?.timezone ?? null,
 					language: profile?.language ?? null,
 					accessToken: user.accessToken,
@@ -250,7 +262,32 @@ export const authOptions = {
 
 			// Handle session updates (e.g., from client-side session.update())
 			if (trigger === "update" && session) {
-				return { ...token, name: session?.user?.name ?? token.name, image: session?.user?.image ?? token.image };
+				// Re-fetch profile to pick up verification status changes (e.g. email just verified)
+				let freshVerifiedFlags: {
+					emailVerified?: boolean;
+					phoneVerified?: boolean;
+					providerVerificationStatus?: string | null;
+				} = {};
+				try {
+					if (token?.accessToken) {
+						const profile = await serverAuthService.getProfileFromToken(token.accessToken as string);
+						if (profile) {
+							freshVerifiedFlags = {
+								emailVerified: Boolean(profile.email_verified),
+								phoneVerified: Boolean(profile.phone_verified),
+								providerVerificationStatus: profile.provider_verification_status ?? null,
+							};
+						}
+					}
+				} catch {
+					// ignore — fall back to current token values
+				}
+				return {
+					...token,
+					name: session?.user?.name ?? token.name,
+					image: session?.user?.image ?? token.image,
+					...freshVerifiedFlags,
+				};
 			}
 
 			// Return previous token if the access token has not expired yet
@@ -272,6 +309,7 @@ export const authOptions = {
 				session.user.permissions = Array.isArray(token.permissions) ? token.permissions : [];
 				session.user.emailVerified = Boolean(token.emailVerified);
 				session.user.phoneVerified = Boolean(token.phoneVerified);
+				session.user.providerVerificationStatus = token.providerVerificationStatus ?? null;
 				session.user.timezone = token.timezone ?? null;
 				session.user.language = token.language ?? null;
 				session.accessToken = token.accessToken;

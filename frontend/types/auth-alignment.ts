@@ -12,20 +12,21 @@
  * Source: services/auth-service/src/modules/auth/dto/auth-response.dto.ts
  */
 export interface BackendAuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name?: string;
-    role: string;
-    email_verified: boolean;
-    phone_verified: boolean;
-    profile_picture_url?: string;
-    timezone: string;
-    language: string;
-    last_login_at?: Date;
-  };
+	accessToken: string;
+	refreshToken: string;
+	user: {
+		id: string;
+		email: string;
+		name?: string;
+		role: string;
+		email_verified: boolean;
+		phone_verified: boolean;
+		profile_picture_url?: string;
+		timezone: string;
+		language: string;
+		last_login_at?: Date;
+		provider_verification_status?: string;
+	};
 }
 
 /**
