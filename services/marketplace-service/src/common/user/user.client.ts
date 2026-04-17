@@ -10,6 +10,7 @@ export interface UserData {
   phone?: string;
   role: string;
   email_verified?: boolean;
+  phone_verified?: boolean;
 }
 
 export interface ProviderData {
