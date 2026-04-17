@@ -308,16 +308,21 @@ function OnboardingContent() {
 				toast.error("Provider profile not found.");
 				return;
 			}
-			for (const doc of uploadedDocs) {
-				const formData = new FormData();
-				formData.append("file", doc.file);
-				formData.append("document_type", doc.type);
-				formData.append("document_name", doc.name);
-				await apiClient
-					.post(`/provider-documents/upload/${profile.id}`, formData, {
+			const results = await Promise.allSettled(
+				uploadedDocs.map((doc) => {
+					const formData = new FormData();
+					formData.append("files", doc.file);
+					formData.append("document_type", doc.type);
+					formData.append("document_name", doc.name);
+					return apiClient.post(`/provider-documents/upload/${profile.id}`, formData, {
 						headers: { "Content-Type": "multipart/form-data" },
-					})
-					.catch(() => null);
+					});
+				}),
+			);
+			const failed = results.filter((r) => r.status === "rejected");
+			if (failed.length > 0) {
+				toast.error(`${failed.length} document(s) failed to upload. Please try again.`);
+				return;
 			}
 			toast.success("Documents uploaded!");
 			goNext();

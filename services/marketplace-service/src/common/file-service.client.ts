@@ -17,6 +17,8 @@ export interface FileUploadOptions {
   description?: string;
   title?: string;
   altText?: string;
+  author?: string;
+  language?: string;
   visibility?: "public" | "private" | "unlisted";
   linkedEntityType?: string;
   linkedEntityId?: string;
@@ -25,24 +27,34 @@ export interface FileUploadOptions {
 
 export interface UploadedFile {
   id: string;
-  filename: string;
+  tenantId?: string;
   originalName: string;
-  path: string;
+  storageKey: string;
   url: string;
   size: number;
   mimeType: string;
+  extension?: string;
+  uploader?: string;
   category: string;
-  uploadedBy?: string;
-  linkedEntityType?: string;
-  linkedEntityId?: string;
+  status?: string;
+  metadata?: {
+    description?: string;
+    tags?: string[];
+    title?: string;
+    altText?: string;
+    author?: string;
+    language?: string;
+    isPublic?: boolean;
+    linkedTo?: { entityType?: string; entityId?: string };
+  };
+  versions?: any[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface FileUploadResponse {
   success: boolean;
-  count: number;
-  files: UploadedFile[];
+  data: UploadedFile[];
 }
 
 /**
@@ -103,12 +115,19 @@ export class FileServiceClient {
         formData.append("description", options.description);
       if (options.title) formData.append("title", options.title);
       if (options.altText) formData.append("altText", options.altText);
-      if (options.visibility) formData.append("visibility", options.visibility);
+      if (options.author) formData.append("author", options.author);
+      if (options.language) formData.append("language", options.language);
+      if (options.visibility !== undefined)
+        formData.append(
+          "isPublic",
+          options.visibility === "public" ? "true" : "false",
+        );
       if (options.linkedEntityType)
         formData.append("linkedEntityType", options.linkedEntityType);
       if (options.linkedEntityId)
         formData.append("linkedEntityId", options.linkedEntityId);
-      if (options.tags) formData.append("tags", options.tags.join(","));
+      if (options.tags)
+        options.tags.forEach((tag) => formData.append("tags", tag));
 
       // Make request to file service with retry logic
       const response = await firstValueFrom(
@@ -151,7 +170,7 @@ export class FileServiceClient {
           ),
       );
 
-      if (!response.data?.files?.[0]) {
+      if (!response.data?.data?.[0]) {
         throw new BadRequestException(
           "File upload failed - invalid response from file service",
         );
@@ -159,12 +178,12 @@ export class FileServiceClient {
 
       this.logger.info("File uploaded successfully", {
         context: "FileServiceClient",
-        fileId: response.data.files[0].id,
+        fileId: response.data.data[0].id,
         category: options.category,
         userId,
       });
 
-      return response.data.files[0];
+      return response.data.data[0];
     } catch (error: any) {
       this.logger.error("File upload failed after all retries", {
         context: "FileServiceClient",
@@ -246,12 +265,20 @@ export class FileServiceClient {
       if (options.description)
         formData.append("description", options.description);
       if (options.title) formData.append("title", options.title);
-      if (options.visibility) formData.append("visibility", options.visibility);
+      if (options.altText) formData.append("altText", options.altText);
+      if (options.author) formData.append("author", options.author);
+      if (options.language) formData.append("language", options.language);
+      if (options.visibility !== undefined)
+        formData.append(
+          "isPublic",
+          options.visibility === "public" ? "true" : "false",
+        );
       if (options.linkedEntityType)
         formData.append("linkedEntityType", options.linkedEntityType);
       if (options.linkedEntityId)
         formData.append("linkedEntityId", options.linkedEntityId);
-      if (options.tags) formData.append("tags", options.tags.join(","));
+      if (options.tags)
+        options.tags.forEach((tag) => formData.append("tags", tag));
 
       // Make request to file service with retry logic
       const response = await firstValueFrom(
@@ -293,7 +320,7 @@ export class FileServiceClient {
           ),
       );
 
-      if (!response.data?.files || response.data.files.length === 0) {
+      if (!response.data?.data || response.data.data.length === 0) {
         throw new BadRequestException(
           "File upload failed - invalid response from file service",
         );
@@ -301,12 +328,12 @@ export class FileServiceClient {
 
       this.logger.info("Multiple files uploaded successfully", {
         context: "FileServiceClient",
-        count: response.data.files.length,
+        count: response.data.data.length,
         category: options.category,
         userId,
       });
 
-      return response.data.files;
+      return response.data.data;
     } catch (error: any) {
       this.logger.error("Multiple file upload failed after all retries", {
         context: "FileServiceClient",
@@ -355,7 +382,7 @@ export class FileServiceClient {
   async getFileById(fileId: string): Promise<UploadedFile> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<UploadedFile>(
+        this.httpService.get<{ success: boolean; data: UploadedFile }>(
           `${this.fileServiceUrl}/api/files/${fileId}`,
           {
             headers: {
@@ -365,7 +392,7 @@ export class FileServiceClient {
         ),
       );
 
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       this.logger.error("Failed to get file metadata", {
         context: "FileServiceClient",
@@ -422,21 +449,21 @@ export class FileServiceClient {
   ): Promise<UploadedFile[]> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<{ files: UploadedFile[] }>(
-          `${this.fileServiceUrl}/api/files`,
-          {
-            params: {
-              linkedEntityType: entityType,
-              linkedEntityId: entityId,
-            },
-            headers: {
-              "X-Tenant-Id": this.defaultTenantId,
-            },
+        this.httpService.get<{
+          success: boolean;
+          data: { files: UploadedFile[] };
+        }>(`${this.fileServiceUrl}/api/files`, {
+          params: {
+            linkedEntityType: entityType,
+            linkedEntityId: entityId,
           },
-        ),
+          headers: {
+            "X-Tenant-Id": this.defaultTenantId,
+          },
+        }),
       );
 
-      return response.data.files || [];
+      return response.data.data?.files || [];
     } catch (error: any) {
       this.logger.error("Failed to get files by entity", {
         context: "FileServiceClient",

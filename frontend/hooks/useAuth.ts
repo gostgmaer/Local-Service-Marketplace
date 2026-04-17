@@ -212,15 +212,18 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      // Call backend logout to invalidate session
-      await authService.logout();
+      // Send refreshToken so backend can revoke the specific session
+      const refreshToken = (session as any)?.refreshToken as string | undefined;
+      await authService.logout(refreshToken);
     } catch (error) {
       console.error("Backend logout error:", error);
     } finally {
-      // NextAuth signOut handles client-side session cleanup
+      // Clear NextAuth client session (HTTP-only cookies cleared server-side)
       await signOut({ redirect: false });
       toast.success("Logged out successfully");
-      router.push(ROUTES.LOGIN);
+      // Hard redirect: clears all in-memory React/query state and ensures
+      // no stale session data persists in the current JS context.
+      window.location.href = ROUTES.LOGIN;
     }
   };
 
@@ -242,6 +245,10 @@ export function useAuth() {
     return true;
   };
 
+  const providerVerificationStatus =
+    (user as { providerVerificationStatus?: string | null })
+      ?.providerVerificationStatus ?? null;
+
   return {
     // Session state
     user,
@@ -249,6 +256,7 @@ export function useAuth() {
     isLoading,
     isAuthenticated,
     permissions,
+    providerVerificationStatus,
 
     // Email/Password auth
     login,

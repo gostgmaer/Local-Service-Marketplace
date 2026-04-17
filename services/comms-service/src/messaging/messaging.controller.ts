@@ -21,6 +21,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -99,7 +100,8 @@ export class MessagingController {
   @Post("attachments")
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
-    FileInterceptor("file", {
+    FileInterceptor("files", {
+      storage: multer.memoryStorage(),
       limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max
       fileFilter: (_req, file, cb) => {
         const allowedMimeTypes = [

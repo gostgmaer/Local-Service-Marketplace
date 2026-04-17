@@ -18,6 +18,7 @@ import {
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { FilesInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { ProviderPortfolioService } from "../services/provider-portfolio.service";
 import { CreatePortfolioDto } from "../dto/create-portfolio.dto";
 import { UpdatePortfolioItemDto } from "../dto/update-portfolio-item.dto";
@@ -32,144 +33,115 @@ import { FileServiceClient } from "../../../common/file-service.client";
 @UseGuards(JwtAuthGuard)
 @Controller("provider-portfolio")
 export class ProviderPortfolioController {
-  constructor(
-    private readonly portfolioService: ProviderPortfolioService,
-    private readonly fileServiceClient: FileServiceClient,
-  ) {}
+	constructor(
+		private readonly portfolioService: ProviderPortfolioService,
+		private readonly fileServiceClient: FileServiceClient,
+	) {}
 
-  @RequirePermissions("provider_portfolio.manage")
-  @UseGuards(RolesGuard)
-  @Post(":providerId")
-  @UseInterceptors(FilesInterceptor("images", 10)) // Max 10 images
-  @HttpCode(HttpStatus.CREATED)
-  async createPortfolioItem(
-    @Param("providerId", StrictUuidPipe) providerId: string,
-    @Body() dto: CreatePortfolioDto,
-    @UploadedFiles() files: any[],
-    @Request() req: any,
-  ) {
-    if (!files || files.length === 0) {
-      throw new BadRequestException("At least one image is required");
-    }
+	@RequirePermissions("provider_portfolio.manage")
+	@UseGuards(RolesGuard)
+	@Post(":providerId")
+	@UseInterceptors(FilesInterceptor("images", 10, { storage: multer.memoryStorage() })) // Max 10 images
+	@HttpCode(HttpStatus.CREATED)
+	async createPortfolioItem(
+		@Param("providerId", StrictUuidPipe) providerId: string,
+		@Body() dto: CreatePortfolioDto,
+		@UploadedFiles() files: any[],
+		@Request() req: any,
+	) {
+		if (!files || files.length === 0) {
+			throw new BadRequestException("At least one image is required");
+		}
 
-    const userId = req.user.userId;
-    const userRole = req.user.role || "user";
+		const userId = req.user.userId;
+		const userRole = req.user.role || "user";
 
-    // Upload all files to external file service
-    const uploadedFiles = await this.fileServiceClient.uploadMultipleFiles(
-      files,
-      {
-        category: "portfolio",
-        description: dto.description || "Portfolio image",
-        title: dto.title,
-        visibility: "public",
-        linkedEntityType: "provider_portfolio",
-        linkedEntityId: providerId,
-        tags: ["portfolio", "showcase"],
-      },
-      userId,
-      userRole,
-    );
+		// Upload all files to external file service
+		const uploadedFiles = await this.fileServiceClient.uploadMultipleFiles(
+			files,
+			{
+				category: "portfolio",
+				description: dto.description || "Portfolio image",
+				title: dto.title,
+				visibility: "public",
+				linkedEntityType: "provider_portfolio",
+				linkedEntityId: providerId,
+				tags: ["portfolio", "showcase"],
+			},
+			userId,
+			userRole,
+		);
 
-    // Get file URLs for database storage
-    const imageUrls = uploadedFiles.map((file) => file.url);
+		// Get file URLs for database storage
+		const imageUrls = uploadedFiles.map((file) => file.url);
 
-    const portfolioItem = await this.portfolioService.createPortfolioItem(
-      providerId,
-      userId,
-      dto,
-      imageUrls,
-    );
+		const portfolioItem = await this.portfolioService.createPortfolioItem(providerId, userId, dto, imageUrls);
 
-    return {
-      success: true,
-      data: {
-        ...portfolioItem,
-        files: uploadedFiles, // Include full file metadata
-      },
-      message: "Portfolio item created successfully",
-    };
-  }
+		return {
+			success: true,
+			data: {
+				...portfolioItem,
+				files: uploadedFiles, // Include full file metadata
+			},
+			message: "Portfolio item created successfully",
+		};
+	}
 
-  @Get("provider/:providerId")
-  async getProviderPortfolio(
-    @Param("providerId", FlexibleIdPipe) providerId: string,
-  ) {
-    const result = await this.portfolioService.getProviderPortfolio(providerId);
+	@Get("provider/:providerId")
+	async getProviderPortfolio(@Param("providerId", FlexibleIdPipe) providerId: string) {
+		const result = await this.portfolioService.getProviderPortfolio(providerId);
 
-    // Transform image_url to images array for frontend compatibility
-    const transformedData = result.data.map((item) => ({
-      ...item,
-      images: [item.image_url], // Convert single image_url to array
-    }));
+		// Transform image_url to images array for frontend compatibility
+		const transformedData = result.data.map((item) => ({
+			...item,
+			images: [item.image_url], // Convert single image_url to array
+		}));
 
-    return { data: transformedData, total: transformedData.length };
-  }
+		return { data: transformedData, total: transformedData.length };
+	}
 
-  @Get(":itemId")
-  async getPortfolioItem(
-    @Param("itemId", ParseUUIDPipe) itemId: string,
-    @Request() req: any,
-  ) {
-    const item = await this.portfolioService.getPortfolioItemById(itemId);
+	@Get(":itemId")
+	async getPortfolioItem(@Param("itemId", ParseUUIDPipe) itemId: string, @Request() req: any) {
+		const item = await this.portfolioService.getPortfolioItemById(itemId);
 
-    // Transform image_url to images array for frontend compatibility
-    const transformedItem = { ...item, images: [item.image_url] };
+		// Transform image_url to images array for frontend compatibility
+		const transformedItem = { ...item, images: [item.image_url] };
 
-    return { success: true, data: transformedItem };
-  }
+		return { success: true, data: transformedItem };
+	}
 
-  @RequirePermissions("provider_portfolio.manage")
-  @UseGuards(RolesGuard)
-  @Put(":itemId")
-  async updatePortfolioItem(
-    @Param("itemId", ParseUUIDPipe) itemId: string,
-    @Body() updateData: UpdatePortfolioItemDto,
-    @Request() req: any,
-  ) {
-    const item = await this.portfolioService.updatePortfolioItem(
-      itemId,
-      req.user.userId,
-      updateData,
-    );
+	@RequirePermissions("provider_portfolio.manage")
+	@UseGuards(RolesGuard)
+	@Put(":itemId")
+	async updatePortfolioItem(
+		@Param("itemId", ParseUUIDPipe) itemId: string,
+		@Body() updateData: UpdatePortfolioItemDto,
+		@Request() req: any,
+	) {
+		const item = await this.portfolioService.updatePortfolioItem(itemId, req.user.userId, updateData);
 
-    return {
-      success: true,
-      data: item,
-      message: "Portfolio item updated successfully",
-    };
-  }
+		return { success: true, data: item, message: "Portfolio item updated successfully" };
+	}
 
-  @RequirePermissions("provider_portfolio.manage")
-  @UseGuards(RolesGuard)
-  @Put(":providerId/reorder")
-  async reorderPortfolio(
-    @Param("providerId", StrictUuidPipe) providerId: string,
-    @Body("orderedIds") orderedIds: string[],
-    @Request() req: any,
-  ) {
-    const portfolio = await this.portfolioService.reorderPortfolio(
-      providerId,
-      req.user.userId,
-      orderedIds,
-    );
+	@RequirePermissions("provider_portfolio.manage")
+	@UseGuards(RolesGuard)
+	@Put(":providerId/reorder")
+	async reorderPortfolio(
+		@Param("providerId", StrictUuidPipe) providerId: string,
+		@Body("orderedIds") orderedIds: string[],
+		@Request() req: any,
+	) {
+		const portfolio = await this.portfolioService.reorderPortfolio(providerId, req.user.userId, orderedIds);
 
-    return {
-      success: true,
-      data: portfolio,
-      message: "Portfolio reordered successfully",
-    };
-  }
+		return { success: true, data: portfolio, message: "Portfolio reordered successfully" };
+	}
 
-  @RequirePermissions("provider_portfolio.manage")
-  @UseGuards(RolesGuard)
-  @Delete(":itemId")
-  async deletePortfolioItem(
-    @Param("itemId", ParseUUIDPipe) itemId: string,
-    @Request() req: any,
-  ) {
-    await this.portfolioService.deletePortfolioItem(itemId, req.user.userId);
+	@RequirePermissions("provider_portfolio.manage")
+	@UseGuards(RolesGuard)
+	@Delete(":itemId")
+	async deletePortfolioItem(@Param("itemId", ParseUUIDPipe) itemId: string, @Request() req: any) {
+		await this.portfolioService.deletePortfolioItem(itemId, req.user.userId);
 
-    return { success: true, message: "Portfolio item deleted successfully" };
-  }
+		return { success: true, message: "Portfolio item deleted successfully" };
+	}
 }

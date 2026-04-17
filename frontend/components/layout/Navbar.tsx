@@ -31,6 +31,11 @@ export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { can } = usePermissions();
   const role = user?.role ?? "customer";
+  const providerVerificationStatus =
+    (user as { providerVerificationStatus?: string | null })
+      ?.providerVerificationStatus ?? null;
+  const isProviderPending =
+    role === "provider" && providerVerificationStatus === "pending";
   const { unreadCount } = useNotifications({ enabled: isAuthenticated });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -116,17 +121,19 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             {isAuthenticated ? (
               <>
-                <Link
-                  href={ROUTES.DASHBOARD}
-                  className={navLinkClass(pathname === ROUTES.DASHBOARD)}
-                >
-                  Dashboard
-                  {pathname === ROUTES.DASHBOARD && (
-                    <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-primary-500 to-violet-500 rounded-full" />
-                  )}
-                </Link>
+                {!isProviderPending && (
+                  <Link
+                    href={ROUTES.DASHBOARD}
+                    className={navLinkClass(pathname === ROUTES.DASHBOARD)}
+                  >
+                    Dashboard
+                    {pathname === ROUTES.DASHBOARD && (
+                      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-primary-500 to-violet-500 rounded-full" />
+                    )}
+                  </Link>
+                )}
 
-                {role === "provider" && can(Permission.REQUESTS_BROWSE) && (
+                {role === "provider" && !isProviderPending && can(Permission.REQUESTS_BROWSE) && (
                   <Link
                     href={ROUTES.DASHBOARD_BROWSE_REQUESTS}
                     className={navLinkClass(
@@ -136,7 +143,7 @@ export function Navbar() {
                     Browse
                   </Link>
                 )}
-                {role === "provider" && can(Permission.PROPOSALS_CREATE) && (
+                {role === "provider" && !isProviderPending && can(Permission.PROPOSALS_CREATE) && (
                   <Link
                     href={ROUTES.DASHBOARD_MY_PROPOSALS}
                     className={navLinkClass(
@@ -146,7 +153,7 @@ export function Navbar() {
                     Proposals
                   </Link>
                 )}
-                {role === "provider" && can(Permission.EARNINGS_VIEW) && (
+                {role === "provider" && !isProviderPending && can(Permission.EARNINGS_VIEW) && (
                   <Link
                     href={ROUTES.DASHBOARD_EARNINGS}
                     className={navLinkClass(
@@ -167,7 +174,7 @@ export function Navbar() {
                     Requests
                   </Link>
                 )}
-                {(role === "customer" || role === "provider") &&
+                {(role === "customer" || (role === "provider" && !isProviderPending)) &&
                   can(Permission.JOBS_READ) && (
                     <Link
                       href={ROUTES.DASHBOARD_JOBS}
@@ -236,30 +243,36 @@ export function Navbar() {
                           </span>
                         </div>
 
-                        <Link
-                          href={ROUTES.DASHBOARD}
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-gray-400" />
-                          Dashboard
-                        </Link>
-                        <Link
-                          href={ROUTES.DASHBOARD_PROFILE}
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                          <User className="w-4 h-4 text-gray-400" />
-                          Profile
-                        </Link>
-                        <Link
-                          href={ROUTES.DASHBOARD_SETTINGS}
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                          <Settings className="w-4 h-4 text-gray-400" />
-                          Settings
-                        </Link>
+                        {!isProviderPending && (
+                          <Link
+                            href={ROUTES.DASHBOARD}
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-gray-400" />
+                            Dashboard
+                          </Link>
+                        )}
+                        {!isProviderPending && (
+                          <Link
+                            href={ROUTES.DASHBOARD_PROFILE}
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          >
+                            <User className="w-4 h-4 text-gray-400" />
+                            Profile
+                          </Link>
+                        )}
+                        {!isProviderPending && (
+                          <Link
+                            href={ROUTES.DASHBOARD_SETTINGS}
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          >
+                            <Settings className="w-4 h-4 text-gray-400" />
+                            Settings
+                          </Link>
+                        )}
                         <div className="border-t border-gray-100 dark:border-gray-800 mt-1 pt-1">
                           <button
                             onClick={handleLogout}
@@ -330,26 +343,28 @@ export function Navbar() {
           <div className="px-4 pt-3 pb-5 space-y-1">
             {isAuthenticated ? (
               <>
-                <MobileLink
-                  href={ROUTES.DASHBOARD}
-                  icon={LayoutDashboard}
-                  label="Dashboard"
-                />
-                {role === "provider" && can(Permission.REQUESTS_BROWSE) && (
+                {!isProviderPending && (
+                  <MobileLink
+                    href={ROUTES.DASHBOARD}
+                    icon={LayoutDashboard}
+                    label="Dashboard"
+                  />
+                )}
+                {role === "provider" && !isProviderPending && can(Permission.REQUESTS_BROWSE) && (
                   <MobileLink
                     href={ROUTES.DASHBOARD_BROWSE_REQUESTS}
                     icon={FileText}
                     label="Browse Requests"
                   />
                 )}
-                {role === "provider" && can(Permission.PROPOSALS_CREATE) && (
+                {role === "provider" && !isProviderPending && can(Permission.PROPOSALS_CREATE) && (
                   <MobileLink
                     href={ROUTES.DASHBOARD_MY_PROPOSALS}
                     icon={Briefcase}
                     label="My Proposals"
                   />
                 )}
-                {role === "provider" && can(Permission.EARNINGS_VIEW) && (
+                {role === "provider" && !isProviderPending && can(Permission.EARNINGS_VIEW) && (
                   <MobileLink
                     href={ROUTES.DASHBOARD_EARNINGS}
                     icon={FileText}
@@ -363,7 +378,7 @@ export function Navbar() {
                     label="My Requests"
                   />
                 )}
-                {(role === "customer" || role === "provider") &&
+                {(role === "customer" || (role === "provider" && !isProviderPending)) &&
                   can(Permission.JOBS_READ) && (
                     <MobileLink
                       href={ROUTES.DASHBOARD_JOBS}

@@ -233,9 +233,18 @@ export function DashboardMobileHeader() {
   const role = user?.role ?? "customer";
   const userPermissions: string[] =
     (user as { permissions?: string[] })?.permissions ?? [];
+  const providerVerificationStatus =
+    (user as { providerVerificationStatus?: string | null })
+      ?.providerVerificationStatus ?? null;
+  const isProviderPending =
+    role === "provider" && providerVerificationStatus === "pending";
 
   const navItems = ALL_NAV_ITEMS.filter((item) => {
     if (item.roles && !item.roles.includes(role)) return false;
+    // Hide all nav items while account is pending admin review
+    if (isProviderPending) {
+      return false;
+    }
     if (userPermissions.length > 0 && item.permissions)
       return canAny(item.permissions);
     if (item.roles) return item.roles.includes(role);

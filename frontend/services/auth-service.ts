@@ -100,14 +100,14 @@ class AuthService {
   }
 
   /**
-   * Logout using NextAuth
-   * @deprecated Use signOut from next-auth/react directly
+   * Logout — invalidates the backend session by revoking the refresh token.
+   * Falls back to deleting all user sessions if no refreshToken provided.
    */
-  async logout(): Promise<void> {
-    // Logout is handled by NextAuth signOut
-    // Call backend to invalidate session if needed
+  async logout(refreshToken?: string): Promise<void> {
     try {
-      await apiClient.post<void>("/user/auth/logout");
+      await apiClient.post<void>("/user/auth/logout", {
+        refreshToken: refreshToken ?? "",
+      });
     } catch (error) {
       console.error("Backend logout error:", error);
     }

@@ -16,6 +16,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { RequestService } from "../services/request.service";
@@ -106,7 +107,7 @@ export class RequestController {
   @Ownership({ resourceType: "request", userIdField: "user_id" })
   @Post(":id/images")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FilesInterceptor("files", 10))
+  @UseInterceptors(FilesInterceptor("files", 10, { storage: multer.memoryStorage() }))
   async uploadRequestImages(
     @Param("id", StrictUuidPipe) requestId: string,
     @UploadedFiles() files: Express.Multer.File[],

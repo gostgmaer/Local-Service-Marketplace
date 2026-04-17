@@ -18,6 +18,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -95,7 +96,7 @@ export class ProviderController {
 	@RequirePermissions("provider_profile.update")
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Post(":id/profile-picture")
-	@UseInterceptors(FileInterceptor("file"))
+	@UseInterceptors(FileInterceptor("files", { storage: multer.memoryStorage() }))
 	@HttpCode(HttpStatus.OK)
 	async uploadProviderProfilePicture(
 		@Param("id", StrictUuidPipe) id: string,

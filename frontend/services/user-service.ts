@@ -100,7 +100,7 @@ export const uploadUserProfilePicture = async (
   file: File,
 ): Promise<UserProfile> => {
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("files", file);
   const response = await apiClient.post<any>(
     "/users/me/profile-picture",
     formData,
@@ -293,7 +293,7 @@ export const uploadProviderDocument = async (
   data: UploadDocumentData,
 ): Promise<ProviderDocument> => {
   const formData = new FormData();
-  formData.append("file", data.file);
+  formData.append("files", data.file);
   formData.append("document_type", data.document_type);
   if (data.document_number)
     formData.append("document_number", data.document_number);

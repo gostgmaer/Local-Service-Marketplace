@@ -18,13 +18,13 @@ import {
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { FileInterceptor } from "@nestjs/platform-express";
+import * as multer from "multer";
 import { ProviderDocumentService } from "../services/provider-document.service";
 import { UploadDocumentDto } from "../dto/upload-document.dto";
 import { VerifyDocumentDto } from "../dto/verify-document.dto";
 import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import {
   PermissionsGuard as RolesGuard,
-  Roles,
   RequirePermissions,
 } from "@/common/rbac";
 import { FileServiceClient } from "../../../common/file-service.client";
@@ -40,7 +40,9 @@ export class ProviderDocumentController {
   @RequirePermissions("provider_documents.manage")
   @UseGuards(RolesGuard)
   @Post("upload/:providerId")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(
+    FileInterceptor("files", { storage: multer.memoryStorage() }),
+  )
   @HttpCode(HttpStatus.CREATED)
   async uploadDocument(
     @Param("providerId", StrictUuidPipe) providerId: string,
@@ -162,7 +164,7 @@ export class ProviderDocumentController {
   @RequirePermissions("providers.verify")
   @UseGuards(RolesGuard)
   @Get("expiring")
-  async getExpiringDocuments(@Request() req: any) {
+  async getExpiringDocuments() {
     return this.documentService.getExpiringDocuments(30);
   }
 
