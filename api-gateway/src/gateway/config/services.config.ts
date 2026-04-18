@@ -160,9 +160,7 @@ export const publicRoutes = [
   // ============================================
   // Public Information Endpoints
   // ============================================
-  "/api/v1/admin/contact", // Contact form submission (public)
-  "/api/v1/categories", // List service categories (public browsing)
-  "/api/v1/requests", // Create service requests (public - allows guests)
+  "/api/v1/admin/contact", // Contact form submission (public POST)
   "/api/v1/review-aggregates/provider/", // View provider review aggregates (public)
 
   // ============================================
@@ -188,8 +186,14 @@ export const publicGetRoutes = [
   // ============================================
   // Service Requests (Public Marketplace Browsing)
   // ============================================
-  // "/api/v1/requests", // Browse all service requests (GET only)
-  // "/api/v1/requests/", // View individual request details (GET /requests/:id)
+  "/api/v1/requests", // Browse all service requests (GET only)
+  "/api/v1/requests/", // View individual request details (GET /requests/:id)
+
+  // ============================================
+  // Service Categories (Public Browsing)
+  // ============================================
+  "/api/v1/categories", // List service categories (GET only)
+  "/api/v1/categories/", // View individual category (GET /categories/:id)
 
   // ============================================
   // Provider Directory (Public Browsing)

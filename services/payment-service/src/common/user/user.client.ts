@@ -84,7 +84,11 @@ export class UserClient {
 
     try {
       const response = await this.httpClient.get(`/users/${userId}`);
-      return response.data as UserData;
+      // identity-service wraps all responses: { success, statusCode, data: {...}, meta }
+      const payload = response.data?.data ?? response.data;
+      return payload && typeof payload === "object" && "id" in payload
+        ? (payload as UserData)
+        : null;
     } catch (error: any) {
       this.logger.error(`Failed to fetch user ${userId}: ${error.message}`);
       return null;
