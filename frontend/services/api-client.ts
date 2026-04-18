@@ -163,7 +163,9 @@ class ApiClient {
         toast.error(`Validation Error: ${errorMessage}`);
         break;
       case 401:
-        toast.error("Session expired. Please log in again.");
+        // Only show session-expired message if the session is genuinely broken.
+        // Permission-denied 401s (e.g. wrong role) are handled at the component level.
+        toast.error("Authentication required. Please log in.");
         break;
       case 403:
         toast.error("Access Denied");

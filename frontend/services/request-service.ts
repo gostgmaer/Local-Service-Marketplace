@@ -75,6 +75,9 @@ export interface UpdateRequestData {
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
   cursor?: string;
   hasMore?: boolean;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
@@ -44,32 +44,45 @@ export default function BrowseRequestsPage() {
     enabled: isAuthenticated && can(Permission.REQUESTS_BROWSE) && !!user?.id,
   });
 
-  // Fetch all open requests (marketplace view for providers)
+  const PAGE_SIZE = 20;
+
+  // Fetch requests with cursor-less page-based infinite scroll
   const {
-    data: requests,
+    data: requestPages,
     isLoading,
     error,
     refetch,
-  } = useQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["browse-requests", statusFilter, selectedCategory, searchTerm],
-    queryFn: () =>
+    queryFn: ({ pageParam }: { pageParam: number }) =>
       requestService.getRequests({
         status: statusFilter || undefined,
         category_id: selectedCategory || undefined,
         search: searchTerm || undefined,
-        limit: 100,
+        limit: PAGE_SIZE,
+        page: pageParam,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      const currentPage = lastPage?.page ?? 1;
+      const totalPages = lastPage?.totalPages ?? 1;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
     enabled: isAuthenticated && can(Permission.REQUESTS_BROWSE),
   });
+
+  // Flatten all pages into a single list
+  const filteredRequests = requestPages?.pages.flatMap((p: any) => p?.data ?? []) ?? [];
+  const totalCount = (requestPages?.pages[0] as any)?.total ?? 0;
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: () => requestService.getCategories(),
     enabled: isAuthenticated,
   });
-
-  // All server-side filtering now — no client-side search needed
-  const filteredRequests = requests?.data || [];
 
   const proposalTargetRequest = filteredRequests.find(
     (r: any) => r.id === proposalTargetId,
@@ -307,9 +320,21 @@ export default function BrowseRequestsPage() {
               )}
 
               {!isLoading && filteredRequests.length > 0 && (
-                <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                  Showing {filteredRequests.length} request
-                  {filteredRequests.length !== 1 ? "s" : ""}
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Showing {filteredRequests.length}
+                    {totalCount > 0 ? ` of ${totalCount}` : ""} request
+                    {filteredRequests.length !== 1 ? "s" : ""}
+                  </p>
+                  {hasNextPage && (
+                    <Button
+                      variant="outline"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                    >
+                      {isFetchingNextPage ? "Loading..." : "Load More"}
+                    </Button>
+                  )}
                 </div>
               )}
             </>

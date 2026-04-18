@@ -15,7 +15,7 @@ function decodeJwtPayload(token: string): any {
   }
 }
 
-async function refreshAccessToken(token: any) {
+async function refreshAccessToken(token: any, attempt = 1): Promise<any> {
   try {
     if (!token?.refreshToken) {
       console.error("No refresh token available");
@@ -56,7 +56,13 @@ async function refreshAccessToken(token: any) {
       providerVerificationStatus,
     };
   } catch (error) {
-    console.error("Error refreshing access token:", error);
+    console.error(`Error refreshing access token (attempt ${attempt}):`, error);
+    // Retry up to 2 times for transient failures (service restarts, brief network blips)
+    // before giving up and forcing re-login. Add a small back-off delay.
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+      return refreshAccessToken(token, attempt + 1);
+    }
     return { ...token, error: "RefreshAccessTokenError" as const };
   }
 }
