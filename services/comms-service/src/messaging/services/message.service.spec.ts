@@ -5,6 +5,7 @@ import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { NotFoundException } from "../../common/exceptions/http.exceptions";
 import { EmailClient } from "../../notification/clients/email.client";
 import { UserClient } from "../../common/user/user.client";
+import { NotificationPreferencesService } from "../../notification/services/notification-preferences.service";
 
 const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
 const mockEmailClient = {
@@ -12,6 +13,12 @@ const mockEmailClient = {
 };
 const mockUserClient = {
   getUserEmail: jest.fn().mockResolvedValue("user@example.com"),
+};
+
+const mockNotificationPreferencesService = {
+  checkNotificationEnabled: jest.fn().mockResolvedValue(true),
+  getPreferences: jest.fn(),
+  updatePreferences: jest.fn(),
 };
 
 const mockMessage = {
@@ -47,6 +54,7 @@ describe("MessageService", () => {
         { provide: MessageRepository, useValue: mockMessageRepo },
         { provide: EmailClient, useValue: mockEmailClient },
         { provide: UserClient, useValue: mockUserClient },
+        { provide: NotificationPreferencesService, useValue: mockNotificationPreferencesService },
       ],
     }).compile();
 
