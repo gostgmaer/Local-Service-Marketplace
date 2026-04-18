@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +12,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { jobService } from "@/services/job-service";
+import { paymentService } from "@/services/payment-service";
 import { ROUTES } from "@/config/constants";
 import { formatDate, formatCurrency } from "@/utils/helpers";
 import {
@@ -25,7 +27,10 @@ import {
   CheckCircle,
   XCircle,
   MessageSquare,
+  CreditCard,
+  Star,
 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -72,12 +77,25 @@ export default function JobDetailPage() {
     mutationFn: (reason: string) => jobService.cancelJob(jobId, reason),
     onSuccess: () => {
       toast.success("Job cancelled");
+      setShowCancelDialog(false);
+      setCancelReason("");
       queryClient.invalidateQueries({ queryKey: ["job", jobId] });
     },
     onError: () => {
       toast.error("Failed to cancel job");
     },
   });
+
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+
+  const { data: jobPayments } = useQuery({
+    queryKey: ["job-payments", jobId],
+    queryFn: () => paymentService.getPaymentsByJob(jobId),
+    enabled: isAuthenticated && !!jobId,
+  });
+  const hasCompletedPayment =
+    jobPayments?.some((p) => p.status === "completed") ?? false;
 
   if (authLoading || isLoading) {
     return (
@@ -154,21 +172,58 @@ export default function JobDetailPage() {
                   Mark as Completed
                 </Button>
               )}
+              {isCustomer &&
+                (job.status === "pending" || job.status === "in_progress") &&
+                !hasCompletedPayment && (
+                  <Button
+                    onClick={() =>
+                      router.push(`/checkout?jobId=${jobId}`)
+                    }
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Make Payment
+                  </Button>
+                )}
+              {isCustomer && job.status === "completed" && (
+                <Button
+                  onClick={() =>
+                    router.push(
+                      `${ROUTES.DASHBOARD_REVIEW_SUBMIT}?jobId=${jobId}&providerId=${job.provider_id}`,
+                    )
+                  }
+                  className="bg-amber-500 hover:bg-amber-600"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Leave Review
+                </Button>
+              )}
               {(isProvider || isCustomer) &&
                 (job.status === "pending" || job.status === "in_progress") && (
                   <Button
                     variant="outline"
                     className="text-red-600 border-red-200 hover:bg-red-50"
-                    onClick={() => {
-                      const reason = window.prompt(
-                        "Please enter a reason for cancellation:",
-                      );
-                      if (reason) cancelJobMutation.mutate(reason);
-                    }}
+                    onClick={() => setShowCancelDialog(true)}
                     isLoading={cancelJobMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     Cancel Job
+                  </Button>
+                )}
+              {isCustomer &&
+                (job.status === "in_progress" ||
+                  job.status === "completed") && (
+                  <Button
+                    variant="outline"
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                    onClick={() =>
+                      router.push(
+                        `${ROUTES.DASHBOARD_DISPUTE_FILE}?jobId=${jobId}`,
+                      )
+                    }
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    File Dispute
                   </Button>
                 )}
               <Button
@@ -311,6 +366,18 @@ export default function JobDetailPage() {
                       </span>
                     </div>
                   )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Payment</span>
+                    {hasCompletedPayment ? (
+                      <span className="text-green-600 font-medium text-xs px-2 py-0.5 bg-green-50 dark:bg-green-900/20 rounded-full">
+                        Paid
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 font-medium text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 rounded-full">
+                        Awaiting Payment
+                      </span>
+                    )}
+                  </div>
                   <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between">
                     <span className="text-base font-semibold">
                       Total Amount
@@ -325,6 +392,49 @@ export default function JobDetailPage() {
           </div>
         </div>
       </Layout>
+
+      {/* Cancel Job Dialog */}
+      <Modal
+        isOpen={showCancelDialog}
+        onClose={() => {
+          setShowCancelDialog(false);
+          setCancelReason("");
+        }}
+        title="Cancel Job"
+        size="sm"
+      >
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Please provide a reason for cancelling this job.
+        </p>
+        <textarea
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+          rows={3}
+          placeholder="Reason for cancellation..."
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+        />
+        <div className="flex justify-end gap-3 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setShowCancelDialog(false);
+              setCancelReason("");
+            }}
+          >
+            Back
+          </Button>
+          <Button
+            size="sm"
+            className="bg-red-600 hover:bg-red-700"
+            isLoading={cancelJobMutation.isPending}
+            disabled={!cancelReason.trim()}
+            onClick={() => cancelJobMutation.mutate(cancelReason.trim())}
+          >
+            Confirm Cancel
+          </Button>
+        </div>
+      </Modal>
     </ProtectedRoute>
   );
 }

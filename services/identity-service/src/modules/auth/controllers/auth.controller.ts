@@ -230,7 +230,7 @@ export class AuthController {
   async refresh(
     @Body() refreshTokenDto: RefreshTokenDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ message: string; accessToken: string }> {
+  ): Promise<{ message: string; accessToken: string; refreshToken: string }> {
     this.logger.info("POST /auth/refresh", { context: "AuthController" });
     const result = await this.authService.refreshAccessToken(
       refreshTokenDto.refreshToken,
@@ -244,6 +244,16 @@ export class AuthController {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: accessTokenMaxAge,
+    });
+
+    // Set the rotated refresh token as HTTP-only cookie so the client can use it
+    const refreshTokenMaxAge =
+      parseInt(process.env.SESSION_TTL_DAYS ?? "90", 10) * 24 * 60 * 60 * 1000;
+    res.cookie("refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: refreshTokenMaxAge,
     });
 
     return { message: "Token refreshed successfully", ...result };

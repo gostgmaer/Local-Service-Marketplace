@@ -35,6 +35,7 @@ type DisputeRow = {
 const DISPUTE_STATUS_OPTIONS = [
   "open",
   "investigating",
+  "escalated",
   "resolved",
   "closed",
 ] as const;
@@ -45,6 +46,7 @@ const DISPUTE_STATUS_LABELS: Record<
 > = {
   open: "Open",
   investigating: "Investigating",
+  escalated: "Escalated",
   resolved: "Resolved",
   closed: "Closed",
 };
@@ -172,6 +174,16 @@ export default function AdminDisputesPage() {
                 </p>
                 <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                   {disputeStats?.byStatus.investigating ?? 0}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  Escalated
+                </p>
+                <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
+                  {(disputeStats?.byStatus as any)?.escalated ?? 0}
                 </p>
               </CardContent>
             </Card>

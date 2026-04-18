@@ -108,29 +108,41 @@ export class ProposalService {
       "provider_verification_required",
       "true",
     );
+    // Always attempt the provider verification check when identity-service is reachable.
+    // If it is unreachable AND verification is required (default), fail-closed to prevent
+    // unverified providers from bypassing the onboarding guard via API when the
+    // frontend middleware is the only guard.
     if (this.userClient.isEnabled()) {
       const providerForGate = await this.userClient.getProviderById(
         dto.provider_id,
       );
-      if (
-        verificationRequired !== "false" &&
-        providerForGate &&
-        providerForGate.verification_status !== "verified"
-      ) {
-        throw new BadRequestException(
-          `Cannot submit proposal: your provider account is not yet verified (status: ${providerForGate.verification_status}). Please wait for admin approval.`,
-        );
-      }
-      if (providerForGate?.user_id) {
-        const providerUser = await this.userClient.getUserById(
-          providerForGate.user_id,
-        );
-        if (providerUser && providerUser.email_verified === false) {
+      if (verificationRequired !== "false") {
+        if (!providerForGate) {
           throw new BadRequestException(
-            "Cannot submit proposal: your email address is not verified. Please verify your email first.",
+            "Cannot submit proposal: provider profile not found. Please complete your provider onboarding first.",
           );
         }
+        if (providerForGate.verification_status !== "verified") {
+          throw new BadRequestException(
+            `Cannot submit proposal: your provider account is not yet verified (status: ${providerForGate.verification_status}). Please complete your profile setup and wait for admin approval.`,
+          );
+        }
+        if (providerForGate.user_id) {
+          const providerUser = await this.userClient.getUserById(
+            providerForGate.user_id,
+          );
+          if (providerUser && providerUser.email_verified === false) {
+            throw new BadRequestException(
+              "Cannot submit proposal: your email address is not verified. Please verify your email first.",
+            );
+          }
+        }
       }
+    } else if (verificationRequired !== "false") {
+      // Identity-service is unavailable — fail-closed to prevent onboarding bypass
+      throw new BadRequestException(
+        "Cannot submit proposal at this time: provider verification service is temporarily unavailable. Please try again shortly.",
+      );
     }
 
     const proposal = await this.proposalRepository.createProposal(dto);
@@ -319,16 +331,13 @@ export class ProposalService {
       existingProposal.id,
     );
 
-    // Reject all other pending proposals on this request so no request has
-    // multiple accepted proposals simultaneously (non-blocking, best-effort)
-    this.proposalRepository
-      .rejectSiblingProposals(existingProposal.request_id, existingProposal.id)
-      .catch((err: any) => {
-        this.logger.warn(
-          `Failed to reject sibling proposals for request ${existingProposal.request_id}: ${err.message}`,
-          ProposalService.name,
-        );
-      });
+    // Reject all other pending proposals on this request SYNCHRONOUSLY before
+    // creating the job. A non-blocking best-effort call here could allow a race
+    // condition where two proposals are accepted for the same request.
+    await this.proposalRepository.rejectSiblingProposals(
+      existingProposal.request_id,
+      existingProposal.id,
+    );
 
     // Create job record — this is the central handoff from proposal → job lifecycle
     const job = await this.jobRepository.createJob({

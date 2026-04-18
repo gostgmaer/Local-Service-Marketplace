@@ -104,30 +104,9 @@ export class RefundService {
       "RefundService",
     );
 
-    // Send refund notification to user
-    const userEmail = await this.userClient.getUserEmail(payment.user_id);
-    if (userEmail) {
-      const refundPayload = {
-        to: userEmail,
-        template: "PAYMENT_REFUNDED",
-        variables: {
-          username: userEmail.split("@")[0],
-          amount: `₹${refundAmount}`,
-          transactionId: payment.transaction_id,
-          refundId: refund.id,
-          refundDate: new Date().toLocaleDateString("en-IN"),
-        },
-      };
-      const refundDispatch = this.workersEnabled
-        ? this.notificationQueue.add("send-refund-notification", refundPayload)
-        : this.notificationClient.sendEmail(refundPayload);
-      refundDispatch.catch((err: any) => {
-        this.logger.warn(
-          `Failed to send refund notification: ${err.message}`,
-          "RefundService",
-        );
-      });
-    }
+    // NOTE: The refund notification email is intentionally NOT sent here.
+    // It is sent by the refund worker AFTER the gateway confirms the refund,
+    // to avoid prematurely telling the user their money is on the way.
 
     return refund;
   }

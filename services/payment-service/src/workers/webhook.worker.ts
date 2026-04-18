@@ -102,6 +102,19 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
               source: "webhook",
             },
           });
+          // Publish a second event for comms-service to send the success email.
+          // Payment success emails are deferred to here for async gateways; for
+          // synchronous gateways the email is sent inline in PaymentService.
+          await this.kafkaService.publishEvent("payment-events", {
+            eventType: "payment_confirmation_needed",
+            eventId: `notif-${paymentId}-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            data: {
+              paymentId,
+              transactionId: event.transactionId,
+              source: "webhook",
+            },
+          });
           break;
         }
         case "payment.failed": {
@@ -122,6 +135,17 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
             "failed",
             null,
           );
+          // Publish failure event so comms-service can notify the user
+          await this.kafkaService.publishEvent("payment-events", {
+            eventType: "payment_failed",
+            eventId: `${paymentId}-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            data: {
+              paymentId,
+              transactionId: event.transactionId,
+              source: "webhook",
+            },
+          });
           break;
         }
         case "refund.created": {

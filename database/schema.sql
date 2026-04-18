@@ -2409,6 +2409,7 @@ VALUES
   ('026', 'india_localization', 'integrated_in_schema', 0),
   ('027', 'add_system_settings', 'integrated_in_schema', 0),
   ('028', 'add_enforcement_settings', 'integrated_in_schema', 0),
-  ('029', 'add_dynamic_config_settings', 'integrated_in_schema', 0)
+  ('029', 'add_dynamic_config_settings', 'integrated_in_schema', 0) 
+   ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0)  
 ON CONFLICT (version) DO NOTHING;
 

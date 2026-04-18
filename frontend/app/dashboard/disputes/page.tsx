@@ -72,6 +72,7 @@ export default function MyDisputesPage() {
                 <option value="">All Statuses</option>
                 <option value="open">Open</option>
                 <option value="investigating">Investigating</option>
+                <option value="escalated">Escalated</option>
                 <option value="resolved">Resolved</option>
                 <option value="closed">Closed</option>
               </select>

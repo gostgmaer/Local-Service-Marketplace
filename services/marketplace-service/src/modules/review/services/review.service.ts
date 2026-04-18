@@ -50,6 +50,23 @@ export class ReviewService {
       );
     }
 
+    // 1b. Enforce review submission time window from system settings
+    if (job.completed_at) {
+      const windowDaysStr = await this.reviewRepository.getSystemSetting(
+        "review_auto_approve_days",
+        "90",
+      );
+      const windowDays = parseInt(windowDaysStr, 10) || 90;
+      const ageDays =
+        (Date.now() - new Date(job.completed_at).getTime()) /
+        (1000 * 60 * 60 * 24);
+      if (ageDays > windowDays) {
+        throw new BadRequestException(
+          `Reviews can only be submitted within ${windowDays} days of job completion. This job was completed ${Math.floor(ageDays)} days ago.`,
+        );
+      }
+    }
+
     // 2. Verify the reviewer is the customer on this job
     if (job.customer_id !== createReviewDto.user_id) {
       throw new ForbiddenException("You are not a participant in this job");

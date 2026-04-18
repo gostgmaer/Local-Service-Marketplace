@@ -26,7 +26,7 @@ import {
 } from "@/utils/helpers";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
-import { ArrowLeft, Edit, MapPin } from "lucide-react";
+import { ArrowLeft, Edit, MapPin, XCircle } from "lucide-react";
 
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 
@@ -77,6 +77,17 @@ export default function RequestDetailPage() {
     },
     onError: () => {
       toast.error("Failed to reject proposal");
+    },
+  });
+
+  const cancelRequestMutation = useMutation({
+    mutationFn: () => requestService.cancelRequest(requestId),
+    onSuccess: () => {
+      toast.success("Request cancelled");
+      queryClient.invalidateQueries({ queryKey: ["request", requestId] });
+    },
+    onError: () => {
+      toast.error("Failed to cancel request");
     },
   });
 
@@ -195,7 +206,7 @@ export default function RequestDetailPage() {
                     </div>
 
                     {isOwner && request.status === "open" && (
-                      <div className="pt-4 border-t">
+                      <div className="pt-4 border-t flex gap-3">
                         <Button
                           variant="outline"
                           size="sm"
@@ -205,6 +216,23 @@ export default function RequestDetailPage() {
                         >
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Request
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => {
+                            if (
+                              confirm(
+                                "Are you sure you want to cancel this request?",
+                              )
+                            )
+                              cancelRequestMutation.mutate();
+                          }}
+                          isLoading={cancelRequestMutation.isPending}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Cancel Request
                         </Button>
                       </div>
                     )}

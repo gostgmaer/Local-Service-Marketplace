@@ -37,6 +37,7 @@ import { FileServiceClient } from "../common/file-service.client";
       { name: "payment.analytics" },
       { name: "payment.refund" },
       { name: "payment.webhook" },
+      { name: "payment.subscription" },
     ),
     NotificationModule,
     UserModule,

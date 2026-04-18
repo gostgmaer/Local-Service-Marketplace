@@ -556,7 +556,8 @@ export class AuthService {
 
   async refreshAccessToken(
     refreshToken: string,
-  ): Promise<{ accessToken: string }> {
+    ipAddress?: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
       // Verify refresh token
       const payload = this.jwtService.verifyRefreshToken(refreshToken);
@@ -579,10 +580,11 @@ export class AuthService {
         throw new UnauthorizedException("User not found");
       }
 
-      // Generate new access token
       const refreshProviderId =
         payload.providerId ??
         (await this.resolveProviderId(user.id, user.role));
+
+      // Generate new access token
       const accessToken = await this.jwtService.generateAccessToken(
         user.id,
         user.email,
@@ -592,7 +594,29 @@ export class AuthService {
         user.phone_verified ?? false,
       );
 
-      return { accessToken };
+      // Rotate refresh token: delete the old session and issue a new one.
+      // This is RFC 6749-compliant and invalidates compromised tokens automatically.
+      await this.sessionRepo.deleteByRefreshToken(refreshToken);
+      const sessionTtlDays = await this.getSessionTtlDays();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + sessionTtlDays);
+      const newRefreshToken = await this.jwtService.generateRefreshToken(
+        user.id,
+        user.email,
+        user.role,
+        refreshProviderId,
+      );
+      await this.sessionRepo.create(
+        user.id,
+        newRefreshToken,
+        expiresAt,
+        ipAddress ?? session.ip_address,
+        session.user_agent,
+        session.device_type,
+        session.location,
+      );
+
+      return { accessToken, refreshToken: newRefreshToken };
     } catch (error: any) {
       this.logger.error("Refresh token failed", {
         context: "AuthService",

@@ -36,6 +36,31 @@ export class DisputeRepository {
     }
   }
 
+  /**
+   * Returns the customer_id and provider's user_id for a job,
+   * used to notify both parties when a dispute is filed or resolved.
+   */
+  async getJobParties(
+    jobId: string,
+  ): Promise<{ customerId: string | null; providerUserId: string | null }> {
+    try {
+      const res = await this.pool.query(
+        `SELECT j.customer_id, p.user_id AS provider_user_id
+         FROM jobs j
+         LEFT JOIN providers p ON p.id = j.provider_id
+         WHERE j.id = $1`,
+        [jobId],
+      );
+      if (!res.rows[0]) return { customerId: null, providerUserId: null };
+      return {
+        customerId: res.rows[0].customer_id ?? null,
+        providerUserId: res.rows[0].provider_user_id ?? null,
+      };
+    } catch {
+      return { customerId: null, providerUserId: null };
+    }
+  }
+
   async createDispute(
     jobId: string,
     openedBy: string,
@@ -156,6 +181,37 @@ export class DisputeRepository {
     const query = `SELECT COUNT(*) as count FROM disputes`;
     const result = await this.pool.query(query);
     return parseInt(result.rows[0].count) || 0;
+  }
+
+  /**
+   * Returns dispute IDs that have been in 'investigating' or 'open' status
+   * for longer than `staleDays` without any update — candidates for escalation.
+   */
+  async findStaleDisputes(staleDays: number): Promise<string[]> {
+    const query = `
+      SELECT id FROM disputes
+      WHERE status IN ('open', 'investigating')
+        AND updated_at < NOW() - ($1 || ' days')::INTERVAL
+    `;
+    const result = await this.pool.query(query, [staleDays]);
+    return result.rows.map((r: { id: string }) => r.id);
+  }
+
+  /**
+   * Bulk-escalates a list of dispute IDs by updating their status to 'escalated'.
+   * Returns the number of rows updated.
+   */
+  async escalateDisputes(ids: string[]): Promise<number> {
+    if (!ids.length) return 0;
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(", ");
+    const query = `
+      UPDATE disputes
+      SET status = 'escalated', updated_at = NOW()
+      WHERE id IN (${placeholders})
+        AND status IN ('open', 'investigating')
+    `;
+    const result = await this.pool.query(query, ids);
+    return result.rowCount ?? 0;
   }
 
   async getDisputeStats(): Promise<{

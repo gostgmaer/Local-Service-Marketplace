@@ -7,7 +7,7 @@ export interface Dispute {
   opened_by: string;
   reason: string;
   description?: string;
-  status: "open" | "investigating" | "resolved" | "closed";
+  status: "open" | "investigating" | "escalated" | "resolved" | "closed";
   resolution?: string;
   resolved_by?: string;
   resolved_at?: string;
@@ -26,9 +26,8 @@ class DisputeService {
   async createDispute(data: CreateDisputeData): Promise<Dispute> {
     const response = await apiClient.post<Dispute>("/disputes", {
       job_id: data.job_id,
-      reason: data.description
-        ? `${data.reason}: ${data.description}`
-        : data.reason,
+      reason: data.reason,
+      description: data.description,
     });
     return response.data;
   }

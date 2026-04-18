@@ -59,7 +59,7 @@ export interface Dispute {
   job_id: string;
   opened_by: string;
   reason: string;
-  status: "open" | "investigating" | "resolved" | "closed";
+  status: "open" | "investigating" | "escalated" | "resolved" | "closed";
   resolution?: string;
   resolved_by?: string;
   resolved_at?: string;

@@ -59,6 +59,12 @@ export class EventConsumerService implements OnModuleInit {
         case "payment_completed":
           await this.handlePaymentCompleted(event);
           break;
+        case "payment_failed":
+          await this.handlePaymentFailed(event);
+          break;
+        case "payment_confirmation_needed":
+          await this.handlePaymentCompleted(event); // same as completed — notify customer
+          break;
         case "review_submitted":
           await this.handleReviewSubmitted(event);
           break;
@@ -163,7 +169,8 @@ export class EventConsumerService implements OnModuleInit {
   }
 
   private async handleJobCompleted(event: any): Promise<void> {
-    // Notify customer that job is completed
+    // In-app notification only — email is handled by the marketplace BullMQ worker
+    // to avoid duplicate emails to the customer.
     const ref = event.data.jobDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
     await this.notificationRepository.createNotification(
@@ -200,6 +207,20 @@ export class EventConsumerService implements OnModuleInit {
       event.data.userId, // Customer ID
       "payment",
       `Payment of ${event.data.amount} ${event.data.currency} completed successfully${refSuffix}`,
+    );
+  }
+
+  private async handlePaymentFailed(event: any): Promise<void> {
+    // Notify customer that their payment failed
+    const ref = event.data.paymentDisplayId || event.data.displayId || "";
+    const refSuffix = ref ? ` (Ref: ${ref})` : "";
+    const amount = event.data.amount
+      ? `₹${event.data.amount} ${event.data.currency ?? "INR"}`
+      : "your payment";
+    await this.notificationRepository.createNotification(
+      event.data.userId,
+      "payment",
+      `Payment failed: ${amount} could not be processed${refSuffix}. Please retry or contact support.`,
     );
   }
 

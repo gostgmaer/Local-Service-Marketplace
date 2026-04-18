@@ -64,7 +64,13 @@ function FileDisputeContent() {
 
   const mutation = useMutation({
     mutationFn: (data: FormData) => disputeService.createDispute(data),
-    onSuccess: () => {
+    onSuccess: async (_dispute, data) => {
+      // Mark the job as disputed so its status reflects the open dispute
+      try {
+        await jobService.updateJobStatus(data.job_id, { status: "disputed" });
+      } catch {
+        // Non-fatal: dispute was still created successfully
+      }
       toast.success(
         "Dispute filed successfully. Our team will review it within 24 hours.",
       );

@@ -6,6 +6,7 @@ import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { AuditLogRepository } from "../admin/repositories/audit-log.repository";
 import { UserActivityRepository } from "../analytics/repositories/user-activity.repository";
 import { MetricsRepository } from "../analytics/repositories/metrics.repository";
+import { DisputeRepository } from "../admin/repositories/dispute.repository";
 import { DEFAULT_JOB_OPTIONS } from "../bullmq/bullmq-default-options";
 
 @Processor("oversight.cleanup", {
@@ -19,6 +20,7 @@ export class OversightCleanupWorker extends WorkerHost implements OnModuleInit {
     private readonly auditLogRepository: AuditLogRepository,
     private readonly userActivityRepository: UserActivityRepository,
     private readonly metricsRepository: MetricsRepository,
+    private readonly disputeRepository: DisputeRepository,
   ) {
     super();
   }
@@ -45,6 +47,13 @@ export class OversightCleanupWorker extends WorkerHost implements OnModuleInit {
       { ...DEFAULT_JOB_OPTIONS, repeat: { pattern: "0 4 * * *" } },
     );
 
+    // Daily 5 AM — escalate disputes stale beyond SLA threshold
+    await this.cleanupQueue.add(
+      "escalate-stale-disputes",
+      {},
+      { ...DEFAULT_JOB_OPTIONS, repeat: { pattern: "0 5 * * *" } },
+    );
+
     this.logger.log(
       "Oversight cleanup repeatable jobs registered",
       "OversightCleanupWorker",
@@ -60,6 +69,8 @@ export class OversightCleanupWorker extends WorkerHost implements OnModuleInit {
           return this.handlePurgeOldActivityLogs();
         case "aggregate-daily-metrics":
           return this.handleAggregateDailyMetrics();
+        case "escalate-stale-disputes":
+          return this.handleEscalateStaleDisputes();
         default:
           throw new Error(`Unknown job name: ${job.name}`);
       }
@@ -102,6 +113,34 @@ export class OversightCleanupWorker extends WorkerHost implements OnModuleInit {
     await this.metricsRepository.aggregateYesterdayMetrics();
     this.logger.log(
       "Daily metrics aggregation completed",
+      "OversightCleanupWorker",
+    );
+  }
+
+  private async handleEscalateStaleDisputes(): Promise<void> {
+    const staleDaysStr = await this.disputeRepository.getSystemSetting(
+      "dispute_escalation_days",
+      "7",
+    );
+    const staleDays = parseInt(staleDaysStr, 10) || 7;
+
+    this.logger.log(
+      `Checking for disputes stale beyond ${staleDays} days`,
+      "OversightCleanupWorker",
+    );
+
+    const staleIds = await this.disputeRepository.findStaleDisputes(staleDays);
+    if (!staleIds.length) {
+      this.logger.log(
+        "No stale disputes to escalate",
+        "OversightCleanupWorker",
+      );
+      return;
+    }
+
+    const count = await this.disputeRepository.escalateDisputes(staleIds);
+    this.logger.log(
+      `Escalated ${count} stale dispute(s) to 'escalated' status`,
       "OversightCleanupWorker",
     );
   }

@@ -451,4 +451,47 @@ export class JobRepository {
     const result = await this.pool.query(query, [amount, jobId]);
     return result.rows[0] || null;
   }
+
+  /**
+   * Update the parent service_request status when job lifecycle changes.
+   * Used to revert to 'open' on cancellation and set 'completed' on job completion.
+   */
+  async updateRequestStatus(
+    requestId: string,
+    status: "open" | "assigned" | "completed" | "cancelled",
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE service_requests SET status = $1, updated_at = NOW() WHERE id = $2`,
+      [status, requestId],
+    );
+  }
+
+  /**
+   * Returns the completed payment for a given job, if one exists.
+   * Used to guard job completion behind payment verification.
+   */
+  async getCompletedPaymentForJob(
+    jobId: string,
+  ): Promise<{ id: string; status: string } | null> {
+    const result = await this.pool.query(
+      `SELECT id, status FROM payments WHERE job_id = $1 AND status = 'completed' LIMIT 1`,
+      [jobId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  /**
+   * Auto-complete in_progress jobs that have not been updated within the
+   * given cutoff date. Returns the number of rows affected.
+   */
+  async autoCompleteStaleJobs(cutoffDate: Date): Promise<number> {
+    const result = await this.pool.query(
+      `UPDATE jobs
+       SET status = 'completed', completed_at = NOW(), updated_at = NOW()
+       WHERE status = 'in_progress'
+         AND updated_at < $1`,
+      [cutoffDate],
+    );
+    return result.rowCount ?? 0;
+  }
 }

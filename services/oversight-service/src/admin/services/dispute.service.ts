@@ -88,12 +88,19 @@ export class DisputeService {
     );
 
     // Notify dispute opener — queue if workers enabled, else inline
+    // Also look up the other job party so they receive a notification too
+    const { customerId, providerUserId } =
+      await this.disputeRepository.getJobParties(jobId);
+    const otherPartyId =
+      openedBy === customerId ? providerUserId : customerId;
+
     if (this.workersEnabled) {
       this.notificationQueue
         .add("notify-dispute-created", {
           disputeId: dispute.id,
           openedBy,
           jobId,
+          otherPartyId: otherPartyId ?? null,
         })
         .catch((err: any) => {
           this.logger.warn(
@@ -298,6 +305,7 @@ export class DisputeService {
           openedBy: existingDispute.opened_by,
           newStatus: normalizedStatus,
           resolution,
+          jobId: existingDispute.job_id,
         })
         .catch((err: any) => {
           this.logger.warn(

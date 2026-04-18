@@ -158,6 +158,20 @@ class PaymentService {
     return apiClient.extractList<PricingPlan>(response.data);
   }
 
+  // ------------------ Coupons ------------------
+
+  /** Read-only coupon preview — does NOT consume the coupon. */
+  async previewCoupon(
+    code: string,
+  ): Promise<{ discount_percent: number; expires_at?: string }> {
+    const response = await apiClient.get<any>(`/coupons/${encodeURIComponent(code)}`);
+    const coupon = response.data?.data ?? response.data;
+    return {
+      discount_percent: parseFloat(coupon.discount_percent ?? "0"),
+      expires_at: coupon.expires_at,
+    };
+  }
+
   // ------------------ Provider Earnings ------------------
 
   async getProviderEarnings(
