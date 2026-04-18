@@ -36,7 +36,7 @@ function VerifyEmailContent() {
 
         // If user is logged in, force refresh their session to update emailVerified flag
         if (session) {
-          await update();
+          await update({ force: true });
           // Wait a bit to ensure session is refreshed and propagated
           await new Promise((res) => setTimeout(res, 500));
         }

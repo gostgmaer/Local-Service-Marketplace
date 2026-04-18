@@ -95,11 +95,23 @@ function OnboardingContent() {
 	const [resendLoading, setResendLoading] = useState(false);
 	const [resendCooldown, setResendCooldown] = useState(0);
 	const [refreshingStatus, setRefreshingStatus] = useState(false);
+	// Local override: set when a direct API check confirms verification
+	// (guards against stale session data after email verification)
+	const [localEmailVerified, setLocalEmailVerified] = useState<boolean | null>(null);
+	const [localPhoneVerified, setLocalPhoneVerified] = useState<boolean | null>(null);
 
-	// Derive live verification flags from session (updated via updateSession())
-	const emailVerified = Boolean(session?.user?.emailVerified);
-	const phoneVerified = Boolean(session?.user?.phoneVerified);
+	// Derive live verification flags — prefer local override over session
+	const emailVerified = localEmailVerified ?? Boolean(session?.user?.emailVerified);
+	const phoneVerified = localPhoneVerified ?? Boolean(session?.user?.phoneVerified);
 	const contactVerified = emailVerified || phoneVerified;
+
+	// Auto-advance from verify-contact step as soon as verification is confirmed
+	useEffect(() => {
+		if (step === "verify-contact" && contactVerified) {
+			goNext();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [contactVerified, step]);
 
 	// Step: Profile
 	const [businessName, setBusinessName] = useState("");
@@ -122,6 +134,13 @@ function OnboardingContent() {
 	const isProvider = can(Permission.PROVIDER_PROFILE_VIEW);
 	const steps = isProvider ? PROVIDER_STEPS : CUSTOMER_STEPS;
 	const currentIndex = steps.indexOf(step as any);
+
+	// Sync local verification state whenever the session updates
+	// (e.g. after returning from the verify-email page)
+	useEffect(() => {
+		if (session?.user?.emailVerified) setLocalEmailVerified(true);
+		if (session?.user?.phoneVerified) setLocalPhoneVerified(true);
+	}, [session?.user?.emailVerified, session?.user?.phoneVerified]);
 
 	// On mount: detect how far the provider got and resume from first incomplete step
 	useEffect(() => {
@@ -218,8 +237,20 @@ function OnboardingContent() {
 	const handleRefreshVerificationStatus = async () => {
 		setRefreshingStatus(true);
 		try {
-			await updateSession();
-			toast.success("Status refreshed!");
+			// Direct API call to get fresh verification status, bypassing potentially
+			// stale session data (session update mechanism can silently fail)
+			const profile = await authService.getProfile();
+			const freshEmailVerified = Boolean(profile?.email_verified);
+			const freshPhoneVerified = Boolean(profile?.phone_verified);
+			setLocalEmailVerified(freshEmailVerified);
+			setLocalPhoneVerified(freshPhoneVerified);
+			// Also persist to NextAuth session for middleware and other pages
+			await updateSession({ force: true });
+			if (freshEmailVerified || freshPhoneVerified) {
+				toast.success("Verified! Continuing...");
+			} else {
+				toast("Email not verified yet. Please check your inbox.");
+			}
 		} catch {
 			toast.error("Could not refresh status. Please try again.");
 		} finally {

@@ -162,7 +162,7 @@ export class ProviderController {
 			provider_id: id,
 			status: dto.status,
 		});
-		return this.providerService.verifyProvider(id, dto.status);
+		return this.providerService.verifyProvider(id, dto.status, dto.reason);
 	}
 
 	@RequirePermissions("provider_profile.update")
