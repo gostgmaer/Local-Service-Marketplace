@@ -10,7 +10,6 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  BadRequestException,
   Request,
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
@@ -27,7 +26,6 @@ import {
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import {
   PermissionsGuard as RolesGuard,
-  Roles,
   RequirePermissions,
 } from "@/common/rbac";
 import { OwnershipGuard } from "@/common/guards/ownership.guard";

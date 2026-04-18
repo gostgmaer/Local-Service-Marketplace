@@ -36,7 +36,10 @@ export class JwtService {
     if (phoneVerified !== undefined) payload.phone_verified = phoneVerified;
     return this.jwtService.sign(payload, {
       secret: this.configService.get<string>("JWT_SECRET"),
-      expiresIn: this.configService.get<string>("JWT_EXPIRATION", "15m"),
+      // Support both JWT_EXPIRATION and JWT_EXPIRES_IN (fallback chain)
+      expiresIn:
+        this.configService.get<string>("JWT_EXPIRATION") ||
+        this.configService.get<string>("JWT_EXPIRES_IN", "1d"),
     });
   }
 

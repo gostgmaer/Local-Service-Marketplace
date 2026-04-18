@@ -248,11 +248,27 @@ export class ProposalService {
       ProposalService.name,
     );
 
-    // RBAC: Only the request owner or user with manage permission can see proposals for a request
+    // RBAC:
+    // - proposals.manage (admin) → see all proposals
+    // - request owner (customer) → see all proposals for their own request
+    // - proposals.read without manage (provider) → see only their own proposals for this request
     if (user && !user.permissions?.includes("proposals.manage")) {
       const requestOwner =
         await this.proposalRepository.getRequestOwner(requestId);
-      if (requestOwner !== user.userId) {
+      if (requestOwner === user.userId) {
+        // Request owner (customer) — allowed to see all proposals, no filter needed
+      } else if (user.permissions?.includes("proposals.read") && user.providerId) {
+        // Provider — allowed to see only their own proposals for this request
+        const proposals = await this.proposalRepository.getProposalsForRequest(
+          requestId,
+          limit,
+        );
+        const ownProposals = proposals.filter(
+          (p: any) => p.provider_id === user.providerId,
+        );
+        const response = ownProposals.map(ProposalResponseDto.fromEntity);
+        return new PaginatedProposalResponseDto(response, undefined, false);
+      } else {
         throw new ForbiddenException(
           "Only the request owner or an admin can see the proposals for this request",
         );

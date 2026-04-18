@@ -25,6 +25,7 @@ import {
   formatRelativeTime,
 } from "@/utils/helpers";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import toast from "react-hot-toast";
 import { ArrowLeft, Edit, MapPin, XCircle } from "lucide-react";
 
@@ -36,6 +37,8 @@ export default function RequestDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { can } = usePermissions();
+  const isProvider = can(Permission.PROVIDER_PROFILE_VIEW);
   const requestId = params.id as string;
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -54,6 +57,8 @@ export default function RequestDetailPage() {
   const { data: proposals } = useQuery({
     queryKey: ["proposals", requestId],
     queryFn: () => proposalService.getProposalsByRequest(requestId),
+    // Owners see all proposals; providers see only their own (backend filters).
+    // Skip entirely if neither owner nor provider with proposals.read.
     enabled: !!requestId && isAuthenticated,
   });
 
@@ -112,6 +117,8 @@ export default function RequestDetailPage() {
   }
 
   const isOwner = user?.id === request.user_id;
+  // Total proposal count comes from request data (always available regardless of role)
+  const totalProposalCount = (request as any).proposal_count ?? proposals?.length ?? 0;
 
   return (
     <ProtectedRoute requiredPermissions={[Permission.REQUESTS_READ]}>
@@ -239,11 +246,61 @@ export default function RequestDetailPage() {
               <Card className="mt-6">
                 <CardHeader>
                   <h2 className="text-xl font-semibold text-gray-900">
-                    Proposals ({proposals?.length || 0})
+                    Proposals ({totalProposalCount})
                   </h2>
                 </CardHeader>
                 <CardContent>
-                  {proposals && proposals.length > 0 ? (
+                  {isProvider && !isOwner ? (
+                    // Provider view: show only their own proposal (if submitted), plus total count
+                    proposals && proposals.length > 0 ? (
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-500 mb-3">
+                          {totalProposalCount > 1
+                            ? `${totalProposalCount} providers have submitted proposals. Your proposal:`
+                            : "Your proposal:"}
+                        </p>
+                        {proposals.map((proposal) => (
+                          <div key={proposal.id} className="p-4 border rounded-lg">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <p className="font-semibold text-gray-900">Your Proposal</p>
+                                <p className="text-sm text-gray-500">
+                                  {formatRelativeTime(proposal.created_at)}
+                                </p>
+                              </div>
+                              <StatusBadge status={proposal.status} />
+                            </div>
+                            <p className="text-gray-700 mb-3">{proposal.message}</p>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className="font-medium text-gray-900">
+                                Price: {formatCurrency(proposal.price)}
+                              </span>
+                              {proposal.estimated_hours && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-gray-600">
+                                    Duration: {proposal.estimated_hours} hours
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 mb-1">
+                          {totalProposalCount > 0
+                            ? `${totalProposalCount} proposal${totalProposalCount !== 1 ? "s" : ""} submitted by other providers.`
+                            : "No proposals submitted yet."}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          You have not submitted a proposal for this request yet.
+                        </p>
+                      </div>
+                    )
+                  ) : proposals && proposals.length > 0 ? (
+                    // Owner / admin view: see all proposals
                     <div className="space-y-4">
                       {proposals.map((proposal) => (
                         <div

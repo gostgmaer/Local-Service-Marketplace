@@ -66,7 +66,10 @@ const createOAuthProviders = (configService: ConfigService) => {
         return {
           secret,
           signOptions: {
-            expiresIn: configService.get<string>("JWT_EXPIRATION", "15m"),
+            // Support both JWT_EXPIRATION and JWT_EXPIRES_IN (fallback chain)
+            expiresIn:
+              configService.get<string>("JWT_EXPIRATION") ||
+              configService.get<string>("JWT_EXPIRES_IN", "1d"),
           },
         };
       },

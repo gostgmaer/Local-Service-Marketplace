@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from "axios";
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 import toast from "react-hot-toast";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
@@ -16,6 +16,30 @@ function getSessionOnce() {
     });
   }
   return _sessionPromise;
+}
+
+// Force a backend token refresh regardless of whether NextAuth considers the
+// current access token valid. Calls the custom /api/auth/force-refresh route
+// which reads the raw session cookie, hits the identity-service refresh endpoint
+// directly, and writes a fresh session cookie back. Returns the new access token,
+// or null if the refresh token is also expired/invalid (→ user must log in again).
+let _forceRefreshPromise: Promise<string | null> | null = null;
+function forceRefreshToken(): Promise<string | null> {
+  if (!_forceRefreshPromise) {
+    _forceRefreshPromise = fetch("/api/auth/force-refresh", {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((r) => {
+        if (!r.ok) return null;
+        return r.json().then((body) => body?.accessToken ?? null);
+      })
+      .catch(() => null)
+      .finally(() => {
+        _forceRefreshPromise = null;
+      });
+  }
+  return _forceRefreshPromise;
 }
 
 // Standardized API Response interface
@@ -117,18 +141,30 @@ class ApiClient {
         return response;
       },
       async (error: AxiosError<ApiErrorResponse>) => {
-        // Handle 401 Unauthorized
-        // Note: Token refresh is handled automatically by NextAuth
-        // If we get a 401, the session is invalid or refresh failed
-        if (error.response?.status === 401) {
-          // Check if session has expired (reuse in-flight session fetch)
-          const session = await getSessionOnce();
+        const originalRequest = error.config as AxiosRequestConfig & { _retried?: boolean };
 
-          if (!session || session.error === "RefreshAccessTokenError") {
-            // Session is invalid or refresh failed
-            // The useAuth hook will handle logout via useEffect
-            console.error("Session expired or invalid");
+        // Handle 401 Unauthorized
+        if (error.response?.status === 401 && !originalRequest._retried) {
+          originalRequest._retried = true;
+
+          // Force NextAuth to re-evaluate the JWT callback and issue a fresh
+          // access token from the refresh token. This closes the gap where the
+          // backend has already rejected the old token but the UI still holds
+          // the old NextAuth session.
+          const freshToken = await forceRefreshToken();
+
+          if (!freshToken) {
+            // Refresh also failed — genuinely expired. Sign out.
+            await signOut({ redirect: false });
+            window.location.href = "/login";
+            return Promise.reject(error);
           }
+
+          // Retry the original request with the new access token
+          if (originalRequest.headers) {
+            (originalRequest.headers as any).Authorization = `Bearer ${freshToken}`;
+          }
+          return this.client(originalRequest);
         }
 
         this.handleError(error);
