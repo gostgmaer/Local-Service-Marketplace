@@ -1,4 +1,5 @@
 import { Injectable, Inject, LoggerService } from "@nestjs/common";
+import * as crypto from "crypto";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -207,7 +208,7 @@ export class PaymentService {
     if (paymentStatus === "completed") {
       await this.kafkaService.publishEvent("payment-events", {
         eventType: "payment_completed",
-        eventId: `${payment.id}-${Date.now()}`,
+        eventId: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         data: {
           paymentId: payment.id,
@@ -222,7 +223,7 @@ export class PaymentService {
     } else {
       await this.kafkaService.publishEvent("payment-events", {
         eventType: "payment_pending",
-        eventId: `${payment.id}-${Date.now()}`,
+        eventId: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         data: {
           paymentId: payment.id,

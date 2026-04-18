@@ -966,6 +966,7 @@ INSERT INTO system_settings (key, value, description, type) VALUES
   -- ── Reviews & Disputes ─────────────────────────────────────────────────────
   ('min_review_length',              '10',    'Minimum character count required for a review comment',                      'number'),
   ('review_auto_approve_days',       '7',     'Days after job completion before a review is auto-approved',                 'number'),
+  ('review_submission_window_days',  '90',    'Days after job completion within which a customer can submit a review',       'number'),
   ('dispute_window_days',            '30',    'Days after job completion within which a dispute can be filed',              'number'),
   ('refund_window_days',             '30',    'Days after payment completion within which a refund can be requested',       'number'),
   -- ── Payments ───────────────────────────────────────────────────────────────

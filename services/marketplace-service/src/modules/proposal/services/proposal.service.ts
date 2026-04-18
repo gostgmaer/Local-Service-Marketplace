@@ -1,4 +1,5 @@
 import { Injectable, Inject, LoggerService } from "@nestjs/common";
+import * as crypto from "crypto";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -214,7 +215,7 @@ export class ProposalService {
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent("proposal-events", {
       eventType: "proposal_submitted",
-      eventId: `${proposal.id}-${Date.now()}`,
+      eventId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       data: {
         proposalId: proposal.id,

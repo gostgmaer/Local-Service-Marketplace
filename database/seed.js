@@ -1932,6 +1932,7 @@ class DatabaseSeeder {
 			// ── Reviews & Disputes ────────────────────────────────────────────
 			{ key: "min_review_length",                value: "10",    type: "number",   description: "Minimum character count required for a review comment" },
 			{ key: "review_auto_approve_days",         value: "7",     type: "number",   description: "Days after job completion before a review is auto-approved" },
+			{ key: "review_submission_window_days",    value: "90",    type: "number",   description: "Days after job completion within which a customer can submit a review" },
 			{ key: "dispute_window_days",              value: "30",    type: "number",   description: "Days after job completion within which a dispute can be filed" },
 			{ key: "refund_window_days",               value: "30",    type: "number",   description: "Days after payment completion within which a refund can be requested" },
 			// ── Security & Auth ───────────────────────────────────────────────

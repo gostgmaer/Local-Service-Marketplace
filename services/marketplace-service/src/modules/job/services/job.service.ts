@@ -1,4 +1,5 @@
 import { Injectable, Inject, LoggerService } from "@nestjs/common";
+import * as crypto from "crypto";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -107,7 +108,7 @@ export class JobService {
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent("job-events", {
       eventType: "job_created",
-      eventId: `${job.id}-${Date.now()}`,
+      eventId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       data: {
         jobId: job.id,
@@ -284,7 +285,7 @@ export class JobService {
     await this.kafkaService.publishEvent("job-events", {
       eventType:
         dto.status === "in_progress" ? "job_started" : `job_${dto.status}`,
-      eventId: `${job.id}-${Date.now()}`,
+      eventId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       data: {
         jobId: job.id,

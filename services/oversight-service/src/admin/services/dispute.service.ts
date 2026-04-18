@@ -74,6 +74,18 @@ export class DisputeService {
       }
     }
 
+    // Verify the opener is actually a party on this job (customer or provider)
+    const { customerId, providerUserId } =
+      await this.disputeRepository.getJobParties(jobId);
+    if (!customerId && !providerUserId) {
+      throw new NotFoundException("Job not found");
+    }
+    if (openedBy !== customerId && openedBy !== providerUserId) {
+      throw new ForbiddenException(
+        "Only the customer or provider of this job can file a dispute",
+      );
+    }
+
     const dispute = await this.disputeRepository.createDispute(
       jobId,
       openedBy,
@@ -88,11 +100,7 @@ export class DisputeService {
     );
 
     // Notify dispute opener — queue if workers enabled, else inline
-    // Also look up the other job party so they receive a notification too
-    const { customerId, providerUserId } =
-      await this.disputeRepository.getJobParties(jobId);
-    const otherPartyId =
-      openedBy === customerId ? providerUserId : customerId;
+    const otherPartyId = openedBy === customerId ? providerUserId : customerId;
 
     if (this.workersEnabled) {
       this.notificationQueue
@@ -290,7 +298,7 @@ export class DisputeService {
         admin_id: adminId,
         timestamp: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch (err: any) {
       this.logger.warn(
         `Failed to emit dispute event for ${id}: ${err.message}`,
         "DisputeService",

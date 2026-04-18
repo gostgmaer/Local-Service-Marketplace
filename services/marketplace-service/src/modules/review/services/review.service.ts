@@ -51,9 +51,11 @@ export class ReviewService {
     }
 
     // 1b. Enforce review submission time window from system settings
+    // This uses review_submission_window_days (default 90), which is separate from
+    // review_auto_approve_days (the timer for auto-approving unanswered reviews).
     if (job.completed_at) {
       const windowDaysStr = await this.reviewRepository.getSystemSetting(
-        "review_auto_approve_days",
+        "review_submission_window_days",
         "90",
       );
       const windowDays = parseInt(windowDaysStr, 10) || 90;

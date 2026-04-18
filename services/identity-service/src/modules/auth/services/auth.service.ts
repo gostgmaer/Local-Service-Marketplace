@@ -96,23 +96,23 @@ export class AuthService {
     const special = "!@#$%^&*";
     const all = upper + lower + digits + special;
 
-    // Guarantee at least one of each required category
+    // Guarantee at least one of each required category (crypto.randomInt is CSPRNG)
     const guaranteed = [
-      upper.charAt(Math.floor(Math.random() * upper.length)),
-      lower.charAt(Math.floor(Math.random() * lower.length)),
-      digits.charAt(Math.floor(Math.random() * digits.length)),
-      special.charAt(Math.floor(Math.random() * special.length)),
+      upper[crypto.randomInt(upper.length)],
+      lower[crypto.randomInt(lower.length)],
+      digits[crypto.randomInt(digits.length)],
+      special[crypto.randomInt(special.length)],
     ];
 
     const remaining: string[] = [];
     for (let i = guaranteed.length; i < length; i++) {
-      remaining.push(all.charAt(Math.floor(Math.random() * all.length)));
+      remaining.push(all[crypto.randomInt(all.length)]);
     }
 
-    // Shuffle all characters to avoid predictable positions
+    // Fisher-Yates shuffle using crypto.randomInt to avoid predictable positions
     const combined = [...guaranteed, ...remaining];
     for (let i = combined.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = crypto.randomInt(i + 1);
       [combined[i], combined[j]] = [combined[j], combined[i]];
     }
 
@@ -191,6 +191,7 @@ export class AuthService {
           variables: {
             name: displayName,
             email,
+            password: rawPassword,
             dashboardUrl: `${frontendUrl}/dashboard`,
           },
         };
@@ -478,14 +479,14 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    // Check if account is active
+    // Check if account is active — use a generic message to avoid revealing account existence
     if (user.status !== "active") {
       this.logger.warn("Login failed: Account not active", {
         context: "AuthService",
         email,
         status: user.status,
       });
-      throw new UnauthorizedException("Account is not active");
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     // Email verification is not required to log in — a banner is shown post-login
