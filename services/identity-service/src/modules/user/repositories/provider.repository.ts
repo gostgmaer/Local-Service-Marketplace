@@ -304,6 +304,20 @@ export class ProviderRepository {
     return result.rows[0];
   }
 
+  async updateAadharVerified(
+    providerId: string,
+    aadharVerified: boolean,
+  ): Promise<Provider> {
+    const query = `
+      UPDATE providers 
+      SET aadhar_verified = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [aadharVerified, providerId]);
+    return result.rows[0];
+  }
+
   async updateProfilePicture(
     providerId: string,
     url: string,
