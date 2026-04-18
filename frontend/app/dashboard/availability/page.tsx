@@ -80,6 +80,13 @@ export default function AvailabilityPage() {
       !!user?.id,
   });
 
+  // Redirect if not authenticated or missing permission (must be in useEffect, not render)
+  useEffect(() => {
+    if (!isAuthenticated || !can(Permission.PROVIDER_AVAILABILITY_MANAGE)) {
+      router.push(ROUTES.DASHBOARD);
+    }
+  }, [isAuthenticated, can, router]);
+
   // Load existing availability when provider data is fetched
   useEffect(() => {
     if (provider?.availability) {
@@ -179,8 +186,17 @@ export default function AvailabilityPage() {
   };
 
   if (!isAuthenticated || !can(Permission.PROVIDER_AVAILABILITY_MANAGE)) {
-    router.push(ROUTES.DASHBOARD);
     return null;
+  }
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container-custom py-12">
+          <Loading />
+        </div>
+      </Layout>
+    );
   }
 
   if (!provider) {

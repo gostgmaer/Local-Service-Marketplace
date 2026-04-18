@@ -53,6 +53,26 @@ export class ProposalController {
     return this.proposalService.createProposal(createProposalDto);
   }
 
+  /**
+   * Nested resource route: POST /requests/:requestId/proposals
+   * Preferred REST style — requestId comes from the URL, not the body.
+   */
+  @RequirePermissions("proposals.create")
+  @UseGuards(RolesGuard)
+  @Post("requests/:requestId/proposals")
+  @HttpCode(HttpStatus.CREATED)
+  async createProposalForRequest(
+    @Param("requestId", FlexibleIdPipe) requestId: string,
+    @Body() createProposalDto: CreateProposalDto,
+    @Request() req: any,
+  ): Promise<ProposalResponseDto> {
+    createProposalDto.request_id = requestId;
+    if (req.user?.providerId) {
+      createProposalDto.provider_id = req.user.providerId;
+    }
+    return this.proposalService.createProposal(createProposalDto);
+  }
+
   @Get("proposals")
   @HttpCode(HttpStatus.OK)
   async getProposals(

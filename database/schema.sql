@@ -697,7 +697,8 @@ CREATE UNIQUE INDEX idx_favorites_unique ON favorites(user_id, provider_id);
 CREATE TABLE attachments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
-  file_url TEXT NOT NULL,
+  file_id TEXT,
+  file_url TEXT,
   file_name TEXT,
   file_size BIGINT,
   mime_type TEXT,
@@ -705,6 +706,7 @@ CREATE TABLE attachments (
 );
 
 CREATE INDEX idx_attachments_message_id ON attachments(message_id);
+CREATE INDEX idx_attachments_file_id ON attachments(file_id) WHERE file_id IS NOT NULL;
 
 -- =====================================================
 -- COUPONS
@@ -1366,7 +1368,8 @@ CREATE TABLE provider_documents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
   document_type TEXT NOT NULL CHECK (document_type IN ('government_id', 'business_license', 'insurance_certificate', 'certification', 'tax_document')),
-  document_url TEXT NOT NULL,
+  document_url TEXT,
+  file_id TEXT,
   document_name TEXT NOT NULL,
   document_number TEXT,
   verified BOOLEAN DEFAULT false,
@@ -1382,6 +1385,7 @@ CREATE INDEX idx_provider_documents_provider_id ON provider_documents(provider_i
 CREATE INDEX idx_provider_documents_type ON provider_documents(document_type);
 CREATE INDEX idx_provider_documents_verified ON provider_documents(verified);
 CREATE INDEX idx_provider_documents_verified_by ON provider_documents(verified_by) WHERE verified_by IS NOT NULL;
+CREATE INDEX idx_provider_documents_file_id ON provider_documents(file_id) WHERE file_id IS NOT NULL;
 
 -- =====================================================
 -- PROVIDER PORTFOLIO
@@ -2417,6 +2421,9 @@ VALUES
   ('030', 'add_setting_type', 'integrated_in_schema', 0),
   ('032', 'index_optimizations', 'integrated_in_schema', 0),
   ('033', 'deep_query_pattern_optimizations', 'integrated_in_schema', 0),
-  ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0)
+  ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0),
+  ('035', 'add_file_id_to_provider_documents', 'integrated_in_schema', 0),
+  ('036', 'secure_attachment_file_id', 'integrated_in_schema', 0),
+  ('037', 'make_document_url_nullable', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

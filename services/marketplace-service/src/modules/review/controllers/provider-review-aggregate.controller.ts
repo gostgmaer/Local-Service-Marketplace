@@ -22,21 +22,17 @@ export class ProviderReviewAggregateController {
     const aggregate =
       await this.aggregateService.getProviderAggregate(providerId);
 
-    // Transform field names for frontend compatibility
-    const transformedAggregate = aggregate
-      ? {
-          ...aggregate,
-          one_star_count: aggregate.rating_1_count,
-          two_star_count: aggregate.rating_2_count,
-          three_star_count: aggregate.rating_3_count,
-          four_star_count: aggregate.rating_4_count,
-          five_star_count: aggregate.rating_5_count,
-        }
-      : null;
+    // Return data directly — ResponseTransformInterceptor handles envelope wrapping.
+    // Returning { message, data } causes the interceptor to produce { data: { data: ... } }.
+    if (!aggregate) return null;
 
     return {
-      message: "Provider review aggregate retrieved successfully",
-      data: transformedAggregate,
+      ...aggregate,
+      one_star_count: aggregate.rating_1_count,
+      two_star_count: aggregate.rating_2_count,
+      three_star_count: aggregate.rating_3_count,
+      four_star_count: aggregate.rating_4_count,
+      five_star_count: aggregate.rating_5_count,
     };
   }
 
@@ -44,26 +40,14 @@ export class ProviderReviewAggregateController {
   async getRatingDistribution(
     @Param("providerId", FlexibleIdPipe) providerId: string,
   ) {
-    const distribution =
-      await this.aggregateService.getRatingDistribution(providerId);
-
-    return {
-      message: "Rating distribution retrieved successfully",
-      data: distribution,
-    };
+    return this.aggregateService.getRatingDistribution(providerId);
   }
 
   @Get("provider/:providerId/trust-badge")
   async checkTrustBadge(
     @Param("providerId", FlexibleIdPipe) providerId: string,
   ) {
-    const eligibility =
-      await this.aggregateService.checkTrustBadgeEligibility(providerId);
-
-    return {
-      message: "Trust badge eligibility retrieved successfully",
-      data: eligibility,
-    };
+    return this.aggregateService.checkTrustBadgeEligibility(providerId);
   }
 
   @Get("top-rated")
@@ -74,8 +58,7 @@ export class ProviderReviewAggregateController {
       limit || 10,
     );
 
-    // Transform field names for frontend compatibility
-    const transformedProviders = providers.map((aggregate) => ({
+    return providers.map((aggregate) => ({
       ...aggregate,
       one_star_count: aggregate.rating_1_count,
       two_star_count: aggregate.rating_2_count,
@@ -83,11 +66,6 @@ export class ProviderReviewAggregateController {
       four_star_count: aggregate.rating_4_count,
       five_star_count: aggregate.rating_5_count,
     }));
-
-    return {
-      message: "Top rated providers retrieved successfully",
-      data: transformedProviders,
-    };
   }
 
   @Get("by-rating")
@@ -102,8 +80,7 @@ export class ProviderReviewAggregateController {
       limit || 20,
     );
 
-    // Transform field names for frontend compatibility
-    const transformedProviders = providers.map((aggregate) => ({
+    return providers.map((aggregate) => ({
       ...aggregate,
       one_star_count: aggregate.rating_1_count,
       two_star_count: aggregate.rating_2_count,
@@ -111,10 +88,5 @@ export class ProviderReviewAggregateController {
       four_star_count: aggregate.rating_4_count,
       five_star_count: aggregate.rating_5_count,
     }));
-
-    return {
-      message: "Providers by rating retrieved successfully",
-      data: transformedProviders,
-    };
   }
 }

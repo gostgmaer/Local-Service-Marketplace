@@ -4,6 +4,7 @@ import {
   IsArray,
   IsUUID,
   IsNumber,
+  IsBoolean,
   Min,
   Max,
   ValidateNested,
@@ -85,4 +86,8 @@ export class UpdateProviderDto {
   @ValidateNested({ each: true })
   @Type(() => CertificationDto)
   certifications?: CertificationDto[];
+
+  @IsOptional()
+  @IsBoolean()
+  aadhar_verified?: boolean;
 }

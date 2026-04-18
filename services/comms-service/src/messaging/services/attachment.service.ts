@@ -14,7 +14,7 @@ export class AttachmentService {
 
   async createAttachment(
     messageId: string,
-    fileUrl: string,
+    fileId: string,
     fileName?: string,
     fileSize?: number,
     mimeType?: string,
@@ -25,7 +25,7 @@ export class AttachmentService {
     );
     const attachment = await this.attachmentRepository.createAttachment(
       messageId,
-      fileUrl,
+      fileId,
       fileName,
       fileSize,
       mimeType,

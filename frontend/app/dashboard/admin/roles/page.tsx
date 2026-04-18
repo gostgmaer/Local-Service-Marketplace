@@ -16,6 +16,7 @@ import { ROUTES } from "@/config/constants";
 import { useState } from "react";
 import { Shield, Plus, Pencil, Trash2, Lock } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export default function AdminRolesPage() {
   const queryClient = useQueryClient();
@@ -25,6 +26,7 @@ export default function AdminRolesPage() {
     display_name: "",
     description: "",
   });
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
 
   const {
     data: roles,
@@ -74,13 +76,13 @@ export default function AdminRolesPage() {
 
   const handleDelete = (role: Role) => {
     if (role.is_system) return;
-    if (
-      !confirm(
-        `Delete role "${role.display_name}"? Users with this role will need to be reassigned.`,
-      )
-    )
-      return;
-    deleteMutation.mutate(role.id);
+    setRoleToDelete(role);
+  };
+
+  const confirmDelete = () => {
+    if (!roleToDelete) return;
+    deleteMutation.mutate(roleToDelete.id);
+    setRoleToDelete(null);
   };
 
   return (
@@ -306,6 +308,17 @@ export default function AdminRolesPage() {
           </Card>
         </div>
       </Layout>
+
+      <ConfirmDialog
+        isOpen={!!roleToDelete}
+        onClose={() => setRoleToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Role"
+        message={`Delete role "${roleToDelete?.display_name}"? Users with this role will need to be reassigned.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+      />
     </ProtectedRoute>
   );
 }

@@ -23,435 +23,584 @@ import { UserRepository } from "../repositories/user.repository";
 
 @Injectable()
 export class ProviderService {
-	private readonly defaultLimit: number;
-	private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
+  private readonly defaultLimit: number;
+  private readonly workersEnabled = process.env.WORKERS_ENABLED === "true";
 
-	constructor(
-		private readonly providerRepo: ProviderRepository,
-		private readonly providerServiceRepo: ProviderServiceRepository,
-		private readonly providerAvailabilityRepo: ProviderAvailabilityRepository,
-		private readonly redisService: RedisService,
-		private readonly configService: ConfigService,
-		@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
-		private readonly notificationClient: NotificationClient,
-		private readonly userRepo: UserRepository,
-		@InjectQueue("identity.notification")
-		private readonly notificationQueue: Queue,
-	) {
-		this.defaultLimit = parseInt(this.configService.get<string>("DEFAULT_PAGE_LIMIT", "20"), 10);
-		// defaultLimit may be overridden per-request from system_settings (defaultLimit is kept as fallback)
-	}
+  constructor(
+    private readonly providerRepo: ProviderRepository,
+    private readonly providerServiceRepo: ProviderServiceRepository,
+    private readonly providerAvailabilityRepo: ProviderAvailabilityRepository,
+    private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    private readonly notificationClient: NotificationClient,
+    private readonly userRepo: UserRepository,
+    @InjectQueue("identity.notification")
+    private readonly notificationQueue: Queue,
+  ) {
+    this.defaultLimit = parseInt(
+      this.configService.get<string>("DEFAULT_PAGE_LIMIT", "20"),
+      10,
+    );
+    // defaultLimit may be overridden per-request from system_settings (defaultLimit is kept as fallback)
+  }
 
-	private sendEmailNotification(payload: { to: string; template: string; variables: Record<string, any> }): void {
-		const dispatch =
-			this.workersEnabled ?
-				this.notificationQueue.add("send-email", payload)
-			:	this.notificationClient.sendEmail(payload);
-		dispatch.catch((err: any) => {
-			this.logger.error(
-				`Failed to send email (${payload.template}) to ${payload.to}: ${err.message}`,
-				"ProviderService",
-			);
-		});
-	}
+  private sendEmailNotification(payload: {
+    to: string;
+    template: string;
+    variables: Record<string, any>;
+  }): void {
+    const dispatch = this.workersEnabled
+      ? this.notificationQueue.add("send-email", payload)
+      : this.notificationClient.sendEmail(payload);
+    dispatch.catch((err: any) => {
+      this.logger.error(
+        `Failed to send email (${payload.template}) to ${payload.to}: ${err.message}`,
+        "ProviderService",
+      );
+    });
+  }
 
-	async createProvider(createProviderDto: CreateProviderDto): Promise<ProviderResponseDto> {
-		const { user_id, business_name, description, service_categories, availability } = createProviderDto;
+  async createProvider(
+    createProviderDto: CreateProviderDto,
+  ): Promise<ProviderResponseDto> {
+    const {
+      user_id,
+      business_name,
+      description,
+      service_categories,
+      availability,
+    } = createProviderDto;
 
-		this.logger.info("Creating provider", { context: "ProviderService", user_id, business_name });
+    this.logger.info("Creating provider", {
+      context: "ProviderService",
+      user_id,
+      business_name,
+    });
 
-		// Check if new provider registrations are currently enabled
-		const providerRegEnabled = await this.providerRepo.getSystemSetting("provider_registration_enabled", "true");
-		if (providerRegEnabled === "false") {
-			throw new BadRequestException("New provider registrations are currently disabled. Please try again later.");
-		}
+    // Check if new provider registrations are currently enabled
+    const providerRegEnabled = await this.providerRepo.getSystemSetting(
+      "provider_registration_enabled",
+      "true",
+    );
+    if (providerRegEnabled === "false") {
+      throw new BadRequestException(
+        "New provider registrations are currently disabled. Please try again later.",
+      );
+    }
 
-		// Check if provider already exists for this user
-		const existingProvider = await this.providerRepo.findByUserId(user_id);
-		if (existingProvider) {
-			throw new ConflictException("Provider profile already exists for this user");
-		}
+    // Check if provider already exists for this user
+    const existingProvider = await this.providerRepo.findByUserId(user_id);
+    if (existingProvider) {
+      throw new ConflictException(
+        "Provider profile already exists for this user",
+      );
+    }
 
-		// Create provider
-		const provider = await this.providerRepo.create(user_id, business_name, description);
+    // Create provider
+    const provider = await this.providerRepo.create(
+      user_id,
+      business_name,
+      description,
+    );
 
-		// Add service categories
-		if (service_categories && service_categories.length > 0) {
-			for (const categoryId of service_categories) {
-				await this.providerServiceRepo.create(provider.id, categoryId);
-			}
-		}
+    // Add service categories
+    if (service_categories && service_categories.length > 0) {
+      for (const categoryId of service_categories) {
+        await this.providerServiceRepo.create(provider.id, categoryId);
+      }
+    }
 
-		// Add availability
-		if (availability && availability.length > 0) {
-			for (const slot of availability) {
-				await this.providerAvailabilityRepo.create(provider.id, slot.day_of_week, slot.start_time, slot.end_time);
-			}
-		}
+    // Add availability
+    if (availability && availability.length > 0) {
+      for (const slot of availability) {
+        await this.providerAvailabilityRepo.create(
+          provider.id,
+          slot.day_of_week,
+          slot.start_time,
+          slot.end_time,
+        );
+      }
+    }
 
-		this.logger.info("Provider created successfully", { context: "ProviderService", provider_id: provider.id });
+    this.logger.info("Provider created successfully", {
+      context: "ProviderService",
+      provider_id: provider.id,
+    });
 
-		// Send welcome notification to provider
-		const providerUser = await this.userRepo.findById(user_id);
-		if (providerUser?.email) {
-			this.sendEmailNotification({
-				to: providerUser.email,
-				template: "MARKETPLACE_WELCOME",
-				variables: {
-					name: business_name,
-					email: providerUser.email,
-					dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/provider/dashboard`,
-				},
-			});
-		} else {
-			this.logger.warn("Skipping provider welcome notification: provider email not found", {
-				context: "ProviderService",
-				provider_id: provider.id,
-				user_id,
-			});
-		}
+    // Send welcome notification to provider
+    const providerUser = await this.userRepo.findById(user_id);
+    if (providerUser?.email) {
+      this.sendEmailNotification({
+        to: providerUser.email,
+        template: "MARKETPLACE_WELCOME",
+        variables: {
+          name: business_name,
+          email: providerUser.email,
+          dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/provider/dashboard`,
+        },
+      });
+    } else {
+      this.logger.warn(
+        "Skipping provider welcome notification: provider email not found",
+        {
+          context: "ProviderService",
+          provider_id: provider.id,
+          user_id,
+        },
+      );
+    }
 
-		// Invalidate cache
-		if (this.redisService.isCacheEnabled()) {
-			await this.redisService.delPattern("provider:*");
-		}
+    // Invalidate cache
+    if (this.redisService.isCacheEnabled()) {
+      await this.redisService.delPattern("provider:*");
+    }
 
-		return this.getProvider(provider.id);
-	}
+    return this.getProvider(provider.id);
+  }
 
-	async updateProvider(providerId: string, updateProviderDto: UpdateProviderDto): Promise<ProviderResponseDto> {
-		const { business_name, description, service_categories, availability } = updateProviderDto;
+  async updateProvider(
+    providerId: string,
+    updateProviderDto: UpdateProviderDto,
+  ): Promise<ProviderResponseDto> {
+    const {
+      business_name,
+      description,
+      service_categories,
+      availability,
+      aadhar_verified,
+    } = updateProviderDto;
 
-		this.logger.info("Updating provider", { context: "ProviderService", provider_id: providerId });
+    this.logger.info("Updating provider", {
+      context: "ProviderService",
+      provider_id: providerId,
+    });
 
-		const provider = await this.providerRepo.findById(providerId);
-		if (!provider) {
-			throw new NotFoundException("Provider not found");
-		}
+    const provider = await this.providerRepo.findById(providerId);
+    if (!provider) {
+      throw new NotFoundException("Provider not found");
+    }
 
-		// Update basic info
-		if (business_name !== undefined || description !== undefined) {
-			await this.providerRepo.update(provider.id, business_name, description);
-		}
+    // Update basic info
+    if (business_name !== undefined || description !== undefined) {
+      await this.providerRepo.update(provider.id, business_name, description);
+    }
 
-		// Update service categories
-		if (service_categories !== undefined) {
-			// Enforce max_services_per_provider system setting
-			const maxServicesStr = await this.providerRepo.getSystemSetting("max_services_per_provider", "10");
-			const maxServices = Math.max(1, parseInt(maxServicesStr, 10) || 10);
-			if (service_categories.length > maxServices) {
-				throw new BadRequestException(`Providers can offer at most ${maxServices} service categories`);
-			}
-			await this.providerServiceRepo.replaceServices(provider.id, service_categories);
-		}
+    // Update service categories
+    if (service_categories !== undefined) {
+      // Enforce max_services_per_provider system setting
+      const maxServicesStr = await this.providerRepo.getSystemSetting(
+        "max_services_per_provider",
+        "10",
+      );
+      const maxServices = Math.max(1, parseInt(maxServicesStr, 10) || 10);
+      if (service_categories.length > maxServices) {
+        throw new BadRequestException(
+          `Providers can offer at most ${maxServices} service categories`,
+        );
+      }
+      await this.providerServiceRepo.replaceServices(
+        provider.id,
+        service_categories,
+      );
+    }
 
-		// Update availability
-		if (availability !== undefined) {
-			await this.providerAvailabilityRepo.replaceAvailability(provider.id, availability);
-		}
+    // Update availability
+    if (availability !== undefined) {
+      await this.providerAvailabilityRepo.replaceAvailability(
+        provider.id,
+        availability,
+      );
+    }
 
-		this.logger.info("Provider updated successfully", { context: "ProviderService", provider_id: provider.id });
+    // Update Aadhaar KYC verification flag
+    if (aadhar_verified !== undefined) {
+      await this.providerRepo.updateAadharVerified(
+        provider.id,
+        aadhar_verified,
+      );
+    }
 
-		// Invalidate cache for this provider
-		if (this.redisService.isCacheEnabled()) {
-			await this.redisService.del(`provider:${provider.id}`);
-		}
+    this.logger.info("Provider updated successfully", {
+      context: "ProviderService",
+      provider_id: provider.id,
+    });
 
-		return this.getProvider(provider.id);
-	}
+    // Invalidate cache for this provider
+    if (this.redisService.isCacheEnabled()) {
+      await this.redisService.del(`provider:${provider.id}`);
+    }
 
-	async getProvider(providerId: string): Promise<ProviderResponseDto> {
-		this.logger.info("Fetching provider", { context: "ProviderService", provider_id: providerId });
+    return this.getProvider(provider.id);
+  }
 
-		// Try cache first
-		if (this.redisService.isCacheEnabled()) {
-			const cacheKey = `provider:${providerId}`;
-			const cached = await this.redisService.get(cacheKey);
+  async getProvider(providerId: string): Promise<ProviderResponseDto> {
+    this.logger.info("Fetching provider", {
+      context: "ProviderService",
+      provider_id: providerId,
+    });
 
-			if (cached) {
-				this.logger.info("Cache hit for provider", { context: "ProviderService", provider_id: providerId });
-				return JSON.parse(cached);
-			}
-		}
+    // Try cache first
+    if (this.redisService.isCacheEnabled()) {
+      const cacheKey = `provider:${providerId}`;
+      const cached = await this.redisService.get(cacheKey);
 
-		const provider = await this.providerRepo.findById(providerId);
-		if (!provider) {
-			throw new NotFoundException("Provider not found");
-		}
+      if (cached) {
+        this.logger.info("Cache hit for provider", {
+          context: "ProviderService",
+          provider_id: providerId,
+        });
+        return JSON.parse(cached);
+      }
+    }
 
-		// Get services
-		const services = await this.providerServiceRepo.findByProviderId(provider.id);
+    const provider = await this.providerRepo.findById(providerId);
+    if (!provider) {
+      throw new NotFoundException("Provider not found");
+    }
 
-		// Get availability
-		const availability = await this.providerAvailabilityRepo.findByProviderId(provider.id);
+    // Get services
+    const services = await this.providerServiceRepo.findByProviderId(
+      provider.id,
+    );
 
-		const response = {
-			id: provider.id,
-			display_id: provider.display_id,
-			user_id: provider.user_id,
-			business_name: provider.business_name,
-			description: provider.description,
-			verification_status: provider.verification_status,
-			aadhar_verified: provider.aadhar_verified,
-			profile_picture_url: provider.profile_picture_url,
-			rating: provider.rating,
-			total_jobs_completed: provider.total_jobs_completed,
-			years_of_experience: provider.years_of_experience,
-			service_area_radius: provider.service_area_radius,
-			response_time_avg: provider.response_time_avg,
-			certifications: provider.certifications,
-			services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
-			availability: availability.map((a) => ({
-				id: a.id,
-				day_of_week: a.day_of_week,
-				start_time: a.start_time,
-				end_time: a.end_time,
-			})),
-			created_at: provider.created_at,
-		};
+    // Get availability
+    const availability = await this.providerAvailabilityRepo.findByProviderId(
+      provider.id,
+    );
 
-		// Cache the result
-		if (this.redisService.isCacheEnabled()) {
-			const cacheKey = `provider:${provider.id}`;
-			const cacheTtlStr = await this.providerRepo.getSystemSetting("provider_cache_ttl_seconds", "300");
-			const cacheTtl = parseInt(cacheTtlStr, 10) || 300;
-			await this.redisService.set(cacheKey, JSON.stringify(response), cacheTtl);
-		}
+    const response = {
+      id: provider.id,
+      display_id: provider.display_id,
+      user_id: provider.user_id,
+      business_name: provider.business_name,
+      description: provider.description,
+      verification_status: provider.verification_status,
+      aadhar_verified: provider.aadhar_verified,
+      profile_picture_url: provider.profile_picture_url,
+      rating: provider.rating,
+      total_jobs_completed: provider.total_jobs_completed,
+      years_of_experience: provider.years_of_experience,
+      service_area_radius: provider.service_area_radius,
+      response_time_avg: provider.response_time_avg,
+      certifications: provider.certifications,
+      services: services.map((s) => ({ id: s.id, category_id: s.category_id, category_name: (s as any).category_name, category_icon: (s as any).category_icon })),
+      availability: availability.map((a) => ({
+        id: a.id,
+        day_of_week: a.day_of_week,
+        start_time: a.start_time,
+        end_time: a.end_time,
+      })),
+      created_at: provider.created_at,
+    };
 
-		return response;
-	}
+    // Cache the result
+    if (this.redisService.isCacheEnabled()) {
+      const cacheKey = `provider:${provider.id}`;
+      const cacheTtlStr = await this.providerRepo.getSystemSetting(
+        "provider_cache_ttl_seconds",
+        "300",
+      );
+      const cacheTtl = parseInt(cacheTtlStr, 10) || 300;
+      await this.redisService.set(cacheKey, JSON.stringify(response), cacheTtl);
+    }
 
-	async getProviders(queryDto: ProviderQueryDto): Promise<PaginatedResponseDto<ProviderResponseDto>> {
-		const limit = queryDto.limit || this.defaultLimit;
-		const maxLimit = parseInt(this.configService.get<string>("MAX_PAGE_LIMIT", "100"), 10);
+    return response;
+  }
 
-		if (limit > maxLimit) {
-			throw new BadRequestException(`Limit cannot exceed ${maxLimit}`);
-		}
+  async getProviders(
+    queryDto: ProviderQueryDto,
+  ): Promise<PaginatedResponseDto<ProviderResponseDto>> {
+    const limit = queryDto.limit || this.defaultLimit;
+    const maxLimit = parseInt(
+      this.configService.get<string>("MAX_PAGE_LIMIT", "100"),
+      10,
+    );
 
-		if (
-			queryDto.min_rating !== undefined &&
-			queryDto.max_rating !== undefined &&
-			queryDto.min_rating > queryDto.max_rating
-		) {
-			throw new BadRequestException("min_rating cannot be greater than max_rating");
-		}
+    if (limit > maxLimit) {
+      throw new BadRequestException(`Limit cannot exceed ${maxLimit}`);
+    }
 
-		this.logger.info("Fetching providers", {
-			context: "ProviderService",
-			limit,
-			cursor: queryDto.cursor,
-			page: queryDto.page,
-			category_id: queryDto.category_id,
-			sortBy: queryDto.sortBy,
-			sortOrder: queryDto.sortOrder,
-			verification_status: queryDto.verification_status,
-			min_rating: queryDto.min_rating,
-			max_rating: queryDto.max_rating,
-		});
+    if (
+      queryDto.min_rating !== undefined &&
+      queryDto.max_rating !== undefined &&
+      queryDto.min_rating > queryDto.max_rating
+    ) {
+      throw new BadRequestException(
+        "min_rating cannot be greater than max_rating",
+      );
+    }
 
-		// Use cursor mode only when cursor param is explicitly provided
-		if (queryDto.cursor) {
-			// Fetch one extra to determine if there are more results
-			const providers = await this.providerRepo.findPaginated(
-				limit + 1,
-				queryDto.cursor,
-				queryDto.category_id,
-				queryDto.search,
-				queryDto.location_id,
-				undefined,
-				queryDto.sortBy,
-				queryDto.sortOrder,
-				queryDto.verification_status,
-				queryDto.min_rating,
-				queryDto.max_rating,
-				queryDto.user_id,
-			);
+    this.logger.info("Fetching providers", {
+      context: "ProviderService",
+      limit,
+      cursor: queryDto.cursor,
+      page: queryDto.page,
+      category_id: queryDto.category_id,
+      sortBy: queryDto.sortBy,
+      sortOrder: queryDto.sortOrder,
+      verification_status: queryDto.verification_status,
+      min_rating: queryDto.min_rating,
+      max_rating: queryDto.max_rating,
+    });
 
-			const hasMore = providers.length > limit;
-			const data = providers.slice(0, limit);
-			const providerResponses = await this.buildProviderResponses(data);
-			const nextCursor = hasMore && data.length > 0 ? data[data.length - 1].id : undefined;
+    // Use cursor mode only when cursor param is explicitly provided
+    if (queryDto.cursor) {
+      // Fetch one extra to determine if there are more results
+      const providers = await this.providerRepo.findPaginated(
+        limit + 1,
+        queryDto.cursor,
+        queryDto.category_id,
+        queryDto.search,
+        queryDto.location_id,
+        undefined,
+        queryDto.sortBy,
+        queryDto.sortOrder,
+        queryDto.verification_status,
+        queryDto.min_rating,
+        queryDto.max_rating,
+        queryDto.user_id,
+      );
 
-			return { data: providerResponses, nextCursor, hasMore };
-		}
+      const hasMore = providers.length > limit;
+      const data = providers.slice(0, limit);
+      const providerResponses = await this.buildProviderResponses(data);
+      const nextCursor =
+        hasMore && data.length > 0 ? data[data.length - 1].id : undefined;
 
-		// Default: page-based pagination
-		const page = queryDto.page || 1;
-		const offset = (page - 1) * limit;
+      return { data: providerResponses, nextCursor, hasMore };
+    }
 
-		const [providers, total] = await Promise.all([
-			this.providerRepo.findPaginated(
-				limit,
-				undefined,
-				queryDto.category_id,
-				queryDto.search,
-				queryDto.location_id,
-				offset,
-				queryDto.sortBy,
-				queryDto.sortOrder,
-				queryDto.verification_status,
-				queryDto.min_rating,
-				queryDto.max_rating,
-				queryDto.user_id,
-			),
-			this.providerRepo.countProviders(
-				queryDto.category_id,
-				queryDto.search,
-				queryDto.location_id,
-				queryDto.verification_status,
-				queryDto.min_rating,
-				queryDto.max_rating,
-				queryDto.user_id,
-			),
-		]);
+    // Default: page-based pagination
+    const page = queryDto.page || 1;
+    const offset = (page - 1) * limit;
 
-		const providerResponses = await this.buildProviderResponses(providers);
+    const [providers, total] = await Promise.all([
+      this.providerRepo.findPaginated(
+        limit,
+        undefined,
+        queryDto.category_id,
+        queryDto.search,
+        queryDto.location_id,
+        offset,
+        queryDto.sortBy,
+        queryDto.sortOrder,
+        queryDto.verification_status,
+        queryDto.min_rating,
+        queryDto.max_rating,
+        queryDto.user_id,
+      ),
+      this.providerRepo.countProviders(
+        queryDto.category_id,
+        queryDto.search,
+        queryDto.location_id,
+        queryDto.verification_status,
+        queryDto.min_rating,
+        queryDto.max_rating,
+        queryDto.user_id,
+      ),
+    ]);
 
-		return { data: providerResponses, total, page, limit };
-	}
+    const providerResponses = await this.buildProviderResponses(providers);
 
-	private async buildProviderResponses(providers: any[]): Promise<ProviderResponseDto[]> {
-		const responses: ProviderResponseDto[] = [];
-		for (const provider of providers) {
-			const services = await this.providerServiceRepo.findByProviderId(provider.id);
-			const availability = await this.providerAvailabilityRepo.findByProviderId(provider.id);
-			responses.push({
-				id: provider.id,
-				display_id: provider.display_id,
-				user_id: provider.user_id,
-				business_name: provider.business_name,
-				description: provider.description,
-				verification_status: provider.verification_status,
-				aadhar_verified: provider.aadhar_verified,
-				profile_picture_url: provider.profile_picture_url,
-				rating: provider.rating,
-				total_jobs_completed: provider.total_jobs_completed,
-				years_of_experience: provider.years_of_experience,
-				service_area_radius: provider.service_area_radius,
-				response_time_avg: provider.response_time_avg,
-				certifications: provider.certifications,
-				services: services.map((s) => ({ id: s.id, category_id: s.category_id })),
-				availability: availability.map((a) => ({
-					id: a.id,
-					day_of_week: a.day_of_week,
-					start_time: a.start_time,
-					end_time: a.end_time,
-				})),
-				created_at: provider.created_at,
-			});
-		}
-		return responses;
-	}
+    return { data: providerResponses, total, page, limit };
+  }
 
-	async addProviderService(providerId: string, categoryId: string): Promise<any> {
-		const provider = await this.providerRepo.findById(providerId);
-		if (!provider) {
-			throw new NotFoundException("Provider not found");
-		}
+  private async buildProviderResponses(
+    providers: any[],
+  ): Promise<ProviderResponseDto[]> {
+    const responses: ProviderResponseDto[] = [];
+    for (const provider of providers) {
+      const services = await this.providerServiceRepo.findByProviderId(
+        provider.id,
+      );
+      const availability = await this.providerAvailabilityRepo.findByProviderId(
+        provider.id,
+      );
+      responses.push({
+        id: provider.id,
+        display_id: provider.display_id,
+        user_id: provider.user_id,
+        business_name: provider.business_name,
+        description: provider.description,
+        verification_status: provider.verification_status,
+        aadhar_verified: provider.aadhar_verified,
+        profile_picture_url: provider.profile_picture_url,
+        rating: provider.rating,
+        total_jobs_completed: provider.total_jobs_completed,
+        years_of_experience: provider.years_of_experience,
+        service_area_radius: provider.service_area_radius,
+        response_time_avg: provider.response_time_avg,
+        certifications: provider.certifications,
+        services: services.map((s) => ({
+          id: s.id,
+          category_id: s.category_id,
+          category_name: (s as any).category_name,
+          category_icon: (s as any).category_icon,
+        })),
+        availability: availability.map((a) => ({
+          id: a.id,
+          day_of_week: a.day_of_week,
+          start_time: a.start_time,
+          end_time: a.end_time,
+        })),
+        created_at: provider.created_at,
+      });
+    }
+    return responses;
+  }
 
-		const existingServices = await this.providerServiceRepo.findByProviderId(provider.id);
-		if (existingServices.some((s) => s.category_id === categoryId)) {
-			throw new ConflictException("Service category already mapped to this provider");
-		}
+  async addProviderService(
+    providerId: string,
+    categoryId: string,
+  ): Promise<any> {
+    const provider = await this.providerRepo.findById(providerId);
+    if (!provider) {
+      throw new NotFoundException("Provider not found");
+    }
 
-		const newService = await this.providerServiceRepo.create(provider.id, categoryId);
+    const existingServices = await this.providerServiceRepo.findByProviderId(
+      provider.id,
+    );
+    if (existingServices.some((s) => s.category_id === categoryId)) {
+      throw new ConflictException(
+        "Service category already mapped to this provider",
+      );
+    }
 
-		if (this.redisService.isCacheEnabled()) {
-			await this.redisService.del(`provider:${provider.id}`);
-		}
+    const newService = await this.providerServiceRepo.create(
+      provider.id,
+      categoryId,
+    );
 
-		return { id: newService.id, provider_id: provider.id, category_id: categoryId };
-	}
+    if (this.redisService.isCacheEnabled()) {
+      await this.redisService.del(`provider:${provider.id}`);
+    }
 
-	async removeProviderService(providerId: string, serviceId: string): Promise<void> {
-		await this.providerServiceRepo.deleteById(serviceId);
+    return {
+      id: newService.id,
+      provider_id: provider.id,
+      category_id: categoryId,
+    };
+  }
 
-		if (this.redisService.isCacheEnabled()) {
-			await this.redisService.del(`provider:${providerId}`);
-		}
-	}
+  async removeProviderService(
+    providerId: string,
+    serviceId: string,
+  ): Promise<void> {
+    await this.providerServiceRepo.deleteById(serviceId);
 
-	async getProviderAvailability(providerId: string): Promise<any[]> {
-		const provider = await this.providerRepo.findById(providerId);
-		if (!provider) {
-			throw new NotFoundException("Provider not found");
-		}
-		return this.providerAvailabilityRepo.findByProviderId(provider.id);
-	}
+    if (this.redisService.isCacheEnabled()) {
+      await this.redisService.del(`provider:${providerId}`);
+    }
+  }
 
-	async getProviderServices(providerId: string): Promise<any[]> {
-		const provider = await this.providerRepo.findById(providerId);
-		if (!provider) {
-			throw new NotFoundException("Provider not found");
-		}
-		const services = await this.providerServiceRepo.findByProviderId(provider.id);
-		return services.map((s) => ({ id: s.id, provider_id: provider.id, category_id: s.category_id }));
-	}
+  async getProviderAvailability(providerId: string): Promise<any[]> {
+    const provider = await this.providerRepo.findById(providerId);
+    if (!provider) {
+      throw new NotFoundException("Provider not found");
+    }
+    return this.providerAvailabilityRepo.findByProviderId(provider.id);
+  }
 
-	async deleteProvider(providerId: string): Promise<void> {
-		this.logger.info("Deleting provider", { context: "ProviderService", provider_id: providerId });
+  async getProviderServices(providerId: string): Promise<any[]> {
+    const provider = await this.providerRepo.findById(providerId);
+    if (!provider) {
+      throw new NotFoundException("Provider not found");
+    }
+    const services = await this.providerServiceRepo.findByProviderId(
+      provider.id,
+    );
+    return services.map((s) => ({
+      id: s.id,
+      provider_id: provider.id,
+      category_id: s.category_id,
+    }));
+  }
 
-		const provider = await this.providerRepo.findById(providerId);
-		if (!provider) {
-			throw new NotFoundException("Provider not found");
-		}
+  async deleteProvider(providerId: string): Promise<void> {
+    this.logger.info("Deleting provider", {
+      context: "ProviderService",
+      provider_id: providerId,
+    });
 
-		// Delete related records
-		await this.providerServiceRepo.deleteByProviderId(provider.id);
-		await this.providerAvailabilityRepo.deleteByProviderId(provider.id);
+    const provider = await this.providerRepo.findById(providerId);
+    if (!provider) {
+      throw new NotFoundException("Provider not found");
+    }
 
-		// Delete provider
-		await this.providerRepo.delete(provider.id);
+    // Delete related records
+    await this.providerServiceRepo.deleteByProviderId(provider.id);
+    await this.providerAvailabilityRepo.deleteByProviderId(provider.id);
 
-		this.logger.info("Provider deleted successfully", { context: "ProviderService", provider_id: providerId });
-	}
+    // Delete provider
+    await this.providerRepo.delete(provider.id);
 
-	async verifyProvider(providerId: string, status: "pending" | "verified" | "rejected", reason?: string): Promise<ProviderResponseDto> {
-		this.logger.info("Updating provider verification status", {
-			context: "ProviderService",
-			provider_id: providerId,
-			status,
-		});
+    this.logger.info("Provider deleted successfully", {
+      context: "ProviderService",
+      provider_id: providerId,
+    });
+  }
 
-		const updated = await this.providerRepo.updateVerificationStatus(providerId, status);
-		if (!updated) {
-			throw new NotFoundException("Provider not found");
-		}
+  async verifyProvider(
+    providerId: string,
+    status: "pending" | "verified" | "rejected",
+    reason?: string,
+  ): Promise<ProviderResponseDto> {
+    this.logger.info("Updating provider verification status", {
+      context: "ProviderService",
+      provider_id: providerId,
+      status,
+    });
 
-		if (this.redisService.isCacheEnabled()) {
-			await this.redisService.del(`provider:${providerId}`);
-		}
+    const updated = await this.providerRepo.updateVerificationStatus(
+      providerId,
+      status,
+    );
+    if (!updated) {
+      throw new NotFoundException("Provider not found");
+    }
 
-		// Send approval or rejection email to the provider
-		if (status === "verified" || status === "rejected") {
-			const providerUser = await this.userRepo.findById(updated.user_id).catch(() => null);
-			if (providerUser?.email) {
-				if (status === "verified") {
-					this.sendEmailNotification({
-						to: providerUser.email,
-						template: "MARKETPLACE_PROVIDER_APPROVED",
-						variables: {
-							businessName: updated.business_name,
-							email: providerUser.email,
-							dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/provider/dashboard`,
-						},
-					});
-				} else {
-					this.sendEmailNotification({
-						to: providerUser.email,
-						template: "MARKETPLACE_PROVIDER_REJECTED",
-						variables: {
-							businessName: updated.business_name || providerUser.name || providerUser.email.split("@")[0],
-							email: providerUser.email,
-								reason: reason || "Your application did not meet our current provider requirements.",
-							supportUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/contact`,
-						},
-					});
-				}
-			}
-		}
+    if (this.redisService.isCacheEnabled()) {
+      await this.redisService.del(`provider:${providerId}`);
+    }
 
-		return this.getProvider(providerId);
-	}
+    // Send approval or rejection email to the provider
+    if (status === "verified" || status === "rejected") {
+      const providerUser = await this.userRepo
+        .findById(updated.user_id)
+        .catch(() => null);
+      if (providerUser?.email) {
+        if (status === "verified") {
+          this.sendEmailNotification({
+            to: providerUser.email,
+            template: "MARKETPLACE_PROVIDER_APPROVED",
+            variables: {
+              businessName: updated.business_name,
+              email: providerUser.email,
+              dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/provider/dashboard`,
+            },
+          });
+        } else {
+          this.sendEmailNotification({
+            to: providerUser.email,
+            template: "MARKETPLACE_PROVIDER_REJECTED",
+            variables: {
+              businessName:
+                updated.business_name ||
+                providerUser.name ||
+                providerUser.email.split("@")[0],
+              email: providerUser.email,
+              reason:
+                reason ||
+                "Your application did not meet our current provider requirements.",
+              supportUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/contact`,
+            },
+          });
+        }
+      }
+    }
+
+    return this.getProvider(providerId);
+  }
 }

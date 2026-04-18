@@ -19,7 +19,8 @@ export class ProviderDocumentService {
     providerId: string,
     userId: string,
     dto: UploadDocumentDto,
-    fileUrl: string,
+    fileUrl: string | null,
+    fileId?: string,
   ): Promise<ProviderDocument> {
     // Verify user owns this provider profile
     // This should call ProviderRepository to verify ownership
@@ -42,6 +43,7 @@ export class ProviderDocumentService {
     return this.documentRepository.create({
       provider_id: providerId,
       document_type: dto.document_type,
+      file_id: fileId,
       document_url: fileUrl,
       document_name: dto.document_name,
       document_number: dto.document_number,

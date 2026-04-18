@@ -7,6 +7,7 @@ export class ProviderDocument {
     | "insurance_certificate"
     | "certification"
     | "tax_document";
+  file_id?: string;
   document_url: string;
   document_name: string;
   document_number?: string;

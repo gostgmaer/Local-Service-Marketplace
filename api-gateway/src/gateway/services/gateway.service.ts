@@ -19,6 +19,7 @@ import {
 @Injectable()
 export class GatewayService {
   private readonly gatewaySecret: string;
+  private readonly tenantId: string;
 
   constructor(
     private readonly httpService: HttpService,
@@ -30,6 +31,7 @@ export class GatewayService {
       "GATEWAY_INTERNAL_SECRET",
       "",
     );
+    this.tenantId = this.configService.get<string>("TENANT_ID", "default");
   }
 
   /**
@@ -203,6 +205,9 @@ export class GatewayService {
     if (!sanitized["x-request-id"]) {
       sanitized["x-request-id"] = crypto.randomUUID();
     }
+
+    // Inject tenant identifier so all downstream services know which tenant this request belongs to
+    sanitized["x-tenant-id"] = this.tenantId;
 
     // Add user context headers (anonymous for public routes, authenticated for protected routes)
     if (user) {

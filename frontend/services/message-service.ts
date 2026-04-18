@@ -21,8 +21,11 @@ export interface Message {
 export interface Attachment {
   id: string;
   message_id: string;
+  /** File service ID — resolve via GET /api/v1/files/:file_id with JWT to get the URL. */
+  file_id: string;
+  /** @deprecated Legacy records only. Do not use for display — use file_id instead. */
+  file_url?: string | null;
   file_name: string;
-  file_url: string;
   file_size: number;
   mime_type: string;
   created_at: string;

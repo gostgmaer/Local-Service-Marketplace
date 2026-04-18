@@ -7,41 +7,54 @@ export class ProviderReviewAggregateRepository {
   constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
   async upsert(providerId: string): Promise<ProviderReviewAggregate> {
-    const query = `
+    // Step 1: Ensure a zero-aggregate row exists (idempotent for providers with no reviews yet).
+    // The old INSERT...SELECT...GROUP BY produced 0 rows when provider had no reviews,
+    // causing the RETURNING to return nothing → caller received undefined.
+    await this.pool.query(
+      `
       INSERT INTO provider_review_aggregates (
         provider_id, total_reviews, average_rating,
         rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count,
-        last_review_at, updated_at
-      )
-      SELECT
-        provider_id,
-        COUNT(*) as total_reviews,
-        ROUND(AVG(rating)::numeric, 2) as average_rating,
-        COUNT(*) FILTER (WHERE rating = 1) as rating_1_count,
-        COUNT(*) FILTER (WHERE rating = 2) as rating_2_count,
-        COUNT(*) FILTER (WHERE rating = 3) as rating_3_count,
-        COUNT(*) FILTER (WHERE rating = 4) as rating_4_count,
-        COUNT(*) FILTER (WHERE rating = 5) as rating_5_count,
-        MAX(created_at) as last_review_at,
-        NOW() as updated_at
-      FROM reviews
-      WHERE provider_id = $1
-      GROUP BY provider_id
-      ON CONFLICT (provider_id)
-      DO UPDATE SET
-        total_reviews = EXCLUDED.total_reviews,
-        average_rating = EXCLUDED.average_rating,
-        rating_1_count = EXCLUDED.rating_1_count,
-        rating_2_count = EXCLUDED.rating_2_count,
-        rating_3_count = EXCLUDED.rating_3_count,
-        rating_4_count = EXCLUDED.rating_4_count,
-        rating_5_count = EXCLUDED.rating_5_count,
-        last_review_at = EXCLUDED.last_review_at,
-        updated_at = NOW()
-      RETURNING *
-    `;
+        updated_at
+      ) VALUES ($1, 0, 0, 0, 0, 0, 0, 0, NOW())
+      ON CONFLICT (provider_id) DO NOTHING
+      `,
+      [providerId],
+    );
 
-    const result = await this.pool.query(query, [providerId]);
+    // Step 2: Update from the reviews table (works even when count = 0).
+    const result = await this.pool.query(
+      `
+      UPDATE provider_review_aggregates
+      SET
+        total_reviews  = sub.cnt,
+        average_rating = sub.avg_rating,
+        rating_1_count = sub.r1,
+        rating_2_count = sub.r2,
+        rating_3_count = sub.r3,
+        rating_4_count = sub.r4,
+        rating_5_count = sub.r5,
+        last_review_at = sub.last_at,
+        updated_at     = NOW()
+      FROM (
+        SELECT
+          COUNT(*)                                        AS cnt,
+          COALESCE(ROUND(AVG(rating)::numeric, 2), 0)    AS avg_rating,
+          COUNT(*) FILTER (WHERE rating = 1)              AS r1,
+          COUNT(*) FILTER (WHERE rating = 2)              AS r2,
+          COUNT(*) FILTER (WHERE rating = 3)              AS r3,
+          COUNT(*) FILTER (WHERE rating = 4)              AS r4,
+          COUNT(*) FILTER (WHERE rating = 5)              AS r5,
+          MAX(created_at)                                 AS last_at
+        FROM reviews
+        WHERE provider_id = $1
+      ) sub
+      WHERE provider_review_aggregates.provider_id = $1
+      RETURNING *
+      `,
+      [providerId],
+    );
+
     return result.rows[0];
   }
 

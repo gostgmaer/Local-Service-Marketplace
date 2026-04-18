@@ -7,8 +7,10 @@ import {
 } from "class-validator";
 
 export class CreatePortfolioDto {
+  // Injected from URL param :providerId — not validated from body
+  @IsOptional()
   @IsString()
-  provider_id: string;
+  provider_id?: string;
 
   @IsString()
   @MinLength(3)
@@ -18,8 +20,10 @@ export class CreatePortfolioDto {
   @IsString()
   description?: string;
 
+  // Injected from uploaded file URL — not validated from body
+  @IsOptional()
   @IsUrl()
-  image_url: string;
+  image_url?: string;
 
   @IsOptional()
   @IsNumber()

@@ -57,6 +57,7 @@ export class ProviderDocumentController {
 
     const userId = req.user.userId;
     const userRole = req.user.role || "user";
+    const tenantId = req.headers["x-tenant-id"] as string | undefined;
 
     if (!dto.document_name && file) {
       dto.document_name = file.originalname;
@@ -76,22 +77,24 @@ export class ProviderDocumentController {
       },
       userId,
       userRole,
+      tenantId,
     );
 
-    // Create document record in database
+    // Create document record in database.
+    // SECURITY: Only store the file service ID, never the raw Azure Blob URL.
+    // The URL is resolved on-demand via an authenticated API call so that
+    // access control is enforced every time the document is viewed.
     const document = await this.documentService.uploadDocument(
       providerId,
       userId,
       dto,
-      uploadedFile.id, // Store file ID instead of URL
+      null, // document_url intentionally null — use file_id for all access
+      uploadedFile.id,
     );
 
     return {
       success: true,
-      data: {
-        ...document,
-        file_url: uploadedFile.url, // Return download URL for frontend
-      },
+      data: document,
       message: "Document uploaded successfully. Pending verification.",
     };
   }

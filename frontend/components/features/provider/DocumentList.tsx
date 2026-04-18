@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getProviderDocuments,
   getDocumentVerificationStatus,
@@ -10,6 +11,8 @@ import {
   type VerificationStatus,
 } from "@/services/user-service";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { FilePreview } from "@/components/ui/FilePreview";
+
 import {
   FileText,
   Check,
@@ -21,43 +24,27 @@ import {
 } from "lucide-react";
 
 export function DocumentList({ providerId }: { providerId?: string }) {
-  const [documents, setDocuments] = useState<ProviderDocument[]>([]);
-  const [status, setStatus] = useState<VerificationStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [selectedDocument, setSelectedDocument] =
     useState<ProviderDocument | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const loadDocuments = useCallback(async () => {
-    if (!providerId) return;
-    try {
-      const data = await getProviderDocuments(providerId);
-      setDocuments(data || []);
-    } catch (error) {
-      console.error("Failed to load documents:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [providerId]);
 
-  const loadVerificationStatus = useCallback(async () => {
-    if (!providerId) return;
-    try {
-      const data = await getDocumentVerificationStatus(providerId);
-      setStatus(data);
-    } catch (error) {
-      console.error("Failed to load status:", error);
-    }
-  }, [providerId]);
-  useEffect(() => {
-    if (!providerId) {
-      setLoading(false);
-      return;
-    }
-    loadDocuments();
-    loadVerificationStatus();
-  }, [providerId, loadDocuments, loadVerificationStatus]);
+  // Use the same query key as the page's invalidateQueries call so that
+  // uploading a document triggers an automatic refetch here.
+  const { data: documents = [], isLoading: docsLoading } = useQuery({
+    queryKey: ["provider-documents", providerId],
+    queryFn: () => getProviderDocuments(providerId!),
+    enabled: !!providerId,
+  });
+
+  const { data: status } = useQuery<VerificationStatus>({
+    queryKey: ["provider-verification-status", providerId],
+    queryFn: () => getDocumentVerificationStatus(providerId!),
+    enabled: !!providerId,
+  });
 
   const handleDeleteClick = (documentId: string) => {
     setPendingDocId(documentId);
@@ -69,8 +56,8 @@ export function DocumentList({ providerId }: { providerId?: string }) {
     setDeleting(true);
     try {
       await deleteProviderDocument(providerId, pendingDocId);
-      loadDocuments();
-      loadVerificationStatus();
+      queryClient.invalidateQueries({ queryKey: ["provider-documents", providerId] });
+      queryClient.invalidateQueries({ queryKey: ["provider-verification-status", providerId] });
     } catch (error) {
       console.error("Failed to delete document:", error);
       toast.error("Failed to delete document");
@@ -130,7 +117,7 @@ export function DocumentList({ providerId }: { providerId?: string }) {
     return new Date(expiryDate) < new Date();
   };
 
-  if (loading) {
+  if (docsLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -328,34 +315,10 @@ export function DocumentList({ providerId }: { providerId?: string }) {
 
         {/* Document Preview Modal */}
         {selectedDocument && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedDocument(null)}
-          >
-            <div
-              className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
-                <h3 className="text-xl font-semibold">
-                  {formatDocumentType(selectedDocument.document_type)}
-                </h3>
-                <button
-                  onClick={() => setSelectedDocument(null)}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="p-6">
-                <iframe
-                  src={selectedDocument.document_url}
-                  className="w-full h-[600px] border border-gray-300 rounded"
-                  title="Document Preview"
-                />
-              </div>
-            </div>
-          </div>
+          <DocumentPreviewModal
+            doc={selectedDocument}
+            onClose={() => setSelectedDocument(null)}
+          />
         )}
       </div>
       <ConfirmDialog
@@ -372,5 +335,44 @@ export function DocumentList({ providerId }: { providerId?: string }) {
         isLoading={deleting}
       />
     </>
+  );
+}
+
+function DocumentPreviewModal({
+  doc,
+  onClose,
+}: {
+  doc: ProviderDocument;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+          <h3 className="text-xl font-semibold">
+            {doc.document_name}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="p-6">
+          <FilePreview
+            fileId={doc.file_id}
+            fileName={doc.document_name}
+            maxHeight="600px"
+          />
+        </div>
+      </div>
+    </div>
   );
 }

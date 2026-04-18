@@ -99,6 +99,7 @@ export class FileServiceClient {
     options: FileUploadOptions,
     userId?: string,
     userRole: string = "user",
+    tenantId?: string,
   ): Promise<UploadedFile> {
     try {
       const formData = new FormData();
@@ -140,7 +141,7 @@ export class FileServiceClient {
                 ...formData.getHeaders(),
                 "X-User-Id": userId || "anonymous",
                 "X-User-Role": userRole,
-                "X-Tenant-Id": this.defaultTenantId,
+                "X-Tenant-Id": tenantId || this.defaultTenantId,
               },
               timeout: this.requestTimeout,
             },

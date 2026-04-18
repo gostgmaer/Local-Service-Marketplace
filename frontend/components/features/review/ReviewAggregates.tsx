@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Star, Award } from "lucide-react";
 import reviewService, { type ReviewAggregate } from "@/services/review-service";
 
-export function ReviewAggregates({ providerId }: { providerId: string }) {
+export function ReviewAggregates({ providerId }: { providerId?: string }) {
   const [aggregate, setAggregate] = useState<ReviewAggregate | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadAggregate = useCallback(async () => {
+    if (!providerId) return;
     try {
       const data = await reviewService.getProviderReviewAggregates(providerId);
       setAggregate(data || null);
@@ -20,6 +21,10 @@ export function ReviewAggregates({ providerId }: { providerId: string }) {
   }, [providerId]);
 
   useEffect(() => {
+    if (!providerId) {
+      setLoading(false);
+      return;
+    }
     loadAggregate();
   }, [providerId, loadAggregate]);
 

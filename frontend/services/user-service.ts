@@ -259,6 +259,7 @@ export interface ProviderDocument {
     | "certification"
     | "tax_document";
   document_url: string;
+  file_id?: string;
   document_name: string;
   document_number?: string;
   expiry_date?: string; // Maps to expires_at in database

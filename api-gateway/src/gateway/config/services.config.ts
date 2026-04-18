@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 export const servicesConfig = {
   "identity-service": {
     url:
@@ -53,7 +56,7 @@ export const servicesConfig = {
     name: "infrastructure-service",
   },
   "file-upload-service": {
-    url: process.env.FILE_UPLOAD_SERVICE_URL || "http://localhost:4001",
+    url: `${process.env.FILE_UPLOAD_SERVICE_URL || "http://localhost:4001"}/api`,
     name: "file-upload-service",
   },
 };
@@ -89,10 +92,11 @@ export const routingConfig = {
   "/notifications": "comms-service",
   "/notification-preferences": "comms-service",
   "/devices": "comms-service",
-  // oversight-service (admin + analytics + user disputes)
+  // oversight-service (admin + analytics + user disputes + public config)
   "/admin": "oversight-service",
   "/analytics": "oversight-service",
   "/disputes": "oversight-service",
+  "/public": "oversight-service",
   // infrastructure-service
   "/events": "infrastructure-service",
   "/background-jobs": "infrastructure-service",
@@ -160,6 +164,11 @@ export const publicRoutes = [
   "/api/v1/categories", // List service categories (public browsing)
   "/api/v1/requests", // Create service requests (public - allows guests)
   "/api/v1/review-aggregates/provider/", // View provider review aggregates (public)
+
+  // ============================================
+  // Public Configuration Endpoints
+  // ============================================
+  "/api/v1/public/", // All public oversight endpoints (site-config, maintenance-status, etc.)
 
   // ============================================
   // Health & Monitoring

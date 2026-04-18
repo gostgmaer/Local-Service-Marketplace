@@ -179,6 +179,7 @@ export class JobController {
       },
       req.user.userId,
       req.user.role,
+      req.headers["x-tenant-id"] as string | undefined,
     );
 
     return {

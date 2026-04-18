@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { ROUTES } from "@/config/constants";
@@ -29,6 +29,7 @@ import toast from "react-hot-toast";
 import { ArrowLeft, Edit, MapPin, XCircle } from "lucide-react";
 
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export default function RequestDetailPage() {
   const params = useParams();
@@ -36,6 +37,7 @@ export default function RequestDetailPage() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const requestId = params.id as string;
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -221,14 +223,7 @@ export default function RequestDetailPage() {
                           variant="outline"
                           size="sm"
                           className="text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                "Are you sure you want to cancel this request?",
-                              )
-                            )
-                              cancelRequestMutation.mutate();
-                          }}
+                          onClick={() => setShowCancelConfirm(true)}
                           isLoading={cancelRequestMutation.isPending}
                         >
                           <XCircle className="h-4 w-4 mr-2" />
@@ -351,6 +346,20 @@ export default function RequestDetailPage() {
           </div>
         </div>
       </Layout>
+
+      <ConfirmDialog
+        isOpen={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={() => {
+          setShowCancelConfirm(false);
+          cancelRequestMutation.mutate();
+        }}
+        title="Cancel Request"
+        message="Are you sure you want to cancel this request? This action cannot be undone."
+        confirmLabel="Cancel Request"
+        variant="danger"
+        isLoading={cancelRequestMutation.isPending}
+      />
     </ProtectedRoute>
   );
 }

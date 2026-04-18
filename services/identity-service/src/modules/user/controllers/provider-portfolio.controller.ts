@@ -55,6 +55,7 @@ export class ProviderPortfolioController {
 
 		const userId = req.user.userId;
 		const userRole = req.user.role || "user";
+		const tenantId = req.headers["x-tenant-id"] as string | undefined;
 
 		// Upload all files to external file service
 		const uploadedFiles = await this.fileServiceClient.uploadMultipleFiles(
@@ -70,6 +71,7 @@ export class ProviderPortfolioController {
 			},
 			userId,
 			userRole,
+			tenantId,
 		);
 
 		// Get file URLs for database storage

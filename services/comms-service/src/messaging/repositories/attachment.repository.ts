@@ -9,22 +9,25 @@ export class AttachmentRepository {
 
   async createAttachment(
     messageId: string,
-    fileUrl: string,
+    fileId: string,
     fileName?: string,
     fileSize?: number,
     mimeType?: string,
   ): Promise<Attachment> {
     const id = uuidv4();
+    // SECURITY: store only the file service ID, not the raw Azure Blob URL.
+    // The URL is resolved on-demand via an authenticated API call.
     const query = `
-      INSERT INTO attachments (id, message_id, file_url, file_name, file_size, mime_type, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO attachments (id, message_id, file_id, file_url, file_name, file_size, mime_type, created_at)
+      VALUES ($1, $2, $3, NULL, $4, $5, $6, NOW())
       RETURNING *
     `;
-    const values = [id, messageId, fileUrl, fileName, fileSize, mimeType];
+    const values = [id, messageId, fileId, fileName, fileSize, mimeType];
     const result = await this.pool.query(query, values);
     return new Attachment({
       id: result.rows[0].id,
       message_id: result.rows[0].message_id,
+      file_id: result.rows[0].file_id,
       file_url: result.rows[0].file_url,
       file_name: result.rows[0].file_name,
       file_size: result.rows[0].file_size,
@@ -42,6 +45,7 @@ export class AttachmentRepository {
     return new Attachment({
       id: result.rows[0].id,
       message_id: result.rows[0].message_id,
+      file_id: result.rows[0].file_id,
       file_url: result.rows[0].file_url,
       file_name: result.rows[0].file_name,
       file_size: result.rows[0].file_size,
@@ -59,6 +63,7 @@ export class AttachmentRepository {
         new Attachment({
           id: row.id,
           message_id: row.message_id,
+          file_id: row.file_id,
           file_url: row.file_url,
           file_name: row.file_name,
           file_size: row.file_size,

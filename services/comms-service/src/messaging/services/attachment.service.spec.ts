@@ -9,7 +9,7 @@ const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
 const mockAttachment = {
   id: "att-uuid-1",
   message_id: "msg-uuid-1",
-  file_url: "https://cdn.example.com/file.pdf",
+  file_id: "file-service-obj-id-1",
   file_name: "file.pdf",
   file_size: 1024,
   mime_type: "application/pdf",
@@ -44,7 +44,7 @@ describe("AttachmentService", () => {
       mockAttachmentRepo.createAttachment.mockResolvedValue(mockAttachment);
       const result = await service.createAttachment(
         "msg-uuid-1",
-        "https://cdn.example.com/file.pdf",
+        "file-service-obj-id-1",
         "file.pdf",
         1024,
         "application/pdf",
@@ -52,7 +52,7 @@ describe("AttachmentService", () => {
       expect(result).toEqual(mockAttachment);
       expect(mockAttachmentRepo.createAttachment).toHaveBeenCalledWith(
         "msg-uuid-1",
-        "https://cdn.example.com/file.pdf",
+        "file-service-obj-id-1",
         "file.pdf",
         1024,
         "application/pdf",
@@ -69,7 +69,7 @@ describe("AttachmentService", () => {
       mockAttachmentRepo.createAttachment.mockResolvedValue(minimal);
       const result = await service.createAttachment(
         "msg-uuid-1",
-        "https://cdn.example.com/file.pdf",
+        "file-service-obj-id-1",
       );
       expect(result).toBeDefined();
     });
