@@ -49,7 +49,7 @@ export function CreateProposalForm({
 
   const createMutation = useMutation({
     mutationFn: (data: CreateProposalFormData) =>
-      proposalService.createProposal(data),
+      proposalService.createProposal(requestId, data),
     onSuccess: () => {
       toast.success("Proposal submitted successfully!");
       queryClient.invalidateQueries({ queryKey: ["proposals", requestId] });

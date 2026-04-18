@@ -1,0 +1,3 @@
+
+
+i think there is some data structured issue beacuse when we are calling single api or sigle record we are getting pagination meta and array within data why

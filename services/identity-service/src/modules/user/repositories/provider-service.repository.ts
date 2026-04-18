@@ -21,8 +21,14 @@ export class ProviderServiceRepository {
   }
 
   async findByProviderId(providerId: string): Promise<ProviderService[]> {
-    const query =
-      "SELECT * FROM provider_services WHERE provider_id = $1 ORDER BY id";
+    const query = `
+      SELECT ps.id, ps.provider_id, ps.category_id,
+             sc.name AS category_name, sc.icon AS category_icon
+      FROM provider_services ps
+      LEFT JOIN service_categories sc ON sc.id = ps.category_id
+      WHERE ps.provider_id = $1
+      ORDER BY ps.id
+    `;
     const result = await this.pool.query(query, [providerId]);
     return result.rows;
   }

@@ -18,8 +18,8 @@ export interface Proposal {
 }
 
 export interface CreateProposalData {
-  request_id: string;
-  provider_id: string;
+  request_id?: string;
+  provider_id?: string;
   price: number;
   message: string;
   estimated_hours?: number;
@@ -34,8 +34,14 @@ export interface UpdateProposalData {
 }
 
 class ProposalService {
-  async createProposal(data: CreateProposalData): Promise<Proposal> {
-    const response = await apiClient.post<Proposal>("/proposals", data);
+  async createProposal(
+    requestId: string,
+    data: CreateProposalData,
+  ): Promise<Proposal> {
+    const response = await apiClient.post<Proposal>(
+      `/requests/${requestId}/proposals`,
+      data,
+    );
     return response.data;
   }
 

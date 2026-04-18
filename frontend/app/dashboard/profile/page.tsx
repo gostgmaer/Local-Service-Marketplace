@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
-import { getUserProfile, getProviderProfile } from "@/services/user-service";
+import { getUserProfile, getProviderProfileByUserId } from "@/services/user-service";
 import { getProviderReviews } from "@/services/review-service";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -47,7 +47,7 @@ export default function ProfilePage() {
 
   const { data: providerProfile, isLoading: providerLoading } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
-    queryFn: () => getProviderProfile(user?.id ?? ""),
+    queryFn: () => getProviderProfileByUserId(user?.id ?? ""),
     enabled: isAuthenticated && isProvider && !!user?.id,
   });
 
@@ -369,12 +369,12 @@ export default function ProfilePage() {
                       Services Offered
                     </h2>
                     <div className="flex flex-wrap gap-2">
-                      {providerProfile.services.map((svc) => (
+                      {providerProfile.services.map((svc: any) => (
                         <span
                           key={svc.id}
                           className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded-full text-sm"
                         >
-                          {svc.category_id}
+                          {svc.category_name || svc.category_id}
                         </span>
                       ))}
                     </div>

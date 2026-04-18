@@ -95,7 +95,9 @@ export class UserClient {
 
     try {
       const response = await this.httpClient.get(`/users/${userId}`);
-      return response.data as UserData;
+      // identity-service wraps all responses: { success, statusCode, data: {...} }
+      const payload = response.data?.data ?? response.data;
+      return payload as UserData;
     } catch (error: any) {
       this.logger.error(`Failed to fetch user ${userId}: ${error.message}`);
       return null;
@@ -119,7 +121,9 @@ export class UserClient {
 
     try {
       const response = await this.httpClient.get(`/providers/${providerId}`);
-      return response.data as ProviderData;
+      // identity-service wraps all responses: { success, statusCode, data: {...} }
+      const payload = response.data?.data ?? response.data;
+      return payload as ProviderData;
     } catch (error: any) {
       this.logger.error(
         `Failed to fetch provider ${providerId}: ${error.message}`,
