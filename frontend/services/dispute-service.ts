@@ -26,9 +26,8 @@ class DisputeService {
   async createDispute(data: CreateDisputeData): Promise<Dispute> {
     const response = await apiClient.post<Dispute>("/disputes", {
       job_id: data.job_id,
-      reason: data.description
-        ? `${data.reason}: ${data.description}`
-        : data.reason,
+      reason: data.reason,
+      description: data.description,
     });
     return response.data;
   }

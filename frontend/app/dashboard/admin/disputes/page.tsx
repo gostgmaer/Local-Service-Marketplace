@@ -177,6 +177,16 @@ export default function AdminDisputesPage() {
             </Card>
             <Card>
               <CardContent className="p-4">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  Escalated
+                </p>
+                <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
+                  {(disputeStats?.byStatus as any)?.escalated ?? 0}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Resolved
                 </p>

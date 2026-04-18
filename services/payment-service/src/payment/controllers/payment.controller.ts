@@ -58,6 +58,13 @@ export class PaymentController {
     @Request() req: any,
     @Headers("x-payment-gateway") gatewayHeader?: string,
   ) {
+    // Gateway override is restricted to admins — non-admins always use the
+    // platform-configured default to prevent routing to weaker or cheaper gateways.
+    const isAdmin =
+      req.user?.role === "admin" ||
+      req.user?.permissions?.includes("payments.manage");
+    const gatewayOverride = isAdmin ? gatewayHeader?.toLowerCase() : undefined;
+
     const payment = await this.paymentService.createPayment(
       createPaymentDto.job_id,
       createPaymentDto.amount,
@@ -65,7 +72,7 @@ export class PaymentController {
       req.user.userId, // user_id from authenticated user
       createPaymentDto.provider_id,
       createPaymentDto.coupon_code,
-      gatewayHeader?.toLowerCase(),
+      gatewayOverride,
     );
 
     return payment;

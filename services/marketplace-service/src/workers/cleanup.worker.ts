@@ -4,6 +4,7 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Job, Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { RequestRepository } from "../modules/request/repositories/request.repository";
+import { JobRepository } from "../modules/job/repositories/job.repository";
 import { DEFAULT_JOB_OPTIONS } from "../bullmq/bullmq-default-options";
 
 @Processor("marketplace.cleanup", {
@@ -18,16 +19,23 @@ export class MarketplaceCleanupWorker
     private readonly logger: LoggerService,
     @InjectQueue("marketplace.cleanup") private readonly cleanupQueue: Queue,
     private readonly requestRepository: RequestRepository,
+    private readonly jobRepository: JobRepository,
   ) {
     super();
   }
 
   async onModuleInit(): Promise<void> {
-    // Daily 2 AM — expire stale open requests older than 30 days
+    // Daily 2 AM — expire stale open requests (days from system settings)
     await this.cleanupQueue.add(
       "expire-stale-requests",
       {},
       { ...DEFAULT_JOB_OPTIONS, repeat: { pattern: "0 2 * * *" } },
+    );
+    // Daily 3 AM — auto-complete in_progress jobs with no activity
+    await this.cleanupQueue.add(
+      "auto-complete-stale-jobs",
+      {},
+      { ...DEFAULT_JOB_OPTIONS, repeat: { pattern: "0 3 * * *" } },
     );
     this.logger.log(
       "Marketplace cleanup repeatable jobs registered",
@@ -40,6 +48,8 @@ export class MarketplaceCleanupWorker
       switch (job.name) {
         case "expire-stale-requests":
           return this.handleExpireStaleRequests();
+        case "auto-complete-stale-jobs":
+          return this.handleAutoCompleteStaleJobs();
         default:
           throw new Error(`Unknown job name: ${job.name}`);
       }
@@ -56,10 +66,33 @@ export class MarketplaceCleanupWorker
 
   private async handleExpireStaleRequests(): Promise<void> {
     this.logger.log("Expiring stale open requests", "MarketplaceCleanupWorker");
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const expiryDays = parseInt(
+      await this.requestRepository.getSystemSetting("request_expiry_days", "30"),
+      10,
+    );
+    const cutoff = new Date(Date.now() - expiryDays * 24 * 60 * 60 * 1000);
     const count = await this.requestRepository.expireStaleRequests(cutoff);
     this.logger.log(
-      `Expired ${count} stale requests`,
+      `Expired ${count} stale requests (cutoff: ${expiryDays} days)`,
+      "MarketplaceCleanupWorker",
+    );
+  }
+
+  private async handleAutoCompleteStaleJobs(): Promise<void> {
+    this.logger.log(
+      "Auto-completing stale in_progress jobs",
+      "MarketplaceCleanupWorker",
+    );
+    const autoCompleteDays = parseInt(
+      await this.jobRepository.getSystemSetting("job_auto_complete_days", "7"),
+      10,
+    );
+    const cutoff = new Date(
+      Date.now() - autoCompleteDays * 24 * 60 * 60 * 1000,
+    );
+    const count = await this.jobRepository.autoCompleteStaleJobs(cutoff);
+    this.logger.log(
+      `Auto-completed ${count} stale jobs (cutoff: ${autoCompleteDays} days)`,
       "MarketplaceCleanupWorker",
     );
   }

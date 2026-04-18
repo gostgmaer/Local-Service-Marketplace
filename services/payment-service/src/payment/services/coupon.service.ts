@@ -47,8 +47,23 @@ export class CouponService {
     return coupon;
   }
 
-  async validateAndUseCoupon(code: string, userId: string): Promise<number> {
+  async validateAndUseCoupon(
+    code: string,
+    userId: string,
+    purchaseAmount?: number,
+  ): Promise<number> {
     const coupon = await this.validateCoupon(code);
+
+    // Enforce minimum purchase amount gate
+    if (
+      coupon.min_purchase_amount != null &&
+      purchaseAmount != null &&
+      purchaseAmount < coupon.min_purchase_amount
+    ) {
+      throw new BadRequestException(
+        `This coupon requires a minimum purchase amount of ₹${coupon.min_purchase_amount}. Your order total is ₹${purchaseAmount}.`,
+      );
+    }
 
     // Record coupon usage atomically — ON CONFLICT (coupon_id, user_id) DO NOTHING
     // returns null when a concurrent request already inserted the row (race condition guard)
@@ -60,11 +75,21 @@ export class CouponService {
       throw new BadRequestException("Coupon has already been used");
     }
 
+    // Cap discount at platform maximum (system_settings.max_coupon_discount_percentage)
+    const maxPctStr = await this.couponRepository.getSystemSetting(
+      "max_coupon_discount_percentage",
+      "80",
+    );
+    const maxPct = parseFloat(maxPctStr);
+    const effectiveDiscount = isNaN(maxPct)
+      ? coupon.discount_percent
+      : Math.min(coupon.discount_percent, maxPct);
+
     this.logger.log(
-      `Coupon ${code} applied for user ${userId}`,
+      `Coupon ${code} applied for user ${userId} — effective discount: ${effectiveDiscount}%`,
       "CouponService",
     );
-    return coupon.discount_percent;
+    return effectiveDiscount;
   }
 
   async getCouponByCode(code: string): Promise<Coupon> {

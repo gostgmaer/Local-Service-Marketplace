@@ -41,7 +41,7 @@ export class CategoryRepository {
   }
 
   async categoryExists(id: string): Promise<boolean> {
-    const query = `SELECT 1 FROM service_categories WHERE id = $1`;
+    const query = `SELECT 1 FROM service_categories WHERE id = $1 AND active = true`;
     const result = await this.pool.query(query, [id]);
     return result.rows.length > 0;
   }

@@ -359,12 +359,12 @@ export class MarketplaceNotificationWorker
       .catch(() => null);
     await this.notificationClient.sendEmail({
       to: emailTo,
-      template: "REVIEW_REMINDER",
+      template: "MESSAGE_RECEIVED",
       variables: {
-        username: providerName || emailTo.split("@")[0],
-        productName: jobTitle || `Job #${jobId || reviewId}`,
-        orderId: jobId || reviewId,
-        purchaseDate: new Date().toLocaleDateString("en-IN"),
+        recipientName: providerName || emailTo.split("@")[0],
+        senderName: "LocalServices",
+        messagePreview: `A customer has left you a ${rating}-star review for ${jobTitle || `Job #${jobId || reviewId}`}. Visit your dashboard to see the full review.`,
+        replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/provider/reviews`,
       },
     });
   }

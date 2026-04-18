@@ -60,15 +60,25 @@ export class CouponRepository {
     userId: string,
   ): Promise<CouponUsage | null> {
     const id = uuidv4();
+    // Atomically enforce global max_uses in the INSERT itself to prevent race conditions.
+    // The CTE counts current usages and the INSERT only proceeds when count < max_uses
+    // (or when max_uses is NULL, meaning unlimited). The ON CONFLICT guard covers
+    // per-user uniqueness simultaneously.
     const query = `
+      WITH global_count AS (
+        SELECT COUNT(*) AS cnt FROM coupon_usage WHERE coupon_id = $2
+      )
       INSERT INTO coupon_usage (id, coupon_id, user_id, used_at)
-      VALUES ($1, $2, $3, NOW())
+      SELECT $1, $2, $3, NOW()
+      FROM coupons c, global_count gc
+      WHERE c.id = $2
+        AND (c.max_uses IS NULL OR gc.cnt < c.max_uses)
       ON CONFLICT (coupon_id, user_id) DO NOTHING
       RETURNING *
     `;
     const values = [id, couponId, userId];
     const result = await this.pool.query(query, values);
-    // ON CONFLICT DO NOTHING returns 0 rows when a conflict occurs — guard against that
+    // Returns 0 rows either when max_uses is reached or per-user conflict
     if (!result.rows.length) {
       return null;
     }

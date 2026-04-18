@@ -6,6 +6,8 @@ import { RefundRepository } from "../payment/repositories/refund.repository";
 import { PaymentRepository } from "../payment/repositories/payment.repository";
 import { PaymentGatewayService } from "../payment/gateway/payment-gateway.service";
 import { DeadLetterQueueService } from "../common/dlq/dead-letter-queue.service";
+import { NotificationClient } from "../common/notification/notification.client";
+import { UserClient } from "../common/user/user.client";
 
 export interface ProcessRefundJobData {
   refundId: string;
@@ -24,6 +26,8 @@ export class RefundWorker extends WorkerHost implements OnModuleInit {
     private readonly refundRepository: RefundRepository,
     private readonly paymentRepository: PaymentRepository,
     private readonly paymentGateway: PaymentGatewayService,
+    private readonly notificationClient: NotificationClient,
+    private readonly userClient: UserClient,
     @Optional() private readonly dlqService?: DeadLetterQueueService,
   ) {
     super();
@@ -84,6 +88,31 @@ export class RefundWorker extends WorkerHost implements OnModuleInit {
         `Refund ${refundId} completed successfully via ${payment.gateway}`,
         "RefundWorker",
       );
+
+      // Send refund success notification now that the gateway has confirmed
+      const userEmail = await this.userClient
+        .getUserEmail(payment.user_id)
+        .catch(() => null);
+      if (userEmail) {
+        await this.notificationClient
+          .sendEmail({
+            to: userEmail,
+            template: "PAYMENT_REFUNDED",
+            variables: {
+              username: userEmail.split("@")[0],
+              amount: `₹${amount}`,
+              transactionId: payment.transaction_id,
+              refundId,
+              refundDate: new Date().toLocaleDateString("en-IN"),
+            },
+          })
+          .catch((err: any) => {
+            this.logger.warn(
+              `Failed to send refund success email: ${err.message}`,
+              "RefundWorker",
+            );
+          });
+      }
     } catch (error: any) {
       const err = error as Error;
       this.logger.error(
@@ -92,6 +121,30 @@ export class RefundWorker extends WorkerHost implements OnModuleInit {
         "RefundWorker",
       );
       await this.refundRepository.updateRefundStatus(refundId, "failed");
+
+      // Notify user that the refund failed so they can contact support
+      const failedPayment = await this.paymentRepository
+        .getPaymentById(paymentId)
+        .catch(() => null);
+      if (failedPayment?.user_id) {
+        const userEmail = await this.userClient
+          .getUserEmail(failedPayment.user_id)
+          .catch(() => null);
+        if (userEmail) {
+          await this.notificationClient
+            .sendEmail({
+              to: userEmail,
+              template: "PAYMENT_FAILED",
+              variables: {
+                username: userEmail.split("@")[0],
+                amount: `₹${amount}`,
+                reason: "Refund processing error — please contact support",
+                supportUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/support`,
+              },
+            })
+            .catch(() => null);
+        }
+      }
 
       // Capture in DLQ if max attempts reached
       if (this.dlqService && job.attemptsMade >= 3) {

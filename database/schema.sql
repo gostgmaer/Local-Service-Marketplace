@@ -98,10 +98,12 @@ CREATE TABLE sessions (
   created_at TIMESTAMP DEFAULT now() NOT NULL
 );
 
-CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+-- idx_sessions_user_id replaced by idx_sessions_user_id_created (includes created_at for ORDER BY)
+CREATE INDEX idx_sessions_user_id_created ON sessions(user_id, created_at DESC);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 CREATE UNIQUE INDEX idx_sessions_refresh_token ON sessions(refresh_token) WHERE refresh_token IS NOT NULL;
 CREATE INDEX idx_sessions_active ON sessions(user_id, expires_at);
+CREATE INDEX idx_sessions_user_device_active ON sessions(user_id, device_type, expires_at DESC) WHERE expires_at > NOW();
 
 CREATE TABLE email_verification_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -179,6 +181,7 @@ CREATE TABLE user_devices (
 
 CREATE INDEX idx_user_devices_device_id ON user_devices(device_id);
 CREATE UNIQUE INDEX idx_user_devices_unique ON user_devices(user_id, device_id);
+CREATE INDEX idx_user_devices_user_last_seen ON user_devices(user_id, last_seen DESC NULLS LAST);
 
 -- =====================================================
 -- ADVANCED AUTH FEATURES
@@ -374,7 +377,9 @@ CREATE INDEX idx_service_requests_user_id ON service_requests(user_id) WHERE use
 CREATE INDEX idx_service_requests_category_id ON service_requests(category_id);
 CREATE INDEX idx_service_requests_status ON service_requests(status);
 CREATE INDEX idx_service_requests_created_at ON service_requests(created_at DESC);
-CREATE INDEX idx_service_requests_user_status ON service_requests(user_id, status) WHERE user_id IS NOT NULL;
+-- idx_service_requests_user_status replaced by idx_service_requests_user_open (tighter partial: status='open' AND deleted_at IS NULL)
+CREATE INDEX idx_service_requests_user_open ON service_requests(user_id) WHERE status = 'open' AND deleted_at IS NULL AND user_id IS NOT NULL;
+CREATE INDEX idx_service_requests_created_at_date ON service_requests((created_at::date)) WHERE deleted_at IS NULL;
 CREATE INDEX idx_service_requests_deleted_at ON service_requests(deleted_at) WHERE deleted_at IS NULL;
 CREATE INDEX idx_service_requests_urgency ON service_requests(urgency);
 CREATE INDEX idx_service_requests_expiry ON service_requests(expiry_date) WHERE expiry_date IS NOT NULL;
@@ -405,7 +410,7 @@ CREATE TABLE proposals (
   updated_at TIMESTAMP
 );
 
-CREATE INDEX idx_proposals_status ON proposals(status);
+-- idx_proposals_status omitted: superseded by idx_proposals_status_created_at below
 CREATE INDEX idx_proposals_created_at ON proposals(created_at DESC);
 CREATE INDEX idx_proposals_request_status ON proposals(request_id, status);
 CREATE UNIQUE INDEX idx_proposals_provider_request_unique ON proposals(provider_id, request_id) WHERE status NOT IN ('withdrawn', 'rejected');
@@ -438,7 +443,7 @@ CREATE INDEX idx_jobs_request_id ON jobs(request_id);
 CREATE INDEX idx_jobs_provider_id ON jobs(provider_id);
 CREATE INDEX idx_jobs_customer_id ON jobs(customer_id);
 CREATE INDEX idx_jobs_proposal_id ON jobs(proposal_id);
-CREATE INDEX idx_jobs_status ON jobs(status);
+-- idx_jobs_status omitted: superseded by idx_jobs_status_started_at below
 CREATE INDEX idx_jobs_provider_status ON jobs(provider_id, status);
 CREATE UNIQUE INDEX idx_jobs_request_unique ON jobs(request_id) WHERE status NOT IN ('cancelled', 'disputed');
 CREATE INDEX idx_jobs_provider_started_at ON jobs(provider_id, started_at DESC);
@@ -471,15 +476,18 @@ CREATE TABLE payments (
   paid_at TIMESTAMP
 );
 
-CREATE INDEX idx_payments_job_id ON payments(job_id);
+-- idx_payments_job_id replaced by idx_payments_job_id_created (composite with created_at for ORDER BY)
+CREATE INDEX idx_payments_job_id_created ON payments(job_id, created_at DESC);
 CREATE INDEX idx_payments_user_id ON payments(user_id);
 CREATE INDEX idx_payments_provider_id ON payments(provider_id);
-CREATE INDEX idx_payments_status ON payments(status);
+-- idx_payments_status omitted: superseded by idx_payments_status_created below
 CREATE INDEX idx_payments_created_at ON payments(created_at DESC);
 CREATE INDEX idx_payments_transaction_id ON payments(transaction_id);
 CREATE INDEX idx_payments_gateway ON payments(gateway);
-CREATE INDEX idx_payments_provider_created ON payments(provider_id, created_at DESC);
-CREATE INDEX idx_payments_provider_status ON payments(provider_id, status);
+-- idx_payments_provider_created replaced by idx_payments_provider_earnings (partial covering with INCLUDE)
+CREATE INDEX idx_payments_provider_earnings ON payments(provider_id, status, created_at DESC) INCLUDE (provider_amount) WHERE status = 'completed';
+CREATE INDEX idx_payments_completed_created ON payments(created_at DESC) INCLUDE (platform_fee, amount, currency) WHERE status = 'completed';
+CREATE INDEX idx_payments_created_at_date ON payments((created_at::date));
 CREATE INDEX idx_payments_paid_at ON payments(paid_at DESC) WHERE paid_at IS NOT NULL;
 CREATE UNIQUE INDEX idx_payments_job_unique ON payments(job_id) WHERE status = 'completed';
 
@@ -495,7 +503,8 @@ CREATE TABLE payment_webhooks (
   processed_at TIMESTAMP
 );
 
-CREATE INDEX idx_payment_webhooks_unprocessed ON payment_webhooks(processed) WHERE processed = false;
+-- idx_payment_webhooks_unprocessed replaced by idx_payment_webhooks_pending_fifo (covers ORDER BY created_at ASC)
+CREATE INDEX idx_payment_webhooks_pending_fifo ON payment_webhooks(created_at ASC) WHERE processed = false;
 CREATE INDEX idx_payment_webhooks_gateway ON payment_webhooks(gateway);
 CREATE INDEX idx_payment_webhooks_external_id ON payment_webhooks(external_id);
 CREATE INDEX idx_payment_webhooks_brin ON payment_webhooks USING BRIN(created_at) WITH (pages_per_range = 32);
@@ -511,7 +520,9 @@ CREATE TABLE refunds (
   created_at TIMESTAMP DEFAULT now() NOT NULL
 );
 
-CREATE INDEX idx_refunds_payment_id ON refunds(payment_id);
+-- Composite covers getRefundsByPaymentId with ORDER BY created_at DESC
+CREATE INDEX idx_refunds_payment_id_created ON refunds(payment_id, created_at DESC);
+CREATE INDEX idx_refunds_created_at ON refunds(created_at DESC);
 CREATE INDEX idx_refunds_status ON refunds(status);
 
 -- =====================================================
@@ -531,7 +542,8 @@ CREATE TABLE reviews (
   helpful_count INT DEFAULT 0 CHECK (helpful_count >= 0),
   verified_purchase BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT now() NOT NULL,
-  updated_at TIMESTAMP
+  updated_at TIMESTAMP,
+  deleted_at TIMESTAMP DEFAULT NULL
 );
 
 CREATE INDEX idx_reviews_job_id ON reviews(job_id);
@@ -540,6 +552,8 @@ CREATE INDEX idx_reviews_created_at ON reviews(created_at DESC);
 CREATE INDEX idx_reviews_provider_rating ON reviews(provider_id, rating DESC);
 CREATE INDEX idx_reviews_provider_covering ON reviews(provider_id, created_at DESC) INCLUDE (rating, comment, user_id);
 CREATE UNIQUE INDEX idx_reviews_job_user_unique ON reviews(job_id, user_id);
+-- Partial index so "live reviews" queries skip soft-deleted rows (migration 034)
+CREATE INDEX idx_reviews_not_deleted ON reviews(provider_id, created_at DESC) WHERE deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS review_helpful_votes (
   review_id UUID NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
@@ -568,6 +582,9 @@ CREATE TABLE conversations (
 
 CREATE INDEX idx_conversations_customer_id ON conversations(customer_id);
 CREATE INDEX idx_conversations_provider_id ON conversations(provider_id);
+-- Composites: cover getUserConversations ORDER BY last_message_at in single scan
+CREATE INDEX idx_conversations_customer_last_msg ON conversations(customer_id, last_message_at DESC NULLS LAST);
+CREATE INDEX idx_conversations_provider_last_msg ON conversations(provider_id, last_message_at DESC NULLS LAST);
 CREATE INDEX idx_conversations_last_message_at ON conversations(last_message_at DESC);
 
 -- =====================================================
@@ -741,7 +758,7 @@ CREATE TABLE disputes (
 );
 
 CREATE INDEX idx_disputes_job_id ON disputes(job_id);
-CREATE INDEX idx_disputes_status ON disputes(status);
+-- idx_disputes_status omitted: superseded by idx_disputes_status_created_at below
 CREATE INDEX idx_disputes_opened_by ON disputes(opened_by);
 
 -- =====================================================
@@ -949,6 +966,7 @@ INSERT INTO system_settings (key, value, description, type) VALUES
   -- ── Reviews & Disputes ─────────────────────────────────────────────────────
   ('min_review_length',              '10',    'Minimum character count required for a review comment',                      'number'),
   ('review_auto_approve_days',       '7',     'Days after job completion before a review is auto-approved',                 'number'),
+  ('review_submission_window_days',  '90',    'Days after job completion within which a customer can submit a review',       'number'),
   ('dispute_window_days',            '30',    'Days after job completion within which a dispute can be filed',              'number'),
   ('refund_window_days',             '30',    'Days after payment completion within which a refund can be requested',       'number'),
   -- ── Payments ───────────────────────────────────────────────────────────────
@@ -1001,7 +1019,8 @@ CREATE TABLE admin_actions (
   created_at TIMESTAMP DEFAULT now() NOT NULL
 );
 
-CREATE INDEX idx_admin_actions_admin_id ON admin_actions(admin_id);
+-- Composite replaces separate admin_id + created_at: covers getAdminActionsByAdminId with ORDER BY
+CREATE INDEX idx_admin_actions_admin_id_created ON admin_actions(admin_id, created_at DESC);
 CREATE INDEX idx_admin_actions_created_at ON admin_actions(created_at DESC);
 
 -- =====================================================
@@ -1487,8 +1506,19 @@ CREATE TABLE provider_review_aggregates (
   updated_at TIMESTAMP DEFAULT now()
 );
 
-CREATE INDEX idx_provider_review_aggregates_rating ON provider_review_aggregates(average_rating DESC);
-CREATE INDEX idx_provider_review_aggregates_total ON provider_review_aggregates(total_reviews DESC);
+-- Two single-column indexes replaced by a unified composite covering findTopRated and findByRatingRange
+CREATE INDEX idx_provider_review_aggregates_composite ON provider_review_aggregates(average_rating DESC, total_reviews DESC);
+
+-- LOGIN ATTEMPTS: location-based fraud detection (getFailedAttemptsByLocation)
+CREATE INDEX IF NOT EXISTS idx_login_attempts_location_failed
+  ON login_attempts(location, created_at DESC)
+  WHERE success = false AND location IS NOT NULL;
+
+-- FUNCTIONAL DATE INDEXES: analytics queries use DATE(created_at)=$1 / created_at::date=
+-- Without a functional index these expressions force a full table scan + per-row cast
+CREATE INDEX IF NOT EXISTS idx_jobs_created_at_date ON jobs((created_at::date));
+CREATE INDEX IF NOT EXISTS idx_users_created_at_date ON users((created_at::date)) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_proposals_created_at_date ON proposals((created_at::date));
 
 -- =====================================================
 -- MAINTENANCE RECOMMENDATIONS
@@ -1571,6 +1601,23 @@ ALTER TABLE audit_logs SET (
   autovacuum_vacuum_scale_factor = 0.1,
   autovacuum_analyze_scale_factor = 0.05
 );
+-- High-volume tables missing from original autovacuum block
+ALTER TABLE login_history SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE user_activity_logs SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE notifications SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02
+);
+ALTER TABLE events SET (
+  autovacuum_vacuum_scale_factor = 0.1,
+  autovacuum_analyze_scale_factor = 0.05
+);
 
 -- =====================================================
 -- STATISTICS TARGETS (query planner tuning)
@@ -1592,6 +1639,7 @@ ALTER TABLE pricing_plans ALTER COLUMN active SET STATISTICS 100;
 ALTER TABLE audit_logs ALTER COLUMN action SET STATISTICS 500;
 ALTER TABLE audit_logs ALTER COLUMN entity SET STATISTICS 500;
 ALTER TABLE background_jobs ALTER COLUMN job_type SET STATISTICS 500;
+ALTER TABLE notifications ALTER COLUMN read SET STATISTICS 200;
 
 -- =====================================================
 -- PERFORMANCE INDEXES (Gap fills identified in audit)
@@ -1649,8 +1697,8 @@ CREATE INDEX IF NOT EXISTS idx_payments_payment_method
   ON payments(payment_method) WHERE payment_method IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_payments_user_status_created
   ON payments(user_id, status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_payments_provider_status_created
-  ON payments(provider_id, status, created_at DESC);
+-- idx_payments_provider_status_created superseded by idx_payments_provider_earnings (partial + INCLUDE)
+-- defined inline above with INCLUDE (provider_amount) WHERE status='completed'
 
 -- PRICING PLANS: no indexes existed; add covering indexes
 CREATE INDEX IF NOT EXISTS idx_pricing_plans_active
@@ -2365,6 +2413,10 @@ VALUES
   ('026', 'india_localization', 'integrated_in_schema', 0),
   ('027', 'add_system_settings', 'integrated_in_schema', 0),
   ('028', 'add_enforcement_settings', 'integrated_in_schema', 0),
-  ('029', 'add_dynamic_config_settings', 'integrated_in_schema', 0)
+  ('029', 'add_dynamic_config_settings', 'integrated_in_schema', 0),
+  ('030', 'add_setting_type', 'integrated_in_schema', 0),
+  ('032', 'index_optimizations', 'integrated_in_schema', 0),
+  ('033', 'deep_query_pattern_optimizations', 'integrated_in_schema', 0),
+  ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

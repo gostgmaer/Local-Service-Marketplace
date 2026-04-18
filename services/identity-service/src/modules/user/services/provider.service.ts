@@ -407,7 +407,7 @@ export class ProviderService {
 		this.logger.info("Provider deleted successfully", { context: "ProviderService", provider_id: providerId });
 	}
 
-	async verifyProvider(providerId: string, status: "pending" | "verified" | "rejected"): Promise<ProviderResponseDto> {
+	async verifyProvider(providerId: string, status: "pending" | "verified" | "rejected", reason?: string): Promise<ProviderResponseDto> {
 		this.logger.info("Updating provider verification status", {
 			context: "ProviderService",
 			provider_id: providerId,
@@ -444,7 +444,7 @@ export class ProviderService {
 						variables: {
 							businessName: updated.business_name || providerUser.name || providerUser.email.split("@")[0],
 							email: providerUser.email,
-							reason: "Your application did not meet our current provider requirements.",
+								reason: reason || "Your application did not meet our current provider requirements.",
 							supportUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/contact`,
 						},
 					});

@@ -181,6 +181,17 @@ export class GatewayService {
     // Remove headers that should not be forwarded
     delete sanitized.host;
     delete sanitized.connection;
+
+    // Strip all gateway identity headers that a client might inject to impersonate
+    // a different user or escalate privileges. These are set exclusively by the gateway.
+    delete sanitized["x-user-id"];
+    delete sanitized["x-user-email"];
+    delete sanitized["x-user-role"];
+    delete sanitized["x-user-name"];
+    delete sanitized["x-user-phone"];
+    delete sanitized["x-user-permissions"];
+    delete sanitized["x-provider-id"];
+    delete sanitized["x-gateway-hmac"];
     // Preserve content-length for multipart uploads so the downstream service
     // can accurately read the stream; remove it otherwise (may be stale after body parsing)
     if (!isMultipart) {

@@ -101,13 +101,26 @@ export class ProviderDocumentService {
     return document;
   }
 
-  async getPendingDocuments(): Promise<{
+  async getPendingDocuments(
+    limit: number = 20,
+    cursor?: string,
+  ): Promise<{
     data: ProviderDocument[];
-    total: number;
+    nextCursor: string | null;
+    hasMore: boolean;
   }> {
     // Admin only - authorization should be handled at controller level
-    const data = await this.documentRepository.getPendingDocuments();
-    return { data, total: data.length };
+    const rows = await this.documentRepository.getPendingDocuments(
+      limit,
+      cursor,
+    );
+    const hasMore = rows.length > limit;
+    const data = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor =
+      hasMore && data.length > 0
+        ? (data[data.length - 1] as any).created_at
+        : null;
+    return { data, nextCursor, hasMore };
   }
 
   async getExpiringDocuments(

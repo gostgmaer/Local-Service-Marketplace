@@ -86,6 +86,13 @@ export class JwtAuthMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const path = req.originalUrl.split("?")[0]; // strip query string
     const method = req.method.toUpperCase();
+
+    // CORS preflight requests must never be blocked by auth checks.
+    // The CORS middleware handles OPTIONS and returns the appropriate headers.
+    if (method === "OPTIONS") {
+      return next();
+    }
+
     const normalizedPath =
       path.endsWith("/") && path.length > 1 ? path.slice(0, -1) : path;
 

@@ -1,4 +1,5 @@
 import { Injectable, Inject, LoggerService } from "@nestjs/common";
+import * as crypto from "crypto";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -107,7 +108,7 @@ export class JobService {
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent("job-events", {
       eventType: "job_created",
-      eventId: `${job.id}-${Date.now()}`,
+      eventId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       data: {
         jobId: job.id,
@@ -205,6 +206,23 @@ export class JobService {
       throw new BadRequestException("Cannot update status of cancelled job");
     }
 
+    // Enforce dispute window: disputes can only be filed within N days of completion
+    if (dto.status === "disputed" && existingJob.completed_at) {
+      const windowDaysStr = await this.jobRepository.getSystemSetting(
+        "dispute_window_days",
+        "30",
+      );
+      const windowDays = parseInt(windowDaysStr, 10) || 30;
+      const ageDays =
+        (Date.now() - new Date(existingJob.completed_at).getTime()) /
+        (1000 * 60 * 60 * 24);
+      if (ageDays > windowDays) {
+        throw new BadRequestException(
+          `Disputes can only be filed within ${windowDays} days of job completion. This job was completed ${Math.floor(ageDays)} days ago.`,
+        );
+      }
+    }
+
     // Role-based transition enforcement
     const isCustomer = existingJob.customer_id === userId;
     const isProvider = existingJob.provider_id === userId;
@@ -267,7 +285,7 @@ export class JobService {
     await this.kafkaService.publishEvent("job-events", {
       eventType:
         dto.status === "in_progress" ? "job_started" : `job_${dto.status}`,
-      eventId: `${job.id}-${Date.now()}`,
+      eventId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       data: {
         jobId: job.id,
@@ -276,6 +294,14 @@ export class JobService {
         status: job.status,
       },
     });
+
+    // When a job is disputed, explicitly log and enrich the notification so both parties are notified
+    if (dto.status === "disputed") {
+      this.logger.warn(
+        `Job ${id} marked disputed by user ${userId}`,
+        JobService.name,
+      );
+    }
 
     // Notify other party about status change — queue if workers enabled, else inline
     const notifyUserId =
@@ -365,6 +391,17 @@ export class JobService {
       throw new BadRequestException("Cannot complete a cancelled job");
     }
 
+    // Require a completed payment before the job can be marked done.
+    // This prevents a provider being marked done before the customer pays.
+    const completedPayment = await this.jobRepository.getCompletedPaymentForJob(
+      existingJob.id,
+    );
+    if (!completedPayment) {
+      throw new BadRequestException(
+        "Payment must be completed before marking the job as done",
+      );
+    }
+
     const job = await this.jobRepository.completeJob(existingJob.id);
 
     this.logger.log(
@@ -377,10 +414,20 @@ export class JobService {
       await this.redisService.del(`job:${existingJob.id}`);
     }
 
+    // Mark the parent service request as completed
+    await this.jobRepository
+      .updateRequestStatus(existingJob.request_id, "completed")
+      .catch((err: any) => {
+        this.logger.warn(
+          `Failed to mark request ${existingJob.request_id} as completed: ${err.message}`,
+          JobService.name,
+        );
+      });
+
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent("job-events", {
       eventType: "job_completed",
-      eventId: `${job.id}-${Date.now()}`,
+      eventId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       data: {
         jobId: job.id,
@@ -665,12 +712,26 @@ export class JobService {
       JobService.name,
     );
 
+    // Revert the parent service request back to 'open' so new proposals can be accepted
+    await this.jobRepository
+      .updateRequestStatus(existingJob.request_id, "open")
+      .catch((err: any) => {
+        this.logger.warn(
+          `Failed to revert request ${existingJob.request_id} to open: ${err.message}`,
+          JobService.name,
+        );
+      });
+
     // Invalidate cache
     if (this.redisService.isCacheEnabled()) {
       await this.redisService.del(`job:${existingJob.id}`);
     }
 
-    // Publish event to Kafka if enabled
+    // Publish event to Kafka if enabled — include hasCompletedPayment so the
+    // payment-service consumer can auto-initiate a refund when appropriate.
+    const cancelPayment = await this.jobRepository
+      .getCompletedPaymentForJob(existingJob.id)
+      .catch(() => null);
     await this.kafkaService.publishEvent("job-events", {
       eventType: "job_cancelled",
       eventId: `${existingJob.id}-${Date.now()}`,
@@ -681,6 +742,8 @@ export class JobService {
         providerId: existingJob.provider_id,
         customerId: existingJob.customer_id,
         cancelledBy: userId,
+        hasCompletedPayment: !!cancelPayment,
+        paymentId: cancelPayment?.id ?? null,
       },
     });
 

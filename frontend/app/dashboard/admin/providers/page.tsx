@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -24,16 +24,16 @@ import {
 import toast from "react-hot-toast";
 import { Permission } from "@/utils/permissions";
 
-function ProviderVerificationCard({
-  provider,
-  onAction,
-}: {
-  provider: any;
-  onAction: () => void;
-}) {
+function ProviderVerificationCard({ provider }: { provider: any }) {
+  const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
+
+  const invalidateProviders = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-providers"] });
+    queryClient.invalidateQueries({ queryKey: ["provider-docs", provider.id] });
+  };
 
   const { data: documents, isLoading: docsLoading } = useQuery({
     queryKey: ["provider-docs", provider.id],
@@ -45,7 +45,7 @@ function ProviderVerificationCard({
     mutationFn: () => adminService.verifyProvider(provider.id),
     onSuccess: () => {
       toast.success(`${provider.business_name} verified`);
-      onAction();
+      invalidateProviders();
     },
     onError: () => toast.error("Failed to verify provider"),
   });
@@ -55,7 +55,7 @@ function ProviderVerificationCard({
       adminService.toggleAadhaarVerified(provider.id, verified),
     onSuccess: (_data, verified) => {
       toast.success(`Aadhaar ${verified ? "verified" : "unverified"}`);
-      onAction();
+      invalidateProviders();
     },
     onError: () => toast.error("Failed to update Aadhaar status"),
   });
@@ -65,7 +65,7 @@ function ProviderVerificationCard({
     onSuccess: () => {
       toast.success("Provider rejected");
       setShowRejectInput(false);
-      onAction();
+      invalidateProviders();
     },
     onError: () => toast.error("Failed to reject provider"),
   });
@@ -262,7 +262,7 @@ export default function ProviderVerificationPage() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const limit = 10;
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["admin-providers", statusFilter, page],
     queryFn: () =>
       adminService.getProviders({ page, limit, status: statusFilter }),
@@ -332,12 +332,11 @@ export default function ProviderVerificationPage() {
               <p className="text-sm text-gray-500 mb-4">
                 {total} provider{total !== 1 ? "s" : ""}
               </p>
-              <div className="space-y-4">
+              <div className={`space-y-4 transition-opacity ${isFetching ? "opacity-60 pointer-events-none" : ""}`}>
                 {providers.map((provider) => (
                   <ProviderVerificationCard
                     key={provider.id}
                     provider={provider}
-                    onAction={refetch}
                   />
                 ))}
               </div>

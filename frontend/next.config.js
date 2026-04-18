@@ -4,6 +4,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 	openAnalyzer: false,
 });
 
+// Extra connect-src origins can be injected via env var (space-separated).
+// Default to the easydev.in wildcard if not explicitly overridden.
+const extraConnectSrc = process.env.NEXT_PUBLIC_EXTRA_CONNECT_SRC || 'https://*.easydev.in';
+
 const nextConfig = {
 	// Use standalone output only for Docker builds
 	...(process.env.DOCKER_BUILD === "true" ? { output: "standalone" } : {}),
@@ -12,7 +16,10 @@ const nextConfig = {
 	poweredByHeader: false,
 
 	// Environment variables
-	env: { NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700" },
+	env: {
+		NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700",
+		NEXT_PUBLIC_EXTRA_CONNECT_SRC: process.env.NEXT_PUBLIC_EXTRA_CONNECT_SRC || "https://*.easydev.in",
+	},
 
 	// Image optimization
 	images: {
@@ -38,8 +45,8 @@ const nextConfig = {
 						key: "Content-Security-Policy",
 						value:
 							process.env.NODE_ENV === "production" ?
-								"default-src 'self'; script-src 'self' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.easydev.in https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
-								: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.easydev.in https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com http://localhost:* ws://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
+								`default-src 'self'; script-src 'self' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${extraConnectSrc} https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`
+								: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${extraConnectSrc} https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com http://localhost:* ws://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`,
 					},
 					{ key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 					{ key: "Cross-Origin-Embedder-Policy", value: "require-corp" },

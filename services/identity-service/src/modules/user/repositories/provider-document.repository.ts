@@ -90,16 +90,26 @@ export class ProviderDocumentRepository {
     return result.rows[0];
   }
 
-  async getPendingDocuments(limit: number = 20): Promise<ProviderDocument[]> {
+  async getPendingDocuments(
+    limit: number = 20,
+    cursor?: string,
+  ): Promise<ProviderDocument[]> {
+    const params: any[] = [limit + 1]; // fetch one extra to detect hasMore
+    let cursorClause = "";
+    if (cursor) {
+      params.push(cursor);
+      cursorClause = `AND pd.created_at > $${params.length}`;
+    }
     const query = `
       SELECT pd.*, p.business_name
       FROM provider_documents pd
       JOIN providers p ON pd.provider_id = p.id
       WHERE pd.verified = false
+        ${cursorClause}
       ORDER BY pd.created_at ASC
       LIMIT $1
     `;
-    const result = await this.pool.query(query, [limit]);
+    const result = await this.pool.query(query, params);
     return result.rows;
   }
 

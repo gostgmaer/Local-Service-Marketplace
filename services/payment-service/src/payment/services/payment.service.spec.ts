@@ -192,6 +192,7 @@ describe("PaymentService.createPayment", () => {
     expect(couponService.validateAndUseCoupon).toHaveBeenCalledWith(
       "SAVE10",
       "user-1",
+      200,
     );
     // 200 * (1 - 10/100) = 180
     expect(paymentRepository.createPayment).toHaveBeenCalledWith(

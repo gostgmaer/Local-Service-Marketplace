@@ -9,6 +9,7 @@ import { UserModule } from "../common/user/user.module";
 import { AnalyticsModule } from "../common/analytics/analytics.module";
 import { ProviderReviewAggregateRepository } from "../modules/review/repositories/provider-review-aggregate.repository";
 import { RequestRepository } from "../modules/request/repositories/request.repository";
+import { JobRepository } from "../modules/job/repositories/job.repository";
 import { getQueueRegistrationOptions } from "../config/queue-config";
 
 /**
@@ -39,6 +40,7 @@ import { getQueueRegistrationOptions } from "../config/queue-config";
     MarketplaceCleanupWorker,
     ProviderReviewAggregateRepository,
     RequestRepository,
+    JobRepository,
   ],
 })
 export class WorkersModule {}

@@ -308,7 +308,11 @@ export default function MyProposalsPage() {
                               size="sm"
                               variant="outline"
                               onClick={() =>
-                                router.push(`/requests/${proposal.request_id}`)
+                                router.push(
+                                  ROUTES.DASHBOARD_REQUEST_DETAIL(
+                                    proposal.request_id,
+                                  ),
+                                )
                               }
                             >
                               View Request

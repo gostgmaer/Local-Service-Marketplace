@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,7 @@ import {
   CreditCard,
   ArrowLeft,
   Briefcase,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -29,13 +30,38 @@ import toast from "react-hot-toast";
 
 function JobCheckout({ jobId }: { jobId: string }) {
   const router = useRouter();
-  useAuth();
+  const { user } = useAuth();
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountPercent: number;
+  } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const { data: job, isLoading } = useQuery({
     queryKey: ["job", jobId],
     queryFn: () => jobService.getJobById(jobId),
     enabled: !!jobId,
   });
+
+  const handleApplyCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) return;
+    setCouponError(null);
+    setCouponLoading(true);
+    try {
+      const result = await paymentService.previewCoupon(code);
+      setAppliedCoupon({ code, discountPercent: result.discount_percent });
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || err?.message || "Invalid coupon code";
+      setCouponError(msg);
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
 
   const payMutation = useMutation({
     mutationFn: async () => {
@@ -45,6 +71,7 @@ function JobCheckout({ jobId }: { jobId: string }) {
         provider_id: job.provider_id || (job as any)?.provider?.id || "",
         amount: job.actual_amount || 0,
         currency: "INR",
+        ...(appliedCoupon ? { coupon_code: appliedCoupon.code } : {}),
       });
     },
     onSuccess: () => {
@@ -75,6 +102,28 @@ function JobCheckout({ jobId }: { jobId: string }) {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Job not found
           </h2>
+          <Link href={ROUTES.DASHBOARD_JOBS}>
+            <Button variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Jobs
+            </Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Ownership guard: only the customer who owns the job can pay for it
+  if (user?.id && job.customer_id && user.id !== job.customer_id) {
+    return (
+      <Layout>
+        <div className="container-custom py-12 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Access Denied
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            You are not authorized to make a payment for this job.
+          </p>
           <Link href={ROUTES.DASHBOARD_JOBS}>
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -153,11 +202,72 @@ function JobCheckout({ jobId }: { jobId: string }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between mb-6 text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Total due</span>
-                  <span className="font-bold text-xl">
-                    {formatCurrency(amount)}
-                  </span>
+                {/* Coupon code */}
+                <div className="mb-5">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-1">
+                    <Tag className="h-4 w-4" />
+                    Coupon Code{" "}
+                    <span className="font-normal text-gray-400">(optional)</span>
+                  </label>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg px-3 py-2">
+                      <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                        <CheckCircle className="inline h-4 w-4 mr-1" />
+                        {appliedCoupon.code} — {appliedCoupon.discountPercent}% off applied
+                      </span>
+                      <button
+                        type="button"
+                        className="text-xs text-red-500 hover:underline ml-4"
+                        onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 uppercase"
+                          placeholder="Enter coupon code"
+                          value={couponCode}
+                          onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
+                          onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleApplyCoupon}
+                          isLoading={couponLoading}
+                          disabled={!couponCode.trim() || couponLoading}
+                        >
+                          Apply
+                        </Button>
+                      </div>
+                      {couponError && (
+                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{couponError}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+                {/* Price breakdown */}
+                <div className="mb-6 space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                  <div className="flex items-center justify-between">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(amount)}</span>
+                  </div>
+                  {appliedCoupon && (
+                    <div className="flex items-center justify-between text-green-600 dark:text-green-400">
+                      <span>Coupon discount ({appliedCoupon.discountPercent}%)</span>
+                      <span>–{formatCurrency(amount * appliedCoupon.discountPercent / 100)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2">
+                    <span className="text-gray-900 dark:text-white">Total due</span>
+                    <span className="text-primary-600 dark:text-primary-400">
+                      {formatCurrency(appliedCoupon ? amount * (1 - appliedCoupon.discountPercent / 100) : amount)}
+                    </span>
+                  </div>
                 </div>
                 <Button
                   onClick={() => payMutation.mutate()}
@@ -167,8 +277,8 @@ function JobCheckout({ jobId }: { jobId: string }) {
                   size="lg"
                 >
                   {payMutation.isPending
-                    ? "Processing Paymentâ€¦"
-                    : `Pay ${formatCurrency(amount)}`}
+                    ? "Processing Payment…"
+                    : `Pay ${formatCurrency(appliedCoupon ? amount * (1 - appliedCoupon.discountPercent / 100) : amount)}`}
                 </Button>
               </CardContent>
             </Card>

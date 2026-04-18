@@ -203,6 +203,24 @@ export function DocumentList({ providerId }: { providerId?: string }) {
           </div>
         )}
 
+        {/* Expiry warning banner */}
+        {documents.some(
+          (d) => isExpiring(d.expiry_date) || isExpired(d.expiry_date),
+        ) && (
+          <div className="flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-700 dark:bg-red-900/20">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
+            <div>
+              <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                Action required: document expiry
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-0.5">
+                One or more of your documents has expired or will expire soon.
+                Please re-upload them to keep your provider profile active.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Documents List */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">

@@ -6,7 +6,7 @@ export class FilterRequestsDto {
   urgency?: "low" | "medium" | "high" | "urgent";
 
   @IsOptional()
-  @IsEnum(["open", "in_progress", "completed", "cancelled"])
+  @IsEnum(["open", "assigned", "completed", "cancelled"])
   status?: string;
 
   @IsOptional()

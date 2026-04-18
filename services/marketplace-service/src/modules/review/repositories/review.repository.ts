@@ -34,20 +34,21 @@ export class ReviewRepository {
     provider_id: string;
     status: string;
     customer_id: string;
+    completed_at: Date | null;
   } | null> {
     const id = await resolveId(this.pool, "jobs", jobId).catch(() => null);
     if (!id) return null;
     const result = await this.pool.query(
-      `SELECT id, provider_id, status, customer_id FROM jobs WHERE id = $1`,
+      `SELECT id, provider_id, status, customer_id, completed_at FROM jobs WHERE id = $1`,
       [id],
     );
     return result.rows[0] ?? null;
   }
 
-  /** Returns true if a review already exists for the given (job, user) pair. */
+  /** Returns true if a live (non-deleted) review already exists for the given (job, user) pair. */
   async existsForJobAndUser(jobId: string, userId: string): Promise<boolean> {
     const result = await this.pool.query(
-      `SELECT 1 FROM reviews WHERE job_id = $1 AND user_id = $2 LIMIT 1`,
+      `SELECT 1 FROM reviews WHERE job_id = $1 AND user_id = $2 AND deleted_at IS NULL LIMIT 1`,
       [jobId, userId],
     );
     return result.rows.length > 0;
@@ -84,7 +85,7 @@ export class ReviewRepository {
     const query = `
       SELECT id, display_id, job_id, user_id, provider_id, rating, comment, response, response_at, helpful_count, verified_purchase, created_at
       FROM reviews
-      WHERE id = $1
+      WHERE id = $1 AND deleted_at IS NULL
     `;
 
     const result = await this.pool.query(query, [id]);
@@ -110,7 +111,7 @@ export class ReviewRepository {
     const col = allowedSortColumns[sortBy] ?? "created_at";
     const dir = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
-    const conditions: string[] = ["provider_id = $1"];
+    const conditions: string[] = ["provider_id = $1", "deleted_at IS NULL"];
     const values: any[] = [providerId];
     let idx = 2;
 
@@ -145,7 +146,7 @@ export class ReviewRepository {
         COALESCE(AVG(rating), 0) as "averageRating",
         COUNT(*) as "totalReviews"
       FROM reviews
-      WHERE provider_id = $1
+      WHERE provider_id = $1 AND deleted_at IS NULL
     `;
 
     const result = await this.pool.query(query, [providerId]);
@@ -175,7 +176,7 @@ export class ReviewRepository {
     const query = `
       SELECT id, display_id, job_id, user_id, provider_id, rating, comment, response, response_at, helpful_count, verified_purchase, created_at
       FROM reviews
-      WHERE job_id = $1
+      WHERE job_id = $1 AND deleted_at IS NULL
       LIMIT 1
     `;
     const result = await this.pool.query(query, [jobId]);
@@ -353,8 +354,12 @@ export class ReviewRepository {
   }
 
   async deleteReview(id: string): Promise<void> {
-    const query = `DELETE FROM reviews WHERE id = $1`;
-    await this.pool.query(query, [id]);
+    // Soft-delete: preserve the record for audit trail and prevent rating
+    // manipulation (delete bad review → submit new one to boost rating).
+    await this.pool.query(
+      `UPDATE reviews SET deleted_at = NOW(), updated_at = NOW() WHERE id = $1`,
+      [id],
+    );
   }
 
   async getReviewsByUser(
@@ -367,13 +372,13 @@ export class ReviewRepository {
         `SELECT id, display_id, job_id, user_id, provider_id, rating, comment,
                 response, response_at, helpful_count, verified_purchase, created_at
          FROM reviews
-         WHERE user_id = $1
+         WHERE user_id = $1 AND deleted_at IS NULL
          ORDER BY created_at DESC
          LIMIT $2 OFFSET $3`,
         [userId, limit, offset],
       ),
       this.pool.query(
-        `SELECT COUNT(*)::int AS total FROM reviews WHERE user_id = $1`,
+        `SELECT COUNT(*)::int AS total FROM reviews WHERE user_id = $1 AND deleted_at IS NULL`,
         [userId],
       ),
     ]);

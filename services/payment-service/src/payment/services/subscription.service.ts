@@ -4,6 +4,8 @@ import {
   BadRequestException,
   ForbiddenException,
 } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
 import { SubscriptionRepository } from "../repositories/subscription.repository";
 import { PricingPlanRepository } from "../repositories/pricing-plan.repository";
 import { Subscription } from "../entities/subscription.entity";
@@ -19,6 +21,8 @@ export class SubscriptionService {
   constructor(
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly pricingPlanRepository: PricingPlanRepository,
+    @InjectQueue("payment.subscription")
+    private readonly subscriptionQueue: Queue,
   ) {}
 
   async createSubscription(
@@ -93,7 +97,18 @@ export class SubscriptionService {
       throw new BadRequestException("Subscription is already active");
     }
 
-    return this.subscriptionRepository.updateStatus(subscriptionId, "active");
+    const activated = await this.subscriptionRepository.updateStatus(
+      subscriptionId,
+      "active",
+    );
+    this.subscriptionQueue
+      .add("notify-subscription-activated", {
+        providerId: activated.provider_id,
+        planId: activated.plan_id,
+        expiresAt: activated.expires_at,
+      })
+      .catch(() => {});
+    return activated;
   }
 
   async getProviderSubscriptions(providerId: string): Promise<Subscription[]> {
@@ -174,7 +189,15 @@ export class SubscriptionService {
     }
 
     // Cancel subscription (remains active until expiry date)
-    return this.subscriptionRepository.cancel(subscriptionId);
+    const cancelled = await this.subscriptionRepository.cancel(subscriptionId);
+    this.subscriptionQueue
+      .add("notify-subscription-cancelled", {
+        providerId: cancelled.provider_id,
+        planId: cancelled.plan_id,
+        expiresAt: cancelled.expires_at,
+      })
+      .catch(() => {});
+    return cancelled;
   }
 
   async upgradeSubscription(

@@ -1692,7 +1692,7 @@ class DatabaseSeeder {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 				[
 					uuid(),
-					displayId('DIS'),
+					displayId('DSP'),
 					job.id,
 					job.customer_id,
 					randomPick(disputeReasons),
@@ -1906,38 +1906,73 @@ class DatabaseSeeder {
 		console.log("⚙️ Seeding system settings...");
 		const adminId = this.adminIds.length > 0 ? this.adminIds[0] : null;
 		const settings = [
-			{ key: "platform_fee_percentage", value: "15", description: "Platform commission percentage" },
-			{ key: "min_payout_amount", value: "5000", description: "Minimum payout amount in cents" },
-			{ key: "max_proposal_count", value: "10", description: "Max proposals per request" },
-			{ key: "request_expiry_days", value: "30", description: "Days until open request expires" },
-			{ key: "support_email", value: "support@marketplace.com", description: "Support contact email" },
-			{ key: "max_login_attempts", value: "5", description: "Max failed login attempts before lockout" },
-			{ key: "session_timeout_minutes", value: "15", description: "JWT access token lifetime in minutes" },
-			{ key: "otp_expiry_minutes", value: "10", description: "OTP verification code expiry in minutes" },
-			{ key: "maintenance_mode", value: "false", description: "Set to true to put the platform in maintenance mode" },
-			{ key: "maintenance_message", value: "We are performing scheduled maintenance. Please check back shortly.", description: "Message shown to users during maintenance mode" },
-			{ key: "provider_verification_required", value: "true", description: "Require admin verification before providers can accept jobs" },
-			{ key: "max_providers_per_category", value: "500", description: "Maximum number of providers allowed per service category" },
-			{ key: "max_services_per_provider", value: "10", description: "Maximum number of service categories a provider can offer" },
-			{ key: "review_auto_approve_days", value: "7", description: "Days after job completion before review is auto-approved if no response" },
-			{ key: "min_review_length", value: "10", description: "Minimum character count for a review comment" },
-			{ key: "default_currency", value: "INR", description: "Default currency for all monetary values on the platform" },
-			{ key: "default_timezone", value: "Asia/Kolkata", description: "Default timezone for scheduling and display" },
-			{ key: "max_file_upload_size_mb", value: "10", description: "Maximum file upload size in megabytes" },
-			{ key: "allowed_file_types", value: "image/jpeg,image/png,image/webp,application/pdf", description: "Comma-separated list of allowed MIME types for uploads" },
-			{ key: "contact_phone", value: "+91 98765 43210", description: "Public support phone number shown on contact page" },
-			{ key: "contact_address", value: "123 Marketplace Tower, MG Road, Bengaluru, Karnataka 560001", description: "Public office address shown on contact page" },
-			{ key: "terms_version", value: "1.0", description: "Current version of the Terms of Service document" },
-			{ key: "privacy_version", value: "1.0", description: "Current version of the Privacy Policy document" },
+			// ── Platform & Fees ───────────────────────────────────────────────
+			{ key: "platform_fee_percentage",          value: "15",    type: "number",   description: "Platform commission percentage charged on each payment" },
+			{ key: "min_payout_amount",                value: "5000",  type: "number",   description: "Minimum provider payout amount in smallest currency unit (paise)" },
+			{ key: "default_currency",                 value: "INR",   type: "text",     description: "Default currency code for pricing and payments (ISO 4217)" },
+			{ key: "default_timezone",                 value: "Asia/Kolkata", type: "text", description: "Default timezone for scheduling and date/time display" },
+			{ key: "gst_rate",                         value: "18",    type: "number",   description: "GST rate percentage applied to the platform fee (e.g. 18 means 18%)" },
+			// ── Maintenance ───────────────────────────────────────────────────
+			{ key: "maintenance_mode",                 value: "false", type: "boolean",  description: "Set to true to put the platform in maintenance mode" },
+			{ key: "maintenance_message",              value: "We are performing scheduled maintenance. Please check back shortly.", type: "textarea", description: "Message shown to users during maintenance mode" },
+			// ── Registration & Access ─────────────────────────────────────────
+			{ key: "registration_enabled",             value: "true",  type: "boolean",  description: "Set to false to disable new customer/user registrations platform-wide" },
+			{ key: "provider_registration_enabled",    value: "true",  type: "boolean",  description: "Set to false to disable new provider profile creation platform-wide" },
+			{ key: "guest_requests_enabled",           value: "true",  type: "boolean",  description: "Allow unauthenticated (guest) users to submit service requests" },
+			{ key: "provider_verification_required",   value: "true",  type: "boolean",  description: "Require providers to be verified before they can submit proposals" },
+			{ key: "max_active_requests_per_customer", value: "10",   type: "number",   description: "Maximum number of open service requests a single customer can have at one time" },
+			// ── Marketplace Rules ─────────────────────────────────────────────
+			{ key: "max_proposal_count",               value: "10",    type: "number",   description: "Maximum number of proposals a provider can submit for a single request" },
+			{ key: "max_services_per_provider",        value: "10",    type: "number",   description: "Maximum number of service categories a single provider can offer" },
+			{ key: "max_providers_per_category",       value: "500",   type: "number",   description: "Maximum number of providers allowed per service category" },
+			{ key: "request_expiry_days",              value: "30",    type: "number",   description: "Number of days before an open service request automatically expires" },
+			{ key: "proposal_withdrawal_window_hours", value: "24",    type: "number",   description: "Hours after submission within which a provider can withdraw a proposal" },
+			{ key: "job_auto_complete_days",           value: "7",     type: "number",   description: "Days after in_progress before a job is auto-completed (requires bg worker)" },
+			{ key: "max_coupon_discount_percentage",   value: "80",    type: "number",   description: "Maximum allowed discount percentage when creating a new coupon" },
+			// ── Reviews & Disputes ────────────────────────────────────────────
+			{ key: "min_review_length",                value: "10",    type: "number",   description: "Minimum character count required for a review comment" },
+			{ key: "review_auto_approve_days",         value: "7",     type: "number",   description: "Days after job completion before a review is auto-approved" },
+			{ key: "review_submission_window_days",    value: "90",    type: "number",   description: "Days after job completion within which a customer can submit a review" },
+			{ key: "dispute_window_days",              value: "30",    type: "number",   description: "Days after job completion within which a dispute can be filed" },
+			{ key: "refund_window_days",               value: "30",    type: "number",   description: "Days after payment completion within which a refund can be requested" },
+			// ── Security & Auth ───────────────────────────────────────────────
+			{ key: "max_login_attempts",               value: "5",     type: "number",   description: "Maximum failed login attempts before account is temporarily locked" },
+			{ key: "session_timeout_minutes",          value: "15",    type: "number",   description: "JWT access token lifetime in minutes" },
+			{ key: "otp_expiry_minutes",               value: "10",    type: "number",   description: "OTP verification code validity in minutes" },
+			{ key: "email_verification_expiry_hours",  value: "24",    type: "number",   description: "Hours before an email verification link expires" },
+			{ key: "password_reset_expiry_hours",      value: "1",     type: "number",   description: "Hours before a password reset link expires" },
+			{ key: "magic_link_expiry_hours",          value: "1",     type: "number",   description: "Hours before a magic-link (passwordless login) token expires" },
+			{ key: "session_ttl_days",                 value: "90",    type: "number",   description: "Days before a refresh token / session expires and requires re-login" },
+			{ key: "auto_generated_password_length",   value: "8",     type: "number",   description: "Character length of system-generated temporary passwords" },
+			// ── Rate Limits ───────────────────────────────────────────────────
+			{ key: "rate_limit_max_requests",          value: "500",   type: "number",   description: "Maximum requests per rate-limit window for general API endpoints" },
+			{ key: "auth_rate_limit_max_requests",     value: "10",    type: "number",   description: "Maximum authentication requests per 15-minute window per IP" },
+			// ── Cache & Performance ───────────────────────────────────────────
+			{ key: "provider_cache_ttl_seconds",       value: "300",   type: "number",   description: "Redis cache TTL in seconds for provider profile data" },
+			{ key: "request_cache_ttl_seconds",        value: "300",   type: "number",   description: "Redis cache TTL in seconds for service request list data" },
+			{ key: "job_cache_ttl_seconds",            value: "180",   type: "number",   description: "Redis cache TTL in seconds for job records" },
+			{ key: "default_page_limit",               value: "20",    type: "number",   description: "Default number of items returned per page for all paginated endpoints" },
+			// ── Data Retention ────────────────────────────────────────────────
+			{ key: "notification_retention_days",      value: "90",    type: "number",   description: "Days before old notification records are purged from the database" },
+			{ key: "failed_delivery_retention_days",   value: "30",    type: "number",   description: "Days before failed notification delivery records are purged" },
+			// ── File Uploads ──────────────────────────────────────────────────
+			{ key: "max_file_upload_size_mb",          value: "10",    type: "number",   description: "Maximum file upload size in megabytes" },
+			{ key: "allowed_file_types",               value: "image/jpeg,image/png,image/webp,application/pdf", type: "textarea", description: "Comma-separated list of allowed MIME types for file uploads" },
+			// ── Contact & Legal ───────────────────────────────────────────────
+			{ key: "support_email",                    value: "support@marketplace.com", type: "text", description: "Platform support email address" },
+			{ key: "contact_phone",                    value: "+91 98765 43210", type: "text", description: "Public support phone number shown on the contact page" },
+			{ key: "contact_address",                  value: "123 Marketplace Tower, MG Road, Bengaluru, Karnataka 560001", type: "textarea", description: "Public office address shown on the contact page" },
+			{ key: "terms_version",                    value: "1.0",   type: "text",     description: "Current version of the Terms of Service document" },
+			{ key: "privacy_version",                  value: "1.0",   type: "text",     description: "Current version of the Privacy Policy document" },
 		];
 
 		let count = 0;
 		for (const setting of settings) {
 			const success = await safeInsert(
-				`INSERT INTO system_settings (key, value, description, updated_by) 
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, description = EXCLUDED.description`,
-				[setting.key, setting.value, setting.description, adminId],
+				`INSERT INTO system_settings (key, value, description, type, updated_by) 
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, description = EXCLUDED.description, type = EXCLUDED.type`,
+				[setting.key, setting.value, setting.description, setting.type, adminId],
 			);
 
 			if (success) count++;
@@ -2009,7 +2044,7 @@ class DatabaseSeeder {
 				[
 					uuid(),
 					`${randomPick(indianFirstNames)} ${randomPick(indianLastNames)}`,
-					this.nextEmail(),
+					faker.internet.email(),
 					randomPick(contactSubjects),
 					randomPick(contactMessageBodies),
 					status,

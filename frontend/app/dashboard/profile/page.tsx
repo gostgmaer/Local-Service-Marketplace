@@ -52,9 +52,9 @@ export default function ProfilePage() {
   });
 
   const { data: reviews } = useQuery({
-    queryKey: ["my-provider-reviews", user?.id],
-    queryFn: () => getProviderReviews(user?.id ?? ""),
-    enabled: isAuthenticated && isProvider && !!user?.id,
+    queryKey: ["my-provider-reviews", providerProfile?.id],
+    queryFn: () => getProviderReviews(providerProfile?.id ?? ""),
+    enabled: isAuthenticated && isProvider && !!providerProfile?.id,
   });
 
   const providerProfileRating = parseRating(providerProfile?.rating);

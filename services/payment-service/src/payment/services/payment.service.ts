@@ -1,4 +1,5 @@
 import { Injectable, Inject, LoggerService } from "@nestjs/common";
+import * as crypto from "crypto";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -69,6 +70,13 @@ export class PaymentService {
           "Provider ID does not match the job's assigned provider",
         );
       }
+      // Gate payment on job being in an active (payable) state
+      const payableStatuses = ["pending", "scheduled", "in_progress"];
+      if (!payableStatuses.includes(job.status)) {
+        throw new BadRequestException(
+          `Cannot accept payment for a job with status '${job.status}'. Job must be pending, scheduled, or in progress.`,
+        );
+      }
       if (job.actual_amount && Math.abs(amount - job.actual_amount) > 0.01) {
         throw new BadRequestException(
           `Payment amount (${amount}) does not match the job amount (${job.actual_amount})`,
@@ -95,6 +103,7 @@ export class PaymentService {
       const discount = await this.couponService.validateAndUseCoupon(
         couponCode,
         userId,
+        amount,
       );
       finalAmount = amount * (1 - discount / 100);
       this.logger.log(
@@ -149,9 +158,12 @@ export class PaymentService {
       "PaymentService",
     );
 
-    // Send payment confirmation email — queue if workers enabled, else inline
+    // Send payment confirmation email only when the gateway has actually confirmed
+    // the charge. For async gateways (Razorpay, PayUbiz, Instamojo) the payment
+    // is still 'pending' — sending a success email now would be premature.
+    // The webhook worker will trigger the success notification once confirmed.
     const userEmail = user?.email ?? null;
-    if (userEmail) {
+    if (userEmail && paymentStatus === "completed") {
       if (this.workersEnabled) {
         this.notificationQueue
           .add("notify-payment-completed", {
@@ -196,7 +208,7 @@ export class PaymentService {
     if (paymentStatus === "completed") {
       await this.kafkaService.publishEvent("payment-events", {
         eventType: "payment_completed",
-        eventId: `${payment.id}-${Date.now()}`,
+        eventId: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         data: {
           paymentId: payment.id,
@@ -211,7 +223,7 @@ export class PaymentService {
     } else {
       await this.kafkaService.publishEvent("payment-events", {
         eventType: "payment_pending",
-        eventId: `${payment.id}-${Date.now()}`,
+        eventId: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         data: {
           paymentId: payment.id,

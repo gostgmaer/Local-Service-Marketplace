@@ -11,6 +11,7 @@ import {
 } from "../../common/exceptions/http.exceptions";
 import { EmailClient } from "../../notification/clients/email.client";
 import { UserClient } from "../../common/user/user.client";
+import { NotificationPreferencesService } from "../../notification/services/notification-preferences.service";
 
 @Injectable()
 export class MessageService {
@@ -20,6 +21,7 @@ export class MessageService {
     private readonly messageRepository: MessageRepository,
     private readonly emailClient: EmailClient,
     private readonly userClient: UserClient,
+    private readonly notificationPreferencesService: NotificationPreferencesService,
   ) {}
 
   async createMessage(
@@ -41,11 +43,18 @@ export class MessageService {
       "MessageService",
     );
 
-    // Notify the other participant via email (non-blocking)
+    // Notify the other participant via email only if they have message_alerts enabled
     this.messageRepository
       .getJobRecipientId(newMessage.job_id, senderId)
       .then(async (recipientId) => {
         if (!recipientId) return;
+        // Check notification preferences before sending the alert
+        const alertsEnabled =
+          await this.notificationPreferencesService.checkNotificationEnabled(
+            recipientId,
+            "message_alerts",
+          );
+        if (!alertsEnabled) return;
         const recipientEmail = await this.userClient.getUserEmail(recipientId);
         if (!recipientEmail) return;
         return this.emailClient.sendEmail({

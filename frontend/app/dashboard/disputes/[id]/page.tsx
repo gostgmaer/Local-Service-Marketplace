@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const STATUS_STEPS = ["open", "investigating", "resolved", "closed"] as const;
+const STATUS_STEPS = ["open", "investigating", "escalated", "resolved", "closed"] as const;
 
 const REASON_LABELS: Record<string, string> = {
   not_completed: "Work Not Completed",
@@ -122,7 +122,9 @@ export default function DisputeDetailPage() {
                           i < currentStep
                             ? "bg-primary-500 border-primary-500 text-white"
                             : i === currentStep
-                              ? "bg-white dark:bg-gray-900 border-primary-500 text-primary-500"
+                              ? s === "escalated"
+                                ? "bg-white dark:bg-gray-900 border-red-500 text-red-500"
+                                : "bg-white dark:bg-gray-900 border-primary-500 text-primary-500"
                               : "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-400"
                         }`}
                       >
@@ -139,7 +141,13 @@ export default function DisputeDetailPage() {
                       )}
                     </div>
                     <p
-                      className={`text-xs mt-2 capitalize font-medium ${i <= currentStep ? "text-primary-600 dark:text-primary-400" : "text-gray-400"}`}
+                      className={`text-xs mt-2 capitalize font-medium ${
+                        i === currentStep && s === "escalated"
+                          ? "text-red-600 dark:text-red-400"
+                          : i <= currentStep
+                            ? "text-primary-600 dark:text-primary-400"
+                            : "text-gray-400"
+                      }`}
                     >
                       {s}
                     </p>

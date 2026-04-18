@@ -5,6 +5,8 @@ import { Job, Queue } from "bullmq";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 import { UserRepository } from "../modules/auth/repositories/user.repository";
+import { ProviderDocumentRepository } from "../modules/user/repositories/provider-document.repository";
+import { NotificationClient } from "../common/notification/notification.client";
 import { DEFAULT_JOB_OPTIONS } from "../bullmq/bullmq-default-options";
 
 export interface DocumentExpiryCheckData {
@@ -19,6 +21,8 @@ export class DocumentExpiryWorker extends WorkerHost implements OnModuleInit {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     @InjectQueue("identity.document") private readonly documentQueue: Queue,
     private readonly userRepository: UserRepository,
+    private readonly providerDocumentRepository: ProviderDocumentRepository,
+    private readonly notificationClient: NotificationClient,
   ) {
     super();
   }
@@ -70,11 +74,45 @@ export class DocumentExpiryWorker extends WorkerHost implements OnModuleInit {
     this.logger.info(`Checking documents expiring within ${warningDays} days`, {
       context: "DocumentExpiryWorker",
     });
-    // Delegate to user repository — the repository fires notifications via the notification queue
-    // This is a placeholder; actual logic lives in the repository or document service
-    this.logger.info("Document expiry check completed", {
-      context: "DocumentExpiryWorker",
-    });
+
+    const expiringDocs =
+      await this.providerDocumentRepository.getExpiringDocuments(warningDays);
+
+    this.logger.info(
+      `Found ${expiringDocs.length} document(s) expiring within ${warningDays} days`,
+      { context: "DocumentExpiryWorker" },
+    );
+
+    for (const doc of expiringDocs) {
+      const docRow = doc as any;
+      if (!docRow.user_id) continue;
+      const user = await this.userRepository.findById(docRow.user_id).catch(() => null);
+      if (!user?.email) continue;
+
+      const expiryStr = new Date(doc.expires_at).toLocaleDateString("en-IN");
+      await this.notificationClient
+        .sendEmail({
+          to: user.email,
+          template: "MESSAGE_RECEIVED",
+          variables: {
+            recipientName: user.name || user.email.split("@")[0],
+            senderName: "LocalServices",
+            messagePreview: `Your document "${doc.document_type}" (ID: ${doc.id.slice(0, 8)}) will expire on ${expiryStr}. Please re-upload it before it expires to keep your provider profile active.`,
+            replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/provider/documents`,
+          },
+        })
+        .catch((err: Error) => {
+          this.logger.warn(
+            `Failed to send document expiry email for doc ${doc.id}: ${err.message}`,
+            { context: "DocumentExpiryWorker" },
+          );
+        });
+    }
+
+    this.logger.info(
+      `Document expiry check complete — notified ${expiringDocs.length} providers`,
+      { context: "DocumentExpiryWorker" },
+    );
   }
 
   private async handleExpireOverdueDocuments(): Promise<void> {

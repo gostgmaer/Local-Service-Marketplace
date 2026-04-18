@@ -15,7 +15,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { notificationService } from "@/services/notification-service";
 import { useNotificationStore } from "@/store/notificationStore";
 import { formatRelativeTime } from "@/utils/helpers";
-import { Check, Bell } from "lucide-react";
+import { Check, Bell, AlertCircle, CheckCircle, MessageCircle, FileText } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 
 export default function NotificationsPage() {
@@ -23,6 +23,42 @@ export default function NotificationsPage() {
   const queryClient = useQueryClient();
   const { setUnreadCount } = useNotificationStore();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  function getNotificationIcon(type: string, read: boolean) {
+    const base = read ? "bg-gray-200 dark:bg-gray-700" : "";
+    switch (type) {
+      case "payment_failed":
+        return (
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${read ? base : "bg-red-100 dark:bg-red-900/30"}`}>
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          </div>
+        );
+      case "payment_completed":
+        return (
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${read ? base : "bg-green-100 dark:bg-green-900/30"}`}>
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+          </div>
+        );
+      case "message_received":
+        return (
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${read ? base : "bg-blue-100 dark:bg-blue-900/30"}`}>
+            <MessageCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
+        );
+      case "document_expiry":
+        return (
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${read ? base : "bg-yellow-100 dark:bg-yellow-900/30"}`}>
+            <FileText className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+          </div>
+        );
+      default:
+        return (
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${read ? base : "bg-primary-100 dark:bg-primary-900/30"}`}>
+            <Bell className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+          </div>
+        );
+    }
+  }
 
   // Redirect if not authenticated or notifications are disabled
   useEffect(() => {
@@ -116,15 +152,7 @@ export default function NotificationsPage() {
                         >
                           <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
-                              <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                  notification.read
-                                    ? "bg-gray-200 dark:bg-gray-700"
-                                    : "bg-primary-100 dark:bg-primary-900/30"
-                                }`}
-                              >
-                                <Bell className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                              </div>
+                              {getNotificationIcon(notification.type, notification.read)}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-gray-900 dark:text-white">

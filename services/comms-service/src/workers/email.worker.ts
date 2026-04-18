@@ -91,7 +91,6 @@ export class EmailWorker extends WorkerHost implements OnModuleInit {
   ): Promise<void> {
     const {
       deliveryId,
-      notificationId,
       userId,
       type,
       message,
@@ -114,9 +113,23 @@ export class EmailWorker extends WorkerHost implements OnModuleInit {
       const recipient = to ?? (await this.userClient.getUserEmail(userId));
 
       if (!recipient) {
-        throw new Error(
-          `EmailWorker: cannot resolve email address for userId ${userId} — delivery ${deliveryId} aborted`,
+        // Permanent failure — the user or identity-service cannot provide an
+        // email address. Do NOT re-throw so BullMQ doesn't retry endlessly.
+        const reason = `EmailWorker: cannot resolve email address for userId ${userId} — delivery ${deliveryId} aborted`;
+        this.logger.error(reason, undefined, "EmailWorker");
+        await this.deliveryRepository.updateDeliveryStatus(
+          deliveryId,
+          "failed",
+          reason,
         );
+        if (this.dlqService) {
+          await this.dlqService.captureFailedJob(
+            "comms.email",
+            job,
+            new Error(reason),
+          );
+        }
+        return; // abort without throwing — no retry
       }
 
       await this.emailClient.sendEmail({
@@ -150,7 +163,11 @@ export class EmailWorker extends WorkerHost implements OnModuleInit {
         err.stack,
         "EmailWorker",
       );
-      await this.deliveryRepository.updateDeliveryStatus(deliveryId, "failed");
+      await this.deliveryRepository.updateDeliveryStatus(
+        deliveryId,
+        "failed",
+        err.message,
+      );
 
       // Capture in DLQ if max attempts reached
       if (this.dlqService && job.attemptsMade >= 3) {
@@ -204,10 +221,28 @@ export class EmailWorker extends WorkerHost implements OnModuleInit {
         continue;
       }
 
+      // Pre-resolve the recipient email so the deliver-email job never
+      // has to make a service-to-service call mid-flight.
+      const recipientEmail = await this.userClient.getUserEmail(
+        notification.user_id,
+      );
+      if (!recipientEmail) {
+        this.logger.warn(
+          `EmailWorker: skipping re-queue of delivery ${delivery.id} — cannot resolve email for userId ${notification.user_id}`,
+          "EmailWorker",
+        );
+        await this.deliveryRepository.updateDeliveryStatus(
+          delivery.id,
+          "failed",
+        );
+        continue;
+      }
+
       await this.emailQueue.add("deliver-email", {
         deliveryId: delivery.id,
         notificationId: notification.id,
         userId: notification.user_id,
+        to: recipientEmail,
         type: notification.type,
         message: notification.message,
       });

@@ -323,7 +323,12 @@ function LoginContent() {
   useEffect(() => {
     if (isAuthenticated) {
       const callbackUrl = searchParams.get("callbackUrl");
-      router.push(callbackUrl || ROUTES.DASHBOARD);
+      // Only allow relative same-origin paths to prevent open-redirect attacks
+      const safeCallbackUrl =
+        callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
+          ? callbackUrl
+          : ROUTES.DASHBOARD;
+      router.push(safeCallbackUrl);
     }
   }, [isAuthenticated, router, searchParams]);
 

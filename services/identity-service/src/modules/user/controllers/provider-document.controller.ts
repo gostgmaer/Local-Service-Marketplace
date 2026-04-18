@@ -5,6 +5,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   Request,
   UploadedFile,
@@ -157,8 +158,12 @@ export class ProviderDocumentController {
   @RequirePermissions("providers.verify")
   @UseGuards(RolesGuard)
   @Get("pending")
-  async getPendingDocuments() {
-    return this.documentService.getPendingDocuments();
+  async getPendingDocuments(
+    @Query("limit") limit?: string,
+    @Query("cursor") cursor?: string,
+  ) {
+    const parsedLimit = limit ? Math.min(parseInt(limit, 10) || 20, 100) : 20;
+    return this.documentService.getPendingDocuments(parsedLimit, cursor);
   }
 
   @RequirePermissions("providers.verify")

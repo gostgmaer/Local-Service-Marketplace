@@ -55,16 +55,27 @@ function FileDisputeContent() {
     defaultValues: { job_id: prefillJobId, reason: "", description: "" },
   });
 
-  // Load user's completable jobs for selection
+  // Load user's eligible jobs for dispute (only in_progress or completed)
   const { data: jobs } = useQuery({
     queryKey: ["my-jobs-for-dispute", user?.id],
-    queryFn: () => jobService.getMyJobs(),
+    queryFn: async () => {
+      const all = await jobService.getMyJobs();
+      return all.filter(
+        (j) => j.status === "in_progress" || j.status === "completed",
+      );
+    },
     enabled: !!user && !prefillJobId,
   });
 
   const mutation = useMutation({
     mutationFn: (data: FormData) => disputeService.createDispute(data),
-    onSuccess: () => {
+    onSuccess: async (_dispute, data) => {
+      // Mark the job as disputed so its status reflects the open dispute
+      try {
+        await jobService.updateJobStatus(data.job_id, { status: "disputed" });
+      } catch {
+        // Non-fatal: dispute was still created successfully
+      }
       toast.success(
         "Dispute filed successfully. Our team will review it within 24 hours.",
       );
