@@ -114,9 +114,17 @@ export class ProposalService {
     // unverified providers from bypassing the onboarding guard via API when the
     // frontend middleware is the only guard.
     if (this.userClient.isEnabled()) {
-      const providerForGate = await this.userClient.getProviderById(
+      const rawProvider = await this.userClient.getProviderById(
         dto.provider_id,
       );
+      // Defensive: user.client may return the identity-service envelope
+      // { success, data: { id, verification_status, ... } } instead of the
+      // inner object. Unwrap it here so verification_status is always accessible.
+      const providerForGate =
+        rawProvider && (rawProvider as any).data?.id
+          ? (rawProvider as any).data
+          : rawProvider;
+
       if (verificationRequired !== "false") {
         if (!providerForGate) {
           throw new BadRequestException(
@@ -125,7 +133,7 @@ export class ProposalService {
         }
         if (providerForGate.verification_status !== "verified") {
           throw new BadRequestException(
-            `Cannot submit proposal: your provider account is not yet verified (status: ${providerForGate.verification_status}). Please complete your profile setup and wait for admin approval.`,
+            `Cannot submit proposal: your provider account is not yet verified (status: ${providerForGate.verification_status ?? "pending"}). Please complete your profile setup and wait for admin approval.`,
           );
         }
         if (providerForGate.user_id) {

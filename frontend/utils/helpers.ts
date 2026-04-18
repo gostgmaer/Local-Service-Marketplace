@@ -137,6 +137,7 @@ export function getStatusColor(
     scheduled: "blue",
     accepted: "green",
     completed: "green",
+    verified: "green",
     cancelled: "red",
     rejected: "red",
     failed: "red",

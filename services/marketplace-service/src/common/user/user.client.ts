@@ -95,8 +95,23 @@ export class UserClient {
 
     try {
       const response = await this.httpClient.get(`/users/${userId}`);
-      // identity-service wraps all responses: { success, statusCode, data: {...} }
-      const payload = response.data?.data ?? response.data;
+      // identity-service wraps all responses: { success, statusCode, data: {...}, meta }
+      // Unwrap up to two levels deep to handle any double-envelope edge cases
+      let payload = response.data?.data ?? response.data;
+      if (
+        payload &&
+        typeof payload === "object" &&
+        "success" in payload &&
+        "data" in payload
+      ) {
+        payload = (payload as any).data ?? payload;
+      }
+      if (!payload || typeof payload !== "object" || !("id" in payload)) {
+        this.logger.error(
+          `getUserById: unexpected response shape for ${userId}`,
+        );
+        return null;
+      }
       return payload as UserData;
     } catch (error: any) {
       this.logger.error(`Failed to fetch user ${userId}: ${error.message}`);
@@ -121,8 +136,23 @@ export class UserClient {
 
     try {
       const response = await this.httpClient.get(`/providers/${providerId}`);
-      // identity-service wraps all responses: { success, statusCode, data: {...} }
-      const payload = response.data?.data ?? response.data;
+      // identity-service wraps all responses: { success, statusCode, data: {...}, meta }
+      // Unwrap up to two levels deep to handle any double-envelope edge cases
+      let payload = response.data?.data ?? response.data;
+      if (
+        payload &&
+        typeof payload === "object" &&
+        "success" in payload &&
+        "data" in payload
+      ) {
+        payload = (payload as any).data ?? payload;
+      }
+      if (!payload || typeof payload !== "object" || !("id" in payload)) {
+        this.logger.error(
+          `getProviderById: unexpected response shape for ${providerId}`,
+        );
+        return null;
+      }
       return payload as ProviderData;
     } catch (error: any) {
       this.logger.error(
