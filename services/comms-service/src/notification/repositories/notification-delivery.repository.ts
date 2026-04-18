@@ -62,14 +62,21 @@ export class NotificationDeliveryRepository {
   async updateDeliveryStatus(
     id: string,
     status: string,
+    errorMessage?: string,
   ): Promise<NotificationDelivery> {
     const query = `
       UPDATE notification_deliveries 
-      SET status = $1 
+      SET status = $1,
+          error_message = COALESCE($3, error_message),
+          delivered_at = CASE WHEN $1 = 'sent' THEN NOW() ELSE delivered_at END
       WHERE id = $2 
       RETURNING *
     `;
-    const result = await this.pool.query(query, [status, id]);
+    const result = await this.pool.query(query, [
+      status,
+      id,
+      errorMessage ?? null,
+    ]);
     return new NotificationDelivery({
       id: result.rows[0].id,
       notification_id: result.rows[0].notification_id,
