@@ -1,7 +1,13 @@
 export class Attachment {
   id: string;
   message_id: string;
-  file_url: string;
+  /**
+   * File service ObjectID — resolve via GET /api/v1/files/:file_id with JWT.
+   * Never expose the raw Azure Blob URL; always go through the authenticated gateway.
+   */
+  file_id: string;
+  /** @deprecated Retained for legacy records only. New records set this to null. */
+  file_url?: string | null;
   file_name?: string;
   file_size?: number;
   mime_type?: string;

@@ -15,6 +15,8 @@ export { Dropdown } from "./Dropdown";
 export type { DropdownOption } from "./Dropdown";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";
+export { FilePreview } from "./FilePreview";
+export type { FilePreviewProps } from "./FilePreview";
 export { FileUpload } from "./FileUpload";
 export { Input } from "./Input";
 export { Loading } from "./Loading";

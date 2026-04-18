@@ -137,6 +137,7 @@ export class RequestController {
       },
       req.user.userId,
       req.user.role,
+      req.headers["x-tenant-id"] as string | undefined,
     );
 
     return {

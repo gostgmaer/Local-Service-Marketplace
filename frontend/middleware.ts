@@ -176,10 +176,6 @@ export async function middleware(req: NextRequest) {
     const emailVerified = Boolean(token?.emailVerified);
     const phoneVerified = Boolean(token?.phoneVerified);
     const contactVerified = emailVerified || phoneVerified;
-    const providerVerificationStatus = token?.providerVerificationStatus as
-      | string
-      | null
-      | undefined;
 
     // Paths providers can access regardless of verification status (account/settings management)
     const PROVIDER_ALLOWED_UNVERIFIED_PREFIXES = [
@@ -202,18 +198,9 @@ export async function middleware(req: NextRequest) {
       onboardingUrl.searchParams.set("reason", "verify_contact");
       return NextResponse.redirect(onboardingUrl);
     }
-
-    // Block all dashboard access for providers with pending admin review
-    if (
-      !isAllowedPath &&
-      contactVerified &&
-      providerVerificationStatus === "pending" &&
-      (pathname === "/dashboard" || pathname.startsWith("/dashboard/"))
-    ) {
-      const onboardingUrl = new URL("/onboarding", nextUrl);
-      onboardingUrl.searchParams.set("reason", "pending_admin_review");
-      return NextResponse.redirect(onboardingUrl);
-    }
+    // Note: pending-verification providers (contactVerified but not yet admin-approved)
+    // are allowed into the dashboard in limited mode. The dashboard UI shows the pending
+    // status banner and API endpoints enforce actual restrictions (no job acceptance, no payments).
   }
 
   // ── 5. Customer email verification gate ──────────────────────────────────────

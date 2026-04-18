@@ -21,7 +21,7 @@ const mockMessage = {
 const mockAttachment = {
   id: "att-uuid-1",
   message_id: "msg-uuid-1",
-  file_url: "https://cdn.example.com/file.pdf",
+  file_id: "file-service-obj-id-1",
   file_name: "file.pdf",
 };
 
@@ -105,7 +105,8 @@ describe("MessagingController", () => {
   describe("createAttachment", () => {
     it("should create attachment and return success response", async () => {
       mockFileServiceClient.uploadFile.mockResolvedValue({
-        url: "https://cdn.example.com/file.pdf",
+        id: "file-service-obj-id-1",
+        url: "https://blob.example.com/file.pdf",
         originalName: "file.pdf",
         size: 1024,
         mimeType: "application/pdf",

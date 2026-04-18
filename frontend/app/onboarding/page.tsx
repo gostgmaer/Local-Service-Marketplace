@@ -83,6 +83,7 @@ function OnboardingContent() {
 	const { can } = usePermissions();
 	const [step, setStep] = useState<ProviderStep | CustomerStep>("welcome");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [providerVerificationStatus, setProviderVerificationStatus] = useState<string | null>(null);
 	const resumeChecked = useRef(false);
 
 	// Step: Documents
@@ -186,6 +187,7 @@ function OnboardingContent() {
 				}
 
 				// Everything done — go to complete
+				setProviderVerificationStatus(profile.verification_status ?? null);
 				setStep("complete");
 			} catch {
 				// On any error fall through to welcome
@@ -935,34 +937,53 @@ function OnboardingContent() {
 							<CardContent>
 								{isProvider ?
 									<div className='space-y-4'>
-										{/* Pending admin verification notice */}
-										<div className='flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4'>
-											<AlertTriangle className='h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5' />
-											<div className='text-sm'>
-												<p className='font-semibold text-amber-800 dark:text-amber-300 mb-1'>
-													Document Verification Pending
-												</p>
-												<p className='text-amber-700 dark:text-amber-400'>
-													Your profile is under review by our team. You will be notified once verified. Until then you
-													can browse requests and prepare proposals, but you cannot accept jobs or receive payments.
-												</p>
+										{/* Verification status notice */}
+										{providerVerificationStatus === "verified" ? (
+											<div className='flex items-start gap-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-700 p-4'>
+												<CheckCircle className='h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5' />
+												<div className='text-sm'>
+													<p className='font-semibold text-green-800 dark:text-green-300 mb-1'>
+														Profile Verified
+													</p>
+													<p className='text-green-700 dark:text-green-400'>
+														Your provider profile has been verified. You can now accept jobs and receive payments.
+													</p>
+												</div>
 											</div>
-										</div>
+										) : (
+											<div className='flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4'>
+												<AlertTriangle className='h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5' />
+												<div className='text-sm'>
+													<p className='font-semibold text-amber-800 dark:text-amber-300 mb-1'>
+														Document Verification Pending
+													</p>
+													<p className='text-amber-700 dark:text-amber-400'>
+														Your profile is under review by our team. You will be notified once verified. Until then you
+														can browse requests and prepare proposals, but you cannot accept jobs or receive payments.
+													</p>
+												</div>
+											</div>
+										)}
 
-										{/* What you can do now */}
-										<div className='rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4 text-sm text-blue-800 dark:text-blue-300'>
-											<p className='font-semibold mb-2'>While you wait, you can:</p>
-											<ul className='space-y-1 list-disc list-inside text-xs'>
-												<li>Browse open service requests from customers</li>
-												<li>Submit proposals on relevant jobs (held until verified)</li>
-												<li>Complete your profile and upload KYC documents</li>
-												<li>Set your availability and service areas</li>
-											</ul>
-										</div>
+										{/* What you can do now — only shown when not yet verified */}
+										{providerVerificationStatus !== "verified" && (
+											<div className='rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4 text-sm text-blue-800 dark:text-blue-300'>
+												<p className='font-semibold mb-2'>While you wait, you can:</p>
+												<ul className='space-y-1 list-disc list-inside text-xs'>
+													<li>Browse open service requests from customers</li>
+													<li>Submit proposals on relevant jobs (held until verified)</li>
+													<li>Complete your profile and upload KYC documents</li>
+													<li>Set your availability and service areas</li>
+												</ul>
+											</div>
+										)}
 
 										<Button
 											className='w-full'
-											onClick={() => router.push("/dashboard/provider")}>
+											onClick={async () => {
+												await updateSession({ force: true });
+												router.push("/dashboard/provider");
+											}}>
 											Go to Provider Dashboard <ArrowRight className='h-4 w-4 ml-2' />
 										</Button>
 										<Button

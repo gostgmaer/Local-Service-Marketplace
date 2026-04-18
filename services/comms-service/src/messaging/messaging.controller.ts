@@ -146,6 +146,7 @@ export class MessagingController {
 
     const userId = req.user.userId;
     const userRole = req.user.role || "user";
+    const tenantId = req.headers["x-tenant-id"] as string | undefined;
 
     // Upload file to external file service
     const uploadedFile = await this.fileServiceClient.uploadFile(
@@ -160,12 +161,15 @@ export class MessagingController {
       },
       userId,
       userRole,
+      tenantId,
     );
 
-    // Create attachment record in database
+    // Create attachment record in database.
+    // SECURITY: store only the file service ID, never the raw Azure Blob URL.
+    // Callers must resolve the URL via GET /api/v1/files/:file_id with a valid JWT.
     const attachment = await this.attachmentService.createAttachment(
       createAttachmentDto.message_id,
-      uploadedFile.url, // Store download URL
+      uploadedFile.id,
       uploadedFile.originalName,
       uploadedFile.size,
       uploadedFile.mimeType,

@@ -49,7 +49,7 @@ const nextConfig = {
 								: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${extraConnectSrc} https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com http://localhost:* ws://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`,
 					},
 					{ key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-					{ key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+				{ key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
 					{ key: "Cross-Origin-Resource-Policy", value: "same-origin" },
 					{ key: "X-DNS-Prefetch-Control", value: "on" },
 					{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },

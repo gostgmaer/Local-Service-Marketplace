@@ -157,6 +157,7 @@ export class UserController {
 
     const userId = req.user.userId;
     const userRole = req.user.role || "user";
+    const tenantId = req.headers["x-tenant-id"] as string | undefined;
 
     // Upload file to external file service
     const uploadedFile = await this.fileServiceClient.uploadFile(
@@ -171,6 +172,7 @@ export class UserController {
       },
       userId,
       userRole,
+      tenantId,
     );
 
     // Update user profile with file URL

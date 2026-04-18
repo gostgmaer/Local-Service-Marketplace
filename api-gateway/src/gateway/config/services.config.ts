@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 export const servicesConfig = {
   "identity-service": {
     url:
@@ -53,7 +56,7 @@ export const servicesConfig = {
     name: "infrastructure-service",
   },
   "file-upload-service": {
-    url: process.env.FILE_UPLOAD_SERVICE_URL || "http://localhost:4001",
+    url: `${process.env.FILE_UPLOAD_SERVICE_URL || "http://localhost:4001"}/api`,
     name: "file-upload-service",
   },
 };

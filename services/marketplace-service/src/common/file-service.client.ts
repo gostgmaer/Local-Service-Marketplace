@@ -240,6 +240,7 @@ export class FileServiceClient {
     options: FileUploadOptions,
     userId?: string,
     userRole: string = "user",
+    tenantId?: string,
   ): Promise<UploadedFile[]> {
     try {
       if (!files || files.length === 0) {
@@ -291,7 +292,7 @@ export class FileServiceClient {
                 ...formData.getHeaders(),
                 "X-User-Id": userId || "anonymous",
                 "X-User-Role": userRole,
-                "X-Tenant-Id": this.defaultTenantId,
+                "X-Tenant-Id": tenantId || this.defaultTenantId,
               },
               timeout: this.requestTimeout, // Increased timeout from configuration
             },

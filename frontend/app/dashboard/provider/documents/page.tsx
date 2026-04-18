@@ -141,11 +141,14 @@ export default function ProviderDocumentsPage() {
               <div className="grid lg:grid-cols-2 gap-8">
                 <DocumentUpload
                   providerId={provider?.id}
-                  onUploadSuccess={() =>
+                  onUploadSuccess={() => {
                     queryClient.invalidateQueries({
                       queryKey: ["provider-documents", provider?.id],
-                    })
-                  }
+                    });
+                    queryClient.invalidateQueries({
+                      queryKey: ["provider-verification-status", provider?.id],
+                    });
+                  }}
                 />
                 <DocumentList providerId={provider?.id} />
               </div>

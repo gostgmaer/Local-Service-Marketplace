@@ -8,18 +8,19 @@ import { UploadDocumentDto } from "../dto/upload-document.dto";
 export class ProviderDocumentRepository {
   constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
 
-  async create(data: UploadDocumentDto): Promise<ProviderDocument> {
+  async create(data: UploadDocumentDto & { file_id?: string; document_url?: string | null }): Promise<ProviderDocument> {
     const query = `
       INSERT INTO provider_documents (
-        provider_id, document_type, document_url, document_name, document_number, expires_at
+        provider_id, document_type, file_id, document_url, document_name, document_number, expires_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
 
     const values = [
       data.provider_id,
       data.document_type,
+      data.file_id || null,
       data.document_url,
       data.document_name,
       data.document_number || null,

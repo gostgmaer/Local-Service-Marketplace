@@ -395,6 +395,7 @@ export class PaymentController {
     }
 
     // Upload file to external file service
+    const tenantId = req.headers["x-tenant-id"] as string | undefined;
     const uploadedFile = await this.fileServiceClient.uploadFile(
       file,
       {
@@ -404,6 +405,7 @@ export class PaymentController {
       },
       req.user.userId,
       req.user.role,
+      tenantId,
     );
 
     return {

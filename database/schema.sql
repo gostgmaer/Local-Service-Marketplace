@@ -1366,7 +1366,7 @@ CREATE TABLE provider_documents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
   document_type TEXT NOT NULL CHECK (document_type IN ('government_id', 'business_license', 'insurance_certificate', 'certification', 'tax_document')),
-  document_url TEXT NOT NULL,
+  document_url TEXT,
   document_name TEXT NOT NULL,
   document_number TEXT,
   verified BOOLEAN DEFAULT false,
@@ -2418,5 +2418,6 @@ VALUES
   ('032', 'index_optimizations', 'integrated_in_schema', 0),
   ('033', 'deep_query_pattern_optimizations', 'integrated_in_schema', 0),
   ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0)
+  ('035', 'add_file_id_to_provider_documents', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

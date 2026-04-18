@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
+import { Modal } from "@/components/ui/Modal";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { StatusBadge } from "@/components/ui/Badge";
+import { FilePreview } from "@/components/ui/FilePreview";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { adminService } from "@/services/admin-service";
 import { formatDate } from "@/utils/helpers";
@@ -15,20 +17,141 @@ import {
   ShieldCheck,
   ShieldX,
   FileText,
-  ExternalLink,
   ChevronDown,
   ChevronUp,
   CheckCircle,
   XCircle,
+  X,
+  Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Permission } from "@/utils/permissions";
+
+/* ── Document Review Modal ─────────────────────────────────────────── */
+function DocumentReviewModal({
+  doc,
+  onClose,
+  onApprove,
+  onReject,
+  isApproving,
+  isRejecting,
+}: {
+  doc: any;
+  onClose: () => void;
+  onApprove: () => void;
+  onReject: (_reason: string) => void;
+  isApproving: boolean;
+  isRejecting: boolean;
+}) {
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectForm, setShowRejectForm] = useState(false);
+
+  const isPending = !doc.verified && !doc.rejected;
+
+  return (
+    <Modal isOpen onClose={onClose} title={doc.document_name} size="xl">
+      {/* Document type + status */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-gray-500 uppercase tracking-wide">
+          {doc.document_type?.replace(/_/g, " ")}
+        </p>
+        <StatusBadge
+          status={doc.verified ? "verified" : doc.rejected ? "rejected" : "pending"}
+        />
+      </div>
+
+      {/* Document Preview */}
+      <div className="-mx-6 px-4 py-3 bg-gray-50 dark:bg-gray-800/50 mb-4">
+        <FilePreview
+          fileId={doc.file_id}
+          fileName={doc.document_name}
+          maxHeight="50vh"
+        />
+      </div>
+
+      {/* Rejection reason info (already rejected) */}
+      {doc.rejected && doc.rejection_reason && (
+        <div className="-mx-6 px-5 py-3 mb-4 bg-red-50 dark:bg-red-900/20 border-y border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-700 dark:text-red-300">
+            <span className="font-medium">Rejection reason:</span> {doc.rejection_reason}
+          </p>
+        </div>
+      )}
+
+      {/* Footer actions */}
+      <div className="space-y-3">
+        {isPending && (
+          <>
+            {showRejectForm ? (
+              <div className="space-y-2">
+                <textarea
+                  rows={2}
+                  placeholder="Rejection reason (required)..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-red-400 resize-none"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="danger"
+                    isLoading={isRejecting}
+                    disabled={!rejectReason.trim()}
+                    onClick={() => onReject(rejectReason)}
+                    className="flex-1"
+                  >
+                    Confirm Rejection
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRejectForm(false)}
+                    className="flex-1"
+                  >
+                    Back
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="primary"
+                  isLoading={isApproving}
+                  onClick={onApprove}
+                  className="flex-1 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" /> Approve
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRejectForm(true)}
+                  className="flex-1 flex items-center justify-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4" /> Reject
+                </Button>
+                <Button variant="outline" onClick={onClose} className="flex-1">
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+        {!isPending && (
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
 
 function ProviderVerificationCard({ provider }: { provider: any }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
 
   const invalidateProviders = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-providers"] });
@@ -48,6 +171,27 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
       invalidateProviders();
     },
     onError: () => toast.error("Failed to verify provider"),
+  });
+
+  const verifyDocMutation = useMutation({
+    mutationFn: (docId: string) => adminService.verifyDocument(docId),
+    onSuccess: () => {
+      toast.success("Document approved");
+      setSelectedDoc(null);
+      queryClient.invalidateQueries({ queryKey: ["provider-docs", provider.id] });
+    },
+    onError: () => toast.error("Failed to approve document"),
+  });
+
+  const rejectDocMutation = useMutation({
+    mutationFn: ({ docId, reason }: { docId: string; reason: string }) =>
+      adminService.rejectDocument(docId, reason),
+    onSuccess: () => {
+      toast.success("Document rejected");
+      setSelectedDoc(null);
+      queryClient.invalidateQueries({ queryKey: ["provider-docs", provider.id] });
+    },
+    onError: () => toast.error("Failed to reject document"),
   });
 
   const aadhaarMutation = useMutation({
@@ -71,6 +215,21 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
   });
 
   return (
+    <>
+      {/* Document Review Modal */}
+      {selectedDoc && (
+        <DocumentReviewModal
+          doc={selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          onApprove={() => verifyDocMutation.mutate(selectedDoc.id)}
+          onReject={(reason) =>
+            rejectDocMutation.mutate({ docId: selectedDoc.id, reason })
+          }
+          isApproving={verifyDocMutation.isPending}
+          isRejecting={rejectDocMutation.isPending}
+        />
+      )}
+
     <Card>
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
@@ -137,21 +296,14 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
                               : "pending"
                         }
                       />
-                      {doc.document_url && (
-                        <a
-                          href={doc.document_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-1"
-                          >
-                            <ExternalLink className="h-3 w-3" /> View
-                          </Button>
-                        </a>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1"
+                        onClick={() => setSelectedDoc(doc)}
+                      >
+                        <Eye className="h-3 w-3" /> View
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -254,6 +406,7 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
         )}
       </CardContent>
     </Card>
+    </>
   );
 }
 

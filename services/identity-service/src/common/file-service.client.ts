@@ -82,7 +82,9 @@ export class FileServiceClient {
       this.configService.get<string>("FILE_UPLOAD_SERVICE_URL") ||
       "https://your-file-service.vercel.app";
     this.defaultTenantId =
-      this.configService.get<string>("DEFAULT_TENANT_ID") || "default";
+      this.configService.get<string>("FILE_DEFAULT_TENANT_ID") ||
+      this.configService.get<string>("DEFAULT_TENANT_ID") ||
+      "default";
     this.requestTimeout = this.configService.get<number>(
       "REQUEST_TIMEOUT_MS",
       72000,
@@ -99,6 +101,7 @@ export class FileServiceClient {
     options: FileUploadOptions,
     userId?: string,
     userRole: string = "user",
+    tenantId?: string,
   ): Promise<UploadedFile> {
     try {
       const formData = new FormData();
@@ -140,7 +143,7 @@ export class FileServiceClient {
                 ...formData.getHeaders(),
                 "X-User-Id": userId || "anonymous",
                 "X-User-Role": userRole,
-                "X-Tenant-Id": this.defaultTenantId,
+                "X-Tenant-Id": tenantId || this.defaultTenantId,
               },
               timeout: this.requestTimeout,
             },
@@ -242,6 +245,7 @@ export class FileServiceClient {
     options: FileUploadOptions,
     userId?: string,
     userRole: string = "user",
+    tenantId?: string,
   ): Promise<UploadedFile[]> {
     try {
       if (!files || files.length === 0) {
@@ -293,7 +297,7 @@ export class FileServiceClient {
                 ...formData.getHeaders(),
                 "X-User-Id": userId || "anonymous",
                 "X-User-Role": userRole,
-                "X-Tenant-Id": this.defaultTenantId,
+                "X-Tenant-Id": tenantId || this.defaultTenantId,
               },
               timeout: this.requestTimeout, // Increased timeout from configuration
             },

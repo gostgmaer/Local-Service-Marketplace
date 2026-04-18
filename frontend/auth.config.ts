@@ -28,6 +28,7 @@ async function refreshAccessToken(token: any) {
     let permissions = token.permissions || [];
     let emailVerified = token.emailVerified as boolean | undefined;
     let phoneVerified = token.phoneVerified as boolean | undefined;
+    let providerVerificationStatus = token.providerVerificationStatus as string | null | undefined;
     if (data.accessToken) {
       const jwtPayload = decodeJwtPayload(data.accessToken);
       if (Array.isArray(jwtPayload.permissions)) {
@@ -39,6 +40,9 @@ async function refreshAccessToken(token: any) {
       if (typeof jwtPayload.phone_verified === "boolean") {
         phoneVerified = jwtPayload.phone_verified;
       }
+      if (typeof jwtPayload.provider_verification_status === "string") {
+        providerVerificationStatus = jwtPayload.provider_verification_status;
+      }
     }
 
     return {
@@ -49,6 +53,7 @@ async function refreshAccessToken(token: any) {
       permissions,
       emailVerified,
       phoneVerified,
+      providerVerificationStatus,
     };
   } catch (error) {
     console.error("Error refreshing access token:", error);
