@@ -99,6 +99,7 @@ const GROUP_CONFIG: Record<
     icon: MessageSquare,
     keys: [
       "min_review_length",
+      "review_submission_window_days",
       "review_auto_approve_days",
       "dispute_window_days",
       "refund_window_days",

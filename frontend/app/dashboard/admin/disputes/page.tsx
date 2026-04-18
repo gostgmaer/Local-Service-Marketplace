@@ -35,7 +35,6 @@ type DisputeRow = {
 const DISPUTE_STATUS_OPTIONS = [
   "open",
   "investigating",
-  "escalated",
   "resolved",
   "closed",
 ] as const;
@@ -46,7 +45,6 @@ const DISPUTE_STATUS_LABELS: Record<
 > = {
   open: "Open",
   investigating: "Investigating",
-  escalated: "Escalated",
   resolved: "Resolved",
   closed: "Closed",
 };
