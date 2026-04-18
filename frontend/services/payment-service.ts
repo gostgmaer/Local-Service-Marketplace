@@ -121,8 +121,7 @@ class PaymentService {
     const response = await apiClient.post<Subscription>(
       `/subscriptions/${subscriptionId}/activate`,
     );
-    const payload: any = response.data;
-    return (payload?.data ?? payload) as Subscription;
+    return response.data;
   }
 
   async getActiveSubscription(

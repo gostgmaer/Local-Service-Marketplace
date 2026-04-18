@@ -75,7 +75,11 @@ export class JobClient {
 
     try {
       const response = await this.httpClient.get(`/jobs/${jobId}`);
-      return response.data as JobData;
+      // marketplace-service wraps all responses: { success, statusCode, data: {...}, meta }
+      const payload = response.data?.data ?? response.data;
+      return payload && typeof payload === "object" && "id" in payload
+        ? (payload as JobData)
+        : null;
     } catch (error: any) {
       this.logger.error(`Failed to fetch job ${jobId}: ${error.message}`);
       return null;
