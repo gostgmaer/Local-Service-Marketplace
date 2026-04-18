@@ -72,7 +72,6 @@ function SubmitReviewContent() {
     mutationFn: (data: ReviewFormData) =>
       createReview({
         job_id: jobId!,
-        provider_id: providerId!,
         rating: data.rating,
         comment: data.comment,
       }),

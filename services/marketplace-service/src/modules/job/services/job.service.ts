@@ -427,7 +427,7 @@ export class JobService {
     // Publish event to Kafka if enabled
     await this.kafkaService.publishEvent("job-events", {
       eventType: "job_completed",
-      eventId: `${job.id}-${Date.now()}`,
+      eventId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       data: {
         jobId: job.id,

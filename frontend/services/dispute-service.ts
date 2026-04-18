@@ -7,7 +7,7 @@ export interface Dispute {
   opened_by: string;
   reason: string;
   description?: string;
-  status: "open" | "investigating" | "escalated" | "resolved" | "closed";
+  status: "open" | "investigating" | "resolved" | "closed";
   resolution?: string;
   resolved_by?: string;
   resolved_at?: string;

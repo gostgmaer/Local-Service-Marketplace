@@ -199,7 +199,7 @@ export default function JobDetailPage() {
                 </Button>
               )}
               {(isProvider || isCustomer) &&
-                (job.status === "pending" || job.status === "in_progress") && (
+                job.status === "pending" && (
                   <Button
                     variant="outline"
                     className="text-red-600 border-red-200 hover:bg-red-50"

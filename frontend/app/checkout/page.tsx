@@ -30,7 +30,7 @@ import toast from "react-hot-toast";
 
 function JobCheckout({ jobId }: { jobId: string }) {
   const router = useRouter();
-  useAuth();
+  const { user } = useAuth();
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
@@ -102,6 +102,28 @@ function JobCheckout({ jobId }: { jobId: string }) {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Job not found
           </h2>
+          <Link href={ROUTES.DASHBOARD_JOBS}>
+            <Button variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Jobs
+            </Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Ownership guard: only the customer who owns the job can pay for it
+  if (user?.id && job.customer_id && user.id !== job.customer_id) {
+    return (
+      <Layout>
+        <div className="container-custom py-12 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Access Denied
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            You are not authorized to make a payment for this job.
+          </p>
           <Link href={ROUTES.DASHBOARD_JOBS}>
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />

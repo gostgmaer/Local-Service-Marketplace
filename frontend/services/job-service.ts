@@ -76,9 +76,8 @@ class JobService {
   }
 
   async cancelJob(id: string, reason?: string): Promise<Job> {
-    const response = await apiClient.patch<Job>(`/jobs/${id}/status`, {
-      status: "cancelled",
-      notes: reason,
+    const response = await apiClient.delete<Job>(`/jobs/${id}`, {
+      data: { reason: reason || "Cancelled by user" },
     });
     return response.data;
   }
