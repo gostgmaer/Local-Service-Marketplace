@@ -38,7 +38,7 @@ BEGIN;
 --   Fix: INCLUDE provider_amount — PostgreSQL returns value from index leaf, skips heap.
 -- (Replace the existing index with a covering version)
 DROP INDEX IF EXISTS idx_payments_provider_status_created;
-CREATE INDEX idx_payments_provider_earnings
+CREATE INDEX IF NOT EXISTS idx_payments_provider_earnings
   ON payments(provider_id, status, created_at DESC)
   INCLUDE (provider_amount)
   WHERE status = 'completed';
@@ -49,7 +49,7 @@ COMMENT ON INDEX idx_payments_provider_earnings
 -- A2. getPaymentsByJobId: WHERE job_id=$1 ORDER BY created_at DESC
 --   Current idx_payments_job_id is bare job_id (single-column) forcing a post-lookup sort.
 DROP INDEX IF EXISTS idx_payments_job_id;
-CREATE INDEX idx_payments_job_id_created
+CREATE INDEX IF NOT EXISTS idx_payments_job_id_created
   ON payments(job_id, created_at DESC);
 
 COMMENT ON INDEX idx_payments_job_id_created
@@ -75,7 +75,7 @@ COMMENT ON INDEX idx_payments_completed_created
 -- Current idx_payment_webhooks_unprocessed is bare processed=false (no sort support).
 -- A composite ordered ASC lets PostgreSQL return rows in delivery order without sorting.
 DROP INDEX IF EXISTS idx_payment_webhooks_unprocessed;
-CREATE INDEX idx_payment_webhooks_pending_fifo
+CREATE INDEX IF NOT EXISTS idx_payment_webhooks_pending_fifo
   ON payment_webhooks(created_at ASC)
   WHERE processed = false;
 
@@ -99,7 +99,7 @@ COMMENT ON INDEX idx_sessions_user_device_active
 --   Current idx_sessions_user_id is bare user_id; PostgreSQL fetches all rows then sorts.
 --   Replace with a composite that covers the ORDER BY.
 DROP INDEX IF EXISTS idx_sessions_user_id;
-CREATE INDEX idx_sessions_user_id_created
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id_created
   ON sessions(user_id, created_at DESC);
 
 COMMENT ON INDEX idx_sessions_user_id_created
@@ -127,7 +127,7 @@ COMMENT ON INDEX idx_login_attempts_location_failed
 -- which does not filter out soft-deleted rows in the index. PostgreSQL must recheck
 -- deleted_at IS NULL on every returned row. A tighter partial eliminates that recheck.
 DROP INDEX IF EXISTS idx_service_requests_user_status;
-CREATE INDEX idx_service_requests_user_open
+CREATE INDEX IF NOT EXISTS idx_service_requests_user_open
   ON service_requests(user_id)
   WHERE status = 'open' AND deleted_at IS NULL AND user_id IS NOT NULL;
 
@@ -148,7 +148,7 @@ COMMENT ON INDEX idx_service_requests_user_open
 DROP INDEX IF EXISTS idx_provider_review_aggregates_rating;
 DROP INDEX IF EXISTS idx_provider_review_aggregates_total;
 
-CREATE INDEX idx_provider_review_aggregates_composite
+CREATE INDEX IF NOT EXISTS idx_provider_review_aggregates_composite
   ON provider_review_aggregates(average_rating DESC, total_reviews DESC);
 
 COMMENT ON INDEX idx_provider_review_aggregates_composite

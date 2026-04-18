@@ -542,7 +542,8 @@ CREATE TABLE reviews (
   helpful_count INT DEFAULT 0 CHECK (helpful_count >= 0),
   verified_purchase BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT now() NOT NULL,
-  updated_at TIMESTAMP
+  updated_at TIMESTAMP,
+  deleted_at TIMESTAMP DEFAULT NULL
 );
 
 CREATE INDEX idx_reviews_job_id ON reviews(job_id);
@@ -551,6 +552,8 @@ CREATE INDEX idx_reviews_created_at ON reviews(created_at DESC);
 CREATE INDEX idx_reviews_provider_rating ON reviews(provider_id, rating DESC);
 CREATE INDEX idx_reviews_provider_covering ON reviews(provider_id, created_at DESC) INCLUDE (rating, comment, user_id);
 CREATE UNIQUE INDEX idx_reviews_job_user_unique ON reviews(job_id, user_id);
+-- Partial index so "live reviews" queries skip soft-deleted rows (migration 034)
+CREATE INDEX idx_reviews_not_deleted ON reviews(provider_id, created_at DESC) WHERE deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS review_helpful_votes (
   review_id UUID NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
@@ -2409,7 +2412,10 @@ VALUES
   ('026', 'india_localization', 'integrated_in_schema', 0),
   ('027', 'add_system_settings', 'integrated_in_schema', 0),
   ('028', 'add_enforcement_settings', 'integrated_in_schema', 0),
-  ('029', 'add_dynamic_config_settings', 'integrated_in_schema', 0) 
-   ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0)  
+  ('029', 'add_dynamic_config_settings', 'integrated_in_schema', 0),
+  ('030', 'add_setting_type', 'integrated_in_schema', 0),
+  ('032', 'index_optimizations', 'integrated_in_schema', 0),
+  ('033', 'deep_query_pattern_optimizations', 'integrated_in_schema', 0),
+  ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

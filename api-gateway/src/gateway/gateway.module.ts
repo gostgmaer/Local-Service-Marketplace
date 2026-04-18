@@ -29,12 +29,12 @@ import { MaintenanceMiddleware } from "./middlewares/maintenance.middleware";
 })
 export class GatewayModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Maintenance check runs first — before auth or rate limiting
-    consumer.apply(MaintenanceMiddleware).forRoutes("*");
-
-    // Apply JWT authentication middleware BEFORE logging so req.user is populated
-    // Public routes are defined in publicRoutes (services.config.ts)
+    // JWT auth runs first so req.user is populated for downstream middleware
+    // (maintenance middleware needs req.user.role to bypass admins)
     consumer.apply(JwtAuthMiddleware).forRoutes("*");
+
+    // Maintenance check: blocks all non-admin requests when maintenance_mode=true
+    consumer.apply(MaintenanceMiddleware).forRoutes("*");
 
     // Apply logging middleware after auth so User: <id> is correctly shown
     consumer.apply(LoggingMiddleware).forRoutes("*");

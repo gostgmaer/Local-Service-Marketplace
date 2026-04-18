@@ -60,7 +60,7 @@ COMMENT ON INDEX idx_refunds_created_at
 -- (payment_id alone cannot eliminate the sort for getRefundsByPaymentId)
 DROP INDEX IF EXISTS idx_refunds_payment_id;
 
-CREATE INDEX idx_refunds_payment_id_created
+CREATE INDEX IF NOT EXISTS idx_refunds_payment_id_created
   ON refunds(payment_id, created_at DESC);
 
 COMMENT ON INDEX idx_refunds_payment_id_created
@@ -77,7 +77,7 @@ COMMENT ON INDEX idx_refunds_payment_id_created
 
 DROP INDEX IF EXISTS idx_admin_actions_admin_id;
 
-CREATE INDEX idx_admin_actions_admin_id_created
+CREATE INDEX IF NOT EXISTS idx_admin_actions_admin_id_created
   ON admin_actions(admin_id, created_at DESC);
 
 COMMENT ON INDEX idx_admin_actions_admin_id_created
