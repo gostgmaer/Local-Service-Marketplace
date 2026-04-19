@@ -12,6 +12,7 @@ import {
   LoggerService,
   ParseIntPipe,
   ParseUUIDPipe,
+  DefaultValuePipe,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -64,8 +65,8 @@ export class MessagingController {
   async getMessagesForJob(
     @Param("jobId", FlexibleIdPipe) jobId: string,
     @Request() req: any,
-    @Query("page", new ParseIntPipe({ optional: true })) page: number = 1,
-    @Query("limit", new ParseIntPipe({ optional: true })) limit: number = 20,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
     this.logger.log(
       `GET /messages/jobs/${jobId}/messages - Get conversation for user ${req.user.userId}`,
@@ -83,8 +84,8 @@ export class MessagingController {
   @Get("conversations")
   async getConversations(
     @Request() req: any,
-    @Query("page", new ParseIntPipe({ optional: true })) page: number = 1,
-    @Query("limit", new ParseIntPipe({ optional: true })) limit: number = 20,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
     this.logger.log(
       `GET /messages/conversations - Get user conversations (page ${page}, limit ${limit})`,
