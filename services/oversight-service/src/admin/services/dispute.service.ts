@@ -21,8 +21,10 @@ import { NotificationClient } from "../../common/notification/notification.clien
 import { UserClient } from "../../common/user/user.client";
 
 // Valid status transitions: current → allowed next statuses
+// open disputes must be investigated before being resolved or closed
+// (prevents admins from skipping the investigation step)
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  open: ["investigating", "closed"],
+  open: ["investigating"],
   investigating: ["resolved", "closed"],
   resolved: ["closed"],
   closed: [],

@@ -64,7 +64,7 @@ export class InfraCleanupWorker extends WorkerHost implements OnModuleInit {
   }
 
   private async handlePurgeOldEvents(): Promise<void> {
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     this.logger.log(
       `Purging events before ${cutoff.toISOString()}`,
       "InfraCleanupWorker",

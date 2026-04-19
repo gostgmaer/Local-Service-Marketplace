@@ -5,6 +5,7 @@ import { CreateJobDto } from "../dto/create-job.dto";
 import { JobStatus } from "../dto/update-job-status.dto";
 import { JobQueryDto, JobSortBy, SortOrder } from "../dto/job-query.dto";
 import { resolveId } from "@/common/utils/resolve-id.util";
+import { ConflictException } from "../../../common/exceptions/http.exceptions";
 
 @Injectable()
 export class JobRepository {
@@ -30,23 +31,35 @@ export class JobRepository {
         ? resolveId(this.pool, "proposals", dto.proposal_id)
         : Promise.resolve(null),
     ]);
-    const query = `
-      INSERT INTO jobs (
-        request_id, provider_id, customer_id, proposal_id, status, started_at
-      )
-      VALUES ($1, $2, $3, $4, 'scheduled', NOW())
-      RETURNING *
-    `;
 
-    const values = [
-      requestId,
-      providerId,
-      dto.customer_id, // ✅ NEW
-      proposalId, // ✅ NEW
-    ];
-
-    const result = await this.pool.query(query, values);
-    return result.rows[0];
+    // Atomic check-then-insert: the FOR UPDATE lock serialises concurrent createJob
+    // calls for the same request, eliminating the race between existence check and insert.
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const existing = await client.query(
+        `SELECT id FROM jobs WHERE request_id = $1 AND status != 'cancelled' LIMIT 1 FOR UPDATE`,
+        [requestId],
+      );
+      if (existing.rows.length > 0) {
+        throw new ConflictException("A job already exists for this request");
+      }
+      const result = await client.query(
+        `INSERT INTO jobs (
+           request_id, provider_id, customer_id, proposal_id, status, started_at
+         )
+         VALUES ($1, $2, $3, $4, 'scheduled', NOW())
+         RETURNING *`,
+        [requestId, providerId, dto.customer_id, proposalId],
+      );
+      await client.query("COMMIT");
+      return result.rows[0];
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async getJobById(id: string): Promise<Job | null> {

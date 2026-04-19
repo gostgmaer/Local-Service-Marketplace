@@ -144,13 +144,35 @@ export default function AvailabilityPage() {
   };
 
   const handleSave = () => {
-    // Validate slots
+    // Validate individual slots
     for (const slot of slots) {
       if (slot.start_time >= slot.end_time) {
         toast.error("End time must be after start time");
         return;
       }
     }
+
+    // Detect overlapping slots on the same day
+    const byDay: Record<number, AvailabilitySlot[]> = {};
+    for (const slot of slots) {
+      if (!byDay[slot.day_of_week]) byDay[slot.day_of_week] = [];
+      byDay[slot.day_of_week].push(slot);
+    }
+    for (const daySlots of Object.values(byDay)) {
+      const sorted = [...daySlots].sort((a, b) =>
+        a.start_time.localeCompare(b.start_time),
+      );
+      for (let i = 0; i < sorted.length - 1; i++) {
+        if (sorted[i].end_time > sorted[i + 1].start_time) {
+          const dayName =
+            DAYS_OF_WEEK.find((d) => d.value === sorted[i].day_of_week)
+              ?.label ?? "that day";
+          toast.error(`Overlapping time slots detected on ${dayName}`);
+          return;
+        }
+      }
+    }
+
     updateMutation.mutate(slots);
   };
 

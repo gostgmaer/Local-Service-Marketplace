@@ -8,6 +8,7 @@ import { Message } from "../entities/message.entity";
 import {
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from "../../common/exceptions/http.exceptions";
 import { EmailClient } from "../../notification/clients/email.client";
 import { UserClient } from "../../common/user/user.client";
@@ -33,10 +34,23 @@ export class MessageService {
       `Creating message for job ${jobId} from sender ${senderId}`,
       "MessageService",
     );
+
+    // Strip HTML tags to prevent stored XSS — messages are plain text only
+    const sanitizedMessage = message
+      .replace(/<[^>]*>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .trim();
+
+    if (!sanitizedMessage) {
+      throw new BadRequestException('Message content cannot be empty after sanitization');
+    }
+
     const newMessage = await this.messageRepository.createMessage(
       jobId,
       senderId,
-      message,
+      sanitizedMessage,
     );
     this.logger.log(
       `Message created successfully: ${newMessage.id}`,

@@ -389,6 +389,25 @@ export class RequestService {
       );
     }
 
+    // Status transition validation — prevent arbitrary jumps in the lifecycle.
+    // 'assigned' and 'completed' are set internally (via proposal acceptance /
+    // job completion flows) and must not be reachable through this API.
+    if (dto.status && dto.status !== existingRequest.status) {
+      const VALID_TRANSITIONS: Record<string, string[]> = {
+        open: ["cancelled"],
+        assigned: ["cancelled"],
+        completed: [],
+        cancelled: [],
+      };
+      const allowed =
+        VALID_TRANSITIONS[existingRequest.status as string] ?? [];
+      if (!allowed.includes(dto.status as string)) {
+        throw new BadRequestException(
+          `Cannot transition request from '${existingRequest.status}' to '${dto.status}'`,
+        );
+      }
+    }
+
     // Validate category if provided
     if (dto.category_id) {
       const categoryExists = await this.categoryRepository.categoryExists(

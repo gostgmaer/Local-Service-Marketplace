@@ -95,6 +95,8 @@ export interface RequestFilters {
   limit?: number;
   page?: number;
   search?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
 }
 
 class RequestService {
@@ -117,6 +119,8 @@ class RequestService {
     if (filters?.limit) params.append("limit", filters.limit.toString());
     if (filters?.page) params.append("page", filters.page.toString());
     if (filters?.search) params.append("search", filters.search);
+    if (filters?.sort_by) params.append("sort_by", filters.sort_by);
+    if (filters?.sort_order) params.append("sort_order", filters.sort_order);
 
     const response = await apiClient.get<PaginatedResponse<ServiceRequest>>(
       `/requests?${params.toString()}`,

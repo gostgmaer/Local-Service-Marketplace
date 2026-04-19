@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional } from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, MaxLength, MinLength } from "class-validator";
+import { Transform } from "class-transformer";
 
 export class CreateMessageDto {
   @IsString()
@@ -10,5 +11,8 @@ export class CreateMessageDto {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(1, { message: 'Message cannot be empty' })
+  @MaxLength(5000, { message: 'Message cannot exceed 5000 characters' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   message: string;
 }

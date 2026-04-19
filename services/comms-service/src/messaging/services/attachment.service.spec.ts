@@ -21,6 +21,7 @@ const mockAttachmentRepo = {
   getAttachmentById: jest.fn(),
   getAttachmentsByMessageId: jest.fn(),
   deleteAttachment: jest.fn(),
+  getTotalSizeByMessageId: jest.fn().mockResolvedValue(0),
 };
 
 describe("AttachmentService", () => {

@@ -137,6 +137,12 @@ export class GatewayController {
       const message =
         error.response?.message || error.message || "Internal server error";
 
+      // Echo correlation ID so the client can match the error to server logs
+      const requestId = req.headers["x-request-id"] as string | undefined;
+      if (requestId) {
+        res.setHeader("x-request-id", requestId);
+      }
+
       // Send standardized error response
       res.status(status).json({
         success: false,

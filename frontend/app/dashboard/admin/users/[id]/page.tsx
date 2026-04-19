@@ -42,6 +42,7 @@ export default function AdminUserDetailPage() {
   const userId = params.id as string;
   const [suspendReason, setSuspendReason] = useState("");
   const [showSuspendForm, setShowSuspendForm] = useState(false);
+  const [showActivateConfirm, setShowActivateConfirm] = useState(false);
 
   const {
     data: user,
@@ -317,12 +318,33 @@ export default function AdminUserDetailPage() {
                         <Ban className="h-4 w-4 mr-2" />
                         Suspend User
                       </Button>
+                    ) : showActivateConfirm ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Re-activate <strong>{user.email}</strong>?
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            className="flex-1"
+                            onClick={() => { activateMutation.mutate(); setShowActivateConfirm(false); }}
+                            isLoading={activateMutation.isPending}
+                          >
+                            Confirm
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setShowActivateConfirm(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
                       <Button
                         className="w-full border-green-500 text-green-600 hover:bg-green-50"
                         variant="outline"
-                        onClick={() => activateMutation.mutate()}
-                        isLoading={activateMutation.isPending}
+                        onClick={() => setShowActivateConfirm(true)}
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
                         Activate User

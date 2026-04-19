@@ -79,6 +79,7 @@ export const ROUTES = {
 
   // Dashboard - Payments
   DASHBOARD_PAYMENT_HISTORY: "/dashboard/payments/history",
+  DASHBOARD_PAYMENT_RECEIPT: (id: string) => `/dashboard/payments/${id}`,
 
   // Dashboard - Reviews
   DASHBOARD_REVIEWS: "/dashboard/reviews",

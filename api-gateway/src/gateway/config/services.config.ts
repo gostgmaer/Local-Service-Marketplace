@@ -1,7 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-export const servicesConfig = {
+export interface ServiceConfig {
+  url: string;
+  name: string;
+  stripPrefix?: string;
+}
+
+export const servicesConfig: Record<string, ServiceConfig> = {
   "identity-service": {
     url:
       process.env.IDENTITY_SERVICE_URL ||
