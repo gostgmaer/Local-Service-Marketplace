@@ -117,7 +117,7 @@ export class ProposalController {
     );
   }
 
-  @RequirePermissions("proposals.accept")
+  @RequirePermissions("proposals.reject")
   @UseGuards(RolesGuard)
   @Post("proposals/:id/reject")
   @HttpCode(HttpStatus.OK)

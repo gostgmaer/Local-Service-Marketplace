@@ -42,7 +42,7 @@ export default function BrowseRequestsPage() {
   const [proposalTargetId, setProposalTargetId] = useState<string | null>(null);
 
   const { data: provider } = useQuery({
-    queryKey: ["provider-profile-by-user", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: () => getProviderProfileByUserId(user!.id),
     enabled: isAuthenticated && can(Permission.REQUESTS_BROWSE) && !!user?.id,
   });
@@ -238,7 +238,7 @@ export default function BrowseRequestsPage() {
                             </div>
 
                             {/* Description */}
-                            <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3">
+                            <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3 break-words">
                               {request.description}
                             </p>
 
@@ -389,7 +389,7 @@ export default function BrowseRequestsPage() {
                 </button>
               </div>
               <div className="p-6">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 break-words">
                   {proposalTargetRequest.description}
                 </p>
                 <CreateProposalForm

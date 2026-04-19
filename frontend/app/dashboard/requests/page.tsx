@@ -83,12 +83,12 @@ export default function RequestsPage() {
             />
           ) : (
             <>
-              <div className="flex items-center justify-between mb-10">
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
                 <div>
-                  <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-3">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-1">
                     Service Requests
                   </h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-400">
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                     Browse and manage service requests
                   </p>
                 </div>
@@ -132,8 +132,8 @@ export default function RequestsPage() {
                     {data.data.map((request) => (
                       <Card key={request.id} hover>
                         <CardContent>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
                               <Link href={`/requests/${request.id}`}>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400">
                                   Request #
@@ -141,7 +141,7 @@ export default function RequestsPage() {
                                     request.id.substring(0, 8)}
                                 </h3>
                               </Link>
-                              <p className="text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
+                              <p className="text-gray-600 dark:text-gray-400 mt-2 line-clamp-2 break-words">
                                 {request.description}
                               </p>
                               <div className="flex items-center gap-4 mt-4 text-sm text-gray-500 dark:text-gray-400">

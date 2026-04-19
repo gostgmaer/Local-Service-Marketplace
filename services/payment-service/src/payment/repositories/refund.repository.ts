@@ -3,10 +3,82 @@ import { Pool } from "pg";
 import { Refund } from "../entities/refund.entity";
 import { v4 as uuidv4 } from "uuid";
 import { resolveId } from "../../common/utils/resolve-id.util";
+import {
+  BadRequestException,
+  NotFoundException,
+} from "../../common/exceptions/http.exceptions";
 
 @Injectable()
 export class RefundRepository {
   constructor(@Inject("DATABASE_POOL") private pool: Pool) {}
+
+  /**
+   * Atomically check refund eligibility and create a new refund record inside
+   * a single transaction, using `SELECT … FOR UPDATE` to lock the payment row.
+   * This prevents double-refund races where two concurrent requests could both
+   * read totalRefunded = 0 and both succeed.
+   *
+   * Throws a `BadRequestException`-compatible Error if the refund would
+   * over-reimburse the payment.
+   */
+  async createRefundAtomic(
+    paymentId: string,
+    amount: number,
+  ): Promise<Refund> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Lock the payment row for the duration of this transaction
+      const paymentRes = await client.query(
+        `SELECT id, amount FROM payments WHERE id = $1 FOR UPDATE`,
+        [paymentId],
+      );
+      if (paymentRes.rowCount === 0) {
+        throw new NotFoundException("Payment not found");
+      }
+      const paymentAmount = parseFloat(paymentRes.rows[0].amount);
+
+      // Sum all completed refunds inside the lock
+      const sumRes = await client.query(
+        `SELECT COALESCE(SUM(amount), 0) AS total
+         FROM refunds
+         WHERE payment_id = $1 AND status = 'completed'`,
+        [paymentId],
+      );
+      const totalRefunded = parseFloat(sumRes.rows[0].total);
+
+      if (totalRefunded + amount > paymentAmount) {
+        throw new BadRequestException(
+          "Total refund amount exceeds payment amount",
+        );
+      }
+
+      const id = uuidv4();
+      const insertRes = await client.query(
+        `INSERT INTO refunds (id, payment_id, amount, status, created_at)
+         VALUES ($1, $2, $3, 'pending', NOW())
+         RETURNING *`,
+        [id, paymentId, amount],
+      );
+
+      await client.query("COMMIT");
+      const row = insertRes.rows[0];
+      return new Refund({
+        id: row.id,
+        display_id: row.display_id,
+        payment_id: row.payment_id,
+        amount: parseFloat(row.amount),
+        status: row.status,
+        created_at: row.created_at,
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 
   async createRefund(paymentId: string, amount: number): Promise<Refund> {
     const id = uuidv4();

@@ -4,6 +4,7 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { JobRepository } from "../repositories/job.repository";
+import { RequestRepository } from "../../request/repositories/request.repository";
 import { CreateJobDto } from "../dto/create-job.dto";
 import { UpdateJobStatusDto, JobStatus } from "../dto/update-job-status.dto";
 import {
@@ -33,6 +34,7 @@ export class JobService {
 
   constructor(
     private readonly jobRepository: JobRepository,
+    private readonly requestRepository: RequestRepository,
     private readonly kafkaService: KafkaService,
     private readonly redisService: RedisService,
     private readonly notificationClient: NotificationClient,
@@ -270,6 +272,18 @@ export class JobService {
       existingJob.id,
       dto.status,
     );
+
+    // When a job is completed, also mark the parent service request as completed.
+    if (dto.status === "completed") {
+      await this.requestRepository
+        .updateRequest(existingJob.request_id, { status: "completed" } as any)
+        .catch((err: any) => {
+          this.logger.warn(
+            `Failed to mark request ${existingJob.request_id} as completed: ${err.message}`,
+            JobService.name,
+          );
+        });
+    }
 
     this.logger.log(
       `Job status updated successfully: ${existingJob.id}`,

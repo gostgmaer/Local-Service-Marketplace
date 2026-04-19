@@ -142,9 +142,16 @@ export default function RequestDetailPage() {
                         Service Request #
                         {request.display_id || request.id.slice(0, 8)}
                       </h1>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Posted {formatRelativeTime(request.created_at)}
-                      </p>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {request.category && (
+                          <span className="inline-block px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                            {request.category.name}
+                          </span>
+                        )}
+                        <p className="text-sm text-gray-500">
+                          Posted {formatRelativeTime(request.created_at)}
+                        </p>
+                      </div>
                     </div>
                     <StatusBadge status={request.status} />
                   </div>
@@ -155,7 +162,7 @@ export default function RequestDetailPage() {
                       <h3 className="text-sm font-semibold text-gray-700 mb-2">
                         Description
                       </h3>
-                      <p className="text-gray-900 whitespace-pre-wrap">
+                      <p className="text-gray-900 whitespace-pre-wrap break-words">
                         {request.description}
                       </p>
                     </div>
@@ -213,6 +220,35 @@ export default function RequestDetailPage() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Attached images — public URLs, no extra API call needed */}
+                    {Array.isArray(request.images) && request.images.length > 0 && (
+                      <div className="pt-4 border-t">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                          Attached Images ({request.images.length})
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {(request.images as unknown as { id: string; url: string }[]).map(
+                            (img) => (
+                              <a
+                                key={img.id}
+                                href={img.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-90 transition-opacity"
+                              >
+                                <img
+                                  src={img.url}
+                                  alt="Request attachment"
+                                  className="w-full h-36 object-cover"
+                                  loading="lazy"
+                                />
+                              </a>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {isOwner && request.status === "open" && (
                       <div className="pt-4 border-t flex gap-3">

@@ -73,7 +73,7 @@ export default function SearchPage() {
 
   // Fetch categories
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
-    queryKey: ["search-categories"],
+    queryKey: ["categories"],
     queryFn: () => requestService.getCategories(),
     enabled: activeTab === "all" || activeTab === "categories",
   });

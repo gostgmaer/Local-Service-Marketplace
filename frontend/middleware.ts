@@ -170,6 +170,14 @@ export async function middleware(req: NextRequest) {
   }
 
   // ── 4. Provider onboarding gate ─────────────────────────────────────────────
+  // Non-providers (customers, admins) should never land on /onboarding —
+  // redirect them to their home dashboard.
+  if (isLoggedIn && userRole !== "provider" && pathname === "/onboarding") {
+    return NextResponse.redirect(
+      new URL(getDashboardHomeByRole(userRole), nextUrl),
+    );
+  }
+
   // Providers who have not verified either email or phone cannot access
   // service-related routes until they complete the onboarding flow.
   if (isLoggedIn && userRole === "provider" && pathname !== "/onboarding") {
@@ -204,21 +212,28 @@ export async function middleware(req: NextRequest) {
   }
 
   // ── 5. Customer email verification gate ──────────────────────────────────────
-  // Customers must verify email or phone before creating or managing service requests.
+  // Unverified customers cannot access any protected route until they verify
+  // their email or phone. They can still access the verification pages and
+  // account settings (to update their email address).
   if (isLoggedIn && userRole === "customer") {
     const emailVerified = Boolean(token?.emailVerified);
     const phoneVerified = Boolean(token?.phoneVerified);
     const contactVerified = emailVerified || phoneVerified;
 
-    const CUSTOMER_GATED_PREFIXES = ["/dashboard/requests", "/checkout"];
-    const isGatedPath = CUSTOMER_GATED_PREFIXES.some(
-      (p) => pathname === p || pathname.startsWith(p + "/"),
-    );
-
-    if (isGatedPath && !contactVerified) {
-      const verifyUrl = new URL("/verify-email", nextUrl);
-      verifyUrl.searchParams.set("reason", "create_request");
-      return NextResponse.redirect(verifyUrl);
+    if (!contactVerified && isProtected) {
+      const CUSTOMER_UNVERIFIED_ALLOWED = [
+        "/verify-email-required",
+        "/verify-email",
+        "/dashboard/settings",
+      ];
+      const isAllowedUnverified = CUSTOMER_UNVERIFIED_ALLOWED.some(
+        (p) => pathname === p || pathname.startsWith(p + "/"),
+      );
+      if (!isAllowedUnverified) {
+        return NextResponse.redirect(
+          new URL("/verify-email-required", nextUrl),
+        );
+      }
     }
   }
 

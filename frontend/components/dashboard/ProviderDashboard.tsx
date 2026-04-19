@@ -49,7 +49,7 @@ export default function ProviderDashboard() {
     error: jobsError,
     refetch: refetchJobs,
   } = useQuery({
-    queryKey: ["provider-jobs"],
+    queryKey: ["my-jobs"],
     queryFn: () => jobService.getMyJobs(),
     enabled: isAuthenticated,
   });

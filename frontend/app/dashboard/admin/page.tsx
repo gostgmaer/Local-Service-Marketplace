@@ -37,6 +37,7 @@ export default function AdminDashboardPage() {
     queryKey: ["admin-users-recent"],
     queryFn: () => adminService.getUsers({ page: 1, limit: 5 }),
     enabled: can(Permission.ADMIN_ACCESS),
+    staleTime: 30_000,
   });
 
   const {
@@ -47,6 +48,7 @@ export default function AdminDashboardPage() {
     queryKey: ["admin-disputes-recent"],
     queryFn: () => adminService.getDisputes({ page: 1, limit: 5 }),
     enabled: can(Permission.ADMIN_ACCESS),
+    staleTime: 30_000,
   });
 
   const { data: userStats } = useQuery({

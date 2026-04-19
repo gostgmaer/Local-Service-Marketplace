@@ -114,6 +114,23 @@ function OnboardingContent() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [contactVerified, step]);
 
+	// Poll verification status every 10 s while the provider is on the
+	// verify-contact step so the wizard advances automatically when they
+	// click the email link in another tab — without needing to hit "Refresh".
+	useEffect(() => {
+		if (step !== "verify-contact" || contactVerified) return;
+		const interval = setInterval(async () => {
+			try {
+				const profile = await authService.getProfile();
+				if (profile?.email_verified) setLocalEmailVerified(true);
+				if (profile?.phone_verified) setLocalPhoneVerified(true);
+			} catch {
+				// silently ignore transient poll errors
+			}
+		}, 10_000);
+		return () => clearInterval(interval);
+	}, [step, contactVerified]);
+
 	// Step: Profile
 	const [businessName, setBusinessName] = useState("");
 	const [description, setDescription] = useState("");
@@ -142,6 +159,15 @@ function OnboardingContent() {
 		if (session?.user?.emailVerified) setLocalEmailVerified(true);
 		if (session?.user?.phoneVerified) setLocalPhoneVerified(true);
 	}, [session?.user?.emailVerified, session?.user?.phoneVerified]);
+
+	// Auto-redirect customers to the dashboard 3 s after the complete step.
+	// Providers stay because they need to read the pending-review notice.
+	useEffect(() => {
+		if (step !== "complete" || isProvider) return;
+		const timer = setTimeout(() => router.push(ROUTES.DASHBOARD), 3000);
+		return () => clearTimeout(timer);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [step, isProvider]);
 
 	// On mount: detect how far the provider got and resume from first incomplete step
 	useEffect(() => {
@@ -993,11 +1019,16 @@ function OnboardingContent() {
 											Browse Service Requests
 										</Button>
 									</div>
-								:	<Button
-										className='w-full'
-										onClick={() => router.push(ROUTES.DASHBOARD)}>
-										Go to Dashboard <ArrowRight className='h-4 w-4 ml-2' />
-									</Button>
+								:	<>
+										<Button
+											className='w-full'
+											onClick={() => router.push(ROUTES.DASHBOARD)}>
+											Go to Dashboard <ArrowRight className='h-4 w-4 ml-2' />
+										</Button>
+										<p className='text-xs text-center text-gray-400 mt-2'>
+											Redirecting automatically in a few seconds&hellip;
+										</p>
+									</>
 								}
 							</CardContent>
 						</Card>

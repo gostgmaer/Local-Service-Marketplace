@@ -690,6 +690,15 @@ export class AuthService {
     });
   }
 
+  /**
+   * Non-consuming check: returns true if the reset token exists and is not
+   * expired. Used by the frontend reset-password page to validate the link
+   * before rendering the form, without consuming the token.
+   */
+  async verifyResetTokenValidity(token: string): Promise<boolean> {
+    return this.tokenService.checkPasswordResetTokenValid(token);
+  }
+
   async getProfile(userId: string): Promise<any> {
     if (!userId) {
       throw new UnauthorizedException(

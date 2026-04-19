@@ -195,6 +195,8 @@ export const publicGetRoutes = [
   // ============================================
   "/api/v1/categories", // List service categories (GET only)
   "/api/v1/categories/", // View individual category (GET /categories/:id)
+  "/categories", // Same routes without /api/v1 prefix (used by API client directly)
+  "/categories/", // View individual category without prefix
 
   // ============================================
   // Provider Directory (Public Browsing)

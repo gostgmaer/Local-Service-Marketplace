@@ -28,6 +28,7 @@ describe("JobService list validation", () => {
 
     const service = new JobService(
       jobRepository,
+      {} as any,
       makeKafka(),
       makeRedis(),
       {} as any,
@@ -86,6 +87,7 @@ describe("JobService.createJob", () => {
     } as any;
     const service = new JobService(
       jobRepository,
+      {} as any,
       makeKafka(),
       makeRedis(),
       {} as any,
@@ -121,6 +123,7 @@ describe("JobService.createJob", () => {
 
     const service = new JobService(
       jobRepository,
+      {} as any,
       kafka,
       makeRedis(),
       notificationClient,
@@ -166,6 +169,7 @@ describe("JobService.completeJob", () => {
     } as any;
     const service = new JobService(
       jobRepository,
+      {} as any,
       makeKafka(),
       makeRedis(),
       {} as any,
@@ -186,6 +190,7 @@ describe("JobService.completeJob", () => {
     } as any;
     const service = new JobService(
       jobRepository,
+      {} as any,
       makeKafka(),
       makeRedis(),
       {} as any,
@@ -208,6 +213,7 @@ describe("JobService.completeJob", () => {
     } as any;
     const service = new JobService(
       jobRepository,
+      {} as any,
       makeKafka(),
       makeRedis(),
       {} as any,
@@ -240,6 +246,7 @@ describe("JobService.completeJob", () => {
     } as any;
     const service = new JobService(
       jobRepository,
+      {} as any,
       kafka,
       makeRedis(),
       notificationClient,

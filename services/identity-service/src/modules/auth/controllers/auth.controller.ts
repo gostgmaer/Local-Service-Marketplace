@@ -73,16 +73,14 @@ import {
 
 @Controller("auth")
 export class AuthController {
-  private readonly oauthExchangeStore = new Map<
-    string,
-    { accessToken: string; refreshToken: string; expiresAt: number }
-  >();
-  private readonly oauthExchangeTtlMs = 60 * 1000;
+  /** TTL for OAuth one-time codes (seconds). */
+  private readonly oauthExchangeTtlSec = 60;
 
   constructor(
     private readonly authService: AuthService,
     private readonly tokenBlacklistService: TokenBlacklistService,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+    @Inject("REDIS_CLIENT") private readonly redis: import("ioredis").Redis,
   ) {}
 
   @Post("register")
@@ -287,6 +285,21 @@ export class AuthController {
     return { message: "Password has been reset successfully" };
   }
 
+  @Post("password-reset/verify-token")
+  @HttpCode(HttpStatus.OK)
+  async verifyResetToken(
+    @Body() body: { token: string },
+  ): Promise<{ valid: boolean }> {
+    this.logger.info("POST /auth/password-reset/verify-token", {
+      context: "AuthController",
+    });
+    if (!body?.token) {
+      return { valid: false };
+    }
+    const valid = await this.authService.verifyResetTokenValidity(body.token);
+    return { valid };
+  }
+
   // ==========================================
   // OAuth Routes
   // ==========================================
@@ -377,7 +390,7 @@ export class AuthController {
       throw new BadRequestException("OAuth code is required");
     }
 
-    const tokens = this.consumeOAuthCode(body.code);
+    const tokens = await this.consumeOAuthCode(body.code);
     if (!tokens) {
       throw new UnauthorizedException("Invalid or expired OAuth code");
     }
@@ -973,34 +986,35 @@ export class AuthController {
   }
 
   private issueOAuthCode(accessToken: string, refreshToken: string): string {
-    this.cleanupExpiredOAuthCodes();
     const code = randomUUID();
-    this.oauthExchangeStore.set(code, {
-      accessToken,
-      refreshToken,
-      expiresAt: Date.now() + this.oauthExchangeTtlMs,
-    });
+    const key = `oauth:code:${code}`;
+    // Fire-and-forget; if Redis is unavailable the exchange will simply fail.
+    this.redis
+      .setex(
+        key,
+        this.oauthExchangeTtlSec,
+        JSON.stringify({ accessToken, refreshToken }),
+      )
+      .catch((err: any) =>
+        this.logger.warn(`Failed to store OAuth code in Redis: ${err.message}`, {
+          context: "AuthController",
+        }),
+      );
     return code;
   }
 
-  private consumeOAuthCode(
+  private async consumeOAuthCode(
     code: string,
-  ): { accessToken: string; refreshToken: string } | null {
-    const entry = this.oauthExchangeStore.get(code);
-    if (!entry) return null;
-
-    this.oauthExchangeStore.delete(code);
-    if (Date.now() > entry.expiresAt) return null;
-
-    return { accessToken: entry.accessToken, refreshToken: entry.refreshToken };
-  }
-
-  private cleanupExpiredOAuthCodes(): void {
-    const now = Date.now();
-    for (const [code, entry] of this.oauthExchangeStore.entries()) {
-      if (entry.expiresAt <= now) {
-        this.oauthExchangeStore.delete(code);
-      }
+  ): Promise<{ accessToken: string; refreshToken: string } | null> {
+    const key = `oauth:code:${code}`;
+    // Atomically GET and DEL to prevent replay attacks.
+    const [raw] = await this.redis.multi().get(key).del(key).exec() as [any, any];
+    const value = raw?.[1] as string | null;
+    if (!value) return null;
+    try {
+      return JSON.parse(value) as { accessToken: string; refreshToken: string };
+    } catch {
+      return null;
     }
   }
 }

@@ -55,7 +55,7 @@ export default function EarningsPage() {
     error: providerError,
     refetch: refetchProvider,
   } = useQuery({
-    queryKey: ["provider-profile-by-user", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: () => getProviderProfileByUserId(user!.id),
     enabled: isAuthenticated && can(Permission.EARNINGS_VIEW) && !!user?.id,
   });

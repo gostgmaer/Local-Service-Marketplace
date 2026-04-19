@@ -38,7 +38,7 @@ export default function ProviderDocumentsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["provider-profile", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: async () => {
       const response = await apiClient.get(`/providers?user_id=${user?.id}`);
       if (response.data?.data && response.data.data.length > 0) {
@@ -62,7 +62,7 @@ export default function ProviderDocumentsPage() {
     onSuccess: () => {
       setTaxSaved(true);
       queryClient.invalidateQueries({
-        queryKey: ["provider-profile", user?.id],
+        queryKey: ["my-provider-profile", user?.id],
       });
       setTimeout(() => setTaxSaved(false), 3000);
     },

@@ -18,7 +18,7 @@ export default function SubscriptionPage() {
   const { can } = usePermissions();
 
   const { data: provider, isLoading: providerLoading } = useQuery({
-    queryKey: ["provider-profile-by-user", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: () => getProviderProfileByUserId(user!.id),
     enabled:
       isAuthenticated && can(Permission.SUBSCRIPTIONS_MANAGE) && !!user?.id,

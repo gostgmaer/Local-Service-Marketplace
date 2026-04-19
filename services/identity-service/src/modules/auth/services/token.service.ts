@@ -115,4 +115,19 @@ export class TokenService {
     await this.passwordResetTokenRepo.deleteByToken(token);
     return tokenRecord.user_id;
   }
+
+  /**
+   * Check whether a password-reset token is valid without consuming it.
+   * Used by the frontend reset-password page to validate the link before
+   * rendering the form.
+   */
+  async checkPasswordResetTokenValid(token: string): Promise<boolean> {
+    const tokenRecord = await this.passwordResetTokenRepo.findByToken(token);
+    if (!tokenRecord) return false;
+    if (new Date() > new Date(tokenRecord.expires_at)) {
+      await this.passwordResetTokenRepo.deleteByToken(token);
+      return false;
+    }
+    return true;
+  }
 }

@@ -1,4 +1,7 @@
 import { apiClient } from "./api-client";
+import type { RequestImage } from "./file-service";
+
+export type { RequestImage };
 
 export interface ServiceCategory {
   id: string;
@@ -24,7 +27,7 @@ export interface ServiceRequest {
   guest_phone?: string | null;
   created_at: string;
   updated_at: string;
-  category?: { id: string; name: string };
+  category?: { id: string; name: string; icon?: string };
   location_id?: string;
   location?: {
     id: string;
@@ -33,8 +36,8 @@ export interface ServiceRequest {
     address?: string;
     city?: string;
     state?: string;
-    pincode?: string;
-    zip_code?: string;
+    pincode?: string;   // sent to API; backend stores as zip_code
+    zip_code?: string;  // returned from API in responses
     country?: string;
   };
   images?: string[];
@@ -59,13 +62,14 @@ export interface CreateRequestData {
     zipCode?: string;
     country?: string;
   };
-  images?: string[];
+  images?: RequestImage[];
   preferred_date?: string;
   urgency?: "low" | "medium" | "high" | "urgent";
   expiry_date?: string;
 }
 
 export interface UpdateRequestData {
+  category_id?: string;
   description?: string;
   budget?: number;
   status?: ServiceRequest["status"];

@@ -60,7 +60,7 @@ export default function AvailabilityPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["provider-profile", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: async () => {
       try {
         // First, get the provider record for this user
@@ -109,7 +109,7 @@ export default function AvailabilityPage() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["provider-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["my-provider-profile"] });
       setHasChanges(false);
       toast.success("Availability updated successfully!");
     },

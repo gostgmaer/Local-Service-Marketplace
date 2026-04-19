@@ -57,13 +57,12 @@ function FileDisputeContent() {
 
   // Load user's eligible jobs for dispute (only in_progress or completed)
   const { data: jobs } = useQuery({
-    queryKey: ["my-jobs-for-dispute", user?.id],
-    queryFn: async () => {
-      const all = await jobService.getMyJobs();
-      return all.filter(
+    queryKey: ["my-jobs"],
+    queryFn: () => jobService.getMyJobs(),
+    select: (all: any[]) =>
+      all.filter(
         (j) => j.status === "in_progress" || j.status === "completed",
-      );
-    },
+      ),
     enabled: !!user && !prefillJobId,
   });
 

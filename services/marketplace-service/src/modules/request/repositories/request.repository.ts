@@ -127,9 +127,11 @@ export class RequestRepository {
         r.images, r.preferred_date, r.urgency, r.expiry_date, r.view_count, 
         r.guest_name, r.guest_email, r.guest_phone,
         r.created_at, r.updated_at,
-        l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at
+        l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at,
+        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon
       FROM service_requests r
       LEFT JOIN locations l ON r.location_id = l.id
+      LEFT JOIN service_categories sc ON r.category_id = sc.id
       WHERE r.deleted_at IS NULL
     `;
 
@@ -241,6 +243,11 @@ export class RequestRepository {
           country: row.country,
           created_at: row.loc_created_at,
         } as LocationEntity;
+      }
+
+      // Add category if exists
+      if (row.cat_id) {
+        request.category = { id: row.cat_id, name: row.cat_name, icon: row.cat_icon };
       }
 
       return request;
@@ -359,9 +366,11 @@ export class RequestRepository {
       SELECT 
         r.id, r.display_id, r.user_id, r.category_id, r.location_id, r.description, r.budget, r.status,
         r.images, r.preferred_date, r.urgency, r.expiry_date, r.view_count, r.created_at, r.updated_at,
-        l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at
+        l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at,
+        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon
       FROM service_requests r
       LEFT JOIN locations l ON r.location_id = l.id
+      LEFT JOIN service_categories sc ON r.category_id = sc.id
       WHERE r.id = $1 AND r.deleted_at IS NULL
     `;
 
@@ -404,6 +413,11 @@ export class RequestRepository {
         country: row.country,
         created_at: row.loc_created_at,
       } as LocationEntity;
+    }
+
+    // Add category if exists
+    if (row.cat_id) {
+      request.category = { id: row.cat_id, name: row.cat_name, icon: row.cat_icon };
     }
 
     return request;
@@ -476,21 +490,34 @@ export class RequestRepository {
     return result.rowCount ?? 0;
   }
 
-  async getRequestsByUser(userId: string): Promise<ServiceRequest[]> {
+  async getRequestsByUser(
+    userId: string,
+    limit = 20,
+    page = 1,
+  ): Promise<{ rows: ServiceRequest[]; total: number }> {
+    const offset = (page - 1) * limit;
+    const countRes = await this.pool.query(
+      `SELECT COUNT(*) AS total FROM service_requests WHERE user_id = $1 AND deleted_at IS NULL`,
+      [userId],
+    );
+    const total = parseInt(countRes.rows[0].total, 10);
+
     const query = `
       SELECT 
         r.id, r.display_id, r.user_id, r.category_id, r.location_id, r.description, r.budget, r.status,
         r.images, r.preferred_date, r.urgency, r.expiry_date, r.view_count, r.created_at, r.updated_at,
-        l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at
+        l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at,
+        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon
       FROM service_requests r
       LEFT JOIN locations l ON r.location_id = l.id
+      LEFT JOIN service_categories sc ON r.category_id = sc.id
       WHERE r.user_id = $1 AND r.deleted_at IS NULL
       ORDER BY r.created_at DESC
-      LIMIT 200
+      LIMIT $2 OFFSET $3
     `;
 
-    const result = await this.pool.query(query, [userId]);
-    return result.rows.map((row) => {
+    const result = await this.pool.query(query, [userId, limit, offset]);
+    const rows = result.rows.map((row) => {
       const request: ServiceRequest = {
         id: row.id,
         display_id: row.display_id,
@@ -525,8 +552,14 @@ export class RequestRepository {
         } as LocationEntity;
       }
 
+      // Add category if exists
+      if (row.cat_id) {
+        request.category = { id: row.cat_id, name: row.cat_name, icon: row.cat_icon };
+      }
+
       return request;
     });
+    return { rows, total };
   }
 
   // ✅ NEW METHODS for new fields

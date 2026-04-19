@@ -46,7 +46,7 @@ export default function CustomerDashboard() {
   });
 
   const { data: notifications, isLoading: notificationsLoading } = useQuery({
-    queryKey: ["notifications"],
+    queryKey: ["notifications-preview"],
     queryFn: () => notificationService.getNotifications({ limit: 5 }),
     enabled: isAuthenticated && isNotificationsEnabled(),
   });

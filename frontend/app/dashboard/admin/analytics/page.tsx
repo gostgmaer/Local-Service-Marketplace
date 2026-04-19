@@ -93,35 +93,35 @@ export default function AdminAnalyticsPage() {
     error: e1,
     refetch: r1,
   } = useQuery({
-    queryKey: ["admin-user-stats"],
+    queryKey: ["admin-users-stats"],
     queryFn: () => adminService.getSystemStats(),
     enabled: can(Permission.ANALYTICS_VIEW),
     staleTime: 60_000,
   });
 
   const { data: jobStats, isLoading: l2 } = useQuery({
-    queryKey: ["admin-job-stats"],
+    queryKey: ["admin-jobs-stats"],
     queryFn: () => adminService.getJobStats(),
     enabled: can(Permission.ANALYTICS_VIEW),
     staleTime: 60_000,
   });
 
   const { data: requestStats, isLoading: l3 } = useQuery({
-    queryKey: ["admin-request-stats"],
+    queryKey: ["admin-requests-stats"],
     queryFn: () => adminService.getRequestStats(),
     enabled: can(Permission.ANALYTICS_VIEW),
     staleTime: 60_000,
   });
 
   const { data: paymentStats, isLoading: l4 } = useQuery({
-    queryKey: ["admin-payment-stats"],
+    queryKey: ["admin-payments-stats"],
     queryFn: () => adminService.getPaymentStats(),
     enabled: can(Permission.ANALYTICS_VIEW),
     staleTime: 60_000,
   });
 
   const { data: disputeStats, isLoading: l5 } = useQuery({
-    queryKey: ["admin-dispute-stats"],
+    queryKey: ["admin-disputes-stats"],
     queryFn: () => adminService.getDisputeStats(),
     enabled: can(Permission.ANALYTICS_VIEW),
     staleTime: 60_000,

@@ -352,30 +352,15 @@ export class ProposalService {
       );
     }
 
-    const proposal = await this.proposalRepository.acceptProposal(
-      existingProposal.id,
-    );
-
-    // Reject all other pending proposals on this request SYNCHRONOUSLY before
-    // creating the job. A non-blocking best-effort call here could allow a race
-    // condition where two proposals are accepted for the same request.
-    await this.proposalRepository.rejectSiblingProposals(
-      existingProposal.request_id,
-      existingProposal.id,
-    );
-
-    // Create job record — this is the central handoff from proposal → job lifecycle
-    const job = await this.jobRepository.createJob({
-      request_id: existingProposal.request_id,
-      provider_id: existingProposal.provider_id,
-      customer_id: existingProposal.customer_id,
-      proposal_id: existingProposal.id,
-    });
-
-    // Transition the service request to 'assigned'
-    await this.requestRepository.updateRequest(existingProposal.request_id, {
-      status: "assigned",
-    } as any);
+    // Accept proposal, reject siblings, create job, and update request status
+    // — all inside a single database transaction to prevent partial-accept races.
+    const { proposal, job } =
+      await this.proposalRepository.acceptProposalTransaction(
+        existingProposal.id,
+        existingProposal.request_id,
+        existingProposal.provider_id,
+        existingProposal.customer_id,
+      );
 
     this.logger.log(
       `Job ${job.id} created and request ${existingProposal.request_id} set to assigned`,

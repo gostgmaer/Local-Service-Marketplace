@@ -144,6 +144,74 @@ export class ProposalRepository {
     await this.pool.query(query, [requestId, acceptedProposalId]);
   }
 
+  /**
+   * Atomically accepts a proposal, rejects all sibling proposals, creates the
+   * job record, and transitions the service request to 'assigned' — all inside
+   * a single database transaction. This prevents a partial-accept race condition
+   * where a crash between steps could leave the request in an inconsistent state.
+   *
+   * Returns the accepted Proposal and the newly-created Job row.
+   */
+  async acceptProposalTransaction(
+    proposalId: string,
+    requestId: string,
+    providerId: string,
+    customerId: string,
+  ): Promise<{ proposal: Proposal; job: any }> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Accept this proposal (guard on status = 'pending' prevents double-accept)
+      const acceptRes = await client.query(
+        `UPDATE proposals
+         SET status = 'accepted', updated_at = NOW()
+         WHERE id = $1 AND status = 'pending'
+         RETURNING id, display_id, request_id, provider_id, price, message,
+                   estimated_hours, start_date, completion_date, rejected_reason,
+                   status, created_at, updated_at`,
+        [proposalId],
+      );
+      if (acceptRes.rowCount === 0) {
+        throw new BadRequestException(
+          "Proposal is no longer pending or does not exist",
+        );
+      }
+      const proposal = acceptRes.rows[0] as Proposal;
+
+      // 2. Reject all other pending proposals on the same request
+      await client.query(
+        `UPDATE proposals
+         SET status = 'rejected', updated_at = NOW()
+         WHERE request_id = $1 AND id != $2 AND status = 'pending'`,
+        [requestId, proposalId],
+      );
+
+      // 3. Create job record
+      const jobRes = await client.query(
+        `INSERT INTO jobs (request_id, provider_id, customer_id, proposal_id, status, started_at)
+         VALUES ($1, $2, $3, $4, 'scheduled', NOW())
+         RETURNING *`,
+        [requestId, providerId, customerId, proposalId],
+      );
+      const job = jobRes.rows[0];
+
+      // 4. Transition service request to 'assigned'
+      await client.query(
+        `UPDATE service_requests SET status = 'assigned', updated_at = NOW() WHERE id = $1`,
+        [requestId],
+      );
+
+      await client.query("COMMIT");
+      return { proposal, job };
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async rejectProposal(id: string, reason?: string): Promise<Proposal | null> {
     const query = `
       UPDATE proposals

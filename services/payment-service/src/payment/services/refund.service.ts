@@ -72,21 +72,8 @@ export class RefundService {
       );
     }
 
-    // Check if payment is already refunded
-    const existingRefunds =
-      await this.refundRepository.getRefundsByPaymentId(paymentId);
-    const totalRefunded = existingRefunds
-      .filter((r) => r.status === "completed")
-      .reduce((sum, r) => sum + r.amount, 0);
-
-    if (totalRefunded + refundAmount > payment.amount) {
-      throw new BadRequestException(
-        "Total refund amount exceeds payment amount",
-      );
-    }
-
-    // Create refund
-    const refund = await this.refundRepository.createRefund(
+    // Check if payment is already refunded (atomic check + insert via FOR UPDATE lock)
+    const refund = await this.refundRepository.createRefundAtomic(
       paymentId,
       refundAmount,
     );

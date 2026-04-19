@@ -2,7 +2,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -50,8 +49,7 @@ export default function ProviderDetailPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const providerId = params.id as string;
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [checkingFavorite, setCheckingFavorite] = useState(true);
+
 
   const {
     data: provider,
@@ -90,24 +88,11 @@ export default function ProviderDetailPage() {
     return acc;
   }, {});
 
-  // Check if provider is favorited
-  useEffect(() => {
-    const checkFavorite = async () => {
-      if (user?.id && providerId) {
-        try {
-          const favorited = await favoriteService.isFavorite(providerId);
-          setIsFavorited(favorited);
-        } catch (error) {
-          console.error("Error checking favorite:", error);
-        } finally {
-          setCheckingFavorite(false);
-        }
-      } else {
-        setCheckingFavorite(false);
-      }
-    };
-    checkFavorite();
-  }, [user?.id, providerId]);
+  const { data: isFavorited = false, isLoading: checkingFavorite } = useQuery({
+    queryKey: ["is-favorite", providerId],
+    queryFn: () => favoriteService.isFavorite(providerId),
+    enabled: !!user?.id && !!providerId,
+  });
 
   // Toggle favorite mutation
   const toggleFavoriteMutation = useMutation({
@@ -123,7 +108,8 @@ export default function ProviderDetailPage() {
     },
     onMutate: async () => {
       // Optimistically update UI
-      setIsFavorited(!isFavorited);
+      await queryClient.cancelQueries({ queryKey: ["is-favorite", providerId] });
+      queryClient.setQueryData(["is-favorite", providerId], !isFavorited);
     },
     onSuccess: () => {
       toast.success(
@@ -134,7 +120,7 @@ export default function ProviderDetailPage() {
     },
     onError: (error: any) => {
       // Revert optimistic update on error
-      setIsFavorited(!isFavorited);
+      queryClient.setQueryData(["is-favorite", providerId], isFavorited);
       toast.error(error.message || "Failed to update favorite");
     },
   });
