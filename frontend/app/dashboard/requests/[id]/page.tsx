@@ -237,7 +237,7 @@ export default function RequestDetailPage() {
                           Attached Images ({request.images.length})
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {(request.images as unknown as { id: string; url: string }[]).map(
+                          {request.images.map(
                             (img) => (
                               <a
                                 key={img.id}

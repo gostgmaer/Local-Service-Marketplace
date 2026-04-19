@@ -41,7 +41,7 @@ export interface ServiceRequest {
     zip_code?: string;  // returned from API in responses
     country?: string;
   };
-  images?: string[];
+  images?: RequestImage[];
   preferred_date?: string;
   urgency?: "low" | "medium" | "high" | "urgent";
   expiry_date?: string;
@@ -63,10 +63,13 @@ export interface CreateRequestData {
     zipCode?: string;
     country?: string;
   };
-  images?: RequestImage[];
+  /** File objects to upload — backend handles file-service upload internally */
+  imageFiles?: File[];
   preferred_date?: string;
   urgency?: "low" | "medium" | "high" | "urgent";
   expiry_date?: string;
+  guest_info?: { name: string; email: string; phone: string };
+  user_id?: string;
 }
 
 export interface UpdateRequestData {
@@ -102,7 +105,27 @@ export interface RequestFilters {
 
 class RequestService {
   async createRequest(data: CreateRequestData): Promise<ServiceRequest> {
-    const response = await apiClient.post<ServiceRequest>("/requests", data);
+    const { imageFiles, ...rest } = data;
+
+    if (imageFiles && imageFiles.length > 0) {
+      // Send as multipart/form-data so the backend uploads images internally
+      const formData = new FormData();
+
+      // Append non-file fields as JSON string so the backend can parse them
+      const { location, guest_info, ...scalar } = rest;
+      Object.entries(scalar).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) formData.append(k, String(v));
+      });
+      if (location) formData.append("location", JSON.stringify(location));
+      if (guest_info) formData.append("guest_info", JSON.stringify(guest_info));
+
+      imageFiles.forEach((file) => formData.append("images", file));
+
+      const response = await apiClient.post<ServiceRequest>("/requests", formData);
+      return response.data;
+    }
+
+    const response = await apiClient.post<ServiceRequest>("/requests", rest);
     return response.data;
   }
 

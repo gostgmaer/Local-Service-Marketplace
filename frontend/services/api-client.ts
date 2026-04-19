@@ -91,6 +91,12 @@ class ApiClient {
     // Request interceptor - add Authorization header from NextAuth session
     this.client.interceptors.request.use(
       async (config) => {
+        // When sending FormData, remove the default application/json Content-Type so
+        // axios can auto-set multipart/form-data with the correct boundary.
+        if (config.data instanceof FormData) {
+          delete config.headers["Content-Type"];
+        }
+
         // Get the current session (deduplicating concurrent calls)
         const session = await getSessionOnce();
         if (session?.accessToken && config.headers) {

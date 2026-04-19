@@ -15,7 +15,7 @@ import { jobService } from "@/services/job-service";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
 import { ROUTES } from "@/config/constants";
-import { formatRelativeTime } from "@/utils/helpers";
+import { formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import {
   ArrowLeft,
   Printer,
@@ -200,7 +200,7 @@ function PaymentReceiptContent() {
                 {payment.status === "completed" ? "Total Charged" : "Amount"}
               </p>
               <p className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                {payment.currency}&nbsp;{payment.amount.toFixed(2)}
+                {formatCurrency(payment.amount)}
               </p>
               {payment.status === "completed" && payment.paid_at && (
                 <p className="mt-1.5 text-xs text-primary-700 dark:text-primary-300">
@@ -269,13 +269,13 @@ function PaymentReceiptContent() {
                 <div className="flex justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
                   <span className="text-gray-600 dark:text-gray-400">Service Amount</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {payment.currency}&nbsp;{providerAmount.toFixed(2)}
+                    {formatCurrency(providerAmount)}
                   </span>
                 </div>
                 <div className="flex justify-between px-4 py-3">
                   <span className="text-gray-600 dark:text-gray-400">Platform Fee</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {payment.currency}&nbsp;{platformFee.toFixed(2)}
+                    {formatCurrency(platformFee)}
                   </span>
                 </div>
                 <div className="flex justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
@@ -283,13 +283,13 @@ function PaymentReceiptContent() {
                     GST <span className="text-xs">({gstRate}% on platform fee)</span>
                   </span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {payment.currency}&nbsp;{gst.toFixed(2)}
+                    {formatCurrency(gst)}
                   </span>
                 </div>
                 <div className="flex justify-between px-4 py-3 bg-primary-50 dark:bg-primary-900/20">
                   <span className="font-bold text-gray-900 dark:text-white">Total Charged</span>
                   <span className="font-extrabold text-primary-700 dark:text-primary-300">
-                    {payment.currency}&nbsp;{payment.amount.toFixed(2)}
+                    {formatCurrency(payment.amount)}
                   </span>
                 </div>
                 {/* Provider payout — visible to providers */}
@@ -300,7 +300,7 @@ function PaymentReceiptContent() {
                       Your Payout
                     </span>
                     <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                      {payment.currency}&nbsp;{providerAmount.toFixed(2)}
+                      {formatCurrency(providerAmount)}
                     </span>
                   </div>
                 )}

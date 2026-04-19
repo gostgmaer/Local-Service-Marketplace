@@ -6,7 +6,13 @@ import {
   Inject,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Pool } from "pg";
+import { Pool, types } from "pg";
+
+// TIMESTAMP WITHOUT TIME ZONE columns are stored as UTC in PostgreSQL.
+// The pg postgres-date parser creates Date objects using local-time constructor,
+// which causes a 5.5h offset when the Node.js process runs in IST.
+// Force UTC interpretation by appending 'Z' before parsing.
+types.setTypeParser(1114, (val: string | null) => (val ? new Date(val + "Z") : null));
 
 const logger = new Logger("DatabaseModule");
 

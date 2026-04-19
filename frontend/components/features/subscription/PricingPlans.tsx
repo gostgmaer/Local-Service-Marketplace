@@ -201,7 +201,7 @@ export function PricingPlans({
                           : "text-gray-500"
                       }`}
                     >
-                      ₹{Math.round(plan.price / 12)}/month billed annually
+                      {formatCurrency(Math.round(plan.price / 12))}/month billed annually
                     </p>
                   )}
                 </div>

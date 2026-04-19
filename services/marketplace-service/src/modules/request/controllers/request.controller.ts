@@ -50,11 +50,36 @@ export class RequestController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FilesInterceptor("images", 5, { storage: multer.memoryStorage() }))
   async createRequest(
     @Body() createRequestDto: CreateRequestDto,
+    @UploadedFiles() files: Express.Multer.File[],
     @Req() req: any,
   ): Promise<RequestResponseDto> {
     createRequestDto.user_id = req.user.userId;
+
+    // If images were attached via multipart, upload them to the file service
+    if (files && files.length > 0) {
+      const uploadedFiles = await this.fileServiceClient.uploadMultipleFiles(
+        files,
+        {
+          category: "request-images",
+          linkedEntityType: "request",
+          visibility: "public",
+        },
+        req.user.userId,
+        req.user.role,
+        req.headers["x-tenant-id"] as string | undefined,
+      );
+      createRequestDto.images = uploadedFiles.map((f: any) => ({
+        id: f.id,
+        url: f.url,
+      }));
+    } else {
+      // No real files — discard any body-provided images (e.g. [{}, {}] from JSON tests)
+      createRequestDto.images = undefined;
+    }
+
     return this.requestService.createRequest(createRequestDto);
   }
 
