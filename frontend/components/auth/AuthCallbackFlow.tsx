@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -32,9 +32,14 @@ function AuthCallbackContent() {
     "Something went wrong. Please try again.",
   );
   const [countdown, setCountdown] = useState(3);
+  const exchangeAttempted = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
+      // Guard against React StrictMode double-invoke and searchParams re-renders
+      if (exchangeAttempted.current) return;
+      exchangeAttempted.current = true;
+
       try {
         const code = searchParams.get("code");
         const oauthError = searchParams.get("error");

@@ -378,6 +378,17 @@ export const authOptions = {
       return session;
     },
   },
+  events: {
+    /**
+     * Called server-side for every signOut() invocation — manual logout,
+     * RefreshAccessTokenError handler, session expiry, etc.
+     * Revokes the backend refresh token so the session is truly invalidated.
+     */
+    async signOut({ token }: { token?: any }) {
+      const refreshToken = token?.refreshToken as string | undefined;
+      await serverAuthService.logout(refreshToken);
+    },
+  },
   pages: { signIn: "/login", error: "/error" },
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
 };

@@ -400,12 +400,7 @@ export class AuthService {
       user.email_verified,
       user.phone_verified ?? false,
     );
-    const refreshToken = await this.jwtService.generateRefreshToken(
-      user.id,
-      user.email,
-      user.role,
-      signupProviderId,
-    );
+    const refreshToken = this.jwtService.generateRefreshToken();
 
     // Store refresh token in session
     const expiresAt = new Date();
@@ -512,12 +507,7 @@ export class AuthService {
       user.email_verified,
       user.phone_verified ?? false,
     );
-    const refreshToken = await this.jwtService.generateRefreshToken(
-      user.id,
-      user.email,
-      user.role,
-      loginProviderId,
-    );
+    const refreshToken = this.jwtService.generateRefreshToken();
 
     // Store refresh token in session
     const expiresAt = new Date();
@@ -560,10 +550,8 @@ export class AuthService {
     ipAddress?: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      // Verify refresh token
-      const payload = this.jwtService.verifyRefreshToken(refreshToken);
-
-      // Check if session exists
+      // Opaque tokens have no embedded claims — the DB session is the sole
+      // source of truth for validity and expiry.
       const session = await this.sessionRepo.findByRefreshToken(refreshToken);
       if (!session) {
         throw new UnauthorizedException("Invalid refresh token");
@@ -575,15 +563,17 @@ export class AuthService {
         throw new UnauthorizedException("Refresh token expired");
       }
 
-      // Get user
-      const user = await this.userRepo.findById(payload.sub);
+      // Get user via the session's user_id (no JWT decode required)
+      const user = await this.userRepo.findById(session.user_id);
       if (!user) {
+        await this.sessionRepo.deleteByRefreshToken(refreshToken);
         throw new UnauthorizedException("User not found");
       }
 
-      const refreshProviderId =
-        payload.providerId ??
-        (await this.resolveProviderId(user.id, user.role));
+      const refreshProviderId = await this.resolveProviderId(
+        user.id,
+        user.role,
+      );
 
       // Generate new access token
       const accessToken = await this.jwtService.generateAccessToken(
@@ -601,12 +591,7 @@ export class AuthService {
       const sessionTtlDays = await this.getSessionTtlDays();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + sessionTtlDays);
-      const newRefreshToken = await this.jwtService.generateRefreshToken(
-        user.id,
-        user.email,
-        user.role,
-        refreshProviderId,
-      );
+      const newRefreshToken = this.jwtService.generateRefreshToken();
       await this.sessionRepo.create(
         user.id,
         newRefreshToken,
@@ -909,10 +894,12 @@ export class AuthService {
         );
       } else {
         // Create new user with OAuth
-        // No password needed for OAuth users
+        // password_hash is NOT NULL in DB; store a sentinel that can never match
+        // a real bcrypt hash (bcrypt hashes start with "$2b$", never "!oauth!").
+        const oauthSentinel = `!oauth!${crypto.randomBytes(32).toString("hex")}`;
         user = await this.userRepo.create(
           email,
-          null, // No password for OAuth users
+          oauthSentinel,
           "customer", // Default role
           null, // No phone initially
           name || null, // Name from OAuth provider profile
@@ -949,12 +936,7 @@ export class AuthService {
       user.email_verified,
       user.phone_verified ?? false,
     );
-    const jwtRefreshToken = await this.jwtService.generateRefreshToken(
-      user.id,
-      user.email,
-      user.role,
-      oauthProviderId,
-    );
+    const jwtRefreshToken = this.jwtService.generateRefreshToken();
 
     // Store refresh token in session
     const expiresAt = new Date();
@@ -1074,12 +1056,7 @@ export class AuthService {
       user.email_verified,
       user.phone_verified ?? false,
     );
-    const refreshToken = await this.jwtService.generateRefreshToken(
-      user.id,
-      user.email,
-      user.role,
-      phoneLoginProviderId,
-    );
+    const refreshToken = this.jwtService.generateRefreshToken();
 
     // Store refresh token in session
     const expiresAt = new Date();
@@ -1285,12 +1262,7 @@ export class AuthService {
         user.email_verified,
         user.phone_verified,
       );
-      const refreshToken = await this.jwtService.generateRefreshToken(
-        user.id,
-        user.email,
-        user.role,
-        phoneOtpProviderId,
-      );
+      const refreshToken = this.jwtService.generateRefreshToken();
 
       // Store refresh token in session
       const expiresAt = new Date();
@@ -1475,12 +1447,7 @@ export class AuthService {
       user.email_verified,
       user.phone_verified ?? false,
     );
-    const refreshToken = await this.jwtService.generateRefreshToken(
-      user.id,
-      user.email,
-      user.role,
-      emailOtpProviderId,
-    );
+    const refreshToken = this.jwtService.generateRefreshToken();
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
@@ -1811,7 +1778,8 @@ export class AuthService {
       throw new NotFoundException("Session not found");
     }
 
-    await this.sessionRepo.deleteByRefreshToken(target.refresh_token);
+    // Use deleteById — target.refresh_token is now a hash, not the raw token
+    await this.sessionRepo.deleteById(target.id);
   }
 
   async revokeAllSessions(userId: string): Promise<void> {
@@ -2238,17 +2206,16 @@ export class AuthService {
       user.email_verified,
       user.phone_verified ?? false,
     );
-    const refreshToken = await this.jwtService.generateRefreshToken(
-      user.id,
-      user.email,
-      user.role,
-      magicLinkProviderId,
+    const refreshToken = this.jwtService.generateRefreshToken();
+    const magicLinkExpiresAt = new Date();
+    magicLinkExpiresAt.setDate(
+      magicLinkExpiresAt.getDate() + (await this.getSessionTtlDays()),
     );
 
     await this.sessionRepo.create(
       user.id,
       refreshToken,
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      magicLinkExpiresAt,
       ipAddress,
     );
 
@@ -2353,17 +2320,16 @@ export class AuthService {
       user.email_verified,
       user.phone_verified ?? false,
     );
-    const refreshToken = await this.jwtService.generateRefreshToken(
-      user.id,
-      user.email,
-      user.role,
-      appleProviderId,
+    const refreshToken = this.jwtService.generateRefreshToken();
+    const appleExpiresAt = new Date();
+    appleExpiresAt.setDate(
+      appleExpiresAt.getDate() + (await this.getSessionTtlDays()),
     );
 
     await this.sessionRepo.create(
       user.id,
       refreshToken,
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      appleExpiresAt,
       ipAddress,
     );
 

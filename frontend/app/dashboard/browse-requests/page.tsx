@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { requestService } from "@/services/request-service";
+import { proposalService } from "@/services/proposal-service";
 import { formatDate, formatCurrency } from "@/utils/helpers";
 import {
   Search,
@@ -24,6 +25,7 @@ import {
   X,
   Send,
   ShieldAlert,
+  CheckCircle2,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { CreateProposalForm } from "@/components/forms/CreateProposalForm";
@@ -33,6 +35,7 @@ export default function BrowseRequestsPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { can } = usePermissions();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("open");
@@ -83,6 +86,19 @@ export default function BrowseRequestsPage() {
     queryFn: () => requestService.getCategories(),
     enabled: isAuthenticated,
   });
+
+  const { data: myProposals } = useQuery({
+    queryKey: ["my-proposals"],
+    queryFn: () => proposalService.getMyProposals(),
+    enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
+  });
+
+  // Set of request IDs for which the provider already has an active proposal
+  const alreadyAppliedRequestIds = new Set(
+    (myProposals ?? [])
+      .filter((p) => p.status === "pending" || p.status === "accepted")
+      .map((p) => p.request_id),
+  );
 
   const proposalTargetRequest = filteredRequests.find(
     (r: any) => r.id === proposalTargetId,
@@ -270,25 +286,34 @@ export default function BrowseRequestsPage() {
 
                           {/* Actions */}
                           <div className="ml-4 flex flex-col gap-2">
-                            {request.status === "open" && (
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                disabled={!canSubmitProposal}
-                                title={
-                                  !canSubmitProposal
-                                    ? "Verify your email and await account approval before submitting proposals"
-                                    : undefined
-                                }
-                                onClick={() =>
-                                  canSubmitProposal &&
-                                  setProposalTargetId(request.id)
-                                }
-                                className="flex items-center gap-1"
-                              >
-                                <Send className="h-3 w-3" />
-                                Submit Proposal
-                              </Button>
+                            {request.status === "open" && isProviderUser && (
+                              alreadyAppliedRequestIds.has(request.id) ? (
+                                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 font-medium px-2 py-1.5">
+                                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                                  Proposal Sent
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  disabled={!canSubmitProposal}
+                                  title={
+                                    !canSubmitProposal
+                                      ? providerNotVerified
+                                        ? "Your provider account is not verified yet"
+                                        : "Verify your email before submitting proposals"
+                                      : undefined
+                                  }
+                                  onClick={() =>
+                                    canSubmitProposal &&
+                                    setProposalTargetId(request.id)
+                                  }
+                                  className="flex items-center gap-1"
+                                >
+                                  <Send className="h-3 w-3" />
+                                  Submit Proposal
+                                </Button>
+                              )
                             )}
                             <Button
                               size="sm"
@@ -370,7 +395,10 @@ export default function BrowseRequestsPage() {
                 <CreateProposalForm
                   requestId={proposalTargetRequest.id}
                   providerId={provider?.id}
-                  onSuccess={() => setProposalTargetId(null)}
+                  onSuccess={() => {
+                    setProposalTargetId(null);
+                    queryClient.invalidateQueries({ queryKey: ["my-proposals"] });
+                  }}
                   onCancel={() => setProposalTargetId(null)}
                 />
               </div>

@@ -76,7 +76,7 @@ function Get-GatewayPort {
         }
     }
 
-    return "3800"
+    return "3700"
 }
 
 $GatewayPort = Get-GatewayPort

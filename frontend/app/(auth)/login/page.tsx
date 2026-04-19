@@ -273,6 +273,11 @@ function LoginContent() {
 
   // Auto-detect input type and check backend (debounced)
   useEffect(() => {
+    // Only run the auto-check when the user is still on the identifier step.
+    // Skipping it for other steps prevents a second API call when `step`
+    // changes to "authenticate" inside checkIdentifierExists.
+    if (step !== "identifier") return;
+
     // Clear previous timeout
     if (checkTimeoutRef.current) {
       clearTimeout(checkTimeoutRef.current);
@@ -291,19 +296,12 @@ function LoginContent() {
         setIdentifierExists(null);
         setOtpAvailable(false);
         setAvailableMethods([]);
-        setStep("identifier");
       }
     } else {
       setDetectedType("unknown");
       setIdentifierExists(null);
       setOtpAvailable(false);
       setAvailableMethods([]);
-
-      // Reset to identifier step if input is cleared
-      if (step !== "identifier") {
-        setStep("identifier");
-        setLoginMethod(null);
-      }
     }
 
     return () => {
@@ -588,19 +586,38 @@ function LoginContent() {
                     autoComplete="username"
                     autoFocus
                     aria-invalid={errors.identifier ? "true" : "false"}
-                    disabled={isLoading || step === "authenticate"}
+                    disabled={isLoading}
+                    readOnly={step === "authenticate" || step === "method"}
                     className={
                       errors.identifier
                         ? "border-red-500 focus:ring-red-500"
-                        : ""
+                        : step === "authenticate" || step === "method"
+                          ? "bg-gray-50 dark:bg-gray-800 cursor-default"
+                          : ""
                     }
                   />
-                  {/* Detection Badge */}
+                  {/* Detection Badge / Change button */}
                   {detectedType !== "unknown" && identifier && (
-                    <div className="absolute right-3 top-9">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                        {detectedType === "email" ? "📧 Email" : "📱 Phone"}
-                      </span>
+                    <div className="absolute right-3 top-9 flex items-center gap-1.5">
+                      {(step === "authenticate" || step === "method") ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStep("identifier");
+                            setLoginMethod(null);
+                            setIdentifierExists(null);
+                            setAvailableMethods([]);
+                            setTimeout(() => setFocus("identifier"), 50);
+                          }}
+                          className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                        >
+                          Change
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                          {detectedType === "email" ? "📧 Email" : "📱 Phone"}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

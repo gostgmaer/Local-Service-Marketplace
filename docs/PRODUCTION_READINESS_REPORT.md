@@ -64,7 +64,7 @@ All 10 Dockerfiles build successfully.
 ### Frontend (Next.js)
 
 - ✅ Zero `TODO` / `FIXME` markers
-- ✅ `NEXT_PUBLIC_API_URL` corrected to `http://localhost:3700` (was wrongly set to `3800`)
+- ✅ `NEXT_PUBLIC_API_URL` corrected to `http://localhost:3700` (was wrongly set to `3700`)
 - ✅ Production security headers configured (CSP, HSTS, X-Frame-Options, etc.)
 - ✅ Standalone output mode enabled for Docker builds
 - ✅ Performance budgets set in webpack config

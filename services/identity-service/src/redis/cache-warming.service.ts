@@ -74,13 +74,24 @@ export class CacheWarmingService implements OnModuleInit {
 
             const response = {
               id: provider.id,
+              display_id: provider.display_id,
               user_id: provider.user_id,
               business_name: provider.business_name,
               description: provider.description,
+              verification_status: provider.verification_status,
+              aadhar_verified: provider.aadhar_verified,
+              profile_picture_url: provider.profile_picture_url,
               rating: provider.rating,
+              total_jobs_completed: provider.total_jobs_completed,
+              years_of_experience: provider.years_of_experience,
+              service_area_radius: provider.service_area_radius,
+              response_time_avg: provider.response_time_avg,
+              certifications: provider.certifications,
               services: services.map((s) => ({
                 id: s.id,
                 category_id: s.category_id,
+                category_name: (s as any).category_name,
+                category_icon: (s as any).category_icon,
               })),
               availability: availability.map((a) => ({
                 id: a.id,

@@ -26,9 +26,23 @@ export function ProtectedRoute({
   redirectTo = ROUTES.LOGIN,
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading, updateSession } = useAuth();
   const { canAny } = usePermissions();
   const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // When a page is restored from the browser's back-forward cache (bfcache)
+  // the React context still holds the previous session state. Force a session
+  // re-validation so stale "authenticated" state is cleared after logout.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setIsAuthorized(false);
+        updateSession();
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [updateSession]);
 
   useEffect(() => {
     if (isLoading) return;

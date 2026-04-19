@@ -6,7 +6,23 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 
 // Extra connect-src origins can be injected via env var (space-separated).
 // Default to the easydev.in wildcard if not explicitly overridden.
-const extraConnectSrc = process.env.NEXT_PUBLIC_EXTRA_CONNECT_SRC || 'https://*.easydev.in';
+const extraConnectSrcEnv = process.env.NEXT_PUBLIC_EXTRA_CONNECT_SRC || 'https://*.easydev.in';
+
+// Always allow the configured API URL origin so the CSP works regardless of
+// whether the app is running locally (http://localhost:*) or against a remote
+// backend. Derive the origin from NEXT_PUBLIC_API_URL (e.g. http://localhost:3700
+// → http://localhost:3700). Fall back gracefully if the env var is absent.
+const apiOrigin = (() => {
+	try {
+		const u = new URL(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3700');
+		// Allow the entire host on that scheme so port differences don't matter.
+		return `${u.protocol}//${u.hostname}:*`;
+	} catch {
+		return '';
+	}
+})();
+
+const extraConnectSrc = [extraConnectSrcEnv, apiOrigin].filter(Boolean).join(' ');
 
 const nextConfig = {
 	// Use standalone output only for Docker builds
@@ -39,6 +55,15 @@ const nextConfig = {
 	// Security headers
 	async headers() {
 		return [
+			// Prevent bfcache for all protected routes so that navigating back
+			// after logout always triggers a fresh server request (which the
+			// middleware will redirect to /login if the session cookie is gone).
+			{
+				source: "/(dashboard|onboarding|checkout)/:path*",
+				headers: [
+					{ key: "Cache-Control", value: "no-store, max-age=0" },
+				],
+			},
 			{
 				source: "/:path*",
 				headers: [

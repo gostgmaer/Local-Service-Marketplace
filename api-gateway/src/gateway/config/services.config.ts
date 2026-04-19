@@ -138,6 +138,7 @@ export const publicRoutes = [
   "/api/v1/user/auth/google/callback", // Google OAuth callback
   "/api/v1/user/auth/facebook", // Facebook OAuth initiate
   "/api/v1/user/auth/facebook/callback", // Facebook OAuth callback
+  "/api/v1/user/auth/oauth/exchange", // Exchange one-time OAuth code for tokens
 
   // ============================================
   // Phone Authentication Endpoints
