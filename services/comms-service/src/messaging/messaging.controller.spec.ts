@@ -118,7 +118,7 @@ describe("MessagingController", () => {
         buffer: Buffer.from("test"),
         mimetype: "application/pdf",
       } as any;
-      const reqMock = { user: { userId: "user-uuid-1", role: "user" } };
+      const reqMock = { user: { userId: "user-uuid-1", role: "user" }, headers: {} };
 
       const result = await controller.createAttachment(
         { message_id: "msg-uuid-1" } as any,
