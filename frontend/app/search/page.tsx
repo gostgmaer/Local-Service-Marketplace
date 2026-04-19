@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { useDebounce } from "@/hooks/useDebounce";
 import { getProviders } from "@/services/user-service";
 import { requestService } from "@/services/request-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import { analytics } from "@/utils/analytics";
 import {
   Search,
@@ -327,7 +327,7 @@ export default function SearchPage() {
                                       {request.location}
                                     </span>
                                   )}
-                                  <span>{formatDate(request.created_at)}</span>
+                                  <span>{formatRelativeTime(request.created_at)}</span>
                                 </div>
                               </div>
                             </div>

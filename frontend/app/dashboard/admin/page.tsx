@@ -10,7 +10,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { adminService } from "@/services/admin-service";
-import { formatDate } from "@/utils/helpers";
+import { formatDate, formatRelativeTime } from "@/utils/helpers";
 import Link from "next/link";
 import { ErrorState } from "@/components/ui/ErrorState";
 import {
@@ -711,7 +711,7 @@ export default function AdminDashboardPage() {
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Role: {u.role} &bull; Joined{" "}
-                                {formatDate(u.created_at)}
+                                {formatRelativeTime(u.created_at)}
                               </p>
                             </div>
                             <StatusBadge status={u.status || "active"} />
@@ -764,7 +764,7 @@ export default function AdminDashboardPage() {
                                 "No description"}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                              Filed {formatDate(dispute.created_at)}
+                              Filed {formatRelativeTime(dispute.created_at)}
                             </p>
                           </div>
                         ))}

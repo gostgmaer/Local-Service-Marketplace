@@ -13,7 +13,7 @@ import { Loading } from "@/components/ui/Loading";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { adminService } from "@/services/admin-service";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import {
   ArrowLeft,
@@ -221,7 +221,7 @@ export default function AdminUserDetailPage() {
                             Member Since
                           </p>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {formatDate(user.created_at)}
+                            {formatRelativeTime(user.created_at)}
                           </p>
                         </div>
                       </div>
@@ -233,7 +233,7 @@ export default function AdminUserDetailPage() {
                               Last Login
                             </p>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {formatDate(user.last_login_at)}
+                              {formatRelativeTime(user.last_login_at)}
                             </p>
                           </div>
                         </div>

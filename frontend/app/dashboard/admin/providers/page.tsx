@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { FilePreview } from "@/components/ui/FilePreview";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { adminService } from "@/services/admin-service";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import {
   ShieldCheck,
   ShieldX,
@@ -242,7 +242,7 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Provider ID: {provider.display_id || provider.id.substring(0, 8)}{" "}
-              &middot; Joined {formatDate(provider.created_at)}
+              &middot; Joined {formatRelativeTime(provider.created_at)}
             </p>
             {provider.description && (
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">

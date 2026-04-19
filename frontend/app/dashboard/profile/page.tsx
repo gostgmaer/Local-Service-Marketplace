@@ -26,7 +26,7 @@ import {
   Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { formatDate, parseRating } from "@/utils/helpers";
+import { formatRelativeTime, parseRating } from "@/utils/helpers";
 
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -218,7 +218,7 @@ export default function ProfilePage() {
                       </p>
                       <p className="text-gray-900 dark:text-white">
                         {profile?.created_at
-                          ? formatDate(profile.created_at)
+                          ? formatRelativeTime(profile.created_at)
                           : "—"}
                       </p>
                     </div>
@@ -408,7 +408,7 @@ export default function ProfilePage() {
                             ))}
                           </div>
                           <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                            {formatDate(review.created_at)}
+                            {formatRelativeTime(review.created_at)}
                           </span>
                         </div>
                         {review.comment && (

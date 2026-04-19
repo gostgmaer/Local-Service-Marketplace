@@ -12,7 +12,7 @@ import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { disputeService } from "@/services/dispute-service";
-import { formatDate } from "@/utils/helpers";
+import { formatDate, formatRelativeTime, formatDateTime } from "@/utils/helpers";
 import { AlertTriangle, Plus, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -134,9 +134,9 @@ export default function MyDisputesPage() {
                             </p>
                           )}
                           <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                            Filed {formatDate(dispute.created_at)}
+                            Filed {formatRelativeTime(dispute.created_at)}
                             {dispute.resolved_at &&
-                              ` · Resolved ${formatDate(dispute.resolved_at)}`}
+                              ` · Resolved ${formatDateTime(dispute.resolved_at)}`}
                           </p>
                         </div>
                         <div className="ml-4 flex flex-col gap-2">

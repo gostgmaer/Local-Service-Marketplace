@@ -20,9 +20,9 @@ const LocationMap = dynamic(() => import("@/components/ui/LocationMap"), {
 import { requestService } from "@/services/request-service";
 import { proposalService } from "@/services/proposal-service";
 import {
-  formatDate,
-  formatCurrency,
   formatRelativeTime,
+  formatDateTime,
+  formatCurrency,
 } from "@/utils/helpers";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -423,13 +423,13 @@ export default function RequestDetailPage() {
                     <div>
                       <p className="text-gray-500">Created</p>
                       <p className="font-medium text-gray-900">
-                        {formatDate(request.created_at)}
+                        {formatRelativeTime(request.created_at)}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-500">Last Updated</p>
                       <p className="font-medium text-gray-900">
-                        {formatDate(request.updated_at)}
+                        {formatRelativeTime(request.updated_at)}
                       </p>
                     </div>
                   </div>

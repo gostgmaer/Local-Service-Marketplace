@@ -13,7 +13,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { requestService } from "@/services/request-service";
 import { jobService } from "@/services/job-service";
 import { notificationService } from "@/services/notification-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatRelativeTime, formatCurrency } from "@/utils/helpers";
 import Link from "next/link";
 import { Plus, Briefcase, FileText, Bell } from "lucide-react";
 import { SkeletonStatCard, SkeletonListItem } from "@/components/ui/Skeleton";
@@ -198,7 +198,7 @@ export default function CustomerDashboard() {
                           </p>
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                             {formatCurrency(request.budget)} &bull;{" "}
-                            {formatDate(request.created_at)}
+                            {formatRelativeTime(request.created_at)}
                           </p>
                         </div>
                         <StatusBadge status={request.status} />
@@ -265,7 +265,7 @@ export default function CustomerDashboard() {
                               {job.provider?.name || "Provider"}
                             </p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                              {formatDate(job.created_at)}
+                              {formatRelativeTime(job.created_at)}
                             </p>
                           </div>
                           <StatusBadge status={job.status} />
@@ -332,7 +332,7 @@ export default function CustomerDashboard() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                        {formatDate(notification.created_at)}
+                        {formatRelativeTime(notification.created_at)}
                       </p>
                     </div>
                   ))}

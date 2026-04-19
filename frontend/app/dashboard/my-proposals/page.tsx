@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { proposalService } from "@/services/proposal-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatRelativeTime, formatDateTime, formatCurrency } from "@/utils/helpers";
 import {
   FileText,
   Calendar,
@@ -255,7 +255,7 @@ export default function MyProposalsPage() {
                               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                 <Calendar className="h-4 w-4 mr-2" />
                                 <span>
-                                  Submitted {formatDate(proposal.created_at)}
+                                  Submitted {formatRelativeTime(proposal.created_at)}
                                 </span>
                               </div>
                             </div>
@@ -273,7 +273,7 @@ export default function MyProposalsPage() {
                                       <span className="font-medium">
                                         Start:
                                       </span>{" "}
-                                      {formatDate(proposal.start_date)}
+                                      {formatDateTime(proposal.start_date)}
                                     </div>
                                   )}
                                   {proposal.completion_date && (
@@ -281,7 +281,7 @@ export default function MyProposalsPage() {
                                       <span className="font-medium">
                                         Complete:
                                       </span>{" "}
-                                      {formatDate(proposal.completion_date)}
+                                      {formatDateTime(proposal.completion_date)}
                                     </div>
                                   )}
                                 </div>

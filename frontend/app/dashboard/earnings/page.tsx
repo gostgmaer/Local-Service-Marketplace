@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { paymentService } from "@/services/payment-service";
 import { getProviderProfileByUserId } from "@/services/user-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatDateTime, formatCurrency } from "@/utils/helpers";
 import { ErrorState } from "@/components/ui/ErrorState";
 import {
   ArrowDown,
@@ -448,7 +448,7 @@ export default function EarningsPage() {
                               className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                             >
                               <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                                {formatDate(payout.payout_date)}
+                                {formatDateTime(payout.payout_date)}
                               </td>
                               <td className="py-3 px-4 text-sm capitalize text-gray-600 dark:text-gray-400">
                                 {String(payout.payout_method || "card").replace(
@@ -608,7 +608,7 @@ export default function EarningsPage() {
                               className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                             >
                               <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                                {formatDate(
+                                {formatDateTime(
                                   transaction.paid_at || transaction.created_at,
                                 )}
                               </td>

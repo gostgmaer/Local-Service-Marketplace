@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { rbacService, type Role } from "@/services/rbac-service";
 import { Permission } from "@/utils/permissions";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import Link from "next/link";
@@ -259,7 +259,7 @@ export default function AdminRolesPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
-                            {formatDate(role.created_at)}
+                            {formatRelativeTime(role.created_at)}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1">

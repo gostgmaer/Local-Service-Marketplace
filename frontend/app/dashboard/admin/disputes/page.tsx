@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { DataTable } from "@/components/ui";
 import { adminService } from "@/services/admin-service";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import Link from "next/link";
 
@@ -335,7 +335,7 @@ export default function AdminDisputesPage() {
                       header: "Filed Date",
                       sortable: true,
                       accessor: (row: DisputeRow) => new Date(row.created_at),
-                      cell: (row: DisputeRow) => formatDate(row.created_at),
+                      cell: (row: DisputeRow) => formatRelativeTime(row.created_at),
                     },
                     {
                       id: "action",

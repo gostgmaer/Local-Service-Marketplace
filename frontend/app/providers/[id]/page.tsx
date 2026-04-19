@@ -30,7 +30,7 @@ import {
 import { requestService, ServiceCategory } from "@/services/request-service";
 import { favoriteService } from "@/services/favorite-service";
 import { useAuth } from "@/hooks/useAuth";
-import { formatDate, parseRating } from "@/utils/helpers";
+import { formatRelativeTime, parseRating } from "@/utils/helpers";
 import {
   ArrowLeft,
   Star,
@@ -243,7 +243,7 @@ export default function ProviderDetailPage() {
                       </Badge>
                       <Badge variant="secondary">
                         <Calendar className="h-3 w-3 mr-1" />
-                        Joined {formatDate(provider.created_at)}
+                        Joined {formatRelativeTime(provider.created_at)}
                       </Badge>
                     </div>
                   </div>
@@ -366,7 +366,7 @@ export default function ProviderDetailPage() {
                             {review.customer_name || "Anonymous"}
                           </span>
                           <span className="text-xs text-gray-400">
-                            {formatDate(review.created_at)}
+                            {formatRelativeTime(review.created_at)}
                           </span>
                         </div>
                         <div className="flex items-center gap-0.5 mb-2">

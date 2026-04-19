@@ -15,7 +15,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { requestService } from "@/services/request-service";
 import { proposalService } from "@/services/proposal-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import {
   Search,
   Filter,
@@ -219,7 +219,7 @@ export default function BrowseRequestsPage() {
                     <Card key={request.id} hover>
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             {/* Header */}
                             <div className="flex items-start justify-between mb-3">
                               <div>
@@ -261,7 +261,7 @@ export default function BrowseRequestsPage() {
                               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                 <Calendar className="h-4 w-4 mr-2" />
                                 <span>
-                                  Posted {formatDate(request.created_at)}
+                                  Posted {formatRelativeTime(request.created_at)}
                                 </span>
                               </div>
                             </div>

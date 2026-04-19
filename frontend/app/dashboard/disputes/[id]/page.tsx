@@ -12,7 +12,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { disputeService } from "@/services/dispute-service";
 import { ROUTES } from "@/config/constants";
-import { formatDate } from "@/utils/helpers";
+import { formatDate, formatRelativeTime, formatDateTime } from "@/utils/helpers";
 import {
   ArrowLeft,
   AlertTriangle,
@@ -99,7 +99,7 @@ export default function DisputeDetailPage() {
                 {dispute.display_id || dispute.id.slice(0, 8).toUpperCase()}
               </h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Filed {formatDate(dispute.created_at)}
+                Filed {formatRelativeTime(dispute.created_at)}
               </p>
             </div>
             <StatusBadge status={dispute.status} />
@@ -201,7 +201,7 @@ export default function DisputeDetailPage() {
                       </dt>
                       <dd className="text-sm text-gray-900 dark:text-white flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        {formatDate(dispute.created_at)}
+                        {formatRelativeTime(dispute.created_at)}
                       </dd>
                     </div>
                   )}
@@ -211,7 +211,7 @@ export default function DisputeDetailPage() {
                         Last Updated
                       </dt>
                       <dd className="text-sm text-gray-900 dark:text-white">
-                        {formatDate(dispute.updated_at)}
+                        {formatRelativeTime(dispute.updated_at)}
                       </dd>
                     </div>
                   )}
@@ -269,7 +269,7 @@ export default function DisputeDetailPage() {
                       {dispute.resolved_at && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          Resolved on {formatDate(dispute.resolved_at)}
+                          Resolved on {formatDateTime(dispute.resolved_at)}
                         </p>
                       )}
                     </div>

@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { apiClient } from "@/services/api-client";
 import { proposalService } from "@/services/proposal-service";
 import { jobService } from "@/services/job-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatRelativeTime, formatCurrency } from "@/utils/helpers";
 import Link from "next/link";
 import {
   Briefcase,
@@ -299,7 +299,7 @@ export default function ProviderDashboard() {
                           </p>
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                             {formatCurrency(proposal.price)} &bull;{" "}
-                            {formatDate(proposal.created_at)}
+                            {formatRelativeTime(proposal.created_at)}
                           </p>
                         </div>
                         <StatusBadge status={proposal.status} />
@@ -368,7 +368,7 @@ export default function ProviderDashboard() {
                             </p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                               {formatCurrency(job.actual_amount || 0)} &bull;{" "}
-                              {formatDate(job.created_at)}
+                              {formatRelativeTime(job.created_at)}
                             </p>
                           </div>
                           <StatusBadge status={job.status} />

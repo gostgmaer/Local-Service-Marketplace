@@ -17,7 +17,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { RequestFilters } from "@/components/features/requests/RequestFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { requestService } from "@/services/request-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import { analytics } from "@/utils/analytics";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -153,7 +153,7 @@ export default function RequestsPage() {
                                   {request.category?.name || "Uncategorized"}
                                 </span>
                                 <span>•</span>
-                                <span>{formatDate(request.created_at)}</span>
+                                <span>{formatRelativeTime(request.created_at)}</span>
                               </div>
                             </div>
                             <StatusBadge status={request.status} />

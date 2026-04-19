@@ -14,7 +14,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { adminService } from "@/services/admin-service";
 import { paymentService } from "@/services/payment-service";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime, formatDateTime } from "@/utils/helpers";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import {
   ArrowLeft,
@@ -183,7 +183,7 @@ export default function AdminDisputeDetailPage() {
                             Filed On
                           </p>
                           <p className="text-gray-900 dark:text-white">
-                            {formatDate(dispute.created_at)}
+                            {formatRelativeTime(dispute.created_at)}
                           </p>
                         </div>
                       </div>
@@ -208,7 +208,7 @@ export default function AdminDisputeDetailPage() {
                               Resolved On
                             </p>
                             <p className="text-gray-900 dark:text-white">
-                              {formatDate(dispute.resolved_at)}
+                              {formatDateTime(dispute.resolved_at)}
                             </p>
                           </div>
                         </div>

@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatusBadge } from "@/components/ui/Badge";
 import { paymentService } from "@/services/payment-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatRelativeTime, formatCurrency } from "@/utils/helpers";
 import { analytics } from "@/utils/analytics";
 import toast from "react-hot-toast";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -219,7 +219,7 @@ export default function PaymentHistoryPage() {
                             {payment.display_id || payment.id.slice(0, 8)}
                           </p>
                           <p className="text-sm text-gray-500 dark:text-gray-500">
-                            {formatDate(payment.created_at)}
+                            {formatRelativeTime(payment.created_at)}
                           </p>
                         </div>
 

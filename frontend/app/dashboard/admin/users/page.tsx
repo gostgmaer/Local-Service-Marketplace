@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { DataTable } from "@/components/ui";
 import { adminService } from "@/services/admin-service";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useMemo, useState } from "react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
@@ -406,7 +406,7 @@ export default function AdminUsersPage() {
                       header: "Joined",
                       sortable: true,
                       accessor: (row: UserRow) => new Date(row.created_at),
-                      cell: (row: UserRow) => formatDate(row.created_at),
+                      cell: (row: UserRow) => formatRelativeTime(row.created_at),
                     },
                     {
                       id: "action",
