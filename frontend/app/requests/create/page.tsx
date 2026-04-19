@@ -29,7 +29,6 @@ const LocationPicker = dynamic(
   },
 );
 import { requestService } from "@/services/request-service";
-import { uploadRequestImages } from "@/services/file-service";
 import {
   createRequestSchema,
   type CreateRequestFormData,
@@ -44,7 +43,6 @@ function CreateRequestContent() {
   void prefillQuery; // reserved for future pre-fill functionality
   const { user, isAuthenticated } = useAuth();
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
   const [location, setLocation] = useState<any>(null);
   const [guestInfo, setGuestInfo] = useState({
     name: "",
@@ -119,18 +117,6 @@ function CreateRequestContent() {
     }
 
     // Upload images first (authenticated users only)
-    let images: { id: string; url: string }[] = [];
-    if (isAuthenticated && attachments.length > 0) {
-      setUploadingImages(true);
-      try {
-        images = await uploadRequestImages(attachments);
-      } catch {
-        toast.error("Image upload failed — request will be created without images.");
-      } finally {
-        setUploadingImages(false);
-      }
-    }
-
     // Prepare request data with location
     const requestData: any = {
       ...data,
@@ -146,7 +132,7 @@ function CreateRequestContent() {
           ? { pincode: String(location.zipCode).trim() }
           : {}),
       },
-      ...(images.length > 0 ? { images } : {}),
+      ...(isAuthenticated && attachments.length > 0 ? { imageFiles: attachments } : {}),
     };
 
     // Include user_id only if authenticated
@@ -257,7 +243,7 @@ function CreateRequestContent() {
 
                 <div>
                   <Input
-                    label="Budget (USD)"
+                    label="Budget (₹)"
                     type="number"
                     {...register("budget", { valueAsNumber: true })}
                     min="0"
@@ -309,10 +295,10 @@ function CreateRequestContent() {
                 <div className="flex gap-4">
                   <Button
                     type="submit"
-                    isLoading={uploadingImages || createMutation.isPending}
-                    disabled={uploadingImages || createMutation.isPending}
+                    isLoading={createMutation.isPending}
+                    disabled={createMutation.isPending}
                   >
-                    {uploadingImages ? "Uploading images…" : "Create Request"}
+                    {"Create Request"}
                   </Button>
                   <Button
                     type="button"

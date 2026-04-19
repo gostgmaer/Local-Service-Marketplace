@@ -21,6 +21,7 @@ import { UserClient } from "../../common/user/user.client";
 import { JobClient } from "../../common/marketplace/job.client";
 import { AnalyticsClient } from "../../common/analytics/analytics.client";
 import { PaymentGatewayService } from "../gateway/payment-gateway.service";
+import { InvoiceService } from "./invoice.service";
 import {
   PaginatedTransactionResponseDto,
   SortOrder,
@@ -46,6 +47,7 @@ export class PaymentService {
     private readonly jobClient: JobClient,
     private readonly analyticsClient: AnalyticsClient,
     private readonly paymentGateway: PaymentGatewayService,
+    private readonly invoiceService: InvoiceService,
   ) {}
 
   async createPayment(
@@ -56,6 +58,7 @@ export class PaymentService {
     providerId: string,
     couponCode?: string,
     gateway?: string,
+    paymentMethod?: string,
   ): Promise<Payment> {
     this.logger.log(`Creating payment for job ${jobId}`, "PaymentService");
 
@@ -116,9 +119,61 @@ export class PaymentService {
     // Non-blocking: charge proceeds with defaults if identity-service is temporarily unavailable.
     const user = await this.userClient.getUserById(userId).catch(() => null);
 
+    // ── Cash payment: skip gateway entirely ──────────────────────────────────
+    const isCash = paymentMethod === "cash";
+    if (isCash) {
+      // Generate a unique, traceable transaction ID for cash receipts
+      const cashTxnId = `CASH-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+      // Calculate GST-inclusive total so the stored amount matches what was agreed
+      const fees = await this.paymentRepository.calculateFees(finalAmount);
+      const payment = await this.paymentRepository.createPayment(
+        jobId,
+        userId,
+        providerId,
+        finalAmount,
+        currency,
+        "cash",
+        cashTxnId,
+        "cash",
+      );
+      await this.paymentRepository.updatePaymentStatus(
+        payment.id,
+        "completed",
+        cashTxnId,
+      );
+      this.logger.log(
+        `Cash payment recorded and completed: ${payment.id}`,
+        "PaymentService",
+      );
+      const userEmail = user?.email ?? null;
+      if (userEmail) {
+        this.notificationClient
+          .sendEmail({
+            to: userEmail,
+            template: "PAYMENT_SUCCESS",
+            variables: {
+              username: userEmail.split("@")[0],
+              amount: `₹${fees.totalAmount}`,
+              transactionId: cashTxnId,
+              paymentMethod: "Cash",
+              date: new Date().toLocaleDateString("en-IN"),
+            },
+          })
+          .catch(() => {});
+      }
+      // Auto-generate and upload invoice (non-blocking)
+      this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+      return { ...payment, status: "completed", transaction_id: cashTxnId };
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Calculate GST-inclusive total BEFORE calling the gateway so the customer
+    // is charged the correct amount (base service price + GST on platform fee).
+    const fees = await this.paymentRepository.calculateFees(finalAmount);
+
     // Charge via payment gateway — per-request override via X-Payment-Gateway header
     const chargeParams = {
-      amount: finalAmount,
+      amount: fees.totalAmount, // GST-inclusive total — what customer actually pays
       currency,
       description: `Job ${jobId} payment`,
       customerEmail: user?.email,
@@ -256,6 +311,11 @@ export class PaymentService {
     // the frontend (PayUbiz form POST fields, Instamojo longurl, etc.).
     if (chargeResult.gatewayResponse) {
       (payment as any).gateway_response = chargeResult.gatewayResponse;
+    }
+
+    // Auto-generate and upload invoice when payment is immediately completed (non-blocking)
+    if (paymentStatus === "completed") {
+      this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
     }
 
     return payment;

@@ -17,7 +17,35 @@ export interface Job {
   started_at?: string;
   completed_at?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  actual_amount?: number;
+  cancelled_by?: string;
+  cancellation_reason?: string;
+  // Customer
+  customer_name?: string | null;
+  customer_email?: string | null;
+  customer_phone?: string | null;
+  // Provider
+  provider_name?: string | null;
+  provider_email?: string | null;
+  provider_business_name?: string | null;
+  provider_rating?: number | null;
+  provider_verification_status?: string | null;
+  // Request
+  request_description?: string | null;
+  request_budget?: number | null;
+  request_status?: string | null;
+  request_urgency?: string | null;
+  request_preferred_date?: string | null;
+  request_category_name?: string | null;
+  request_category_icon?: string | null;
+  // Proposal
+  proposal_price?: number | null;
+  proposal_message?: string | null;
+  proposal_estimated_hours?: number | null;
+  proposal_start_date?: string | null;
+  proposal_completion_date?: string | null;
+  // Legacy nested shapes (list endpoint may still return these)
   request?: { id?: string; description?: string };
   proposal?: { id?: string; message?: string };
   provider?: {
@@ -28,9 +56,6 @@ export interface Job {
     user?: { name?: string };
   };
   customer?: { id?: string; name?: string; email?: string };
-  actual_amount?: number;
-  cancelled_by?: string;
-  cancellation_reason?: string;
 }
 
 export interface CreateJobData {
@@ -72,6 +97,12 @@ class JobService {
     const response = await apiClient.patch<Job>(`/jobs/${id}/status`, {
       status: "completed",
     });
+    return response.data;
+  }
+
+  /** Customer-facing complete — calls the dedicated endpoint that requires payment to be confirmed. */
+  async completeJobByCustomer(id: string): Promise<Job> {
+    const response = await apiClient.post<Job>(`/jobs/${id}/complete`);
     return response.data;
   }
 

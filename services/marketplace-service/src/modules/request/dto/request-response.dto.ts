@@ -20,6 +20,7 @@ export class CategoryResponseDto {
 export class RequestResponseDto {
   id: string;
   user_id?: string | null;
+  user_name?: string | null;
   category_id: string;
   category?: CategoryResponseDto;
   location?: LocationResponseDto;
@@ -41,6 +42,7 @@ export class RequestResponseDto {
     return {
       id: request.id,
       user_id: request.user_id,
+      user_name: request.user_name,
       category_id: request.category_id,
       category: request.category
         ? {

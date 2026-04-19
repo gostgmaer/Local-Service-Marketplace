@@ -267,6 +267,17 @@ export class RequestService {
       queryDto.user_id = user.userId;
     }
 
+    // RBAC: Providers see open requests + requests they have a job on
+    if (isAuthenticated && user.role === "provider") {
+      this.logger.log(
+        `Enforcing provider visibility filter for user ${user.userId}`,
+        RequestService.name,
+      );
+      queryDto.provider_user_id = user.userId;
+      // Remove any status filter the provider passed — the repo will handle the OR logic
+      queryDto.status = undefined;
+    }
+
     validateMinMaxRange(
       queryDto.min_budget,
       queryDto.max_budget,
@@ -389,23 +400,18 @@ export class RequestService {
       );
     }
 
-    // Status transition validation — prevent arbitrary jumps in the lifecycle.
-    // 'assigned' and 'completed' are set internally (via proposal acceptance /
-    // job completion flows) and must not be reachable through this API.
-    if (dto.status && dto.status !== existingRequest.status) {
-      const VALID_TRANSITIONS: Record<string, string[]> = {
-        open: ["cancelled"],
-        assigned: ["cancelled"],
-        completed: [],
-        cancelled: [],
-      };
-      const allowed =
-        VALID_TRANSITIONS[existingRequest.status as string] ?? [];
-      if (!allowed.includes(dto.status as string)) {
-        throw new BadRequestException(
-          `Cannot transition request from '${existingRequest.status}' to '${dto.status}'`,
-        );
-      }
+    // Once a job has been created the request is locked — no edits or cancellations allowed
+    if (existingRequest.status !== "open") {
+      throw new BadRequestException(
+        `Request cannot be edited because it is ${existingRequest.status}. Only open requests can be modified.`,
+      );
+    }
+    // At this point status is guaranteed to be 'open'; the only permitted
+    // customer-driven status change is open → cancelled.
+    if (dto.status && !["cancelled"].includes(dto.status as string)) {
+      throw new BadRequestException(
+        `You can only cancel a request, not set it to '${dto.status}'.`,
+      );
     }
 
     // Validate category if provided

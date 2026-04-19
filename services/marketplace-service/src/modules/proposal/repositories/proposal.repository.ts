@@ -200,12 +200,13 @@ export class ProposalRepository {
         [requestId, proposalId],
       );
 
-      // 3. Create job record
+      // 3. Create job record — copy proposal price into actual_amount so it is
+      //    always populated even if the customer never calls updateActualAmount.
       const jobRes = await client.query(
-        `INSERT INTO jobs (request_id, provider_id, customer_id, proposal_id, status, started_at)
-         VALUES ($1, $2, $3, $4, 'scheduled', NOW())
+        `INSERT INTO jobs (request_id, provider_id, customer_id, proposal_id, actual_amount, status, started_at)
+         VALUES ($1, $2, $3, $4, $5, 'scheduled', NOW())
          RETURNING *`,
-        [requestId, providerId, customerId, proposalId],
+        [requestId, providerId, customerId, proposalId, proposal.price ?? null],
       );
       const job = jobRes.rows[0];
 

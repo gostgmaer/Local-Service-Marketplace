@@ -30,7 +30,7 @@ type PaymentSortField = "created_at" | "amount" | "status";
 
 export default function PaymentHistoryPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [sortField, setSortField] = useState<PaymentSortField>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const { page, limit, setLimit, goToPage } = usePagination({
@@ -40,8 +40,13 @@ export default function PaymentHistoryPage() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(ROUTES.LOGIN);
+      return;
     }
-  }, [isAuthenticated, authLoading, router]);
+    // Providers use the Earnings page, not Payment History
+    if (!authLoading && isAuthenticated && user?.role === "provider") {
+      router.replace(ROUTES.DASHBOARD_EARNINGS);
+    }
+  }, [isAuthenticated, authLoading, user, router]);
   const {
     data: payments,
     isLoading,

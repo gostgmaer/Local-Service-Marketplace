@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { jobService } from "@/services/job-service";
 import { formatDate, formatRelativeTime, formatDateTime } from "@/utils/helpers";
 import Link from "next/link";
-import { Briefcase } from "lucide-react";
+import { Briefcase, Star, CheckCircle } from "lucide-react";
 
 export default function JobsPage() {
   const router = useRouter();
@@ -92,14 +92,14 @@ export default function JobsPage() {
                             <span className="font-medium text-gray-700 dark:text-gray-300">
                               Provider:
                             </span>{" "}
-                            {job.provider?.name || "N/A"}
+                            {job.provider_name || job.provider?.name || "N/A"}
                           </span>
                           <span>•</span>
                           <span>
                             <span className="font-medium text-gray-700 dark:text-gray-300">
                               Customer:
                             </span>{" "}
-                            {job.customer?.name || "N/A"}
+                            {job.customer_name || job.customer?.name || "N/A"}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -110,7 +110,23 @@ export default function JobsPage() {
                               <span>Started {formatDateTime(job.started_at)}</span>
                             </>
                           )}
+                          {job.completed_at && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                Completed {formatDateTime(job.completed_at)}
+                              </span>
+                            </>
+                          )}
                         </div>
+                        {(job as any).provider_rating != null && job.status === "completed" && (
+                          <div className="flex items-center gap-1 text-sm text-amber-500">
+                            <Star className="h-3.5 w-3.5 fill-amber-400" />
+                            <span className="font-medium">{Number((job as any).provider_rating).toFixed(1)}</span>
+                            <span className="text-gray-400 text-xs">provider rating</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <StatusBadge status={job.status} />

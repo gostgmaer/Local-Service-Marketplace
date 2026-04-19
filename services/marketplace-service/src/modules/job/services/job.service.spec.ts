@@ -123,7 +123,7 @@ describe("JobService.createJob", () => {
 
     const service = new JobService(
       jobRepository,
-      {} as any,
+      { updateRequest: jest.fn().mockResolvedValue(undefined) } as any,
       kafka,
       makeRedis(),
       notificationClient,

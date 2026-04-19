@@ -11,6 +11,52 @@ import { ConflictException } from "../../../common/exceptions/http.exceptions";
 export class JobRepository {
   constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
+  // ─── Shared query helpers ────────────────────────────────────────────────
+
+  /** SELECT + JOIN fragment shared by all single-row and list queries. */
+  private readonly ENRICHED_SELECT = `
+    SELECT
+      j.*,
+      cu.name            AS customer_name,
+      cu.email           AS customer_email,
+      cu.phone           AS customer_phone,
+      pu.name            AS provider_name,
+      pu.email           AS provider_email,
+      pr.business_name   AS provider_business_name,
+      pr.rating          AS provider_rating,
+      pr.verification_status AS provider_verification_status,
+      sr.description     AS request_description,
+      sr.budget          AS request_budget,
+      sr.status          AS request_status,
+      sr.urgency         AS request_urgency,
+      sr.preferred_date  AS request_preferred_date,
+      sc.name            AS request_category_name,
+      sc.icon            AS request_category_icon,
+      prop.price         AS proposal_price,
+      prop.message       AS proposal_message,
+      prop.estimated_hours AS proposal_estimated_hours,
+      prop.start_date    AS proposal_start_date,
+      prop.completion_date AS proposal_completion_date
+    FROM jobs j
+    LEFT JOIN users cu         ON j.customer_id = cu.id
+    LEFT JOIN providers pr     ON j.provider_id = pr.id
+    LEFT JOIN users pu         ON pr.user_id = pu.id
+    LEFT JOIN service_requests sr ON j.request_id = sr.id
+    LEFT JOIN service_categories sc ON sr.category_id = sc.id
+    LEFT JOIN proposals prop   ON j.proposal_id = prop.id
+  `;
+
+  /** Normalise a raw DB row into a typed Job object. */
+  private mapRow(row: any): Job {
+    return {
+      ...row,
+      provider_rating:
+        row.provider_rating ? parseFloat(row.provider_rating) : null,
+    };
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
       const res = await this.pool.query(
@@ -44,13 +90,23 @@ export class JobRepository {
       if (existing.rows.length > 0) {
         throw new ConflictException("A job already exists for this request");
       }
+      // Fetch proposal price so actual_amount is always populated
+      let proposalPrice: number | null = null;
+      if (proposalId) {
+        const priceRes = await client.query(
+          `SELECT price FROM proposals WHERE id = $1`,
+          [proposalId],
+        );
+        proposalPrice = priceRes.rows[0]?.price ?? null;
+      }
+
       const result = await client.query(
         `INSERT INTO jobs (
-           request_id, provider_id, customer_id, proposal_id, status, started_at
+           request_id, provider_id, customer_id, proposal_id, actual_amount, status, started_at
          )
-         VALUES ($1, $2, $3, $4, 'scheduled', NOW())
+         VALUES ($1, $2, $3, $4, $5, 'scheduled', NOW())
          RETURNING *`,
-        [requestId, providerId, dto.customer_id, proposalId],
+        [requestId, providerId, dto.customer_id, proposalId, proposalPrice],
       );
       await client.query("COMMIT");
       return result.rows[0];
@@ -64,14 +120,12 @@ export class JobRepository {
 
   async getJobById(id: string): Promise<Job | null> {
     id = await resolveId(this.pool, "jobs", id);
-    const query = `
-      SELECT *
-      FROM jobs
-      WHERE id = $1
-    `;
-
-    const result = await this.pool.query(query, [id]);
-    return result.rows[0] || null;
+    const result = await this.pool.query(
+      `${this.ENRICHED_SELECT} WHERE j.id = $1`,
+      [id],
+    );
+    if (!result.rows[0]) return null;
+    return this.mapRow(result.rows[0]);
   }
 
   async updateJobStatus(id: string, status: JobStatus): Promise<Job | null> {
@@ -140,8 +194,13 @@ export class JobRepository {
     ]);
 
     let query = `
-      SELECT *
-      FROM jobs
+      SELECT j.*,
+        pu.name AS provider_name,
+        cu.name AS customer_name
+      FROM jobs j
+      LEFT JOIN providers p ON j.provider_id = p.id
+      LEFT JOIN users pu ON p.user_id = pu.id
+      LEFT JOIN users cu ON j.customer_id = cu.id
       WHERE 1=1
     `;
 
@@ -150,59 +209,59 @@ export class JobRepository {
     const usingOffset = page !== undefined && page > 0;
 
     if (provider_id) {
-      query += ` AND provider_id = $${paramIndex++}`;
+      query += ` AND j.provider_id = $${paramIndex++}`;
       values.push(provider_id);
     }
 
     if (customer_id) {
-      query += ` AND customer_id = $${paramIndex++}`;
+      query += ` AND j.customer_id = $${paramIndex++}`;
       values.push(customer_id);
     }
 
     if (request_id) {
-      query += ` AND request_id = $${paramIndex++}`;
+      query += ` AND j.request_id = $${paramIndex++}`;
       values.push(request_id);
     }
 
     if (status) {
-      query += ` AND status = $${paramIndex++}`;
+      query += ` AND j.status = $${paramIndex++}`;
       values.push(status);
     }
 
     if (started_from) {
-      query += ` AND started_at >= $${paramIndex++}`;
+      query += ` AND j.started_at >= $${paramIndex++}`;
       values.push(started_from);
     }
 
     if (started_to) {
-      query += ` AND started_at <= $${paramIndex++}`;
+      query += ` AND j.started_at <= $${paramIndex++}`;
       values.push(started_to);
     }
 
     if (completed_from) {
-      query += ` AND completed_at >= $${paramIndex++}`;
+      query += ` AND j.completed_at >= $${paramIndex++}`;
       values.push(completed_from);
     }
 
     if (completed_to) {
-      query += ` AND completed_at <= $${paramIndex++}`;
+      query += ` AND j.completed_at <= $${paramIndex++}`;
       values.push(completed_to);
     }
 
     if (cursor && !usingOffset) {
-      query += ` AND started_at < (SELECT started_at FROM jobs WHERE id = $${paramIndex++})`;
+      query += ` AND j.started_at < (SELECT started_at FROM jobs WHERE id = $${paramIndex++})`;
       values.push(cursor);
     }
 
     const sortMap: Record<JobSortBy, string> = {
-      [JobSortBy.STARTED_AT]: "started_at",
-      [JobSortBy.COMPLETED_AT]: "completed_at",
-      [JobSortBy.CREATED_AT]: "created_at",
+      [JobSortBy.STARTED_AT]: "j.started_at",
+      [JobSortBy.COMPLETED_AT]: "j.completed_at",
+      [JobSortBy.CREATED_AT]: "j.created_at",
     };
-    const safeSortColumn = sortMap[sortBy] || "started_at";
+    const safeSortColumn = sortMap[sortBy] || "j.started_at";
     const safeSortOrder = sortOrder === SortOrder.ASC ? "ASC" : "DESC";
 
-    query += ` ORDER BY ${safeSortColumn} ${safeSortOrder}, id DESC`;
+    query += ` ORDER BY ${safeSortColumn} ${safeSortOrder}, j.id DESC`;
 
     if (usingOffset) {
       const offset = ((page || 1) - 1) * limit;
@@ -214,7 +273,11 @@ export class JobRepository {
     }
 
     const result = await this.pool.query(query, values);
-    return result.rows;
+    return result.rows.map((row) => ({
+      ...row,
+      provider_name: row.provider_name ?? null,
+      customer_name: row.customer_name ?? null,
+    }));
   }
 
   async getJobStats(): Promise<{
@@ -318,59 +381,42 @@ export class JobRepository {
       query += ` AND completed_at <= $${paramIndex++}`;
       values.push(completed_to);
     }
+    // Note: countJobs only counts — no JOIN needed for names
 
     const result = await this.pool.query(query, values);
     return result.rows[0].total;
   }
 
   async getJobsByProvider(providerId: string): Promise<Job[]> {
-    const query = `
-      SELECT *
-      FROM jobs
-      WHERE provider_id = $1
-      ORDER BY started_at DESC
-    `;
-
-    const result = await this.pool.query(query, [providerId]);
-    return result.rows;
+    const result = await this.pool.query(
+      `${this.ENRICHED_SELECT} WHERE j.provider_id = $1 ORDER BY j.started_at DESC`,
+      [providerId],
+    );
+    return result.rows.map(this.mapRow.bind(this));
   }
 
   async getJobsByStatus(status: string): Promise<Job[]> {
-    const query = `
-      SELECT *
-      FROM jobs
-      WHERE status = $1
-      ORDER BY started_at DESC
-    `;
-
-    const result = await this.pool.query(query, [status]);
-    return result.rows;
+    const result = await this.pool.query(
+      `${this.ENRICHED_SELECT} WHERE j.status = $1 ORDER BY j.started_at DESC`,
+      [status],
+    );
+    return result.rows.map(this.mapRow.bind(this));
   }
 
   async getJobsByCustomer(userId: string): Promise<Job[]> {
-    const query = `
-      SELECT j.*
-      FROM jobs j
-      INNER JOIN service_requests sr ON j.request_id = sr.id
-      WHERE sr.user_id = $1
-      ORDER BY j.started_at DESC
-    `;
-
-    const result = await this.pool.query(query, [userId]);
-    return result.rows;
+    const result = await this.pool.query(
+      `${this.ENRICHED_SELECT} WHERE j.customer_id = $1 ORDER BY j.started_at DESC`,
+      [userId],
+    );
+    return result.rows.map(this.mapRow.bind(this));
   }
 
   async getJobsByProviderUser(userId: string): Promise<Job[]> {
-    const query = `
-      SELECT j.*
-      FROM jobs j
-      INNER JOIN providers p ON j.provider_id = p.id
-      WHERE p.user_id = $1
-      ORDER BY j.started_at DESC
-    `;
-
-    const result = await this.pool.query(query, [userId]);
-    return result.rows;
+    const result = await this.pool.query(
+      `${this.ENRICHED_SELECT} WHERE pr.user_id = $1 ORDER BY j.started_at DESC`,
+      [userId],
+    );
+    return result.rows.map(this.mapRow.bind(this));
   }
 
   // ✅ NEW METHOD: Cancel job with reason

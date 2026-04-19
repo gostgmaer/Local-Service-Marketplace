@@ -7,7 +7,7 @@ import {
   IsEnum,
   IsDateString,
 } from "class-validator";
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
 
 export enum RequestSortBy {
   CREATED_AT = "created_at",
@@ -97,7 +97,29 @@ export class RequestQueryDto {
   @IsEnum(RequestSortBy)
   sortBy?: RequestSortBy = RequestSortBy.CREATED_AT;
 
+  // snake_case alias accepted from API clients
+  @IsOptional()
+  @IsEnum(RequestSortBy)
+  @Transform(({ value, obj }) => {
+    if (value !== undefined) obj.sortBy = value;
+    return value;
+  })
+  sort_by?: RequestSortBy;
+
   @IsOptional()
   @IsEnum(SortOrder)
   sortOrder?: SortOrder = SortOrder.DESC;
+
+  // snake_case alias accepted from API clients
+  @IsOptional()
+  @IsEnum(SortOrder)
+  @Transform(({ value, obj }) => {
+    if (value !== undefined) obj.sortOrder = value;
+    return value;
+  })
+  sort_order?: SortOrder;
+
+  // Internal-only: set by service layer for provider RBAC filtering.
+  // Not exposed as a query param (forbidden by validation pipe).
+  provider_user_id?: string;
 }

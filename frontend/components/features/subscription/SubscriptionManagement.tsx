@@ -11,6 +11,7 @@ import {
   Clock,
 } from "lucide-react";
 import { paymentService, type Subscription } from "@/services/payment-service";
+import { formatCurrency } from "@/utils/helpers";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export function SubscriptionManagement({ providerId }: { providerId: string }) {
@@ -137,7 +138,7 @@ export function SubscriptionManagement({ providerId }: { providerId: string }) {
               <div>
                 <p className="text-blue-200 text-sm mb-1">Price</p>
                 <p className="text-3xl font-bold">
-                  ₹{activeSubscription.plan_price || 0}
+                  {formatCurrency(activeSubscription.plan_price || 0)}
                   <span className="text-lg font-normal">
                     /{activeSubscription.billing_period || "month"}
                   </span>
@@ -253,8 +254,8 @@ export function SubscriptionManagement({ providerId }: { providerId: string }) {
 
                       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-600">
                         <div>
-                          <span className="text-gray-500">Price:</span> ₹
-                          {subscription.plan_price || 0}/
+                          <span className="text-gray-500">Price:</span>{" "}
+                          {formatCurrency(subscription.plan_price || 0)}/
                           {subscription.billing_period || "month"}
                         </div>
                         <div>

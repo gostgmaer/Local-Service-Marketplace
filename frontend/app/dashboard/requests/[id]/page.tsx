@@ -125,7 +125,16 @@ export default function RequestDetailPage() {
       <Layout>
         <div className="container-custom py-8">
           <div className="mb-6">
-            <Button variant="ghost" onClick={() => router.push(ROUTES.DASHBOARD_REQUESTS)}>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                router.push(
+                  isProvider
+                    ? ROUTES.DASHBOARD_BROWSE_REQUESTS
+                    : ROUTES.DASHBOARD_REQUESTS,
+                )
+              }
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Requests
             </Button>
@@ -228,7 +237,7 @@ export default function RequestDetailPage() {
                           Attached Images ({request.images.length})
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {(request.images as unknown as { id: string; url: string }[]).map(
+                          {request.images.map(
                             (img) => (
                               <a
                                 key={img.id}
@@ -429,7 +438,7 @@ export default function RequestDetailPage() {
                     <div>
                       <p className="text-gray-500">Last Updated</p>
                       <p className="font-medium text-gray-900">
-                        {formatRelativeTime(request.updated_at)}
+                        {formatRelativeTime(request.updated_at|| request.created_at)}
                       </p>
                     </div>
                   </div>

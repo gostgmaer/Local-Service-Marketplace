@@ -18,6 +18,7 @@ import { requestService, UpdateRequestData } from "@/services/request-service";
 import { ArrowLeft, Lock, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { formatCurrency } from "@/utils/helpers";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 
 export default function EditRequestPage() {
@@ -300,7 +301,7 @@ export default function EditRequestPage() {
                         Budget
                       </p>
                       <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                        ₹{request.budget.toLocaleString()}
+                        {formatCurrency(request.budget)}
                       </p>
                     </div>
 

@@ -2,6 +2,7 @@ import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { PaymentRepository } from "../repositories/payment.repository";
 import { UserClient } from "../../common/user/user.client";
+import { FileServiceClient } from "../../common/file-service.client";
 import { NotFoundException } from "../../common/exceptions/http.exceptions";
 
 export interface InvoiceData {
@@ -10,6 +11,10 @@ export interface InvoiceData {
   payment: {
     id: string;
     amount: number;
+    platform_fee: number;
+    provider_amount: number;
+    gst_rate: number;
+    gst_amount: number;
     currency: string;
     status: string;
     payment_method: string;
@@ -43,11 +48,12 @@ export class InvoiceService {
     private readonly logger: LoggerService,
     private readonly paymentRepository: PaymentRepository,
     private readonly userClient: UserClient,
+    private readonly fileServiceClient: FileServiceClient,
   ) {}
 
   async generateInvoice(
     paymentId: string,
-    requestingUserId: string,
+    _requestingUserId: string,
   ): Promise<InvoiceData> {
     this.logger.log(
       `Generating invoice for payment ${paymentId}`,
@@ -88,6 +94,10 @@ export class InvoiceService {
           typeof payment.amount === "string"
             ? parseFloat(payment.amount)
             : payment.amount,
+        platform_fee: payment.platform_fee ?? 0,
+        provider_amount: payment.provider_amount ?? 0,
+        gst_rate: payment.gst_rate ?? 18,
+        gst_amount: payment.gst_amount ?? 0,
         currency: payment.currency || "INR",
         status: payment.status,
         payment_method: payment.payment_method || "card",
@@ -120,10 +130,15 @@ export class InvoiceService {
   }
 
   generateInvoiceHtml(invoice: InvoiceData): string {
-    const formattedAmount = new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: invoice.payment.currency,
-    }).format(invoice.payment.amount);
+    const currency = invoice.payment.currency;
+    const fmt = (n: number) =>
+      new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(n);
+
+    const serviceAmount = invoice.payment.provider_amount;
+    const platformFee = invoice.payment.platform_fee;
+    const gstRate = invoice.payment.gst_rate;
+    const gstAmount = invoice.payment.gst_amount;
+    const totalAmount = invoice.payment.amount;
 
     const issueDate = new Date(invoice.issue_date).toLocaleDateString("en-IN", {
       year: "numeric",
@@ -132,10 +147,13 @@ export class InvoiceService {
     });
 
     const paidDate = invoice.payment.paid_at
-      ? new Date(invoice.payment.paid_at).toLocaleDateString("en-IN", {
+      ? new Date(invoice.payment.paid_at).toLocaleString("en-IN", {
           year: "numeric",
           month: "long",
           day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
         })
       : "Pending";
 
@@ -159,14 +177,17 @@ export class InvoiceService {
     .party h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 8px; }
     .party p { font-size: 14px; margin-bottom: 4px; }
     .party .name { font-weight: bold; font-size: 16px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
     th { background: #f8fafc; padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #666; border-bottom: 2px solid #e2e8f0; }
-    td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-    .total-row td { font-weight: bold; font-size: 16px; border-top: 2px solid #333; border-bottom: none; }
+    td { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+    .subtotal-row td { color: #555; }
+    .total-row td { font-weight: bold; font-size: 16px; background: #f0f9ff; border-top: 2px solid #2563eb; border-bottom: none; color: #1e40af; }
     .status { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
     .status-completed { background: #dcfce7; color: #166534; }
     .status-pending { background: #fef3c7; color: #92400e; }
     .status-failed { background: #fecaca; color: #991b1b; }
+    .meta-box { background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 20px; font-size: 13px; }
+    .meta-box p { margin-bottom: 6px; }
     .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #999; }
     @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } .invoice { padding: 20px; } }
   </style>
@@ -181,7 +202,7 @@ export class InvoiceService {
       <div class="invoice-info">
         <p class="invoice-number">${invoice.invoice_number}</p>
         <p>Date: ${issueDate}</p>
-        <p>Payment ID: ${invoice.payment.id.substring(0, 8)}...</p>
+        <p>Payment ID: ${invoice.payment.id.substring(0, 8).toUpperCase()}...</p>
       </div>
     </div>
 
@@ -202,34 +223,43 @@ export class InvoiceService {
       <thead>
         <tr>
           <th>Description</th>
-          <th>Job ID</th>
+          <th>Job Ref</th>
           <th>Method</th>
           <th style="text-align: right;">Amount</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>Service Payment</td>
-          <td>${invoice.job_id.substring(0, 8)}...</td>
+        <tr class="subtotal-row">
+          <td>Service Amount (to provider)</td>
+          <td>${invoice.job_id.substring(0, 8).toUpperCase()}...</td>
           <td>${invoice.payment.payment_method}</td>
-          <td style="text-align: right;">${formattedAmount}</td>
+          <td style="text-align: right;">${fmt(serviceAmount)}</td>
+        </tr>
+        <tr class="subtotal-row">
+          <td>Platform Fee</td>
+          <td>—</td>
+          <td>—</td>
+          <td style="text-align: right;">${fmt(platformFee)}</td>
+        </tr>
+        <tr class="subtotal-row">
+          <td>GST (${gstRate}% on platform fee)</td>
+          <td>—</td>
+          <td>—</td>
+          <td style="text-align: right;">${fmt(gstAmount)}</td>
         </tr>
         <tr class="total-row">
-          <td colspan="3">Total</td>
-          <td style="text-align: right;">${formattedAmount}</td>
+          <td colspan="3">Total Charged</td>
+          <td style="text-align: right;">${fmt(totalAmount)}</td>
         </tr>
       </tbody>
     </table>
 
-    <p>
-      <strong>Status:</strong>
-      <span class="status status-${invoice.payment.status}">${invoice.payment.status}</span>
-    </p>
-    <p style="margin-top: 8px; font-size: 14px; color: #666;">
-      <strong>Transaction ID:</strong> ${invoice.payment.transaction_id || "N/A"}<br>
-      <strong>Gateway:</strong> ${invoice.payment.gateway}<br>
-      <strong>Paid:</strong> ${paidDate}
-    </p>
+    <div class="meta-box">
+      <p><strong>Status:</strong> <span class="status status-${invoice.payment.status}">${invoice.payment.status.toUpperCase()}</span></p>
+      <p><strong>Transaction ID:</strong> ${invoice.payment.transaction_id || "N/A"}</p>
+      <p><strong>Payment Gateway:</strong> ${invoice.payment.gateway}</p>
+      <p><strong>Paid On:</strong> ${paidDate}</p>
+    </div>
 
     <div class="footer">
       <p>This is a computer-generated invoice. No signature required.</p>
@@ -238,6 +268,57 @@ export class InvoiceService {
   </div>
 </body>
 </html>`;
+  }
+
+  /**
+   * Generates invoice HTML, uploads it to the file service, and stores the URL
+   * on the payment record. Non-blocking — caller should use .catch(() => null).
+   */
+  async generateAndUploadInvoice(
+    paymentId: string,
+    userId: string,
+  ): Promise<string | null> {
+    try {
+      const invoice = await this.generateInvoice(paymentId, userId);
+      const html = this.generateInvoiceHtml(invoice);
+      const buffer = Buffer.from(html, "utf-8");
+      const filename = `${invoice.invoice_number}.html`;
+
+      const uploaded = await this.fileServiceClient.uploadBuffer(
+        buffer,
+        filename,
+        "text/html",
+        {
+          category: "invoice",
+          title: `Invoice ${invoice.invoice_number}`,
+          visibility: "private",
+          linkedEntityType: "payment",
+          linkedEntityId: paymentId,
+          tags: ["invoice", "payment"],
+        },
+        userId,
+        "system",
+      );
+
+      await this.paymentRepository.updateInvoiceUrl(
+        paymentId,
+        uploaded.url,
+        uploaded.id,
+      );
+
+      this.logger.log(
+        `Invoice generated and uploaded for payment ${paymentId}: ${uploaded.url}`,
+        "InvoiceService",
+      );
+
+      return uploaded.url;
+    } catch (err: any) {
+      this.logger.warn(
+        `Failed to auto-generate invoice for payment ${paymentId}: ${err.message}`,
+        "InvoiceService",
+      );
+      return null;
+    }
   }
 
   private generateInvoiceNumber(paymentId: string, createdAt: string): string {

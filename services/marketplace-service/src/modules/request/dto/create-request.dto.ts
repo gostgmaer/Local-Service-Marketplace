@@ -15,7 +15,7 @@ import {
   IsUrl,
   Matches,
 } from "class-validator";
-import { Type } from "class-transformer";
+import { Type, Transform, plainToInstance } from "class-transformer";
 
 /**
  * Represents a single uploaded image attached to a service request.
@@ -73,6 +73,7 @@ export class CreateRequestDto {
 
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => (typeof value === "string" ? JSON.parse(value) : value))
   guest_info?: {
     name: string;
     email: string;
@@ -84,6 +85,10 @@ export class CreateRequestDto {
 
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    const obj = typeof value === "string" ? JSON.parse(value) : value;
+    return plainToInstance(LocationDto, obj);
+  })
   @ValidateNested()
   @Type(() => LocationDto)
   location?: LocationDto;
@@ -94,11 +99,17 @@ export class CreateRequestDto {
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => (typeof value === "string" ? Number(value) : value))
   budget: number;
 
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(10)
+  @Transform(({ value }) => {
+    if (!Array.isArray(value)) return value;
+    // Filter out empty/placeholder objects (from multipart form or client-side placeholders)
+    return value.filter((img: any) => img && img.id && img.url);
+  })
   @ValidateNested({ each: true })
   @Type(() => RequestImageDto)
   images?: RequestImageDto[];

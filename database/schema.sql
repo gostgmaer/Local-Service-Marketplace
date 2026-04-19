@@ -475,7 +475,9 @@ CREATE TABLE payments (
   gst_rate NUMERIC(5,2) DEFAULT 18.00,
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   paid_at TIMESTAMP,
-  deleted_at TIMESTAMPTZ
+  deleted_at TIMESTAMPTZ,
+  invoice_url TEXT,
+  invoice_file_id TEXT
 );
 
 -- idx_payments_job_id replaced by idx_payments_job_id_created (composite with created_at for ORDER BY)
@@ -2442,6 +2444,7 @@ VALUES
   ('035', 'add_file_id_to_provider_documents', 'integrated_in_schema', 0),
   ('036', 'secure_attachment_file_id', 'integrated_in_schema', 0),
   ('037', 'make_document_url_nullable', 'integrated_in_schema', 0),
-  ('038', 'production_hardening_indexes', 'integrated_in_schema', 0)
+  ('038', 'production_hardening_indexes', 'integrated_in_schema', 0),
+  ('039', 'add_invoice_url_to_payments', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

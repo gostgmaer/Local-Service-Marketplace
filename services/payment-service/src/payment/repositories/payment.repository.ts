@@ -27,6 +27,34 @@ export class PaymentRepository {
     }
   }
 
+  /**
+   * Calculates platform fee, GST, and total for a given base amount WITHOUT
+   * touching the database. Used by PaymentService to get the GST-inclusive
+   * total before charging the payment gateway.
+   */
+  async calculateFees(baseAmount: number): Promise<{
+    platformFee: number;
+    providerAmount: number;
+    gstAmount: number;
+    gstRate: number;
+    totalAmount: number;
+  }> {
+    const [feeRateStr, gstRateStr] = await Promise.all([
+      this.getSystemSetting("platform_fee_percentage", "15"),
+      this.getSystemSetting("gst_rate", "18"),
+    ]);
+    const feeRate =
+      Math.max(0, Math.min(100, parseFloat(feeRateStr) || 15)) / 100;
+    const gstRate = Math.max(0, Math.min(100, parseFloat(gstRateStr) || 18));
+
+    const platformFee = Math.floor(baseAmount * feeRate);
+    const providerAmount = baseAmount - platformFee;
+    const gstAmount = parseFloat(((platformFee * gstRate) / 100).toFixed(2));
+    const totalAmount = Math.round((baseAmount + gstAmount) * 100) / 100;
+
+    return { platformFee, providerAmount, gstAmount, gstRate, totalAmount };
+  }
+
   async createPayment(
     jobId: string,
     userId: string,
@@ -52,16 +80,19 @@ export class PaymentRepository {
       Math.max(0, Math.min(100, parseFloat(feeRateStr) || 15)) / 100;
     const gstRate = Math.max(0, Math.min(100, parseFloat(gstRateStr) || 18));
 
+    // amount = base service price (what customer agreed to pay)
+    // totalAmount = what customer is actually charged (base + GST on platform fee)
     const platformFee = Math.floor(amount * feeRate);
-    const providerAmount = amount - platformFee;
+    const providerAmount = amount - platformFee; // provider receives base minus platform fee
     const gstAmount = parseFloat(((platformFee * gstRate) / 100).toFixed(2));
+    const totalAmount = Math.round((amount + gstAmount) * 100) / 100;
 
     const values = [
       id,
       jobId,
       userId,
       providerId,
-      amount,
+      totalAmount, // customer's actual charge: base + GST on platform fee
       platformFee,
       providerAmount,
       currency,
@@ -133,16 +164,41 @@ export class PaymentRepository {
     if (result.rows.length === 0) {
       return null;
     }
+    const row = result.rows[0];
     return new Payment({
-      id: result.rows[0].id,
-      display_id: result.rows[0].display_id,
-      job_id: result.rows[0].job_id,
-      amount: parseFloat(result.rows[0].amount),
-      currency: result.rows[0].currency,
-      status: result.rows[0].status,
-      transaction_id: result.rows[0].transaction_id,
-      created_at: result.rows[0].created_at,
+      id: row.id,
+      display_id: row.display_id,
+      job_id: row.job_id,
+      user_id: row.user_id,
+      provider_id: row.provider_id,
+      amount: parseFloat(row.amount),
+      platform_fee: row.platform_fee != null ? parseFloat(row.platform_fee) : 0,
+      provider_amount:
+        row.provider_amount != null ? parseFloat(row.provider_amount) : 0,
+      gst_rate: row.gst_rate != null ? parseFloat(row.gst_rate) : 18,
+      gst_amount: row.gst_amount != null ? parseFloat(row.gst_amount) : 0,
+      currency: row.currency,
+      payment_method: row.payment_method,
+      gateway: row.gateway,
+      status: row.status,
+      transaction_id: row.transaction_id,
+      failed_reason: row.failed_reason,
+      created_at: row.created_at,
+      paid_at: row.paid_at,
+      invoice_url: row.invoice_url ?? undefined,
+      invoice_file_id: row.invoice_file_id ?? undefined,
     });
+  }
+
+  async updateInvoiceUrl(
+    id: string,
+    invoiceUrl: string,
+    invoiceFileId?: string,
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE payments SET invoice_url = $1, invoice_file_id = $2 WHERE id = $3`,
+      [invoiceUrl, invoiceFileId ?? null, id],
+    );
   }
 
   async getPaymentByTransactionId(
@@ -224,9 +280,13 @@ export class PaymentRepository {
           id: row.id,
           display_id: row.display_id,
           job_id: row.job_id,
+          user_id: row.user_id,
+          provider_id: row.provider_id,
           amount: parseFloat(row.amount),
           currency: row.currency,
           status: row.status,
+          payment_method: row.payment_method,
+          gateway: row.gateway,
           transaction_id: row.transaction_id,
           created_at: row.created_at,
         }),
@@ -470,7 +530,10 @@ export class PaymentRepository {
         AND created_at BETWEEN COALESCE($1::TIMESTAMP, '2020-01-01'::TIMESTAMP) AND COALESCE($2::TIMESTAMP, NOW())
       GROUP BY currency
     `;
-    const result = await this.pool.query(query, [startDate ?? null, endDate ?? null]);
+    const result = await this.pool.query(query, [
+      startDate ?? null,
+      endDate ?? null,
+    ]);
     return result.rows;
   }
 

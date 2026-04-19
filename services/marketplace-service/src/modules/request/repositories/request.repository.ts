@@ -110,6 +110,7 @@ export class RequestRepository {
       sortBy = RequestSortBy.CREATED_AT,
       sortOrder = SortOrder.DESC,
       search,
+      provider_user_id,
     } = queryDto;
 
     [user_id, category_id] = await Promise.all([
@@ -128,10 +129,12 @@ export class RequestRepository {
         r.guest_name, r.guest_email, r.guest_phone,
         r.created_at, r.updated_at,
         l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at,
-        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon
+        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon,
+        u.name as user_full_name
       FROM service_requests r
       LEFT JOIN locations l ON r.location_id = l.id
       LEFT JOIN service_categories sc ON r.category_id = sc.id
+      LEFT JOIN users u ON r.user_id = u.id
       WHERE r.deleted_at IS NULL
     `;
 
@@ -148,7 +151,17 @@ export class RequestRepository {
       values.push(category_id);
     }
 
-    if (status) {
+    if (provider_user_id) {
+      // Provider sees: open requests OR requests they have a non-cancelled job on
+      query += ` AND (r.status = 'open' OR r.id IN (
+        SELECT j.request_id FROM jobs j
+        JOIN providers p ON j.provider_id = p.id
+        WHERE p.user_id = $${paramIndex++}
+          AND j.deleted_at IS NULL
+          AND j.status NOT IN ('cancelled', 'disputed')
+      ))`;
+      values.push(provider_user_id);
+    } else if (status) {
       query += ` AND r.status = $${paramIndex++}`;
       values.push(status);
     }
@@ -215,6 +228,7 @@ export class RequestRepository {
         id: row.id,
         display_id: row.display_id,
         user_id: row.user_id,
+        user_name: row.user_full_name ?? null,
         category_id: row.category_id,
         location_id: row.location_id,
         description: row.description,
@@ -296,6 +310,7 @@ export class RequestRepository {
       urgency,
       created_from,
       created_to,
+      provider_user_id,
     } = queryDto;
 
     [user_id, category_id] = await Promise.all([
@@ -326,7 +341,16 @@ export class RequestRepository {
       values.push(category_id);
     }
 
-    if (status) {
+    if (provider_user_id) {
+      query += ` AND (r.status = 'open' OR r.id IN (
+        SELECT j.request_id FROM jobs j
+        JOIN providers p ON j.provider_id = p.id
+        WHERE p.user_id = $${paramIndex++}
+          AND j.deleted_at IS NULL
+          AND j.status NOT IN ('cancelled', 'disputed')
+      ))`;
+      values.push(provider_user_id);
+    } else if (status) {
       query += ` AND r.status = $${paramIndex++}`;
       values.push(status);
     }
@@ -367,10 +391,12 @@ export class RequestRepository {
         r.id, r.display_id, r.user_id, r.category_id, r.location_id, r.description, r.budget, r.status,
         r.images, r.preferred_date, r.urgency, r.expiry_date, r.view_count, r.created_at, r.updated_at,
         l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at,
-        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon
+        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon,
+        u.name as user_full_name
       FROM service_requests r
       LEFT JOIN locations l ON r.location_id = l.id
       LEFT JOIN service_categories sc ON r.category_id = sc.id
+      LEFT JOIN users u ON r.user_id = u.id
       WHERE r.id = $1 AND r.deleted_at IS NULL
     `;
 
@@ -385,6 +411,7 @@ export class RequestRepository {
       id: row.id,
       display_id: row.display_id,
       user_id: row.user_id,
+      user_name: row.user_full_name ?? null,
       category_id: row.category_id,
       location_id: row.location_id,
       description: row.description,
@@ -507,10 +534,12 @@ export class RequestRepository {
         r.id, r.display_id, r.user_id, r.category_id, r.location_id, r.description, r.budget, r.status,
         r.images, r.preferred_date, r.urgency, r.expiry_date, r.view_count, r.created_at, r.updated_at,
         l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at,
-        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon
+        sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon,
+        u.name as user_full_name
       FROM service_requests r
       LEFT JOIN locations l ON r.location_id = l.id
       LEFT JOIN service_categories sc ON r.category_id = sc.id
+      LEFT JOIN users u ON r.user_id = u.id
       WHERE r.user_id = $1 AND r.deleted_at IS NULL
       ORDER BY r.created_at DESC
       LIMIT $2 OFFSET $3
@@ -522,6 +551,7 @@ export class RequestRepository {
         id: row.id,
         display_id: row.display_id,
         user_id: row.user_id,
+        user_name: row.user_full_name ?? null,
         category_id: row.category_id,
         location_id: row.location_id,
         description: row.description,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { Layout } from "@/components/layout/Layout";
@@ -11,8 +12,10 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { paymentService } from "@/services/payment-service";
 import { jobService } from "@/services/job-service";
+import { useAuth } from "@/hooks/useAuth";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 import { ROUTES } from "@/config/constants";
-import { formatRelativeTime } from "@/utils/helpers";
+import { formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import {
   ArrowLeft,
   Printer,
@@ -21,6 +24,15 @@ import {
   XCircle,
   RefreshCw,
   CreditCard,
+  FileText,
+  ExternalLink,
+  Building2,
+  User2,
+  Calendar,
+  Banknote,
+  Tag,
+  Copy,
+  Check,
 } from "lucide-react";
 
 const STATUS_BADGE: Record<
@@ -36,7 +48,10 @@ const STATUS_BADGE: Record<
 function PaymentReceiptContent() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const { config: siteConfig } = usePublicSettings();
   const paymentId = params.id as string;
+  const [copied, setCopied] = useState(false);
 
   const {
     data: payment,
@@ -81,39 +96,83 @@ function PaymentReceiptContent() {
 
   const statusInfo = STATUS_BADGE[payment.status] ?? STATUS_BADGE.pending;
   const platformFee = payment.platform_fee ?? 0;
-  const providerAmount = payment.provider_amount ?? payment.amount - platformFee;
-  // Approximate GST (18%) included in platform fee
-  const gst = Math.round(platformFee * 0.18 * 100) / 100;
-  const jobTitle =
-    job?.request?.description
-      ? job.request.description.slice(0, 60) + (job.request.description.length > 60 ? "…" : "")
-      : job?.id
-      ? `Job #${job.display_id ?? job.id.slice(0, 8)}`
-      : "—";
+  const providerAmount = payment.provider_amount ?? 0;
+  const gstRate = payment.gst_rate ?? siteConfig.gstRate;
+  const gst = payment.gst_amount ?? Math.round(platformFee * (gstRate / 100) * 100) / 100;
+
+  const serviceDescription =
+    job?.request_description ??
+    job?.request?.description ??
+    null;
+  const jobTitle = serviceDescription
+    ? serviceDescription.slice(0, 80) + (serviceDescription.length > 80 ? "…" : "")
+    : job?.id
+    ? `Job #${job.display_id ?? job.id.slice(0, 8)}`
+    : "—";
+
+  const categoryName = job?.request_category_name ?? null;
+  const providerName = job?.provider_name ?? job?.provider?.name ?? null;
+  const providerBusiness = job?.provider_business_name ?? job?.provider?.business_name ?? null;
+  const customerName = job?.customer_name ?? null;
+  const customerEmail = job?.customer_email ?? null;
 
   const receiptDate = payment.paid_at ?? payment.created_at;
+
+  function formatDateTime(iso: string) {
+    const d = new Date(iso);
+    return {
+      date: d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
+      time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }),
+    };
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  const paid = formatDateTime(receiptDate);
+  const created = formatDateTime(payment.created_at);
 
   return (
     <Layout>
       <div className="container-custom py-8 max-w-2xl mx-auto print:py-4">
-        {/* Back button — hidden on print */}
+        {/* Top bar — hidden on print */}
         <div className="mb-6 flex items-center justify-between print:hidden">
           <Button variant="ghost" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => window.print()}
-            aria-label="Print this receipt"
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Print Receipt
-          </Button>
+          {/* Print button — only shown when invoice is ready */}
+          {payment.invoice_url && (
+            <Button
+              variant="outline"
+              onClick={() => window.print()}
+              aria-label="Print this receipt"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print Receipt
+            </Button>
+          )}
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-700">
+            {/* Status banner for non-completed payments */}
+            {payment.status === "pending" && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                <Clock className="h-4 w-4 flex-shrink-0" />
+                <span>Payment is pending. You will be notified once confirmed.</span>
+              </div>
+            )}
+            {payment.status === "failed" && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3 text-sm text-red-800 dark:text-red-300">
+                <XCircle className="h-4 w-4 flex-shrink-0" />
+                <span>Payment failed. {payment.failed_reason ? `Reason: ${payment.failed_reason}` : "Please try again."}</span>
+              </div>
+            )}
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -123,7 +182,7 @@ function PaymentReceiptContent() {
                   </h1>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  #{payment.display_id ?? payment.id.slice(0, 8).toUpperCase()}
+                  Receipt #{payment.display_id ?? payment.id.slice(0, 8).toUpperCase()}
                 </p>
               </div>
               <Badge variant={statusInfo.variant} className="flex items-center gap-1.5 text-sm px-3 py-1.5">
@@ -133,122 +192,240 @@ function PaymentReceiptContent() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            {/* Job info */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                Service
+          <CardContent className="space-y-6 pt-6">
+
+            {/* Total amount — prominent hero */}
+            <div className="rounded-xl bg-gradient-to-br from-primary-50 to-indigo-100 dark:from-primary-900/30 dark:to-indigo-900/20 border border-primary-100 dark:border-primary-800 p-5 text-center">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-400 mb-1">
+                {payment.status === "completed" ? "Total Charged" : "Amount"}
               </p>
-              <p className="font-semibold text-gray-900 dark:text-white">
-                {jobTitle}
+              <p className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                {formatCurrency(payment.amount)}
               </p>
-              {job && (
-                <button
-                  className="mt-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
-                  onClick={() => router.push(ROUTES.DASHBOARD_JOB_DETAIL(job.id))}
-                >
-                  View Job →
-                </button>
+              {payment.status === "completed" && payment.paid_at && (
+                <p className="mt-1.5 text-xs text-primary-700 dark:text-primary-300">
+                  Paid on {paid.date} at {paid.time}
+                </p>
+              )}
+            </div>
+
+            {/* Service / Job info */}
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <Tag className="h-3.5 w-3.5 text-gray-400" />
+                    <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                      {categoryName ?? "Service"}
+                    </span>
+                  </div>
+                  <p className="font-semibold text-gray-900 dark:text-white leading-snug">
+                    {jobTitle}
+                  </p>
+                </div>
+                {job && (
+                  <button
+                    className="flex-shrink-0 text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                    onClick={() => router.push(ROUTES.DASHBOARD_JOB_DETAIL(job.id))}
+                  >
+                    View Job →
+                  </button>
+                )}
+              </div>
+              {/* Provider / customer party info */}
+              {(providerName || providerBusiness) && (
+                <div className="flex items-center gap-2 pt-1 border-t border-gray-200 dark:border-gray-700 mt-2">
+                  <Building2 className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                    Provider:{" "}
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {providerBusiness ?? providerName}
+                    </span>
+                    {providerBusiness && providerName && (
+                      <span className="text-gray-400"> · {providerName}</span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {user?.role === "provider" && (customerName || customerEmail) && (
+                <div className="flex items-center gap-2">
+                  <User2 className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                    Customer:{" "}
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {customerName ?? customerEmail}
+                    </span>
+                  </span>
+                </div>
               )}
             </div>
 
             {/* Amount breakdown */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-widest">
                 Amount Breakdown
               </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-sm divide-y divide-gray-100 dark:divide-gray-700">
+                <div className="flex justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
                   <span className="text-gray-600 dark:text-gray-400">Service Amount</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {payment.currency} {providerAmount.toFixed(2)}
+                    {formatCurrency(providerAmount)}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between px-4 py-3">
                   <span className="text-gray-600 dark:text-gray-400">Platform Fee</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {payment.currency} {(platformFee - gst).toFixed(2)}
+                    {formatCurrency(platformFee)}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">GST (18%)</span>
+                <div className="flex justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    GST <span className="text-xs">({gstRate}% on platform fee)</span>
+                  </span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {payment.currency} {gst.toFixed(2)}
+                    {formatCurrency(gst)}
                   </span>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2 flex justify-between">
-                  <span className="font-semibold text-gray-900 dark:text-white">Total Paid</span>
-                  <span className="font-bold text-lg text-gray-900 dark:text-white">
-                    {payment.currency} {payment.amount.toFixed(2)}
+                <div className="flex justify-between px-4 py-3 bg-primary-50 dark:bg-primary-900/20">
+                  <span className="font-bold text-gray-900 dark:text-white">Total Charged</span>
+                  <span className="font-extrabold text-primary-700 dark:text-primary-300">
+                    {formatCurrency(payment.amount)}
+                  </span>
+                </div>
+                {/* Provider payout — visible to providers */}
+                {user?.role === "provider" && providerAmount > 0 && (
+                  <div className="flex justify-between px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20">
+                    <span className="flex items-center gap-1.5 font-medium text-emerald-800 dark:text-emerald-300">
+                      <Banknote className="h-3.5 w-3.5" />
+                      Your Payout
+                    </span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                      {formatCurrency(providerAmount)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Payment details grid */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-widest">
+                Payment Details
+              </h3>
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-sm divide-y divide-gray-100 dark:divide-gray-700">
+                {/* Paid date/time */}
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>{payment.paid_at ? "Paid On" : "Created On"}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900 dark:text-white">{paid.date}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{paid.time} · {formatRelativeTime(receiptDate)}</p>
+                  </div>
+                </div>
+                {/* Created at (if different from paid_at) */}
+                {payment.paid_at && payment.paid_at !== payment.created_at && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>Initiated On</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900 dark:text-white">{created.date}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{created.time}</p>
+                    </div>
+                  </div>
+                )}
+                {/* Payment method */}
+                {payment.payment_method && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      <span>Method</span>
+                    </div>
+                    <span className="font-medium text-gray-900 dark:text-white capitalize">
+                      {payment.payment_method.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                )}
+                {/* Gateway */}
+                {payment.gateway && payment.gateway !== "cash" && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-gray-500 dark:text-gray-400">Gateway</span>
+                    <span className="font-medium text-gray-900 dark:text-white capitalize">
+                      {payment.gateway}
+                    </span>
+                  </div>
+                )}
+                {/* Transaction ID with copy button */}
+                {payment.transaction_id && (
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
+                    <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">Transaction ID</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-mono text-xs text-gray-700 dark:text-gray-300 truncate">
+                        {payment.transaction_id}
+                      </span>
+                      <button
+                        title="Copy transaction ID"
+                        onClick={() => copyToClipboard(payment.transaction_id!)}
+                        className="flex-shrink-0 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                      >
+                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {/* Payment / Receipt ID */}
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">Payment ID</span>
+                  <span className="font-mono text-xs text-gray-700 dark:text-gray-300">
+                    {payment.display_id ?? payment.id.slice(0, 12).toUpperCase()}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Metadata */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                  Date
-                </p>
-                <p className="text-gray-900 dark:text-white">
-                  {new Date(receiptDate).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {formatRelativeTime(receiptDate)}
-                </p>
-              </div>
-              {payment.payment_method && (
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                    Method
-                  </p>
-                  <p className="text-gray-900 dark:text-white capitalize">
-                    {payment.payment_method.replace(/_/g, " ")}
-                  </p>
+            {/* Invoice download */}
+            {payment.invoice_url && (
+              <div className="print:hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Invoice Ready</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-400">Your auto-generated invoice is available to download</p>
+                  </div>
                 </div>
-              )}
-              {payment.transaction_id && (
-                <div className="col-span-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                    Transaction ID
-                  </p>
-                  <p className="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">
-                    {payment.transaction_id}
-                  </p>
-                </div>
-              )}
-              {payment.gateway && (
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-                    Gateway
-                  </p>
-                  <p className="text-gray-900 dark:text-white capitalize">
-                    {payment.gateway}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Failed reason */}
-            {payment.status === "failed" && payment.failed_reason && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 text-sm text-red-700 dark:text-red-400">
-                <strong>Failure reason:</strong> {payment.failed_reason}
+                <a
+                  href={payment.invoice_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-blue-700 dark:text-blue-300 hover:underline"
+                >
+                  View Invoice
+                  <ExternalLink className="h-4 w-4" />
+                </a>
               </div>
             )}
 
             {/* Actions */}
             <div className="flex flex-wrap gap-3 pt-2 print:hidden">
-              <Button
-                variant="outline"
-                onClick={() => router.push(ROUTES.DASHBOARD_PAYMENT_HISTORY)}
-              >
-                Payment History
-              </Button>
+              {user?.role === "customer" && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(ROUTES.DASHBOARD_PAYMENT_HISTORY)}
+                >
+                  Payment History
+                </Button>
+              )}
+              {user?.role === "provider" && (
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(ROUTES.DASHBOARD_EARNINGS)}
+                >
+                  Earnings
+                </Button>
+              )}
               {payment.status === "completed" && (
                 <Button
                   variant="outline"

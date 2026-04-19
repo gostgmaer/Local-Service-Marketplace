@@ -31,18 +31,34 @@ export function parseRating(
     : undefined;
 }
 
-export function formatDate(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+/** Parse a date string, treating bare strings (no TZ suffix) as UTC. */
+function parseDate(date: string | Date): Date {
+  if (date instanceof Date) return date;
+  // If the string has no timezone info (no Z, no +, no -offset after time), treat as UTC
+  if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(date) && !/[Zz]$/.test(date) && !/[+-]\d{2}:?\d{2}$/.test(date)) {
+    return new Date(date.replace(" ", "T") + "Z");
+  }
+  return new Date(date);
+}
+
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return "—";
+  const d = parseDate(date);
+  if (isNaN(d.getTime())) return "—";
   return format(d, "dd MMM yyyy", { locale: enIN });
 }
 
-export function formatDateTime(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return "—";
+  const d = parseDate(date);
+  if (isNaN(d.getTime())) return "—";
   return format(d, "dd MMM yyyy, hh:mm a", { locale: enIN });
 }
 
-export function formatRelativeTime(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+export function formatRelativeTime(date: string | Date | null | undefined): string {
+  if (!date) return "—";
+  const d = parseDate(date);
+  if (isNaN(d.getTime())) return "—";
   // Within the last 7 days: show relative ("2 hours ago", "3 days ago")
   // Older than 7 days: show full datetime
   if (isAfter(d, subDays(new Date(), 7))) {

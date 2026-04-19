@@ -14,6 +14,7 @@ import { Loading } from "@/components/ui/Loading";
 import { paymentService, PricingPlan } from "@/services/payment-service";
 import { getProviderProfileByUserId } from "@/services/user-service";
 import { jobService } from "@/services/job-service";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 import { formatCurrency } from "@/utils/helpers";
 import {
   AlertCircle,
@@ -31,6 +32,7 @@ import toast from "react-hot-toast";
 function JobCheckout({ jobId }: { jobId: string }) {
   const router = useRouter();
   const { user } = useAuth();
+  const { config: siteConfig } = usePublicSettings();
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
@@ -138,6 +140,14 @@ function JobCheckout({ jobId }: { jobId: string }) {
 
   const amount = job.actual_amount || 0;
 
+  // Compute GST + platform fee breakdown using public settings (same formula as backend)
+  const discountedAmount = appliedCoupon
+    ? Math.round(amount * (1 - appliedCoupon.discountPercent / 100) * 100) / 100
+    : amount;
+  const platformFeeAmt = Math.floor(discountedAmount * siteConfig.platformFeePercentage / 100);
+  const gstAmt = Math.round((platformFeeAmt * siteConfig.gstRate / 100) * 100) / 100;
+  const totalDue = Math.round((discountedAmount + gstAmt) * 100) / 100;
+
   return (
     <Layout>
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-12">
@@ -177,9 +187,9 @@ function JobCheckout({ jobId }: { jobId: string }) {
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                      {formatCurrency(amount)}
+                      {formatCurrency(totalDue)}
                     </p>
-                    <p className="text-sm text-gray-500">Total amount</p>
+                    <p className="text-sm text-gray-500">Total (incl. GST)</p>
                   </div>
                 </div>
               </CardContent>
@@ -254,7 +264,7 @@ function JobCheckout({ jobId }: { jobId: string }) {
                 {/* Price breakdown */}
                 <div className="mb-6 space-y-2 text-sm text-gray-700 dark:text-gray-300">
                   <div className="flex items-center justify-between">
-                    <span>Subtotal</span>
+                    <span>Service Amount</span>
                     <span>{formatCurrency(amount)}</span>
                   </div>
                   {appliedCoupon && (
@@ -263,10 +273,18 @@ function JobCheckout({ jobId }: { jobId: string }) {
                       <span>–{formatCurrency(amount * appliedCoupon.discountPercent / 100)}</span>
                     </div>
                   )}
+                  <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+                    <span>Platform Fee ({siteConfig.platformFeePercentage}%)</span>
+                    <span>{formatCurrency(platformFeeAmt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+                    <span>GST ({siteConfig.gstRate}% on platform fee)</span>
+                    <span>{formatCurrency(gstAmt)}</span>
+                  </div>
                   <div className="flex items-center justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2">
                     <span className="text-gray-900 dark:text-white">Total due</span>
                     <span className="text-primary-600 dark:text-primary-400">
-                      {formatCurrency(appliedCoupon ? amount * (1 - appliedCoupon.discountPercent / 100) : amount)}
+                      {formatCurrency(totalDue)}
                     </span>
                   </div>
                 </div>
@@ -275,11 +293,7 @@ function JobCheckout({ jobId }: { jobId: string }) {
                     <p className="text-sm font-medium text-yellow-900 dark:text-yellow-200">
                       Confirm payment of{" "}
                       <strong>
-                        {formatCurrency(
-                          appliedCoupon
-                            ? amount * (1 - appliedCoupon.discountPercent / 100)
-                            : amount,
-                        )}
+                        {formatCurrency(totalDue)}
                       </strong>
                       ? This action cannot be reversed.
                     </p>
@@ -311,7 +325,7 @@ function JobCheckout({ jobId }: { jobId: string }) {
                     className="w-full"
                     size="lg"
                   >
-                    {`Pay ${formatCurrency(appliedCoupon ? amount * (1 - appliedCoupon.discountPercent / 100) : amount)}`}
+                    {`Pay ${formatCurrency(totalDue)}`}
                   </Button>
                 )}
               </CardContent>

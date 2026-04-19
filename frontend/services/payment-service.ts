@@ -15,7 +15,13 @@ export interface Payment {
   provider_id?: string;
   platform_fee?: number;
   provider_amount?: number;
+  /** GST rate applied on platform fee (e.g. 18 for 18%) */
+  gst_rate?: number;
+  /** GST amount = platform_fee * gst_rate / 100 */
+  gst_amount?: number;
   failed_reason?: string;
+  /** URL of the auto-generated invoice file (available after payment completes) */
+  invoice_url?: string;
   /** Gateway used: stripe | razorpay | paypal | payubiz | instamojo | mock */
   gateway?: string;
   /**
@@ -77,6 +83,22 @@ class PaymentService {
   async getMyPayments(): Promise<Payment[]> {
     const response = await apiClient.get<Payment[]>(`/payments/my`);
     return apiClient.extractList<Payment>(response.data);
+  }
+
+  /** Record a cash payment for a job. Marked as completed immediately on the backend. */
+  async confirmCashPayment(
+    jobId: string,
+    providerId: string,
+    amount: number,
+  ): Promise<Payment> {
+    const response = await apiClient.post<Payment>("/payments", {
+      job_id: jobId,
+      provider_id: providerId,
+      amount,
+      currency: "INR",
+      payment_method: "cash",
+    });
+    return response.data;
   }
 
   async getPaymentStatus(id: string): Promise<Payment> {
