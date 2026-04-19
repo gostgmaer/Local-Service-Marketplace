@@ -45,22 +45,14 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // CORS - Allow frontend access
+  // Configure allowed origins via CORS_ORIGINS (comma-separated) in .env / docker.env
+  // Local dev fallback is added automatically when NODE_ENV !== 'production'
   const allowedOrigins = [
-    // Production domains
-    "https://lsp.easydev.in",
-    "https://easydev.in",
-    "https://www.easydev.in",
-    "https://www.lsp.easydev.in",
-    // Staging / preview
-    "https://staging.lsp.easydev.in",
     // Local development (only in non-production environments)
     ...(process.env.NODE_ENV !== "production"
       ? ["http://localhost:3000", "http://127.0.0.1:3000"]
       : []),
-    // Env-based overrides
-    process.env.FRONTEND_URL,
-    process.env.CORS_ORIGIN,
-    // Support comma-separated list via CORS_ORIGINS
+    // All origins from CORS_ORIGINS env var (comma-separated list)
     ...(process.env.CORS_ORIGINS
       ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
       : []),

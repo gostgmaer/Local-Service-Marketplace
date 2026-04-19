@@ -1,6 +1,6 @@
-# Quick Start
+﻿# Quick Start
 
-Get the platform running in 3 steps. For full documentation see [GETTING_STARTED.md](GETTING_STARTED.md).
+Get the platform running in 5 steps. For a full guide covering all environments see [GETTING_STARTED.md](GETTING_STARTED.md).
 
 ---
 
@@ -8,95 +8,103 @@ Get the platform running in 3 steps. For full documentation see [GETTING_STARTED
 
 - Docker Desktop 20.x+ with Docker Compose 2.x+
 - 4 GB RAM minimum (8 GB recommended)
+- Node.js 18+ and pnpm (for local dev only)
 
 ---
 
-## Step 1 — Configure secrets
+## Step 1 — Clone and configure
 
 ```powershell
-.\scripts\setup-env-files.ps1
+git clone https://github.com/your-org/local-service-marketplace.git
+cd local-service-marketplace
+
+# Copy the template — docker.env is gitignored and holds your real secrets
+Copy-Item .env.example docker.env
 ```
 
-Then in `docker.env` set these three secrets (generate each with `openssl rand -base64 48`):
+---
+
+## Step 2 — Generate secrets
+
+Open `docker.env` and set these five values. Generate each one with `openssl rand -base64 48`:
 
 ```env
-JWT_SECRET=
-JWT_REFRESH_SECRET=
-GATEWAY_INTERNAL_SECRET=
+JWT_SECRET=<generated>
+JWT_REFRESH_SECRET=<generated — must differ from JWT_SECRET>
+GATEWAY_INTERNAL_SECRET=<generated>
+ENCRYPTION_KEY=<generated — use openssl rand -base64 64>
+SESSION_SECRET=<generated — use openssl rand -base64 32>
 ```
+
+> **Windows?** Use Git Bash or WSL to run `openssl`. Or generate online at https://generate-secret.vercel.app/64
 
 ---
 
-## Step 2 — Start services
+## Step 3 — Start services
+
+The default `COMPOSE_PROFILES=workers` in `docker.env` starts Redis automatically alongside all microservices.
 
 ```powershell
-# Start core services (postgres, pgbouncer, all microservices, api-gateway)
 docker-compose up -d
-
-# Start Redis (required for token blacklist + caching)
-docker-compose --profile cache up -d redis
 ```
 
-Wait ~60 seconds, then verify:
+Wait ~60 seconds for containers to become healthy, then verify:
 
+```powershell
+curl http://localhost:3700/health   # should return JSON
 ```
-http://localhost:3700/health   -> API Gateway (JSON response)
-http://localhost:3000          -> Frontend
+
+To also start the frontend container:
+
+```powershell
+# Edit docker.env:
+COMPOSE_PROFILES=workers,frontend
+
+docker-compose up -d
 ```
 
 ---
 
-## Step 3 — Seed sample data (optional)
+## Step 4 — Run database migrations
 
 ```powershell
-cd database; node seed.js
+cd database
+node migrate.js
+```
+
+---
+
+## Step 5 — Seed sample data (optional)
+
+```powershell
+node seed.js
 ```
 
 Creates 320+ users and 1000+ records across all tables.
 
-Default credentials:
-- Admin: `admin@marketplace.com` / `password123`
-- Provider: `provider1@example.com` / `password123`
-- Customer: `customer1@example.com` / `password123`
+**Default credentials:**
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@marketplace.com` | `password123` |
+| Provider | `provider1@example.com` | `password123` |
+| Customer | `customer1@example.com` | `password123` |
 
 ---
 
-## Common Commands
+## Access the platform
 
-```powershell
-# Check status of all containers
-docker-compose ps
-
-# View logs for a service
-docker-compose logs -f identity-service
-
-# Restart a service
-docker-compose restart identity-service
-
-# Rebuild after code changes
-docker-compose up -d --build
-
-# Stop everything (keep data)
-docker-compose down
-
-# Full reset (deletes all data)
-docker-compose down -v
-
-# Seed the database
-cd database; node seed.js
-```
+| URL | What you get |
+|-----|-------------|
+| http://localhost:3000 | Frontend (Next.js) — requires `frontend` profile |
+| http://localhost:3700 | API Gateway |
+| http://localhost:3700/health | Health check (JSON) |
 
 ---
 
-## Documentation
+## Next steps
 
-| Guide | Description |
-|---|---|
-| [GETTING_STARTED.md](GETTING_STARTED.md) | Full startup guide for each environment |
-| [MARKETPLACE_GUIDE.md](MARKETPLACE_GUIDE.md) | Admin / Provider / Customer capabilities |
-| [ENVIRONMENT_VARIABLES_GUIDE.md](ENVIRONMENT_VARIABLES_GUIDE.md) | All config options |
-| [BULLMQ_CONFIGURATION_GUIDE.md](BULLMQ_CONFIGURATION_GUIDE.md) | Background job queues |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common issues and fixes |
-| [api/API_SPECIFICATION.md](api/API_SPECIFICATION.md) | API endpoint reference |
-| [guides/AUTHENTICATION_WORKFLOW.md](guides/AUTHENTICATION_WORKFLOW.md) | Auth and token flow |
-| [deployment/SCALING_STRATEGY.md](deployment/SCALING_STRATEGY.md) | Scaling levels and infrastructure |
+- Full local development setup (no Docker): [GETTING_STARTED.md#3-environment-local-development-no-docker](GETTING_STARTED.md)
+- Environment variable reference: [ENVIRONMENT_VARIABLES_GUIDE.md](ENVIRONMENT_VARIABLES_GUIDE.md)
+- All commands and troubleshooting: [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
+- Marketplace roles and workflows: [MARKETPLACE_GUIDE.md](MARKETPLACE_GUIDE.md)

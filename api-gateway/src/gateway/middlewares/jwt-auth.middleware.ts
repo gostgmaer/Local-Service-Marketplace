@@ -36,9 +36,8 @@ export class JwtAuthMiddleware implements NestMiddleware {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.authServiceUrl = this.configService.get<string>(
-      "AUTH_SERVICE_URL",
-      "http://localhost:3001",
+    this.authServiceUrl = this.configService.getOrThrow<string>(
+      "IDENTITY_SERVICE_URL",
     );
     this.gatewaySecret = this.configService.get<string>(
       "GATEWAY_INTERNAL_SECRET",

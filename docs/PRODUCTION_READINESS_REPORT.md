@@ -118,7 +118,7 @@ Workers are opt-in via `WORKERS_ENABLED=true`. All services start and function c
 ## 5. Security Posture
 
 - ✅ Passwords hashed with bcrypt
-- ✅ JWT access tokens (15 min) + refresh tokens (7 days)
+- ✅ JWT access tokens (15 min) + refresh tokens (90 days)
 - ✅ Token revocation via Redis blacklist — immediate logout invalidation
 - ✅ Rate limiting on all services
 - ✅ CORS restricted to `http://localhost:3000` (update to production domain)

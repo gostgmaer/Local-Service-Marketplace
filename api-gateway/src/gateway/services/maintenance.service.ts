@@ -22,9 +22,7 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     private readonly httpService: HttpService,
   ) {
     this.oversightUrl =
-      this.configService.get<string>("OVERSIGHT_SERVICE_URL") ||
-      this.configService.get<string>("ADMIN_SERVICE_URL") ||
-      "http://localhost:3010";
+      this.configService.getOrThrow<string>("OVERSIGHT_SERVICE_URL");
   }
 
   async onModuleInit() {

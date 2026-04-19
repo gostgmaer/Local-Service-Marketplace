@@ -613,3 +613,249 @@ docker system prune -a
 **Last Updated:** March 14, 2026  
 **Platform Version:** 1.0  
 **Status:** Production Ready
+
+
+## Authentication Issues (JWT & Token Problems)
+
+### ❌ 401 Unauthorized on all requests after login
+
+**Error:** Login returns tokens but every subsequent request returns 401.
+
+**Cause:** `JWT_SECRET` mismatch between api-gateway and identity-service.
+
+**Solution:**
+```powershell
+# 1. Open docker.env and ensure JWT_SECRET is set to a real value
+# 2. Open api-gateway/.env and services/identity-service/.env
+# 3. All three files must have IDENTICAL JWT_SECRET values
+
+# 4. Restart both services
+docker-compose restart api-gateway identity-service
+
+# 5. Generate a fresh secret if needed
+openssl rand -base64 48
+```
+
+---
+
+### ❌ 403 Forbidden calling /auth/verify (gateway → identity-service)
+
+**Cause:** `GATEWAY_INTERNAL_SECRET` mismatch.
+
+**Solution:** Ensure `GATEWAY_INTERNAL_SECRET` is the same value in:
+- `docker.env`
+- `api-gateway/.env`
+- `services/identity-service/.env`
+- `services/oversight-service/.env`
+
+```powershell
+docker-compose restart api-gateway identity-service oversight-service
+```
+
+---
+
+### ❌ Refresh token not working / "Token expired"
+
+The default refresh token lifetime is **90 days** (set via `JWT_REFRESH_EXPIRATION=90d` in identity-service).
+
+If tokens expire sooner, check `JWT_EXPIRES_IN` (access token, default 15m) vs `JWT_REFRESH_EXPIRATION` (refresh token, default 90d) are not swapped.
+
+---
+
+### ❌ OAuth (Google/Facebook) redirect fails
+
+**Cause:** Callback URLs don't match what's registered in the OAuth provider.
+
+**Solution:**
+1. In Google Cloud Console → Credentials → your OAuth client → Authorized redirect URIs, add:
+   `http://localhost:3700/api/v1/user/auth/google/callback`
+2. Set the same URL in `services/identity-service/.env`:
+   ```env
+   GOOGLE_CALLBACK_URL=http://localhost:3700/api/v1/user/auth/google/callback
+   ```
+3. Same pattern applies to Facebook.
+
+---
+
+## Redis & Workers Issues
+
+### ❌ Redis not starting / workers not processing jobs
+
+**Cause:** COMPOSE_PROFILES does not include `workers` or `cache`.
+
+**Solution:**
+```powershell
+# Check docker.env
+Get-Content docker.env | Select-String "COMPOSE_PROFILES"
+# Should show: COMPOSE_PROFILES=workers (or include workers)
+
+# If empty or wrong, edit docker.env:
+# COMPOSE_PROFILES=workers
+
+# Restart
+docker-compose down
+docker-compose up -d
+
+# Verify Redis is running
+docker-compose ps redis
+docker exec marketplace-redis redis-cli ping   # should return PONG
+```
+
+---
+
+### ❌ BullMQ jobs stuck in queue / not being processed
+
+**Cause:** `WORKERS_ENABLED=false` in docker.env.
+
+**Solution:**
+```powershell
+# In docker.env, set:
+WORKERS_ENABLED=true
+COMPOSE_PROFILES=workers
+
+# Restart affected service
+docker-compose restart identity-service
+```
+
+---
+
+## PgBouncer Connection Pooling Issues
+
+### ❌ Services fail to connect when PgBouncer is enabled
+
+**Cause:** Services are using `DATABASE_HOST=postgres` instead of `pgbouncer`, or the `pooling` profile is not active.
+
+**Solution:**
+```powershell
+# Enable PgBouncer profile in docker.env:
+COMPOSE_PROFILES=workers,pooling
+
+# Then verify services use the pooler:
+# In docker-compose.yml each service should have DATABASE_HOST=pgbouncer
+# This is set via the docker.env DATABASE_HOST variable
+
+docker-compose up -d
+docker-compose logs pgbouncer
+```
+
+---
+
+### ❌ "prepared statement does not exist" error
+
+**Cause:** PgBouncer in transaction mode does not support prepared statements.
+
+**Solution:** Add `?prepared_statement_limit=0` to the `DATABASE_URL` in affected service `.env` files, or set `PGBOUNCER_POOL_MODE=session` (higher memory use but compatible).
+
+---
+
+## Push Notifications (Firebase FCM) Issues
+
+### ❌ Push notifications not being sent
+
+**Solution:**
+1. Ensure `FCM_ENABLED=true` in `services/comms-service/.env`
+2. Ensure `PUSH_NOTIFICATIONS_ENABLED=true`
+3. Provide valid Firebase credentials:
+
+```env
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY=<base64-encoded private key>
+```
+
+To get Firebase credentials:
+1. Firebase Console → Project Settings → Service Accounts
+2. Click "Generate new private key"
+3. Encode the private key: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("path/to/key.json"))`
+4. Set `FIREBASE_PRIVATE_KEY` to the base64 string
+
+---
+
+### ❌ FIREBASE_PRIVATE_KEY format errors
+
+The private key can be provided in two formats:
+- **Base64 string**: Encode the entire JSON key file as base64
+- **Raw JSON string**: Paste the `private_key` field value with `\n` for newlines
+
+If you see `PEM routines:get_name:no start line` errors, the key is incorrectly formatted. Use the base64 approach.
+
+---
+
+## Email & SMS Issues
+
+### ❌ Emails not being sent
+
+1. Check `EMAIL_ENABLED=true` in `services/comms-service/.env`
+2. Check `EMAIL_SERVICE_URL` points to the running email-service
+3. Check email-service logs: `docker-compose logs email-service`
+4. For local dev, the email-service uses Brevo (Sendinblue) SMTP by default — check `EMAIL_USER` and `EMAIL_PASS`
+
+### ❌ SMS OTP not working
+
+1. Check `SMS_ENABLED=true` in `services/comms-service/.env` and `services/identity-service/.env`
+2. Verify Twilio credentials:
+   ```env
+   TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   TWILIO_AUTH_TOKEN=your_auth_token
+   TWILIO_PHONE_NUMBER=+1234567890
+   ```
+3. Check sms-service logs: `docker-compose logs sms-service`
+
+---
+
+## Payment Issues
+
+### ❌ Payments failing in development
+
+By default `PAYMENT_GATEWAY=mock` — no real credentials needed. If payments fail:
+
+```powershell
+# Check payment-service logs
+docker-compose logs payment-service
+
+# Verify PAYMENT_GATEWAY is set to a supported value
+Get-Content services/payment-service/.env | Select-String "PAYMENT_GATEWAY"
+# Should be: mock, stripe, razorpay, paypal, payubiz, or instamojo
+```
+
+### ❌ Stripe webhook not received
+
+1. For local development use Stripe CLI to forward webhooks:
+   ```bash
+   stripe listen --forward-to http://localhost:3006/webhooks/stripe
+   ```
+2. Copy the webhook signing secret from the CLI output to `STRIPE_WEBHOOK_SECRET`
+
+---
+
+## infrastructure-service Not Starting
+
+The infrastructure-service only starts when `COMPOSE_PROFILES` includes `infrastructure` or `full`.
+
+```powershell
+# In docker.env, add infrastructure to the profile:
+COMPOSE_PROFILES=workers,infrastructure
+
+docker-compose up -d infrastructure-service
+```
+
+---
+
+## General Debugging Tips
+
+```powershell
+# See all container statuses
+docker-compose ps
+
+# Full logs for a failing service (last 100 lines)
+docker-compose logs --tail=100 identity-service
+
+# Get a shell inside a running container
+docker exec -it marketplace-identity-service sh
+
+# Check environment inside a container
+docker exec marketplace-identity-service env | Select-String "JWT"
+
+# Check Node.js process inside container
+docker exec marketplace-identity-service node --version
+```

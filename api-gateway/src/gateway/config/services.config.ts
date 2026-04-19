@@ -7,62 +7,49 @@ export interface ServiceConfig {
   stripPrefix?: string;
 }
 
+const required = (key: string): string => {
+  const value = process.env[key];
+  if (!value) throw new Error(`Missing required environment variable: ${key}`);
+  return value;
+};
+
 export const servicesConfig: Record<string, ServiceConfig> = {
   "identity-service": {
-    url:
-      process.env.IDENTITY_SERVICE_URL ||
-      process.env.AUTH_SERVICE_URL ||
-      "http://localhost:3001",
+    url: required("IDENTITY_SERVICE_URL"),
     name: "identity-service",
-    // No stripPrefix for general identity routes (/users, /providers, etc.)
   },
   "identity-service-auth": {
-    url:
-      process.env.IDENTITY_SERVICE_URL ||
-      process.env.AUTH_SERVICE_URL ||
-      "http://localhost:3001",
+    url: required("IDENTITY_SERVICE_URL"),
     name: "identity-service",
     stripPrefix: "/user",
   },
   "identity-service-rbac": {
-    url:
-      process.env.IDENTITY_SERVICE_URL ||
-      process.env.AUTH_SERVICE_URL ||
-      "http://localhost:3001",
+    url: required("IDENTITY_SERVICE_URL"),
     name: "identity-service",
     stripPrefix: "/identity",
   },
   "marketplace-service": {
-    url:
-      process.env.MARKETPLACE_SERVICE_URL ||
-      process.env.REQUEST_SERVICE_URL ||
-      "http://localhost:3003",
+    url: required("MARKETPLACE_SERVICE_URL"),
     name: "marketplace-service",
   },
   "payment-service": {
-    url: process.env.PAYMENT_SERVICE_URL || "http://localhost:3006",
+    url: required("PAYMENT_SERVICE_URL"),
     name: "payment-service",
   },
   "comms-service": {
-    url:
-      process.env.COMMS_SERVICE_URL ||
-      process.env.MESSAGING_SERVICE_URL ||
-      "http://localhost:3007",
+    url: required("COMMS_SERVICE_URL"),
     name: "comms-service",
   },
   "oversight-service": {
-    url:
-      process.env.OVERSIGHT_SERVICE_URL ||
-      process.env.ADMIN_SERVICE_URL ||
-      "http://localhost:3010",
+    url: required("OVERSIGHT_SERVICE_URL"),
     name: "oversight-service",
   },
   "infrastructure-service": {
-    url: process.env.INFRASTRUCTURE_SERVICE_URL || "http://localhost:3012",
+    url: process.env.INFRASTRUCTURE_SERVICE_URL ?? "",
     name: "infrastructure-service",
   },
   "file-upload-service": {
-    url: `${process.env.FILE_UPLOAD_SERVICE_URL || "http://localhost:4001"}/api`,
+    url: `${required("FILE_UPLOAD_SERVICE_URL")}/api`,
     name: "file-upload-service",
   },
 };
