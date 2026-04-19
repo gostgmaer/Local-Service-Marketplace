@@ -1,29 +1,100 @@
-# 🚀 Quick Reference Guide
-**Local Service Marketplace Platform**
+﻿# Quick Reference — Local Service Marketplace
+
+All commands, ports, and troubleshooting in one place.
 
 ---
 
-## 📋 Essential Commands
-
-### 🔐 Secrets Management
+## Essential Docker Commands
 
 ```powershell
-# Generate new production secrets
-.\scripts\generate-production-secrets.ps1
+# Start all services (uses COMPOSE_PROFILES from docker.env)
+docker-compose up -d
 
-# Apply secrets to all services
-.\scripts\apply-secrets.ps1
+# Start with frontend container
+# (set COMPOSE_PROFILES=workers,frontend in docker.env first)
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# Full reset — deletes all data volumes (WARNING: irreversible)
+docker-compose down -v
+
+# View all running containers and their health status
+docker-compose ps
+
+# View logs (all services)
+docker-compose logs -f
+
+# View logs (specific service)
+docker-compose logs -f identity-service
+
+# Restart a service
+docker-compose restart marketplace-service
+
+# Rebuild and restart after code changes
+docker-compose up -d --build
+
+# Rebuild a single service
+docker-compose up -d --build identity-service
+
+# Scale a service (e.g. 3 gateway replicas)
+docker-compose up -d --scale api-gateway=3
 ```
 
-**Important:** Always generate fresh secrets for production!
+---
+
+## Service Ports
+
+| Service | Port | URL |
+|---------|------|-----|
+| **API Gateway** | 3700 | http://localhost:3700 |
+| **Frontend** | 3000 | http://localhost:3000 |
+| identity-service | 3001 | http://localhost:3001 |
+| marketplace-service | 3003 | http://localhost:3003 |
+| payment-service | 3006 | http://localhost:3006 |
+| comms-service | 3007 | http://localhost:3007 |
+| oversight-service | 3010 | http://localhost:3010 |
+| infrastructure-service | 3012 | http://localhost:3012 |
+| PostgreSQL | 5432 | localhost:5432 |
+| Redis | 6379 | localhost:6379 |
+| Kafka | 9092 | localhost:9092 (optional) |
+| email-service | 4000 | localhost:4000 (Docker: 3500) |
+| sms-service | 5000 | localhost:5000 (Docker: 3000) |
 
 ---
 
-### Database
+## Health Checks
 
 ```powershell
-# Seed database with test data (1000+ records)
-cd database; node seed.js
+# API Gateway (main entry point)
+curl http://localhost:3700/health -UseBasicParsing
+
+# All services
+curl http://localhost:3001/health -UseBasicParsing  # identity-service
+curl http://localhost:3003/health -UseBasicParsing  # marketplace-service
+curl http://localhost:3006/health -UseBasicParsing  # payment-service
+curl http://localhost:3007/health -UseBasicParsing  # comms-service
+curl http://localhost:3010/health -UseBasicParsing  # oversight-service
+curl http://localhost:3012/health -UseBasicParsing  # infrastructure-service
+
+# Redis
+docker exec marketplace-redis redis-cli ping
+
+# PostgreSQL
+docker exec marketplace-postgres psql -U postgres -c "SELECT 1"
+```
+
+---
+
+## Database Commands
+
+```powershell
+# Run all migrations
+cd database ; node migrate.js
+
+# Seed database with 1000+ records
+cd database ; node seed.js
 
 # Connect to database manually
 docker exec -it marketplace-postgres psql -U postgres -d marketplace
@@ -31,47 +102,85 @@ docker exec -it marketplace-postgres psql -U postgres -d marketplace
 # Check database tables
 docker exec marketplace-postgres psql -U postgres -d marketplace -c "\dt"
 
-# View user count
+# Count users
 docker exec marketplace-postgres psql -U postgres -d marketplace -c "SELECT COUNT(*) FROM users;"
 
 # Apply schema to fresh database
 Get-Content database\schema.sql | docker exec -i marketplace-postgres psql -U postgres -d marketplace
+
+# Recreate database (WARNING: deletes all data)
+.\scripts\recreate-database.ps1
 ```
 
 ---
 
-### Docker Services
+## Default Credentials (after seeding)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@marketplace.com` | `password123` |
+| Provider | `provider1@example.com` | `password123` |
+| Customer | `customer1@example.com` | `password123` |
+
+---
+
+## Environment Files
+
+| File | Purpose | Committed? |
+|------|---------|-----------|
+| `docker.env` | Docker Compose runtime (real secrets) | **No** |
+| `.env.example` | Root template | Yes |
+| `services/*/.env.example` | Per-service template | Yes |
+| `api-gateway/.env.example` | Gateway template | Yes |
+| `frontend/.env.local` | Frontend config | No |
 
 ```powershell
-# Start core services
-docker-compose up -d
-
-# Start Redis (required for token blacklist + caching)
-docker-compose --profile cache up -d redis
-
-# Stop all services
-docker-compose down
-
-# View running services and health
-docker-compose ps
-
-# View logs
-docker-compose logs -f [service-name]
-
-# Restart specific service
-docker-compose restart identity-service
-
-# Rebuild and restart
-docker-compose up -d --build
+# Copy all .env.example to .env (local dev)
+Get-ChildItem -Path "." -Filter ".env.example" -Recurse |
+  Where-Object { $_.FullName -notmatch "node_modules" } |
+  ForEach-Object { Copy-Item $_.FullName (Join-Path $_.DirectoryName ".env") }
 ```
 
 ---
 
-### Frontend
+## Compose Profiles
+
+Set `COMPOSE_PROFILES` in `docker.env`:
+
+| Value | What Starts | Level |
+|-------|-------------|-------|
+| _(empty)_ | Core services only | 1 |
+| `cache` | + Redis (cache only) | 2 |
+| `workers` | + Redis + BullMQ workers | 3 |
+| `workers,frontend` | + Next.js frontend container | 3 |
+| `workers,pooling` | + PgBouncer | 3 |
+| `workers,infrastructure` | + infrastructure-service | 3 |
+| `workers,events` | + Kafka + Zookeeper | 4 |
+| `full` | Everything | 5 |
+
+---
+
+## Secrets Management
 
 ```powershell
-# Start development server
+# Generate all production secrets
+.\scripts\generate-production-secrets.ps1
+
+# Apply secrets to all service .env files
+.\scripts\apply-secrets.ps1
+
+# Verify all env files are configured correctly
+.\scripts\check-env.ps1
+```
+
+---
+
+## Frontend Commands
+
+```powershell
 cd frontend
+
+# Development with hot-reload
 pnpm dev
 
 # Build for production
@@ -80,245 +189,162 @@ pnpm build
 # Start production server
 pnpm start
 
-# Run tests
+# Run unit tests
 pnpm test
+
+# Run tests with coverage
+pnpm test:cov
 ```
 
 ---
 
-### Health Checks
+## API Testing
 
 ```powershell
-# Check all containers
-docker-compose ps
+# Run full API test suite (Newman / Postman)
+.\scripts\run-postman-tests.ps1
 
-# Check API Gateway
-curl http://localhost:3700/health -UseBasicParsing
+# Quick signup test
+$body = @{
+  name = "Test User"
+  email = "test@example.com"
+  phone = "+1234567890"
+  password = "Test123!@#"
+  role = "customer"
+} | ConvertTo-Json
 
-# Check all services
-curl http://localhost:3001/health -UseBasicParsing  # identity-service
-curl http://localhost:3003/health -UseBasicParsing  # marketplace-service
-curl http://localhost:3006/health -UseBasicParsing  # payment-service
-curl http://localhost:3007/health -UseBasicParsing  # comms-service
-curl http://localhost:3010/health -UseBasicParsing  # oversight-service
+Invoke-WebRequest -Uri "http://localhost:3700/api/v1/user/auth/signup" `
+  -Method POST `
+  -Headers @{"Content-Type"="application/json"} `
+  -Body $body
 
-# Check Redis
-docker exec marketplace-redis redis-cli ping
+# Quick login test
+$body = @{ email = "customer1@example.com"; password = "password123" } | ConvertTo-Json
+Invoke-WebRequest -Uri "http://localhost:3700/api/v1/user/auth/login" `
+  -Method POST `
+  -Headers @{"Content-Type"="application/json"} `
+  -Body $body
 ```
 
 ---
 
-### 🧪 Testing
+## Troubleshooting
+
+### Port already in use
 
 ```powershell
-# Test user registration
-$body = @{ name = 'Test User'; email = 'test@example.com'; phone = '+1234567890'; password = 'Test123!@#'; role = 'customer' } | ConvertTo-Json
-Invoke-WebRequest -Uri "http://localhost:3700/api/v1/user/auth/signup" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body
+# Find what is using port 3700
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3700).OwningProcess
 
-# Test user login
-$body = @{ email = 'test@example.com'; password = 'Test123!@#' } | ConvertTo-Json
-Invoke-WebRequest -Uri "http://localhost:3700/api/v1/user/auth/login" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body
-```
-
----
-
-## 📂 Project Structure
-
-```
-Local-Service-Marketplace/
-├── api-gateway/          # API Gateway (Port 3700)
-├── services/             # Microservices
-│   ├── identity-service/     # Port 3001 (Auth + Users + Providers)
-│   ├── marketplace-service/  # Port 3003 (Requests + Proposals + Jobs + Reviews)
-│   ├── payment-service/      # Port 3006
-│   ├── comms-service/        # Port 3007 (Notifications + Messaging)
-│   ├── oversight-service/    # Port 3010 (Admin + Analytics)
-│   ├── infrastructure-service/ # Port 3012
-│   ├── email-service/        # Internal 3500
-│   └── sms-service/          # Internal 3000
-├── frontend/             # Next.js Frontend (Port 3000)
-├── database/             # Schema and seeding
-├── docs/                 # Documentation
-│   ├── api/
-│   ├── architecture/
-│   ├── deployment/
-│   └── guides/
-├── docker-compose.yml    # Docker orchestration
-└── scripts/              # Utility scripts
-```
-
----
-
-## 🔑 Environment Files
-
-### Root Directory:
-- `secrets.env` - Generated secrets (DO NOT COMMIT)
-- `docker.env` - Docker environment (DO NOT COMMIT)
-- `.env` - General environment variables
-
-### Backend Services:
-- `services/*/\.env` - Service-specific configuration
-
-### Frontend:
-- `frontend/.env.local` - Frontend configuration (DO NOT COMMIT)
-
----
-
-## 🌐 Service Ports
-
-| Service | Port | URL |
-|---------|------|-----|
-| API Gateway | 3700 | http://localhost:3700 |
-| Frontend | 3000 | http://localhost:3000 |
-| identity-service | 3001 | http://localhost:3001 |
-| marketplace-service | 3003 | http://localhost:3003 |
-| payment-service | 3006 | http://localhost:3006 |
-| comms-service | 3007 | http://localhost:3007 |
-| oversight-service | 3010 | http://localhost:3010 |
-| infrastructure-service | 3012 | http://localhost:3012 |
-| PostgreSQL | 5432 | localhost:5432 |
-| Redis | 6379 | localhost:6379 (when enabled) |
-
----
-
-### Default Credentials
-
-Admin user (after seeding):
-```
-Email: admin@marketplace.com
-Password: password123
-```
-
-Test users (after seeding):
-```
-provider1@example.com / password123
-customer1@example.com / password123
-```
-
----
-
-## 🔧 Troubleshooting
-
-### Port Already in Use:
-```powershell
-# Find process on port 3000
-Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess
-
-# Kill specific process
+# Kill the process
 Stop-Process -Id [PROCESS_ID] -Force
 ```
 
-### Database Connection Issues:
-```powershell
-# Check if PostgreSQL is running
-docker ps | Select-String postgres
+### JWT_SECRET mismatch errors (`401 Unauthorized` on all requests)
 
-# Restart PostgreSQL
-docker-compose restart postgres
+1. Ensure `JWT_SECRET` is identical in `docker.env`, `api-gateway/.env`, and `services/identity-service/.env`
+2. Restart both services: `docker-compose restart api-gateway identity-service`
+
+### Service fails to start (database connection refused)
+
+```powershell
+# Check PostgreSQL is running
+docker-compose ps postgres
 
 # View PostgreSQL logs
 docker-compose logs postgres
+
+# If using PgBouncer, check pgbouncer logs
+docker-compose logs pgbouncer
 ```
 
-### Service Not Responding:
+### Redis connection errors / workers not processing
+
 ```powershell
-# Check service logs
-docker-compose logs [service-name]
+# Verify Redis is in your COMPOSE_PROFILES
+# docker.env should have: COMPOSE_PROFILES=workers (or include workers)
 
-# Restart service
-docker-compose restart [service-name]
+# Check Redis container
+docker-compose ps redis
+docker exec marketplace-redis redis-cli ping    # should return PONG
 
-# Rebuild service
+# Verify WORKERS_ENABLED=true in docker.env
+```
+
+### Service not responding after restart
+
+```powershell
+# Check container logs for startup errors
+docker-compose logs --tail=50 [service-name]
+
+# Check if the container is crash-looping
+docker-compose ps [service-name]
+
+# Force rebuild
 docker-compose up -d --build [service-name]
 ```
 
-### Clear Docker Volumes:
+### Database schema out of date
+
 ```powershell
-# Stop all services
-docker-compose down
+cd database
+node migrate.js
 
-# Remove volumes (WARNING: Deletes all data!)
-docker-compose down -v
+# If migrations fail, recreate database
+.\scripts\recreate-database.ps1
+```
 
-# Or remove specific volume
-docker volume rm local-service-marketplace_postgres_data
+### Frontend cannot connect to API
 
-# Start fresh
-docker-compose up -d
+Ensure `NEXT_PUBLIC_API_URL` in `frontend/.env.local` matches the API Gateway URL the browser can reach:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3700   # for local dev
 ```
 
 ---
 
-## Documentation
+## Project Structure
+
+```
+Local-Service-Marketplace/
+├── api-gateway/                # NestJS API Gateway (port 3700)
+├── services/
+│   ├── identity-service/       # Auth + Users + Providers (port 3001)
+│   ├── marketplace-service/    # Requests + Proposals + Jobs (port 3003)
+│   ├── payment-service/        # Payments + Refunds (port 3006)
+│   ├── comms-service/          # Notifications + Messaging (port 3007)
+│   ├── oversight-service/      # Admin + Analytics (port 3010)
+│   └── infrastructure-service/ # Feature Flags + Jobs (port 3012)
+├── frontend/                   # Next.js (port 3000)
+├── database/                   # Schema, migrations, seed
+├── docs/                       # All documentation
+│   ├── api/                    # API specs
+│   ├── architecture/           # Architecture docs
+│   ├── deployment/             # Deployment & scaling
+│   └── guides/                 # Integration guides
+├── scripts/                    # PowerShell utility scripts
+├── config/                     # Shared configuration (queue-config)
+├── docker-compose.yml          # Core orchestration
+├── docker.env                  # Runtime secrets (gitignored)
+└── .env.example                # Template for docker.env
+```
+
+---
+
+## Documentation Index
 
 | Doc | Purpose |
 |-----|---------|
-| [QUICK_START.md](QUICK_START.md) | 3-step startup |
+| [QUICK_START.md](QUICK_START.md) | 5-step startup |
 | [GETTING_STARTED.md](GETTING_STARTED.md) | Full setup for all environments |
 | [MARKETPLACE_GUIDE.md](MARKETPLACE_GUIDE.md) | Roles, workflows, capabilities |
 | [ENVIRONMENT_VARIABLES_GUIDE.md](ENVIRONMENT_VARIABLES_GUIDE.md) | All env vars explained |
 | [BULLMQ_CONFIGURATION_GUIDE.md](BULLMQ_CONFIGURATION_GUIDE.md) | Background job queues |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common issues and fixes |
 | [api/API_SPECIFICATION.md](api/API_SPECIFICATION.md) | API endpoint reference |
-| [guides/AUTHENTICATION_WORKFLOW.md](guides/AUTHENTICATION_WORKFLOW.md) | Auth flow |
-| [guides/KAFKA_INTEGRATION.md](guides/KAFKA_INTEGRATION.md) | Event-driven setup |
+| [guides/AUTHENTICATION_WORKFLOW.md](guides/AUTHENTICATION_WORKFLOW.md) | Auth flow details |
+| [guides/KAFKA_INTEGRATION.md](guides/KAFKA_INTEGRATION.md) | Kafka event setup |
 | [deployment/SCALING_STRATEGY.md](deployment/SCALING_STRATEGY.md) | Scaling levels |
 
 ---
-
-## Quick Start from Scratch
-
-```powershell
-# 1. Configure secrets
-.\scripts\setup-env-files.ps1
-# Edit docker.env with your JWT_SECRET, JWT_REFRESH_SECRET, GATEWAY_INTERNAL_SECRET
-
-# 2. Start core services
-docker-compose up -d
-
-# 3. Start Redis
-docker-compose --profile cache up -d redis
-
-# 4. Wait for all services to be healthy
-docker-compose ps
-
-# 5. Apply database schema
-Get-Content database\schema.sql | docker exec -i marketplace-postgres psql -U postgres -d marketplace
-
-# 6. Seed database
-cd database; node seed.js
-
-# 7. Start frontend
-cd frontend
-pnpm dev
-
-# 8. Open browser
-start http://localhost:3000
-```
-
----
-
-## 🔒 Security Checklist
-
-- [ ] Generated production secrets
-- [ ] Applied secrets to all services
-- [ ] Verified .gitignore excludes secrets
-- [ ] Changed default passwords
-- [ ] Configured OAuth providers
-- [ ] Set up SMTP for emails
-- [ ] Configured payment gateway
-- [ ] Enabled HTTPS in production
-- [ ] Set up monitoring
-
----
-
-## 🆘 Need Help?
-
-1. Check [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-2. Review [Integration Status](docs/INTEGRATION_STATUS_REPORT.md)
-3. See [Documentation Index](docs/00_DOCUMENTATION_INDEX.md)
-4. Check service-specific README in [docs/services/](docs/services/)
-
----
-
-**Keep this file handy for quick reference!** 📌

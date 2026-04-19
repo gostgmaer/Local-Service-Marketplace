@@ -78,7 +78,7 @@ This document explains **how authentication, validation, and authorization** wor
 │                                                                │
 │  Step 6: Generate JWT access token                            │
 │    payload = { sub: user.id, email, role }                    │
-│    jwt.sign(payload, SECRET, { expiresIn: '7d' })            │
+│    jwt.sign(payload, SECRET, { expiresIn: '15m' })            │
 │                                                                │
 │  Step 7: Send verification email (via comms-service)   │
 │    POST http://comms-service:3007/notifications        │
@@ -507,7 +507,7 @@ This document explains **how authentication, validation, and authorization** wor
 │  Step 4: Generate new access token                            │
 │    newAccessToken = jwt.sign(                                 │
 │      { sub: user.id, email, role },                           │
-│      SECRET, { expiresIn: '7d' }                              │
+│      SECRET, { expiresIn: '15m' }                             │
 │    )                                                           │
 │                                                                │
 │  Step 5: Return new token                                     │
@@ -554,8 +554,8 @@ This document explains **how authentication, validation, and authorization** wor
 - No password in responses
 
 ✅ **JWT Security**
-- Short-lived access tokens (7 days)
-- Long-lived refresh tokens (30 days)
+- Short-lived access tokens (15 minutes)
+- Long-lived refresh tokens (90 days)
 - Secure secret keys (env variables)
 - Token expiration checking
 

@@ -195,8 +195,10 @@ Edit `docker.env` and set:
 ```env
 # These MUST be changed — do not use defaults in production
 JWT_SECRET=<openssl rand -base64 48>
-JWT_REFRESH_SECRET=<openssl rand -base64 48>
+JWT_REFRESH_SECRET=<openssl rand -base64 48, different from JWT_SECRET>
 GATEWAY_INTERNAL_SECRET=<openssl rand -base64 48>
+ENCRYPTION_KEY=<openssl rand -base64 64>
+SESSION_SECRET=<openssl rand -base64 32>
 
 # Database credentials
 DATABASE_PASSWORD=<strong password>
@@ -325,7 +327,8 @@ Or manually (Linux/Mac):
 openssl rand -base64 48  # JWT_SECRET
 openssl rand -base64 48  # JWT_REFRESH_SECRET
 openssl rand -base64 48  # GATEWAY_INTERNAL_SECRET
-openssl rand -base64 32  # AUTH_SECRET (frontend)
+openssl rand -base64 64  # ENCRYPTION_KEY
+openssl rand -base64 32  # SESSION_SECRET / AUTH_SECRET (frontend)
 ```
 
 ### 5.3 Production docker-compose
