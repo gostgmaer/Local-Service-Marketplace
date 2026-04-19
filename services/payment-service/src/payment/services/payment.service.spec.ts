@@ -42,6 +42,7 @@ describe("PaymentService list validation", () => {
       { getJobById: jest.fn().mockResolvedValue(null) } as any, // jobClient
       makeAnalytics(),
       makeGateway(),
+      {} as any, // invoiceService
     );
 
     return { service };
@@ -91,6 +92,11 @@ describe("PaymentService.createPayment", () => {
       createPayment: jest.fn().mockResolvedValue(makePaymentEntity()),
       updatePaymentStatus: jest.fn().mockResolvedValue(undefined),
       getPaymentsByJobId: jest.fn().mockResolvedValue([]),
+      calculateFees: jest
+        .fn()
+        .mockImplementation((amt: number) =>
+          Promise.resolve({ platformFee: 0, providerPayout: amt, totalAmount: amt }),
+        ),
     };
     const couponService = overrides.couponService ?? {
       validateAndUseCoupon: jest.fn().mockResolvedValue(10), // 10% discount
@@ -126,6 +132,7 @@ describe("PaymentService.createPayment", () => {
       { getJobById: jest.fn().mockResolvedValue(null) } as any, // jobClient
       analytics,
       gateway,
+      { generateAndUploadInvoice: jest.fn().mockResolvedValue(undefined) } as any, // invoiceService
     );
 
     return {
