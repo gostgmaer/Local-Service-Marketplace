@@ -63,9 +63,19 @@ CREATE INDEX IF NOT EXISTS idx_payments_not_deleted
 -- 7. Proposals — ensure unique constraint covers price=0 edge case
 --    (allows DB to reject zero-price proposals even if DTO validation is bypassed)
 -- -----------------------------------------------------------------------
-ALTER TABLE proposals ADD CONSTRAINT chk_proposals_price_positive
-  CHECK (price > 0)
-  NOT VALID;  -- NOT VALID = enforce on new rows only, no table scan
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'chk_proposals_price_positive'
+      AND conrelid = 'proposals'::regclass
+  ) THEN
+    ALTER TABLE proposals ADD CONSTRAINT chk_proposals_price_positive
+      CHECK (price > 0)
+      NOT VALID;  -- NOT VALID = enforce on new rows only, no table scan
+  END IF;
+END;
+$$;
 
 -- -----------------------------------------------------------------------
 -- 8. Coupons — ensure expires_at is stored as future date on insert
