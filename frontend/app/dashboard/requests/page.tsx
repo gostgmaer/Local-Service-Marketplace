@@ -20,13 +20,13 @@ import { requestService } from "@/services/request-service";
 import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import { analytics } from "@/utils/analytics";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Tag, User } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { Skeleton } from "@/components/ui";
 
 export default function RequestsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { page, limit, goToPage } = usePagination();
   const [filters, setFilters] = useState<Record<string, any>>({});
 
@@ -134,6 +134,16 @@ export default function RequestsPage() {
                         <CardContent>
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                                {request.category && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 border border-primary-200 dark:border-primary-700">
+                                    {request.category.icon && (
+                                      <span>{request.category.icon}</span>
+                                    )}
+                                    {request.category.name}
+                                  </span>
+                                )}
+                              </div>
                               <Link href={`/requests/${request.id}`}>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 focus-visible:outline-none focus-visible:underline">
                                   Request #
@@ -144,13 +154,16 @@ export default function RequestsPage() {
                               <p className="text-gray-600 dark:text-gray-400 mt-2 line-clamp-2 break-words">
                                 {request.description}
                               </p>
-                              <div className="flex items-center gap-4 mt-4 text-sm text-gray-500 dark:text-gray-400">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-sm text-gray-500 dark:text-gray-400">
                                 <span className="font-medium text-gray-900 dark:text-white">
                                   {formatCurrency(request.budget)}
                                 </span>
                                 <span>•</span>
-                                <span>
-                                  {request.category?.name || "Uncategorized"}
+                                <span className="inline-flex items-center gap-1">
+                                  <User className="h-3.5 w-3.5" />
+                                  {request.user_id === user?.id
+                                    ? "You"
+                                    : `User #${(request.user_id ?? "unknown").substring(0, 8)}`}
                                 </span>
                                 <span>•</span>
                                 <span>{formatRelativeTime(request.created_at)}</span>
