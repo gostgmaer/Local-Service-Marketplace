@@ -125,9 +125,9 @@ export default function RequestDetailPage() {
       <Layout>
         <div className="container-custom py-8">
           <div className="mb-6">
-            <Button variant="ghost" onClick={() => router.back()}>
+            <Button variant="ghost" onClick={() => router.push(ROUTES.DASHBOARD_REQUESTS)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              Back to Requests
             </Button>
           </div>
 

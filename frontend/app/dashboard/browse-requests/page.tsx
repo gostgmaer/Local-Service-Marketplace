@@ -9,10 +9,11 @@ import { useRouter } from "next/navigation";
 
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Loading } from "@/components/ui/Loading";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { requestService } from "@/services/request-service";
 import { proposalService } from "@/services/proposal-service";
 import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
@@ -40,6 +41,13 @@ export default function BrowseRequestsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [proposalTargetId, setProposalTargetId] = useState<string | null>(null);
+
+  const hasActiveFilters = !!(searchTerm || selectedCategory || (statusFilter && statusFilter !== "open"));
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setStatusFilter("open");
+  };
 
   const { data: provider } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
@@ -207,12 +215,28 @@ export default function BrowseRequestsPage() {
                       </select>
                     </div>
                   </div>
+                  {hasActiveFilters && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded-full">
+                        Filters active
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
               {/* Results */}
               {isLoading ? (
-                <Loading />
+                <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+                </div>
               ) : filteredRequests.length > 0 ? (
                 <div className="space-y-4">
                   {filteredRequests.map((request: any) => (
@@ -331,17 +355,12 @@ export default function BrowseRequestsPage() {
                   ))}
                 </div>
               ) : (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      No requests found
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Try adjusting your filters to see more results
-                    </p>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  title="No requests found"
+                  description={hasActiveFilters ? "Try adjusting your filters to see more results." : "No open service requests at the moment. Check back soon."}
+                  icon={hasActiveFilters ? "search" : "inbox"}
+                  action={hasActiveFilters ? { label: "Clear Filters", onClick: clearFilters } : undefined}
+                />
               )}
 
               {!isLoading && filteredRequests.length > 0 && (

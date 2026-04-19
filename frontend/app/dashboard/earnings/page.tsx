@@ -14,6 +14,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import { StatusBadge } from "@/components/ui/Badge";
 import { paymentService } from "@/services/payment-service";
 import { getProviderProfileByUserId } from "@/services/user-service";
 import { formatDateTime, formatCurrency } from "@/utils/helpers";
@@ -457,11 +458,7 @@ export default function EarningsPage() {
                                 )}
                               </td>
                               <td className="py-3 px-4 text-sm">
-                                <span
-                                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${payoutStatusStyles[payout.status] || "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200"}`}
-                                >
-                                  {payout.status}
-                                </span>
+                                <StatusBadge status={payout.status} size="sm" />
                               </td>
                               <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
                                 {numberFormatter.format(
@@ -516,23 +513,6 @@ export default function EarningsPage() {
                     <SkeletonTable rows={5} />
                   ) : paginatedTransactions.length > 0 ? (
                     <div className="overflow-x-auto">
-                      <div className="mb-3 flex flex-wrap items-center gap-2 px-1 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="font-medium">Quick sort:</span>
-                        <button
-                          type="button"
-                          onClick={() => handleSort("date")}
-                          className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Date {sortIcon("date")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSort("provider_amount")}
-                          className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Earnings {sortIcon("provider_amount")}
-                        </button>
-                      </div>
                       <table className="w-full">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -554,7 +534,7 @@ export default function EarningsPage() {
                                 Transaction ID {sortIcon("id")}
                               </button>
                             </th>
-                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <th className="hidden md:table-cell text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
                               <button
                                 type="button"
                                 onClick={() => handleSort("customer")}
@@ -572,7 +552,7 @@ export default function EarningsPage() {
                                 Amount {sortIcon("total_amount")}
                               </button>
                             </th>
-                            <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <th className="hidden md:table-cell text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
                               <button
                                 type="button"
                                 onClick={() => handleSort("platform_fee")}
@@ -615,30 +595,20 @@ export default function EarningsPage() {
                               <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 font-mono">
                                 #{transaction.id.substring(0, 8)}
                               </td>
-                              <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
+                              <td className="hidden md:table-cell py-3 px-4 text-sm text-gray-900 dark:text-white">
                                 {transaction.customer_name || "Customer"}
                               </td>
                               <td className="py-3 px-4 text-sm text-right text-gray-900 dark:text-white">
                                 {formatCurrency(transaction.total_amount)}
                               </td>
-                              <td className="py-3 px-4 text-sm text-right text-red-600 dark:text-red-400">
+                              <td className="hidden md:table-cell py-3 px-4 text-sm text-right text-red-600 dark:text-red-400">
                                 -{formatCurrency(transaction.platform_fee)}
                               </td>
                               <td className="py-3 px-4 text-sm text-right font-semibold text-green-600 dark:text-green-400">
                                 {formatCurrency(transaction.provider_amount)}
                               </td>
                               <td className="py-3 px-4 text-right">
-                                <span
-                                  className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-                                    transaction.status === "completed"
-                                      ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                                      : transaction.status === "pending"
-                                        ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
-                                        : "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200"
-                                  }`}
-                                >
-                                  {transaction.status}
-                                </span>
+                                <StatusBadge status={transaction.status} size="sm" />
                               </td>
                             </tr>
                           ))}

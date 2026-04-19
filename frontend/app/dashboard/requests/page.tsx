@@ -135,7 +135,7 @@ export default function RequestsPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <Link href={`/requests/${request.id}`}>
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 focus-visible:outline-none focus-visible:underline">
                                   Request #
                                   {request.display_id ||
                                     request.id.substring(0, 8)}

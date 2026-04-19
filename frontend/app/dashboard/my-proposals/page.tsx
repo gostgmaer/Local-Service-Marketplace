@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Loading } from "@/components/ui/Loading";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
@@ -183,11 +183,12 @@ export default function MyProposalsPage() {
               {/* Filter */}
               <Card className="mb-6">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="proposal-status-filter">
                       Filter by status:
                     </label>
                     <select
+                      id="proposal-status-filter"
                       className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
@@ -198,13 +199,29 @@ export default function MyProposalsPage() {
                       <option value="rejected">Rejected</option>
                       <option value="withdrawn">Withdrawn</option>
                     </select>
+                    {statusFilter && (
+                      <>
+                        <span className="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded-full">
+                          Filtered: {statusFilter}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter("")}
+                          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
+                        >
+                          Clear
+                        </button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
               {/* Proposals List */}
               {isLoading ? (
-                <Loading />
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+                </div>
               ) : filteredProposals.length > 0 ? (
                 <div className="space-y-4">
                   {filteredProposals.map((proposal: any) => (

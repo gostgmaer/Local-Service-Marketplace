@@ -10,7 +10,8 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
-
+import { SkeletonListItem } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { notificationService } from "@/services/notification-service";
 import { useNotificationStore } from "@/store/notificationStore";
@@ -140,7 +141,17 @@ export default function NotificationsPage() {
               </div>
 
               {isLoading ? (
-                <Loading />
+                <Card>
+                  <CardContent>
+                    <div className="space-y-1 divide-y divide-gray-100 dark:divide-gray-800">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="py-3">
+                          <SkeletonListItem />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               ) : notifications && notifications.length > 0 ? (
                 <Card>
                   <CardContent>
@@ -180,14 +191,11 @@ export default function NotificationsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <Card>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No notifications</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  title="No notifications yet"
+                  description="You'll be notified here about jobs, proposals, payments and messages."
+                  icon="inbox"
+                />
               )}
             </>
           )}

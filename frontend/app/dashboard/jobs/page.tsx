@@ -11,6 +11,7 @@ import { Loading } from "@/components/ui/Loading";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { jobService } from "@/services/job-service";
 import { formatDate, formatRelativeTime, formatDateTime } from "@/utils/helpers";
 import Link from "next/link";
@@ -119,19 +120,15 @@ export default function JobsPage() {
             ))}
           </div>
         ) : (
-          <Card>
-            <CardContent>
-              <div className="text-center py-12">
-                <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  No jobs yet
-                </p>
-                <p className="text-sm text-gray-400 dark:text-gray-500">
-                  Jobs will appear here once proposals are accepted
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="No jobs yet"
+            description="Jobs will appear here once your proposals are accepted."
+            icon="inbox"
+            action={{
+              label: "Browse Requests",
+              onClick: () => router.push(ROUTES.DASHBOARD_BROWSE_REQUESTS),
+            }}
+          />
         )}
       </div>
     </Layout>

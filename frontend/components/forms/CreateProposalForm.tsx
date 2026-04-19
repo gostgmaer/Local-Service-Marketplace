@@ -44,8 +44,11 @@ export function CreateProposalForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = form;
+
+  const messageValue = watch("message") ?? "";
 
   const createMutation = useMutation({
     mutationFn: (data: CreateProposalFormData) =>
@@ -117,9 +120,22 @@ export function CreateProposalForm({
           rows={6}
           placeholder="Describe your approach, experience, and why you're the best fit for this job (minimum 20 characters)..."
         />
-        {errors.message && (
-          <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>
-        )}
+        <div className="mt-1 flex items-center justify-between">
+          <div>
+            {errors.message && (
+              <p className="text-sm text-red-600">{errors.message.message}</p>
+            )}
+          </div>
+          <span className={`text-xs ${
+            messageValue.length > 1000
+              ? "text-red-500"
+              : messageValue.length >= 900
+                ? "text-yellow-500"
+                : "text-gray-400"
+          }`}>
+            {messageValue.length} / 1000
+          </span>
+        </div>
       </div>
 
       <div className="flex gap-3">
