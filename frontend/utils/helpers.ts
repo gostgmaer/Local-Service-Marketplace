@@ -31,18 +31,24 @@ export function parseRating(
     : undefined;
 }
 
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "—";
   return format(d, "dd MMM yyyy", { locale: enIN });
 }
 
-export function formatDateTime(date: string | Date): string {
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "—";
   return format(d, "dd MMM yyyy, hh:mm a", { locale: enIN });
 }
 
-export function formatRelativeTime(date: string | Date): string {
+export function formatRelativeTime(date: string | Date | null | undefined): string {
+  if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "—";
   // Within the last 7 days: show relative ("2 hours ago", "3 days ago")
   // Older than 7 days: show full datetime
   if (isAfter(d, subDays(new Date(), 7))) {

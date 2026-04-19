@@ -378,6 +378,33 @@ export class FileServiceClient {
   }
 
   /**
+   * Upload a raw Buffer (e.g. generated HTML invoice) to the file service.
+   */
+  async uploadBuffer(
+    buffer: Buffer,
+    filename: string,
+    mimeType: string,
+    options: FileUploadOptions,
+    userId?: string,
+    userRole: string = "system",
+    tenantId?: string,
+  ): Promise<UploadedFile> {
+    const fakeFile: Express.Multer.File = {
+      fieldname: "files",
+      originalname: filename,
+      encoding: "7bit",
+      mimetype: mimeType,
+      buffer,
+      size: buffer.length,
+      stream: null as any,
+      destination: "",
+      filename,
+      path: "",
+    };
+    return this.uploadFile(fakeFile, options, userId, userRole, tenantId);
+  }
+
+  /**
    * Get file metadata by ID
    */
   async getFileById(fileId: string): Promise<UploadedFile> {

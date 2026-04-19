@@ -121,8 +121,6 @@ export class JobController {
     );
   }
 
-  @RequirePermissions("jobs.update_status")
-  @UseGuards(RolesGuard)
   @Post(":id/complete")
   @HttpCode(HttpStatus.OK)
   async completeJob(

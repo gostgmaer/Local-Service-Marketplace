@@ -118,4 +118,8 @@ export class RequestQueryDto {
     return value;
   })
   sort_order?: SortOrder;
+
+  // Internal-only: set by service layer for provider RBAC filtering.
+  // Not exposed as a query param (forbidden by validation pipe).
+  provider_user_id?: string;
 }

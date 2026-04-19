@@ -17,6 +17,7 @@ export interface ServiceRequest {
   id: string;
   display_id?: string;
   user_id?: string | null;
+  user_name?: string | null;
   category_id: string;
   description: string;
   budget: number;

@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure Tailwind print:hidden works even when CSS purge misses a class */
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

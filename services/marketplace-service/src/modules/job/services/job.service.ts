@@ -65,6 +65,11 @@ export class JobService {
 
     const job = await this.jobRepository.createJob(dto);
 
+    // Mark the request as assigned so it can no longer be edited or cancelled
+    await this.requestRepository.updateRequest(job.request_id, {
+      status: "assigned" as any,
+    });
+
     this.logger.log(`Job created successfully: ${job.id}`, JobService.name);
 
     // Notify provider (job assigned) — queue if workers enabled, else inline

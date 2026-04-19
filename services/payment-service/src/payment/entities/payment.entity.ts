@@ -20,6 +20,10 @@ export class Payment {
   gst_amount: number;
   created_at: Date;
   paid_at?: Date;
+  /** URL of the auto-generated invoice file stored in file service */
+  invoice_url?: string;
+  /** File service ID of the auto-generated invoice */
+  invoice_file_id?: string;
 
   constructor(partial: Partial<Payment>) {
     Object.assign(this, partial);

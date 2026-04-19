@@ -339,8 +339,8 @@ export default function BrowseRequestsPage() {
                             {request.user_id && (
                               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
                                 <span>
-                                  Customer:{" "}
-                                  {request.customer?.name || "Anonymous"}
+                                  By:{" "}
+                                  {request.user_name || request.guest_name || "Anonymous"}
                                 </span>
                               </div>
                             )}

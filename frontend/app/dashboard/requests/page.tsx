@@ -163,7 +163,8 @@ export default function RequestsPage() {
                                   <User className="h-3.5 w-3.5" />
                                   {request.user_id === user?.id
                                     ? "You"
-                                    : `User #${(request.user_id ?? "unknown").substring(0, 8)}`}
+                                    : request.user_name
+                                      ?? `User #${(request.user_id ?? "unknown").substring(0, 8)}`}
                                 </span>
                                 <span>•</span>
                                 <span>{formatRelativeTime(request.created_at)}</span>
