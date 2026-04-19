@@ -94,9 +94,11 @@ describe("MessagingController", () => {
     it("should return conversations with total count", async () => {
       const convos = [{ job_id: "j-1", last_message: "Hi" }];
       mockMessageService.getUserConversations.mockResolvedValue(convos);
-      const result = await controller.getConversations({
-        user: { userId: "user-uuid-1" },
-      });
+      const result = await controller.getConversations(
+        { user: { userId: "user-uuid-1" } },
+        1,
+        20,
+      );
       expect(result.data).toEqual(convos);
       expect(result.total).toBe(1);
     });
