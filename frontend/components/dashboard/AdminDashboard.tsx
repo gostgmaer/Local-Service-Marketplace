@@ -7,12 +7,13 @@ import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
-import { Loading } from "@/components/ui/Loading";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SkeletonListItem } from "@/components/ui/Skeleton";
 import { adminService } from "@/services/admin-service";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import Link from "next/link";
 import {
   Users,
@@ -190,7 +191,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               {usersLoading ? (
-                <Loading size="sm" />
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => <SkeletonListItem key={i} />)}
+                </div>
               ) : users?.data && users.data.length > 0 ? (
                 <div className="space-y-3">
                   {users.data.slice(0, 5).map((user: any) => (
@@ -207,7 +210,7 @@ export default function AdminDashboard() {
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Role: {user.role} • Joined{" "}
-                          {formatDate(user.created_at)}
+                          {formatRelativeTime(user.created_at)}
                         </p>
                       </div>
                       <StatusBadge status={user.status || "active"} />
@@ -215,9 +218,11 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <p className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  No users found
-                </p>
+                <EmptyState
+                  title="No users found"
+                  description="New users will appear here once they register."
+                  icon="inbox"
+                />
               )}
             </CardContent>
           </Card>
@@ -238,7 +243,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               {disputesLoading ? (
-                <Loading size="sm" />
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => <SkeletonListItem key={i} />)}
+                </div>
               ) : disputes?.data && disputes.data.length > 0 ? (
                 <div className="space-y-3">
                   {disputes.data.slice(0, 5).map((dispute: any) => (
@@ -256,15 +263,17 @@ export default function AdminDashboard() {
                         {dispute.description || "No description"}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        Filed {formatDate(dispute.created_at)}
+                        Filed {formatRelativeTime(dispute.created_at)}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  No disputes found
-                </p>
+                <EmptyState
+                  title="No disputes yet"
+                  description="Filed disputes will appear here for review."
+                  icon="alert"
+                />
               )}
             </CardContent>
           </Card>

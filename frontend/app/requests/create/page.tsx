@@ -29,6 +29,7 @@ const LocationPicker = dynamic(
   },
 );
 import { requestService } from "@/services/request-service";
+import { uploadRequestImages } from "@/services/file-service";
 import {
   createRequestSchema,
   type CreateRequestFormData,
@@ -42,7 +43,8 @@ function CreateRequestContent() {
   const prefillQuery = searchParams.get("q") || "";
   void prefillQuery; // reserved for future pre-fill functionality
   const { user, isAuthenticated } = useAuth();
-  const [, setAttachments] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [location, setLocation] = useState<any>(null);
   const [guestInfo, setGuestInfo] = useState({
     name: "",
@@ -63,7 +65,7 @@ function CreateRequestContent() {
 
   // Fetch categories from API
   const { data: categoriesData } = useQuery({
-    queryKey: ["service-categories"],
+    queryKey: ["categories"],
     queryFn: () => requestService.getCategories(),
   });
 
@@ -101,7 +103,7 @@ function CreateRequestContent() {
     },
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: any) => {
     // Validate location is provided
     if (!location || location.lat === 0) {
       toast.error("Please select a service location on the map");
@@ -116,6 +118,19 @@ function CreateRequestContent() {
       }
     }
 
+    // Upload images first (authenticated users only)
+    let images: { id: string; url: string }[] = [];
+    if (isAuthenticated && attachments.length > 0) {
+      setUploadingImages(true);
+      try {
+        images = await uploadRequestImages(attachments);
+      } catch {
+        toast.error("Image upload failed — request will be created without images.");
+      } finally {
+        setUploadingImages(false);
+      }
+    }
+
     // Prepare request data with location
     const requestData: any = {
       ...data,
@@ -125,9 +140,13 @@ function CreateRequestContent() {
         address: location.address,
         city: location.city,
         state: location.state,
-        zip_code: location.zipCode,
         country: location.country,
+        // Only include pincode when it's a valid 6-digit Indian postal code
+        ...(location.zipCode && /^\d{6}$/.test(String(location.zipCode).trim())
+          ? { pincode: String(location.zipCode).trim() }
+          : {}),
       },
+      ...(images.length > 0 ? { images } : {}),
     };
 
     // Include user_id only if authenticated
@@ -275,23 +294,25 @@ function CreateRequestContent() {
                   </label>
                   <FileUpload
                     onFilesSelected={setAttachments}
-                    accept="image/*,.pdf,.doc,.docx"
+                    accept="image/*"
                     maxSize={10 * 1024 * 1024}
                     maxFiles={5}
                     multiple
                   />
                   <p className="mt-1 text-sm text-gray-500">
-                    Upload images or documents (max 5 files, 10MB each)
+                    {isAuthenticated
+                      ? "Upload images (max 5, 10 MB each — JPEG / PNG / WebP)"
+                      : "Sign in to attach images to your request"}
                   </p>
                 </div>
 
                 <div className="flex gap-4">
                   <Button
                     type="submit"
-                    isLoading={createMutation.isPending}
-                    disabled={createMutation.isPending}
+                    isLoading={uploadingImages || createMutation.isPending}
+                    disabled={uploadingImages || createMutation.isPending}
                   >
-                    Create Request
+                    {uploadingImages ? "Uploading images…" : "Create Request"}
                   </Button>
                   <Button
                     type="button"

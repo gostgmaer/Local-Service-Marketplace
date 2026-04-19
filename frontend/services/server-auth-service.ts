@@ -212,6 +212,24 @@ class ServerAuthService {
       return null;
     }
   }
+
+  /**
+   * Revoke the backend session by invalidating the refresh token.
+   * Best-effort — errors are swallowed so they never block sign-out.
+   */
+  async logout(refreshToken?: string): Promise<void> {
+    try {
+      await serverClient.post(AUTH_ENDPOINTS.LOGOUT, {
+        refreshToken: refreshToken ?? "",
+      });
+    } catch (error) {
+      // Swallow — backend session revocation is best-effort.
+      console.error(
+        "Backend logout error:",
+        (error as AxiosError)?.response?.status,
+      );
+    }
+  }
 }
 
 export const serverAuthService = new ServerAuthService();

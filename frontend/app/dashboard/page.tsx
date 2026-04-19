@@ -10,7 +10,7 @@ import { ROUTES } from "@/config/constants";
 import { Loading } from "@/components/ui/Loading";
 import { analytics } from "@/utils/analytics";
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/services/api-client";
+import { getProviderProfileByUserId } from "@/services/user-service";
 
 const CustomerDashboard = dynamic(
   () => import("@/components/dashboard/CustomerDashboard"),
@@ -33,16 +33,9 @@ export default function DashboardPage() {
   const isAdmin = can(Permission.ADMIN_ACCESS);
 
   const { data: provider, isLoading: providerLoading } = useQuery({
-    queryKey: ["provider-profile-check", user?.id],
-    queryFn: async () => {
-      const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-      if (response.data?.data && response.data.data.length > 0)
-        return response.data.data[0];
-      if (Array.isArray(response.data) && response.data.length > 0)
-        return response.data[0];
-      return null;
-    },
-    enabled: isAuthenticated && isProvider,
+    queryKey: ["my-provider-profile", user?.id],
+    queryFn: () => getProviderProfileByUserId(user!.id),
+    enabled: isAuthenticated && isProvider && !!user?.id,
   });
 
   useEffect(() => {

@@ -248,11 +248,27 @@ export class ProposalService {
       ProposalService.name,
     );
 
-    // RBAC: Only the request owner or user with manage permission can see proposals for a request
+    // RBAC:
+    // - proposals.manage (admin) → see all proposals
+    // - request owner (customer) → see all proposals for their own request
+    // - proposals.read without manage (provider) → see only their own proposals for this request
     if (user && !user.permissions?.includes("proposals.manage")) {
       const requestOwner =
         await this.proposalRepository.getRequestOwner(requestId);
-      if (requestOwner !== user.userId) {
+      if (requestOwner === user.userId) {
+        // Request owner (customer) — allowed to see all proposals, no filter needed
+      } else if (user.permissions?.includes("proposals.read") && user.providerId) {
+        // Provider — allowed to see only their own proposals for this request
+        const proposals = await this.proposalRepository.getProposalsForRequest(
+          requestId,
+          limit,
+        );
+        const ownProposals = proposals.filter(
+          (p: any) => p.provider_id === user.providerId,
+        );
+        const response = ownProposals.map(ProposalResponseDto.fromEntity);
+        return new PaginatedProposalResponseDto(response, undefined, false);
+      } else {
         throw new ForbiddenException(
           "Only the request owner or an admin can see the proposals for this request",
         );
@@ -336,30 +352,15 @@ export class ProposalService {
       );
     }
 
-    const proposal = await this.proposalRepository.acceptProposal(
-      existingProposal.id,
-    );
-
-    // Reject all other pending proposals on this request SYNCHRONOUSLY before
-    // creating the job. A non-blocking best-effort call here could allow a race
-    // condition where two proposals are accepted for the same request.
-    await this.proposalRepository.rejectSiblingProposals(
-      existingProposal.request_id,
-      existingProposal.id,
-    );
-
-    // Create job record — this is the central handoff from proposal → job lifecycle
-    const job = await this.jobRepository.createJob({
-      request_id: existingProposal.request_id,
-      provider_id: existingProposal.provider_id,
-      customer_id: existingProposal.customer_id,
-      proposal_id: existingProposal.id,
-    });
-
-    // Transition the service request to 'assigned'
-    await this.requestRepository.updateRequest(existingProposal.request_id, {
-      status: "assigned",
-    } as any);
+    // Accept proposal, reject siblings, create job, and update request status
+    // — all inside a single database transaction to prevent partial-accept races.
+    const { proposal, job } =
+      await this.proposalRepository.acceptProposalTransaction(
+        existingProposal.id,
+        existingProposal.request_id,
+        existingProposal.provider_id,
+        existingProposal.customer_id,
+      );
 
     this.logger.log(
       `Job ${job.id} created and request ${existingProposal.request_id} set to assigned`,

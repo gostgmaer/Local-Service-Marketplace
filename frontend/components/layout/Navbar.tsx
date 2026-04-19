@@ -87,10 +87,10 @@ export function Navbar() {
       aria-label="Main navigation"
       className="sticky top-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-800/80 shadow-sm"
     >
-      <div className=" mx-auto px-4 sm:px-6 lg:px-8">
+      <div className=" mx-auto px-4 sm:px-6 lg:px-6">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+        { !isAuthenticated && <div className="flex items-center gap-2 flex-shrink-0">
             <Link
               href={isAuthenticated ? ROUTES.DASHBOARD : ROUTES.HOME}
               className="flex items-center gap-2.5 group"
@@ -108,7 +108,7 @@ export function Navbar() {
                 Service
               </span>
             </Link>
-          </div>
+          </div>}
 
           {/* Search (authenticated desktop) */}
           {isAuthenticated && (

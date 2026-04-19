@@ -41,6 +41,7 @@ export const ROUTES = {
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD: "/reset-password",
   VERIFY_EMAIL: "/verify-email",
+  VERIFY_EMAIL_REQUIRED: "/verify-email-required",
   CALLBACK: "/auth/callback",
   ERROR: "/error", // Auth error page
 

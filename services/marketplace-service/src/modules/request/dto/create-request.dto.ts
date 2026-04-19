@@ -2,6 +2,7 @@ import {
   IsString,
   IsNumber,
   IsOptional,
+  IsUUID,
   MinLength,
   Min,
   Max,
@@ -15,6 +16,18 @@ import {
   Matches,
 } from "class-validator";
 import { Type } from "class-transformer";
+
+/**
+ * Represents a single uploaded image attached to a service request.
+ * The file-upload-service assigns the id; the url is the public CDN URL.
+ */
+export class RequestImageDto {
+  @IsUUID()
+  id: string;
+
+  @IsUrl({}, { message: "Image URL must be a valid URL" })
+  url: string;
+}
 
 export class LocationDto {
   @IsNumber()
@@ -86,8 +99,9 @@ export class CreateRequestDto {
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(10)
-  @IsUrl({}, { each: true })
-  images?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => RequestImageDto)
+  images?: RequestImageDto[];
 
   @IsOptional()
   @IsDateString()

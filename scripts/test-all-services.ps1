@@ -110,7 +110,7 @@ function Get-GatewayPort {
         }
     }
 
-    return "3800"
+    return "3700"
 }
 
 function Get-RunningComposeServices {

@@ -28,7 +28,7 @@ export default function ProviderServicesPage() {
 
   // Get the provider record for this user
   const { data: providerData } = useQuery({
-    queryKey: ["my-provider", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: async () => {
       const response = await apiClient.get(`/providers?user_id=${user?.id}`);
       const list = response.data?.data ?? response.data ?? [];

@@ -13,7 +13,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { requestService } from "@/services/request-service";
 import { jobService } from "@/services/job-service";
 import { notificationService } from "@/services/notification-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatRelativeTime, formatCurrency } from "@/utils/helpers";
 import Link from "next/link";
 import { Plus, Briefcase, FileText, Bell } from "lucide-react";
 import { SkeletonStatCard, SkeletonListItem } from "@/components/ui/Skeleton";
@@ -46,7 +46,7 @@ export default function CustomerDashboard() {
   });
 
   const { data: notifications, isLoading: notificationsLoading } = useQuery({
-    queryKey: ["notifications"],
+    queryKey: ["notifications-preview"],
     queryFn: () => notificationService.getNotifications({ limit: 5 }),
     enabled: isAuthenticated && isNotificationsEnabled(),
   });
@@ -185,7 +185,7 @@ export default function CustomerDashboard() {
                     <Link
                       key={request.id}
                       href={ROUTES.DASHBOARD_REQUEST_DETAIL(request.id)}
-                      className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-primary-200 dark:hover:border-primary-700 transition-all"
+                      className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-primary-200 dark:hover:border-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition-all"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
@@ -198,7 +198,7 @@ export default function CustomerDashboard() {
                           </p>
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                             {formatCurrency(request.budget)} &bull;{" "}
-                            {formatDate(request.created_at)}
+                            {formatRelativeTime(request.created_at)}
                           </p>
                         </div>
                         <StatusBadge status={request.status} />
@@ -254,7 +254,7 @@ export default function CustomerDashboard() {
                       <Link
                         key={job.id}
                         href={ROUTES.DASHBOARD_JOB_DETAIL(job.id)}
-                        className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-green-200 dark:hover:border-green-700 transition-all"
+                        className="block p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-green-200 dark:hover:border-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition-all"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -265,7 +265,7 @@ export default function CustomerDashboard() {
                               {job.provider?.name || "Provider"}
                             </p>
                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                              {formatDate(job.created_at)}
+                              {formatRelativeTime(job.created_at)}
                             </p>
                           </div>
                           <StatusBadge status={job.status} />
@@ -332,7 +332,7 @@ export default function CustomerDashboard() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                        {formatDate(notification.created_at)}
+                        {formatRelativeTime(notification.created_at)}
                       </p>
                     </div>
                   ))}

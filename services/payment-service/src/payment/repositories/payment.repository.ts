@@ -443,10 +443,10 @@ export class PaymentRepository {
         currency
       FROM payments
       WHERE status = 'completed'
-        AND created_at BETWEEN COALESCE($1, '2020-01-01') AND COALESCE($2, NOW())
+        AND created_at BETWEEN COALESCE($1::TIMESTAMP, '2020-01-01'::TIMESTAMP) AND COALESCE($2::TIMESTAMP, NOW())
       GROUP BY currency
     `;
-    const result = await this.pool.query(query, [startDate, endDate]);
+    const result = await this.pool.query(query, [startDate ?? null, endDate ?? null]);
     return result.rows;
   }
 
@@ -464,13 +464,13 @@ export class PaymentRepository {
         COALESCE(MAX(currency), 'USD') as currency
       FROM payments
       WHERE provider_id = $1
-        AND created_at >= COALESCE($2, '2020-01-01')
-        AND created_at <= COALESCE($3, NOW())
+        AND created_at >= COALESCE($2::TIMESTAMP, '2020-01-01'::TIMESTAMP)
+        AND created_at <= COALESCE($3::TIMESTAMP, NOW())
     `;
     const result = await this.pool.query(query, [
       providerId,
-      startDate,
-      endDate,
+      startDate ?? null,
+      endDate ?? null,
     ]);
     return (
       result.rows[0] || {
@@ -496,16 +496,16 @@ export class PaymentRepository {
       FROM payments
       WHERE provider_id = $1
         AND status = 'completed'
-        AND created_at >= COALESCE($2, '2020-01-01')
-        AND created_at <= COALESCE($3, NOW())
+        AND created_at >= COALESCE($2::TIMESTAMP, '2020-01-01'::TIMESTAMP)
+        AND created_at <= COALESCE($3::TIMESTAMP, NOW())
       GROUP BY TO_CHAR(created_at, 'YYYY-MM')
       ORDER BY month DESC
       LIMIT 12
     `;
     const result = await this.pool.query(query, [
       providerId,
-      startDate,
-      endDate,
+      startDate ?? null,
+      endDate ?? null,
     ]);
     return result.rows;
   }

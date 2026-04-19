@@ -25,7 +25,7 @@ export default function ProviderPortfolioPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["provider-profile", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: async () => {
       const response = await apiClient.get(`/providers?user_id=${user?.id}`);
       if (response.data?.data && response.data.data.length > 0) {

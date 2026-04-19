@@ -1,5 +1,6 @@
 import { Injectable, Inject } from "@nestjs/common";
 import { Pool } from "pg";
+import { createHash } from "crypto";
 import { DATABASE_POOL } from "@/common/database/database.module";
 import { Session } from "../entities/session.entity";
 
@@ -7,14 +8,24 @@ import { Session } from "../entities/session.entity";
 export class SessionRepository {
   constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
 
+  /**
+   * Returns the SHA-256 hex digest of a raw refresh token.
+   * Only the hash is stored in the DB; the raw token is held by the client
+   * inside the encrypted NextAuth session cookie.  A DB breach therefore
+   * does not expose any live sessions.
+   */
+  private hashToken(token: string): string {
+    return createHash("sha256").update(token).digest("hex");
+  }
+
   async create(
     userId: string,
     refreshToken: string,
     expiresAt: Date,
     ipAddress?: string,
     userAgent?: string,
-    deviceType?: string, // ✅ NEW
-    location?: string, // ✅ NEW
+    deviceType?: string,
+    location?: string,
   ): Promise<Session> {
     const query = `
       INSERT INTO sessions (
@@ -26,19 +37,19 @@ export class SessionRepository {
     `;
     const result = await this.pool.query(query, [
       userId,
-      refreshToken,
+      this.hashToken(refreshToken),
       expiresAt,
       ipAddress,
       userAgent,
-      deviceType, // ✅ NEW
-      location, // ✅ NEW
+      deviceType,
+      location,
     ]);
     return result.rows[0];
   }
 
   async findByRefreshToken(refreshToken: string): Promise<Session | null> {
     const query = "SELECT * FROM sessions WHERE refresh_token = $1";
-    const result = await this.pool.query(query, [refreshToken]);
+    const result = await this.pool.query(query, [this.hashToken(refreshToken)]);
     return result.rows[0] || null;
   }
 
@@ -51,7 +62,12 @@ export class SessionRepository {
 
   async deleteByRefreshToken(refreshToken: string): Promise<void> {
     const query = "DELETE FROM sessions WHERE refresh_token = $1";
-    await this.pool.query(query, [refreshToken]);
+    await this.pool.query(query, [this.hashToken(refreshToken)]);
+  }
+
+  /** Delete a session directly by its primary key (use when you already hold a Session object). */
+  async deleteById(id: string): Promise<void> {
+    await this.pool.query("DELETE FROM sessions WHERE id = $1", [id]);
   }
 
   async deleteByUserId(userId: string): Promise<void> {

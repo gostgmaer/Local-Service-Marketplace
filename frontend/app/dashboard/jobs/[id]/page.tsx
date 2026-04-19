@@ -14,7 +14,7 @@ import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { jobService } from "@/services/job-service";
 import { paymentService } from "@/services/payment-service";
 import { ROUTES } from "@/config/constants";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { formatDate, formatCurrency, formatRelativeTime, formatDateTime } from "@/utils/helpers";
 import {
   ArrowLeft,
   Briefcase,
@@ -145,7 +145,7 @@ export default function JobDetailPage() {
               <div className="flex flex-wrap gap-4 text-gray-600 dark:text-gray-400 text-sm">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  Created {formatDate(job.created_at)}
+                  Created {formatRelativeTime(job.created_at)}
                 </span>
                 <StatusBadge status={job.status} />
               </div>
@@ -280,7 +280,7 @@ export default function JobDetailPage() {
                         </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {job.started_at
-                            ? `Started ${formatDate(job.started_at)}`
+                            ? `Started ${formatDateTime(job.started_at)}`
                             : "Not started yet"}
                         </p>
                       </div>
@@ -347,14 +347,14 @@ export default function JobDetailPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-500">Created</span>
                     <span className="text-gray-900 dark:text-white font-medium">
-                      {formatDate(job.created_at)}
+                      {formatRelativeTime(job.created_at)}
                     </span>
                   </div>
                   {job.started_at && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Started</span>
                       <span className="text-gray-900 dark:text-white font-medium">
-                        {formatDate(job.started_at)}
+                        {formatDateTime(job.started_at)}
                       </span>
                     </div>
                   )}
@@ -362,7 +362,7 @@ export default function JobDetailPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-500">Completed</span>
                       <span className="text-gray-900 dark:text-white font-medium">
-                        {formatDate(job.completed_at)}
+                        {formatDateTime(job.completed_at)}
                       </span>
                     </div>
                   )}

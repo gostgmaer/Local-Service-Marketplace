@@ -26,7 +26,7 @@ function createService(overrides: {
     getSystemSetting: jest.fn().mockResolvedValue("30"),
   };
   const refundRepository = overrides.refundRepository ?? {
-    createRefund: jest.fn().mockResolvedValue({ id: "ref-1", amount: 200, status: "pending" }),
+    createRefundAtomic: jest.fn().mockResolvedValue({ id: "ref-1", amount: 200, status: "pending" }),
     getRefundById: jest.fn().mockResolvedValue({ id: "ref-1", amount: 200, status: "pending" }),
     getRefundsByPaymentId: jest.fn().mockResolvedValue([]),
   };
@@ -90,14 +90,14 @@ describe("RefundService.createRefund", () => {
   });
 
   it("throws BadRequestException when total refunds would exceed payment amount", async () => {
-    const existingRefund = { id: "ref-0", amount: 150, status: "completed" };
     const { service } = createService({
       refundRepository: {
-        getRefundsByPaymentId: jest.fn().mockResolvedValue([existingRefund]),
-        createRefund: jest.fn(),
+        createRefundAtomic: jest.fn().mockRejectedValue(new BadRequestException("Total refund amount exceeds payment amount")),
+        getRefundById: jest.fn(),
+        getRefundsByPaymentId: jest.fn().mockResolvedValue([]),
       },
     });
-    // payment is 200, already refunded 150, trying to refund 100 → total 250 > 200
+    // payment is 200, createRefundAtomic atomically checks and rejects
     await expect(service.createRefund("pay-1", 100)).rejects.toThrow(
       BadRequestException,
     );
@@ -108,7 +108,7 @@ describe("RefundService.createRefund", () => {
 
     const result = await service.createRefund("pay-1");
 
-    expect(refundRepository.createRefund).toHaveBeenCalledWith("pay-1", 200);
+    expect(refundRepository.createRefundAtomic).toHaveBeenCalledWith("pay-1", 200);
     expect(result.id).toBe("ref-1");
   });
 
@@ -117,7 +117,7 @@ describe("RefundService.createRefund", () => {
 
     await service.createRefund("pay-1", 100);
 
-    expect(refundRepository.createRefund).toHaveBeenCalledWith("pay-1", 100);
+    expect(refundRepository.createRefundAtomic).toHaveBeenCalledWith("pay-1", 100);
   });
 
   it("skips window check when payment has no paid_at", async () => {
@@ -130,7 +130,7 @@ describe("RefundService.createRefund", () => {
 
     await service.createRefund("pay-1");
 
-    expect(refundRepository.createRefund).toHaveBeenCalled();
+    expect(refundRepository.createRefundAtomic).toHaveBeenCalled();
   });
 });
 

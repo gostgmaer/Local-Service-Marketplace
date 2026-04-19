@@ -138,6 +138,7 @@ export const publicRoutes = [
   "/api/v1/user/auth/google/callback", // Google OAuth callback
   "/api/v1/user/auth/facebook", // Facebook OAuth initiate
   "/api/v1/user/auth/facebook/callback", // Facebook OAuth callback
+  "/api/v1/user/auth/oauth/exchange", // Exchange one-time OAuth code for tokens
 
   // ============================================
   // Phone Authentication Endpoints
@@ -194,6 +195,8 @@ export const publicGetRoutes = [
   // ============================================
   "/api/v1/categories", // List service categories (GET only)
   "/api/v1/categories/", // View individual category (GET /categories/:id)
+  "/categories", // Same routes without /api/v1 prefix (used by API client directly)
+  "/categories/", // View individual category without prefix
 
   // ============================================
   // Provider Directory (Public Browsing)

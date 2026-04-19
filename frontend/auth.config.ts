@@ -15,7 +15,20 @@ function decodeJwtPayload(token: string): any {
   }
 }
 
-async function refreshAccessToken(token: any) {
+/** Returns the ms timestamp at which we should proactively refresh — 5 minutes before actual expiry.
+ *  Falls back to TOKEN_CONFIG if the JWT has no `exp` claim. */
+const EARLY_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+function getTokenExpiry(accessToken: string): number {
+  const payload = decodeJwtPayload(accessToken);
+  if (payload?.exp && typeof payload.exp === "number") {
+    // payload.exp is seconds since epoch → convert to ms, then subtract buffer
+    return payload.exp * 1000 - EARLY_REFRESH_MS;
+  }
+  // Fallback: use configured expiration minus buffer
+  return Date.now() + TOKEN_CONFIG.ACCESS_TOKEN_EXPIRATION - EARLY_REFRESH_MS;
+}
+
+async function refreshAccessToken(token: any, attempt = 1): Promise<any> {
   try {
     if (!token?.refreshToken) {
       console.error("No refresh token available");
@@ -48,7 +61,7 @@ async function refreshAccessToken(token: any) {
     return {
       ...token,
       accessToken: data.accessToken,
-      accessTokenExpires: Date.now() + TOKEN_CONFIG.ACCESS_TOKEN_EXPIRATION,
+      accessTokenExpires: getTokenExpiry(data.accessToken),
       refreshToken: data.refreshToken ?? token.refreshToken,
       permissions,
       emailVerified,
@@ -56,7 +69,13 @@ async function refreshAccessToken(token: any) {
       providerVerificationStatus,
     };
   } catch (error) {
-    console.error("Error refreshing access token:", error);
+    console.error(`Error refreshing access token (attempt ${attempt}):`, error);
+    // Retry up to 2 times for transient failures (service restarts, brief network blips)
+    // before giving up and forcing re-login. Add a small back-off delay.
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+      return refreshAccessToken(token, attempt + 1);
+    }
     return { ...token, error: "RefreshAccessTokenError" as const };
   }
 }
@@ -290,7 +309,7 @@ export const authOptions = {
           language: profile?.language ?? null,
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
-          accessTokenExpires: Date.now() + TOKEN_CONFIG.ACCESS_TOKEN_EXPIRATION,
+          accessTokenExpires: getTokenExpiry(user.accessToken),
         };
       }
 
@@ -357,6 +376,17 @@ export const authOptions = {
         session.error = token.error;
       }
       return session;
+    },
+  },
+  events: {
+    /**
+     * Called server-side for every signOut() invocation — manual logout,
+     * RefreshAccessTokenError handler, session expiry, etc.
+     * Revokes the backend refresh token so the session is truly invalidated.
+     */
+    async signOut({ token }: { token?: any }) {
+      const refreshToken = token?.refreshToken as string | undefined;
+      await serverAuthService.logout(refreshToken);
     },
   },
   pages: { signIn: "/login", error: "/error" },

@@ -336,8 +336,14 @@ export class RequestService {
       const cached = await this.redisService.get(cacheKey);
 
       if (cached) {
-        this.logger.log(`Cache hit for request: ${id}`, RequestService.name);
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        // Bust stale cache entries that are missing the category join (pre-fix cache)
+        if (parsed.category_id && parsed.category === undefined) {
+          await this.redisService.del(cacheKey);
+        } else {
+          this.logger.log(`Cache hit for request: ${id}`, RequestService.name);
+          return parsed;
+        }
       }
     }
 
@@ -551,16 +557,22 @@ export class RequestService {
 
   async getRequestsByUser(
     userId: string,
+    limit = 20,
+    page = 1,
   ): Promise<{ data: RequestResponseDto[]; total: number }> {
     this.logger.log(
       `Fetching requests for user: ${userId}`,
       RequestService.name,
     );
 
-    const requests = await this.requestRepository.getRequestsByUser(userId);
-    const data = requests.map(RequestResponseDto.fromEntity);
+    const { rows, total } = await this.requestRepository.getRequestsByUser(
+      userId,
+      limit,
+      page,
+    );
+    const data = rows.map(RequestResponseDto.fromEntity);
 
-    return { data, total: data.length };
+    return { data, total };
   }
 
   async getRequestStats(): Promise<{

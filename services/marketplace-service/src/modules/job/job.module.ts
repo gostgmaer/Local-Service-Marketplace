@@ -4,6 +4,7 @@ import { BullModule } from "@nestjs/bullmq";
 import { JobController } from "./controllers/job.controller";
 import { JobService } from "./services/job.service";
 import { JobRepository } from "./repositories/job.repository";
+import { RequestRepository } from "../request/repositories/request.repository";
 import { DatabaseModule } from "../../common/database/database.module";
 import { NotificationModule } from "../../common/notification/notification.module";
 import { UserModule } from "../../common/user/user.module";
@@ -26,7 +27,7 @@ import { FileServiceClient } from "../../common/file-service.client";
     }),
   ],
   controllers: [JobController],
-  providers: [JobService, JobRepository, FileServiceClient],
+  providers: [JobService, JobRepository, RequestRepository, FileServiceClient],
   exports: [JobService, FileServiceClient],
 })
 export class JobModule {}

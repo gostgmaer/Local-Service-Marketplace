@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
@@ -9,12 +9,14 @@ import { useRouter } from "next/navigation";
 
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Loading } from "@/components/ui/Loading";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { requestService } from "@/services/request-service";
-import { formatDate, formatCurrency } from "@/utils/helpers";
+import { proposalService } from "@/services/proposal-service";
+import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import {
   Search,
   Filter,
@@ -24,6 +26,7 @@ import {
   X,
   Send,
   ShieldAlert,
+  CheckCircle2,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { CreateProposalForm } from "@/components/forms/CreateProposalForm";
@@ -33,34 +36,58 @@ export default function BrowseRequestsPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { can } = usePermissions();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [proposalTargetId, setProposalTargetId] = useState<string | null>(null);
 
+  const hasActiveFilters = !!(searchTerm || selectedCategory || (statusFilter && statusFilter !== "open"));
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setStatusFilter("open");
+  };
+
   const { data: provider } = useQuery({
-    queryKey: ["provider-profile-by-user", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: () => getProviderProfileByUserId(user!.id),
     enabled: isAuthenticated && can(Permission.REQUESTS_BROWSE) && !!user?.id,
   });
 
-  // Fetch all open requests (marketplace view for providers)
+  const PAGE_SIZE = 20;
+
+  // Fetch requests with cursor-less page-based infinite scroll
   const {
-    data: requests,
+    data: requestPages,
     isLoading,
     error,
     refetch,
-  } = useQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["browse-requests", statusFilter, selectedCategory, searchTerm],
-    queryFn: () =>
+    queryFn: ({ pageParam }: { pageParam: number }) =>
       requestService.getRequests({
         status: statusFilter || undefined,
         category_id: selectedCategory || undefined,
         search: searchTerm || undefined,
-        limit: 100,
+        limit: PAGE_SIZE,
+        page: pageParam,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      const currentPage = lastPage?.page ?? 1;
+      const totalPages = lastPage?.totalPages ?? 1;
+      return currentPage < totalPages ? currentPage + 1 : undefined;
+    },
     enabled: isAuthenticated && can(Permission.REQUESTS_BROWSE),
   });
+
+  // Flatten all pages into a single list
+  const filteredRequests = requestPages?.pages.flatMap((p: any) => p?.data ?? []) ?? [];
+  const totalCount = (requestPages?.pages[0] as any)?.total ?? 0;
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -68,8 +95,18 @@ export default function BrowseRequestsPage() {
     enabled: isAuthenticated,
   });
 
-  // All server-side filtering now — no client-side search needed
-  const filteredRequests = requests?.data || [];
+  const { data: myProposals } = useQuery({
+    queryKey: ["my-proposals"],
+    queryFn: () => proposalService.getMyProposals(),
+    enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
+  });
+
+  // Set of request IDs for which the provider already has an active proposal
+  const alreadyAppliedRequestIds = new Set(
+    (myProposals ?? [])
+      .filter((p) => p.status === "pending" || p.status === "accepted")
+      .map((p) => p.request_id),
+  );
 
   const proposalTargetRequest = filteredRequests.find(
     (r: any) => r.id === proposalTargetId,
@@ -178,19 +215,35 @@ export default function BrowseRequestsPage() {
                       </select>
                     </div>
                   </div>
+                  {hasActiveFilters && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded-full">
+                        Filters active
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
               {/* Results */}
               {isLoading ? (
-                <Loading />
+                <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+                </div>
               ) : filteredRequests.length > 0 ? (
                 <div className="space-y-4">
                   {filteredRequests.map((request: any) => (
                     <Card key={request.id} hover>
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             {/* Header */}
                             <div className="flex items-start justify-between mb-3">
                               <div>
@@ -209,7 +262,7 @@ export default function BrowseRequestsPage() {
                             </div>
 
                             {/* Description */}
-                            <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3">
+                            <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3 break-words">
                               {request.description}
                             </p>
 
@@ -232,7 +285,7 @@ export default function BrowseRequestsPage() {
                               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                 <Calendar className="h-4 w-4 mr-2" />
                                 <span>
-                                  Posted {formatDate(request.created_at)}
+                                  Posted {formatRelativeTime(request.created_at)}
                                 </span>
                               </div>
                             </div>
@@ -257,25 +310,34 @@ export default function BrowseRequestsPage() {
 
                           {/* Actions */}
                           <div className="ml-4 flex flex-col gap-2">
-                            {request.status === "open" && (
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                disabled={!canSubmitProposal}
-                                title={
-                                  !canSubmitProposal
-                                    ? "Verify your email and await account approval before submitting proposals"
-                                    : undefined
-                                }
-                                onClick={() =>
-                                  canSubmitProposal &&
-                                  setProposalTargetId(request.id)
-                                }
-                                className="flex items-center gap-1"
-                              >
-                                <Send className="h-3 w-3" />
-                                Submit Proposal
-                              </Button>
+                            {request.status === "open" && isProviderUser && (
+                              alreadyAppliedRequestIds.has(request.id) ? (
+                                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 font-medium px-2 py-1.5">
+                                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                                  Proposal Sent
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  disabled={!canSubmitProposal}
+                                  title={
+                                    !canSubmitProposal
+                                      ? providerNotVerified
+                                        ? "Your provider account is not verified yet"
+                                        : "Verify your email before submitting proposals"
+                                      : undefined
+                                  }
+                                  onClick={() =>
+                                    canSubmitProposal &&
+                                    setProposalTargetId(request.id)
+                                  }
+                                  className="flex items-center gap-1"
+                                >
+                                  <Send className="h-3 w-3" />
+                                  Submit Proposal
+                                </Button>
+                              )
                             )}
                             <Button
                               size="sm"
@@ -293,23 +355,30 @@ export default function BrowseRequestsPage() {
                   ))}
                 </div>
               ) : (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      No requests found
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Try adjusting your filters to see more results
-                    </p>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  title="No requests found"
+                  description={hasActiveFilters ? "Try adjusting your filters to see more results." : "No open service requests at the moment. Check back soon."}
+                  icon={hasActiveFilters ? "search" : "inbox"}
+                  action={hasActiveFilters ? { label: "Clear Filters", onClick: clearFilters } : undefined}
+                />
               )}
 
               {!isLoading && filteredRequests.length > 0 && (
-                <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                  Showing {filteredRequests.length} request
-                  {filteredRequests.length !== 1 ? "s" : ""}
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Showing {filteredRequests.length}
+                    {totalCount > 0 ? ` of ${totalCount}` : ""} request
+                    {filteredRequests.length !== 1 ? "s" : ""}
+                  </p>
+                  {hasNextPage && (
+                    <Button
+                      variant="outline"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                    >
+                      {isFetchingNextPage ? "Loading..." : "Load More"}
+                    </Button>
+                  )}
                 </div>
               )}
             </>
@@ -339,13 +408,16 @@ export default function BrowseRequestsPage() {
                 </button>
               </div>
               <div className="p-6">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 break-words">
                   {proposalTargetRequest.description}
                 </p>
                 <CreateProposalForm
                   requestId={proposalTargetRequest.id}
                   providerId={provider?.id}
-                  onSuccess={() => setProposalTargetId(null)}
+                  onSuccess={() => {
+                    setProposalTargetId(null);
+                    queryClient.invalidateQueries({ queryKey: ["my-proposals"] });
+                  }}
                   onCancel={() => setProposalTargetId(null)}
                 />
               </div>

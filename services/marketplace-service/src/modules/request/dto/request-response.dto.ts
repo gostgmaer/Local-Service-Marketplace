@@ -11,10 +11,17 @@ export class LocationResponseDto {
   country?: string;
 }
 
+export class CategoryResponseDto {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
 export class RequestResponseDto {
   id: string;
   user_id?: string | null;
   category_id: string;
+  category?: CategoryResponseDto;
   location?: LocationResponseDto;
   description: string;
   budget: number;
@@ -35,6 +42,13 @@ export class RequestResponseDto {
       id: request.id,
       user_id: request.user_id,
       category_id: request.category_id,
+      category: request.category
+        ? {
+            id: request.category.id,
+            name: request.category.name,
+            icon: request.category.icon,
+          }
+        : undefined,
       location: request.location
         ? {
             id: request.location.id,

@@ -11,7 +11,7 @@ import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import reviewService from "@/services/review-service";
-import { formatDate } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import { Star, MessageSquare } from "lucide-react";
 import Link from "next/link";
 
@@ -94,7 +94,7 @@ export default function MyReviewsPage() {
                       <div className="flex items-start justify-between mb-3">
                         <StarRating rating={review.rating} />
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatDate(review.created_at)}
+                          {formatRelativeTime(review.created_at)}
                         </span>
                       </div>
                       <p className="text-gray-700 dark:text-gray-300 mb-3">

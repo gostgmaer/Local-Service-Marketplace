@@ -27,6 +27,19 @@ export function useAuth() {
     }
   }, [session?.error, router]);
 
+  // When a page is restored from bfcache (browser back/forward navigation),
+  // React context retains the previous session state. Force a re-validation so
+  // pages using inline useEffect auth checks also respond to a stale session.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        update();
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [update]);
+
   const login = async (email: string, password: string) => {
     try {
       const result = await signIn("credentials", {
@@ -211,20 +224,13 @@ export function useAuth() {
   };
 
   const logout = async () => {
-    try {
-      // Send refreshToken so backend can revoke the specific session
-      const refreshToken = (session as any)?.refreshToken as string | undefined;
-      await authService.logout(refreshToken);
-    } catch (error) {
-      console.error("Backend logout error:", error);
-    } finally {
-      // Clear NextAuth client session (HTTP-only cookies cleared server-side)
-      await signOut({ redirect: false });
-      toast.success("Logged out successfully");
-      // Hard redirect: clears all in-memory React/query state and ensures
-      // no stale session data persists in the current JS context.
-      window.location.href = ROUTES.LOGIN;
-    }
+    // Backend session revocation is handled automatically by the
+    // events.signOut callback in authOptions (auth.config.ts).
+    await signOut({ redirect: false });
+    toast.success("Logged out successfully");
+    // Hard redirect: clears all in-memory React/query state and ensures
+    // no stale session data persists in the current JS context.
+    window.location.href = ROUTES.LOGIN;
   };
 
   const requireAuth = () => {

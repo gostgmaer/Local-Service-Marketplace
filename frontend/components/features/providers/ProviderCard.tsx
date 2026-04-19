@@ -34,7 +34,7 @@ export function ProviderCard({ provider }: ProviderCardProps) {
   const rating = parseRating(provider.rating);
 
   return (
-    <Link href={ROUTES.PROVIDER_DETAIL(provider.display_id || provider.id)}>
+    <Link href={ROUTES.PROVIDER_DETAIL(provider.id)}>
       <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
         <CardHeader>
           <div className="flex items-start gap-4">

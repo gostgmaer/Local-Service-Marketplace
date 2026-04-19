@@ -224,8 +224,7 @@ describe("ProposalService.acceptProposal", () => {
     const proposalRepository = overrides.proposalRepository ?? {
       getProposalById: jest.fn().mockResolvedValue(pendingProposal),
       getRequestStatus: jest.fn().mockResolvedValue("open"),
-      acceptProposal: jest.fn().mockResolvedValue(acceptedProposal),
-      rejectSiblingProposals: jest.fn().mockResolvedValue(undefined),
+      acceptProposalTransaction: jest.fn().mockResolvedValue({ proposal: acceptedProposal, job: { id: "job-1" } }),
     };
     const jobRepository = overrides.jobRepository ?? {
       createJob: jest.fn().mockResolvedValue({ id: "job-1" }),
@@ -309,17 +308,11 @@ describe("ProposalService.acceptProposal", () => {
 
     const result = await service.acceptProposal("prop-1", "cust-1", "customer");
 
-    expect(proposalRepository.acceptProposal).toHaveBeenCalledWith("prop-1");
-    expect(proposalRepository.rejectSiblingProposals).toHaveBeenCalledWith(
-      "req-1",
+    expect(proposalRepository.acceptProposalTransaction).toHaveBeenCalledWith(
       "prop-1",
-    );
-    expect(jobRepository.createJob).toHaveBeenCalledWith(
-      expect.objectContaining({ request_id: "req-1", provider_id: "prov-1" }),
-    );
-    expect(requestRepository.updateRequest).toHaveBeenCalledWith(
       "req-1",
-      expect.objectContaining({ status: "assigned" }),
+      "prov-1",
+      "cust-1",
     );
     expect(result).toBeDefined();
   });
@@ -327,6 +320,6 @@ describe("ProposalService.acceptProposal", () => {
   it("allows admin with proposals.manage permission to accept any proposal", async () => {
     const { service, proposalRepository } = makeService();
     await service.acceptProposal("prop-1", "admin-user", "admin", ["proposals.manage"]);
-    expect(proposalRepository.acceptProposal).toHaveBeenCalled();
+    expect(proposalRepository.acceptProposalTransaction).toHaveBeenCalled();
   });
 });

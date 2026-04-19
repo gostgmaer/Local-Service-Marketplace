@@ -82,14 +82,27 @@ export class RequestController {
   @UseGuards(JwtAuthGuard)
   @Get("my")
   @HttpCode(HttpStatus.OK)
-  async getMyRequests(@Req() req: any): Promise<{
+  async getMyRequests(
+    @Req() req: any,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<{
     data: RequestResponseDto[];
     total: number;
     page: number;
     limit: number;
   }> {
-    const result = await this.requestService.getRequestsByUser(req.user.userId);
-    return { ...result, page: 1, limit: result.data.length || 1 };
+    const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+    const parsedLimit = Math.min(
+      100,
+      Math.max(1, parseInt(limit ?? "20", 10) || 20),
+    );
+    const result = await this.requestService.getRequestsByUser(
+      req.user.userId,
+      parsedLimit,
+      parsedPage,
+    );
+    return { ...result, page: parsedPage, limit: parsedLimit };
   }
 
   // Public — anyone can browse a single request

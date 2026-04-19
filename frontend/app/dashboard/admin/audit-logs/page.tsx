@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { Permission } from "@/utils/permissions";
 import { adminService, AuditLog } from "@/services/admin-service";
-import { formatDate } from "@/utils/helpers";
+import { formatDate, formatRelativeTime } from "@/utils/helpers";
 import {
   Scroll,
   Search,
@@ -220,7 +220,7 @@ export default function AuditLogsPage() {
                           className="grid grid-cols-[1.5fr_1.5fr_1.5fr_1fr_1fr] gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors text-sm"
                         >
                           <span className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                            {formatDate(log.created_at)}
+                            {formatRelativeTime(log.created_at)}
                           </span>
                           <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 truncate">
                             <User className="h-3.5 w-3.5 text-gray-400 shrink-0" />

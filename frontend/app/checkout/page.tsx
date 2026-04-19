@@ -307,7 +307,7 @@ function SubscriptionCheckout({ planId }: { planId: string | null }) {
   }, [isAuthenticated, authLoading, router, planId]);
 
   const { data: provider, isLoading: providerLoading } = useQuery({
-    queryKey: ["provider-profile-by-user", user?.id],
+    queryKey: ["my-provider-profile", user?.id],
     queryFn: () => getProviderProfileByUserId(user!.id),
     enabled:
       isAuthenticated && can(Permission.SUBSCRIPTIONS_MANAGE) && !!user?.id,

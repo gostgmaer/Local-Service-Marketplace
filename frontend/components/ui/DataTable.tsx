@@ -202,8 +202,9 @@ export function DataTable<T>({
         if (column.accessor) {
           return column.accessor(row);
         }
-        // Fallback to display_id if the column ID is "id" or "display_id"
-        if (column.id === "id" || column.id === "display_id") {
+        // For a "display_id" column, prefer the human-readable display_id.
+        // For every other column (including "id") use the actual field value.
+        if (column.id === "display_id") {
           return (row as any).display_id || (row as any).id;
         }
         return (row as any)[column.id];

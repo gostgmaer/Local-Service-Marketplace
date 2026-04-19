@@ -1,10 +1,12 @@
 import { Location } from "./location.entity";
+import { ServiceCategory } from "./service-category.entity";
 
 export class ServiceRequest {
   id: string;
   display_id: string;
   user_id?: string | null; // Optional for anonymous requests
   category_id: string;
+  category?: Pick<ServiceCategory, "id" | "name" | "icon">;
   location_id?: string;
   location?: Location;
   description: string;
