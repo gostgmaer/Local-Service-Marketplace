@@ -38,6 +38,7 @@ function JobCheckout({ jobId }: { jobId: string }) {
   } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const { data: job, isLoading } = useQuery({
     queryKey: ["job", jobId],
@@ -269,17 +270,50 @@ function JobCheckout({ jobId }: { jobId: string }) {
                     </span>
                   </div>
                 </div>
-                <Button
-                  onClick={() => payMutation.mutate()}
-                  isLoading={payMutation.isPending}
-                  disabled={amount === 0}
-                  className="w-full"
-                  size="lg"
-                >
-                  {payMutation.isPending
-                    ? "Processing Payment…"
-                    : `Pay ${formatCurrency(appliedCoupon ? amount * (1 - appliedCoupon.discountPercent / 100) : amount)}`}
-                </Button>
+                {showConfirm ? (
+                  <div className="border border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 space-y-3">
+                    <p className="text-sm font-medium text-yellow-900 dark:text-yellow-200">
+                      Confirm payment of{" "}
+                      <strong>
+                        {formatCurrency(
+                          appliedCoupon
+                            ? amount * (1 - appliedCoupon.discountPercent / 100)
+                            : amount,
+                        )}
+                      </strong>
+                      ? This action cannot be reversed.
+                    </p>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => payMutation.mutate()}
+                        isLoading={payMutation.isPending}
+                        className="flex-1"
+                        size="lg"
+                      >
+                        {payMutation.isPending
+                          ? "Processing…"
+                          : "Confirm Payment"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => setShowConfirm(false)}
+                        disabled={payMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => setShowConfirm(true)}
+                    disabled={amount === 0}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {`Pay ${formatCurrency(appliedCoupon ? amount * (1 - appliedCoupon.discountPercent / 100) : amount)}`}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -9,6 +9,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import {
   getProviderServices,
@@ -118,10 +119,18 @@ export default function ProviderServicesPage() {
                   </CardHeader>
                   <CardContent>
                     {services.length === 0 ? (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm py-4 text-center">
-                        No services added yet. Add your first service category
-                        below.
-                      </p>
+                      <EmptyState
+                        title="No services added yet"
+                        description="Add your first service category so customers can find and hire you."
+                        icon="briefcase"
+                        action={{
+                          label: "Add Your First Service",
+                          onClick: () => {
+                            const select = document.getElementById("add-service-select") as HTMLSelectElement;
+                            select?.focus();
+                          },
+                        }}
+                      />
                     ) : (
                       <ul className="space-y-3">
                         {services.map((service) => (
@@ -137,7 +146,8 @@ export default function ProviderServicesPage() {
                               size="sm"
                               onClick={() => removeMutation.mutate(service.id)}
                               disabled={removeMutation.isPending}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[44px] min-w-[44px]"
+                              aria-label={`Remove ${service.category_id} service`}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -172,6 +182,7 @@ export default function ProviderServicesPage() {
                             Category
                           </label>
                           <select
+                            id="add-service-select"
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
                             value={selectedCategoryId}
                             onChange={(e) =>

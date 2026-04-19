@@ -61,6 +61,7 @@ export default function AdminDisputeDetailPage() {
 
   const [resolution, setResolution] = useState("");
   const [outcome, setOutcome] = useState<OutcomeValue>("award_customer");
+  const [showResolveConfirm, setShowResolveConfirm] = useState(false);
 
   const {
     data: dispute,
@@ -268,17 +269,44 @@ export default function AdminDisputeDetailPage() {
                               onChange={(e) => setResolution(e.target.value)}
                             />
                           </div>
-                          <Button
-                            onClick={() => updateMutation.mutate()}
-                            isLoading={updateMutation.isPending}
-                            disabled={updateMutation.isPending}
-                          >
-                            {outcome === "award_customer"
-                              ? "Award Customer & Issue Refund"
-                              : outcome === "award_provider"
-                                ? "Award Provider"
-                                : "Update Dispute"}
-                          </Button>
+                          {showResolveConfirm ? (
+                            <div className="border border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 space-y-2">
+                              <p className="text-sm font-medium text-yellow-900 dark:text-yellow-200">
+                                Are you sure? This action will update the dispute status and cannot be easily reversed.
+                              </p>
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => { setShowResolveConfirm(false); updateMutation.mutate(); }}
+                                  isLoading={updateMutation.isPending}
+                                  className="flex-1"
+                                >
+                                  {outcome === "award_customer"
+                                    ? "Confirm & Issue Refund"
+                                    : outcome === "award_provider"
+                                      ? "Confirm Award Provider"
+                                      : "Confirm Update"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setShowResolveConfirm(false)}
+                                  disabled={updateMutation.isPending}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={() => setShowResolveConfirm(true)}
+                              disabled={updateMutation.isPending}
+                            >
+                              {outcome === "award_customer"
+                                ? "Award Customer & Issue Refund"
+                                : outcome === "award_provider"
+                                  ? "Award Provider"
+                                  : "Update Dispute"}
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

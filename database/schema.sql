@@ -436,7 +436,8 @@ CREATE TABLE jobs (
   started_at TIMESTAMP,
   completed_at TIMESTAMP CHECK (completed_at IS NULL OR (started_at IS NOT NULL AND completed_at >= started_at)),
   created_at TIMESTAMP DEFAULT now() NOT NULL,
-  updated_at TIMESTAMP
+  updated_at TIMESTAMP,
+  deleted_at TIMESTAMPTZ
 );
 
 CREATE INDEX idx_jobs_request_id ON jobs(request_id);
@@ -473,7 +474,8 @@ CREATE TABLE payments (
   gst_amount NUMERIC(12,2) DEFAULT 0,
   gst_rate NUMERIC(5,2) DEFAULT 18.00,
   created_at TIMESTAMP DEFAULT now() NOT NULL,
-  paid_at TIMESTAMP
+  paid_at TIMESTAMP,
+  deleted_at TIMESTAMPTZ
 );
 
 -- idx_payments_job_id replaced by idx_payments_job_id_created (composite with created_at for ORDER BY)
@@ -1843,6 +1845,21 @@ CREATE INDEX IF NOT EXISTS idx_service_request_search_category
 CREATE INDEX IF NOT EXISTS idx_service_request_search_location
   ON service_request_search(location);
 
+-- PROVIDER DOCUMENTS: expires_at without verified filter (admin expiry alert queries)
+CREATE INDEX IF NOT EXISTS idx_provider_documents_expires_at
+  ON provider_documents(expires_at)
+  WHERE expires_at IS NOT NULL;
+
+-- JOBS: soft-delete support — filters for active (non-deleted) jobs
+CREATE INDEX IF NOT EXISTS idx_jobs_not_deleted
+  ON jobs(created_at DESC)
+  WHERE deleted_at IS NULL;
+
+-- PAYMENTS: soft-delete support — filters for active (non-deleted) payments
+CREATE INDEX IF NOT EXISTS idx_payments_not_deleted
+  ON payments(created_at DESC)
+  WHERE deleted_at IS NULL;
+
 -- =====================================================
 -- DISPLAY ID SYSTEM
 -- =====================================================
@@ -2424,6 +2441,7 @@ VALUES
   ('034', 'review_soft_delete_and_dispute_window', 'integrated_in_schema', 0),
   ('035', 'add_file_id_to_provider_documents', 'integrated_in_schema', 0),
   ('036', 'secure_attachment_file_id', 'integrated_in_schema', 0),
-  ('037', 'make_document_url_nullable', 'integrated_in_schema', 0)
+  ('037', 'make_document_url_nullable', 'integrated_in_schema', 0),
+  ('038', 'production_hardening_indexes', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

@@ -79,8 +79,11 @@ export class ProviderPortfolioService {
       throw new NotFoundException("Portfolio item not found");
     }
 
-    // Authorization: verify user owns this provider
-    // This would involve checking provider ownership
+    // Authorization: verify the requesting user owns this portfolio item
+    const ownerUserId = await this.portfolioRepository.findOwnerUserIdForItem(itemId);
+    if (ownerUserId && ownerUserId !== userId) {
+      throw new ForbiddenException("You do not have permission to update this portfolio item");
+    }
 
     if (updateData.image_urls && updateData.image_urls.length > 10) {
       throw new BadRequestException(
@@ -98,7 +101,11 @@ export class ProviderPortfolioService {
       throw new NotFoundException("Portfolio item not found");
     }
 
-    // Authorization: verify user owns this provider
+    // Authorization: verify the requesting user owns this portfolio item
+    const ownerUserId = await this.portfolioRepository.findOwnerUserIdForItem(itemId);
+    if (ownerUserId && ownerUserId !== userId) {
+      throw new ForbiddenException("You do not have permission to delete this portfolio item");
+    }
 
     await this.portfolioRepository.delete(itemId);
   }

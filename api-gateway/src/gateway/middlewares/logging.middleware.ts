@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import * as crypto from "crypto";
 
 @Injectable()
 export class LoggingMiddleware implements NestMiddleware {
@@ -15,6 +16,12 @@ export class LoggingMiddleware implements NestMiddleware {
   ) {}
 
   use(req: Request, res: Response, next: NextFunction) {
+    // Assign correlation ID — honour a trusted inbound header or generate one
+    const requestId =
+      (req.headers["x-request-id"] as string) || crypto.randomUUID();
+    req.headers["x-request-id"] = requestId;
+    res.setHeader("x-request-id", requestId);
+
     const method = req.method;
     const path = req.originalUrl;
     const ip = req.ip;
@@ -25,7 +32,7 @@ export class LoggingMiddleware implements NestMiddleware {
 
     // Log request
     this.logger.log(
-      `Incoming ${method} ${path} from ${userId} (${ip})`,
+      `[${requestId}] Incoming ${method} ${path} from ${userId} (${ip})`,
       "LoggingMiddleware",
     );
 
@@ -34,7 +41,7 @@ export class LoggingMiddleware implements NestMiddleware {
       const { statusCode } = res;
       const duration = Date.now() - startTime;
 
-      const logMessage = `${method} ${path} ${statusCode} - ${duration}ms - User: ${userId} - IP: ${ip}`;
+      const logMessage = `[${requestId}] ${method} ${path} ${statusCode} - ${duration}ms - User: ${userId} - IP: ${ip}`;
 
       if (statusCode >= 500) {
         this.logger.error(logMessage, "", "LoggingMiddleware");

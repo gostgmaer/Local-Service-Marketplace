@@ -6,6 +6,7 @@ import { SystemSetting } from "../entities/system-setting.entity";
 import {
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from "../../common/exceptions/http.exceptions";
 import { SystemSettingQueryDto } from "../dto/system-setting-query.dto";
 import { resolvePagination } from "../../common/pagination/list-query-validation.util";
@@ -74,6 +75,31 @@ export class SystemSettingService {
     if (!existingSetting) {
       throw new NotFoundException("System setting not found");
     }
+
+    // Validate value against the setting's declared type
+    const settingType = existingSetting.type;
+    if (settingType === "boolean") {
+      if (value !== "true" && value !== "false") {
+        throw new BadRequestException(
+          `Setting '${key}' expects a boolean value ("true" or "false")`,
+        );
+      }
+    } else if (settingType === "integer") {
+      if (!/^-?\d+$/.test(value)) {
+        throw new BadRequestException(
+          `Setting '${key}' expects an integer value`,
+        );
+      }
+    } else if (settingType === "json") {
+      try {
+        JSON.parse(value);
+      } catch {
+        throw new BadRequestException(
+          `Setting '${key}' expects a valid JSON value`,
+        );
+      }
+    }
+    // "string" type accepts any non-empty string (already validated by DTO)
 
     // Update setting
     const updatedSetting = await this.systemSettingRepository.updateSetting(

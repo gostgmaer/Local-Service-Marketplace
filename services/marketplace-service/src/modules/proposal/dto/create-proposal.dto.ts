@@ -15,7 +15,7 @@ export class CreateProposalDto {
   provider_id: string;
 
   @IsNumber()
-  @Min(0)
+  @Min(1, { message: 'Proposal price must be at least 1' })
   price: number;
 
   @IsString()

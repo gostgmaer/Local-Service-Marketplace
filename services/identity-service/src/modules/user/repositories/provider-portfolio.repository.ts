@@ -94,6 +94,18 @@ export class ProviderPortfolioRepository {
     await this.pool.query(query, [id]);
   }
 
+  /** Returns the user_id of the provider who owns a portfolio item */
+  async findOwnerUserIdForItem(itemId: string): Promise<string | null> {
+    const query = `
+      SELECT p.user_id
+      FROM provider_portfolio pp
+      JOIN providers p ON p.id = pp.provider_id
+      WHERE pp.id = $1
+    `;
+    const result = await this.pool.query(query, [itemId]);
+    return result.rows[0]?.user_id ?? null;
+  }
+
   async reorderPortfolio(
     providerId: string,
     itemOrders: Array<{ id: string; order: number }>,

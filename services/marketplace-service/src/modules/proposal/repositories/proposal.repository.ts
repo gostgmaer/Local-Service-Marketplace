@@ -162,11 +162,24 @@ export class ProposalRepository {
     try {
       await client.query("BEGIN");
 
-      // 1. Accept this proposal (guard on status = 'pending' prevents double-accept)
+      // 0. Pessimistic lock: serialises concurrent accept attempts for the same proposal.
+      //    Any second transaction will block here until the first commits/rolls back,
+      //    then see status != 'pending' and throw immediately.
+      const lockRes = await client.query(
+        `SELECT id, status FROM proposals WHERE id = $1 FOR UPDATE`,
+        [proposalId],
+      );
+      if (!lockRes.rows[0] || lockRes.rows[0].status !== "pending") {
+        throw new BadRequestException(
+          "Proposal is no longer pending or does not exist",
+        );
+      }
+
+      // 1. Accept this proposal
       const acceptRes = await client.query(
         `UPDATE proposals
          SET status = 'accepted', updated_at = NOW()
-         WHERE id = $1 AND status = 'pending'
+         WHERE id = $1
          RETURNING id, display_id, request_id, provider_id, price, message,
                    estimated_hours, start_date, completion_date, rejected_reason,
                    status, created_at, updated_at`,

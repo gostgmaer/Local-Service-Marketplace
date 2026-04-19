@@ -3,7 +3,9 @@ import { IsNotEmpty, IsString, IsIn, IsOptional } from "class-validator";
 export class UpdateDisputeDto {
   @IsNotEmpty()
   @IsString()
-  @IsIn(["open", "in_progress", "investigating", "resolved", "closed"])
+  @IsIn(["investigating", "resolved", "closed"], {
+    message: 'Status must be one of: investigating, resolved, closed',
+  })
   status: string;
 
   @IsOptional()

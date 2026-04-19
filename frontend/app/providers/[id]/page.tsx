@@ -221,18 +221,18 @@ export default function ProviderDetailPage() {
                 <div className="flex items-start gap-4">
                   <Avatar name={provider.business_name} size="xl" />
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                       {provider.business_name}
                     </h1>
                     {providerRating !== undefined && (
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex items-center gap-1">
                           <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                          <span className="text-lg font-semibold text-gray-900">
+                          <span className="text-lg font-semibold text-gray-900 dark:text-white">
                             {providerRating.toFixed(1)}
                           </span>
                         </div>
-                        <span className="text-gray-500">Rating</span>
+                        <span className="text-gray-500 dark:text-gray-400">Rating</span>
                       </div>
                     )}
                     <div className="flex flex-wrap gap-2">
@@ -251,10 +251,10 @@ export default function ProviderDetailPage() {
               </CardHeader>
               <CardContent>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     About
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                     {provider.description || "No description provided."}
                   </p>
                 </div>
@@ -274,13 +274,13 @@ export default function ProviderDetailPage() {
                       return (
                         <div
                           key={service.id}
-                          className="p-4 border border-gray-200 rounded-lg"
+                          className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
                         >
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-gray-900 dark:text-white">
                             {category?.name || "Service"}
                           </p>
                           {category?.description && (
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                               {category.description}
                             </p>
                           )}
@@ -337,16 +337,16 @@ export default function ProviderDetailPage() {
                           key={stars}
                           className="flex items-center gap-2 text-sm"
                         >
-                          <span className="w-8 text-right text-gray-600">
+                          <span className="w-8 text-right text-gray-600 dark:text-gray-400">
                             {stars}★
                           </span>
-                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-yellow-400 rounded-full"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <span className="w-8 text-gray-500">{count}</span>
+                          <span className="w-8 text-gray-500 dark:text-gray-400">{count}</span>
                         </div>
                       );
                     })}
@@ -359,10 +359,10 @@ export default function ProviderDetailPage() {
                     {reviews.map((review) => (
                       <div
                         key={review.id}
-                        className="border-t border-gray-100 pt-4 first:border-0 first:pt-0"
+                        className="border-t border-gray-100 dark:border-gray-700 pt-4 first:border-0 first:pt-0"
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-gray-900 dark:text-white">
                             {review.customer_name || "Anonymous"}
                           </span>
                           <span className="text-xs text-gray-400">
@@ -377,15 +377,15 @@ export default function ProviderDetailPage() {
                             />
                           ))}
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                           {review.comment}
                         </p>
                         {review.response && (
-                          <div className="mt-2 pl-4 border-l-2 border-primary-200">
-                            <p className="text-xs font-medium text-primary-700">
+                          <div className="mt-2 pl-4 border-l-2 border-primary-200 dark:border-primary-700">
+                            <p className="text-xs font-medium text-primary-700 dark:text-primary-400">
                               Provider Response
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                               {review.response}
                             </p>
                           </div>
@@ -394,7 +394,7 @@ export default function ProviderDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">No reviews yet.</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">No reviews yet.</p>
                 )}
               </CardContent>
             </Card>

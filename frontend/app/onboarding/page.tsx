@@ -149,6 +149,45 @@ function OnboardingContent() {
 		{ day: "Friday", start_time: "09:00", end_time: "17:00" },
 	]);
 
+	// Auto-save indicator
+	const [draftSaved, setDraftSaved] = useState(false);
+	const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	// localStorage draft persistence — restore on mount, save on change, clear on complete
+	const DRAFT_KEY = "onboarding_draft";
+	useEffect(() => {
+		try {
+			const raw = localStorage.getItem(DRAFT_KEY);
+			if (!raw) return;
+			const draft = JSON.parse(raw);
+			if (draft.step && draft.step !== "complete") setStep(draft.step);
+			if (draft.businessName) setBusinessName(draft.businessName);
+			if (draft.description) setDescription(draft.description);
+			if (draft.phone) setPhone(draft.phone);
+			if (draft.gstin) setGstin(draft.gstin);
+			if (Array.isArray(draft.selectedCategories)) setSelectedCategories(draft.selectedCategories);
+			if (Array.isArray(draft.availability) && draft.availability.length > 0) setAvailability(draft.availability);
+		} catch {
+			// ignore malformed draft
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	useEffect(() => {
+		if (step === "complete") {
+			localStorage.removeItem(DRAFT_KEY);
+			return;
+		}
+		try {
+			localStorage.setItem(DRAFT_KEY, JSON.stringify({ step, businessName, description, phone, gstin, selectedCategories, availability }));
+			setDraftSaved(true);
+			if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+			draftSaveTimer.current = setTimeout(() => setDraftSaved(false), 2000);
+		} catch {
+			// ignore quota errors
+		}
+	}, [step, businessName, description, phone, gstin, selectedCategories, availability]);
+
 	const isProvider = can(Permission.PROVIDER_PROFILE_VIEW);
 	const steps = isProvider ? PROVIDER_STEPS : CUSTOMER_STEPS;
 	const currentIndex = steps.indexOf(step as any);
@@ -482,6 +521,15 @@ function OnboardingContent() {
 								)}
 							</div>
 						))}
+					</div>
+					{/* Auto-save indicator */}
+					<div className='h-5 flex items-center justify-center mb-2 -mt-6'>
+						{draftSaved && step !== "complete" && (
+							<span className='inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 animate-fade-in'>
+								<CheckCircle className='h-3 w-3' />
+								Draft saved
+							</span>
+						)}
 					</div>
 
 					{/* Step: Welcome */}

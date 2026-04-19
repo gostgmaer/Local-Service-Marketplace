@@ -306,6 +306,66 @@ export default function JobDetailPage() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Job Timeline */}
+              <Card>
+                <CardHeader>
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-primary-500" />
+                    Timeline
+                  </h2>
+                </CardHeader>
+                <CardContent>
+                  <ol className="relative border-l border-gray-200 dark:border-gray-700 ml-3 space-y-6">
+                    {/* Created */}
+                    <li className="ml-6">
+                      <span className="absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40 ring-4 ring-white dark:ring-gray-900">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                      </span>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Job Created</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatDateTime(job.created_at)}</p>
+                    </li>
+                    {/* Started */}
+                    <li className="ml-6">
+                      <span className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white dark:ring-gray-900 ${job.started_at ? "bg-blue-100 dark:bg-blue-900/40" : "bg-gray-100 dark:bg-gray-800"}`}>
+                        <Play className={`h-3.5 w-3.5 ${job.started_at ? "text-blue-600 dark:text-blue-400" : "text-gray-400"}`} />
+                      </span>
+                      <p className={`text-sm font-medium ${job.started_at ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>Job Started</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {job.started_at ? formatDateTime(job.started_at) : "Pending"}
+                      </p>
+                    </li>
+                    {/* Payment */}
+                    <li className="ml-6">
+                      <span className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white dark:ring-gray-900 ${hasCompletedPayment ? "bg-emerald-100 dark:bg-emerald-900/40" : "bg-gray-100 dark:bg-gray-800"}`}>
+                        <CreditCard className={`h-3.5 w-3.5 ${hasCompletedPayment ? "text-emerald-600 dark:text-emerald-400" : "text-gray-400"}`} />
+                      </span>
+                      <p className={`text-sm font-medium ${hasCompletedPayment ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>Payment Received</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{hasCompletedPayment ? "Paid" : "Awaiting payment"}</p>
+                    </li>
+                    {/* Completed */}
+                    <li className="ml-6">
+                      <span className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white dark:ring-gray-900 ${job.completed_at ? "bg-primary-100 dark:bg-primary-900/40" : "bg-gray-100 dark:bg-gray-800"}`}>
+                        <CheckCircle className={`h-3.5 w-3.5 ${job.completed_at ? "text-primary-600 dark:text-primary-400" : "text-gray-400"}`} />
+                      </span>
+                      <p className={`text-sm font-medium ${job.completed_at ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>Job Completed</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {job.completed_at ? formatDateTime(job.completed_at) : "Pending"}
+                      </p>
+                    </li>
+                    {/* Review */}
+                    <li className="ml-6">
+                      <span className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white dark:ring-gray-900 ${job.status === "completed" ? "bg-amber-100 dark:bg-amber-900/40" : "bg-gray-100 dark:bg-gray-800"}`}>
+                        <Star className={`h-3.5 w-3.5 ${job.status === "completed" ? "text-amber-500" : "text-gray-400"}`} />
+                      </span>
+                      <p className={`text-sm font-medium ${job.status === "completed" ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>Review Submitted</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {job.status === "completed" ? (isCustomer ? "You can leave a review" : "Customer can leave a review") : "After completion"}
+                      </p>
+                    </li>
+                  </ol>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Sidebar info */}
@@ -369,9 +429,16 @@ export default function JobDetailPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-500">Payment</span>
                     {hasCompletedPayment ? (
-                      <span className="text-green-600 font-medium text-xs px-2 py-0.5 bg-green-50 dark:bg-green-900/20 rounded-full">
-                        Paid
-                      </span>
+                      <button
+                        onClick={() => {
+                          const completedPayment = jobPayments?.find((p) => p.status === "completed");
+                          if (completedPayment) router.push(ROUTES.DASHBOARD_PAYMENT_RECEIPT(completedPayment.id));
+                        }}
+                        className="text-green-600 font-medium text-xs px-2 py-0.5 bg-green-50 dark:bg-green-900/20 rounded-full hover:underline"
+                        aria-label="View payment receipt"
+                      >
+                        Paid — View Receipt
+                      </button>
                     ) : (
                       <span className="text-amber-600 font-medium text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 rounded-full">
                         Awaiting Payment

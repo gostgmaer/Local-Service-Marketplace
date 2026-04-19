@@ -55,10 +55,9 @@ export class NotificationController {
   @Get()
   async getNotifications(
     @Request() req: any,
-    @Headers("x-user-id") headerUserId: string,
     @Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
   ) {
-    const userId = req.user?.userId || headerUserId;
+    const userId = req.user?.userId;
 
     if (!userId) {
       throw new UnauthorizedException("User ID is required");
@@ -117,7 +116,9 @@ export class NotificationController {
   }
 
   @Get("unread-count")
-  async getUnreadCount(@Headers("x-user-id") userId: string) {
+  async getUnreadCount(@Request() req: any) {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException("User ID is required");
     this.logger.log(
       `GET /notifications/unread-count for user ${userId}`,
       "NotificationController",
@@ -128,11 +129,8 @@ export class NotificationController {
 
   @Patch("read-all")
   @HttpCode(HttpStatus.OK)
-  async markAllAsRead(
-    @Request() req: any,
-    @Headers("x-user-id") headerUserId: string,
-  ) {
-    const userId = req.user?.userId || headerUserId;
+  async markAllAsRead(@Request() req: any) {
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException("User ID is required");
 
     this.logger.log(
@@ -147,9 +145,8 @@ export class NotificationController {
   async getNotification(
     @Param("id", FlexibleIdPipe) id: string,
     @Request() req: any,
-    @Headers("x-user-id") headerUserId: string,
   ) {
-    const userId = req.user?.userId || headerUserId;
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException("User ID is required");
 
     // Feature flag check: In-app notifications
@@ -174,9 +171,8 @@ export class NotificationController {
   async markAsRead(
     @Param("id", StrictUuidPipe) id: string,
     @Request() req: any,
-    @Headers("x-user-id") headerUserId: string,
   ) {
-    const userId = req.user?.userId || headerUserId;
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException("User ID is required");
 
     // Feature flag check: In-app notifications
@@ -199,9 +195,8 @@ export class NotificationController {
   async deleteNotification(
     @Param("id", StrictUuidPipe) id: string,
     @Request() req: any,
-    @Headers("x-user-id") headerUserId: string,
   ) {
-    const userId = req.user?.userId || headerUserId;
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException("User ID is required");
 
     this.logger.log(

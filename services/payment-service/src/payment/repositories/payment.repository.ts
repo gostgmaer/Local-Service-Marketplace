@@ -8,6 +8,7 @@ import {
   SortOrder,
 } from "../dto/transaction-query.dto";
 import { resolveId } from "../../common/utils/resolve-id.util";
+import { ConflictException } from "../../common/exceptions/http.exceptions";
 
 @Injectable()
 export class PaymentRepository {
@@ -55,15 +56,6 @@ export class PaymentRepository {
     const providerAmount = amount - platformFee;
     const gstAmount = parseFloat(((platformFee * gstRate) / 100).toFixed(2));
 
-    const query = `
-      INSERT INTO payments (
-        id, job_id, user_id, provider_id, amount, platform_fee,
-        provider_amount, currency, payment_method, gateway, status, transaction_id,
-        gst_rate, gst_amount, created_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
-      RETURNING *
-    `;
     const values = [
       id,
       jobId,
@@ -80,26 +72,58 @@ export class PaymentRepository {
       gstRate,
       gstAmount,
     ];
-    const result = await this.pool.query(query, values);
-    return new Payment({
-      id: result.rows[0].id,
-      display_id: result.rows[0].display_id,
-      job_id: result.rows[0].job_id,
-      user_id: result.rows[0].user_id,
-      provider_id: result.rows[0].provider_id,
-      amount: parseFloat(result.rows[0].amount),
-      platform_fee: parseFloat(result.rows[0].platform_fee),
-      provider_amount: parseFloat(result.rows[0].provider_amount),
-      currency: result.rows[0].currency,
-      payment_method: result.rows[0].payment_method,
-      gateway: result.rows[0].gateway,
-      status: result.rows[0].status,
-      transaction_id: result.rows[0].transaction_id,
-      failed_reason: result.rows[0].failed_reason,
-      gst_rate: parseFloat(result.rows[0].gst_rate ?? "18"),
-      gst_amount: parseFloat(result.rows[0].gst_amount ?? "0"),
-      created_at: result.rows[0].created_at,
-    });
+
+    // Atomic check-then-insert: FOR UPDATE lock on any existing active payment for this job
+    // prevents a race window between the service-layer guard and the actual INSERT.
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const existing = await client.query(
+        `SELECT id FROM payments WHERE job_id = $1 AND status IN ('pending', 'completed') LIMIT 1 FOR UPDATE`,
+        [jobId],
+      );
+      if (existing.rows.length > 0) {
+        throw new ConflictException(
+          "An active payment already exists for this job",
+        );
+      }
+      const result = await client.query(
+        `INSERT INTO payments (
+           id, job_id, user_id, provider_id, amount, platform_fee,
+           provider_amount, currency, payment_method, gateway, status, transaction_id,
+           gst_rate, gst_amount, created_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+         RETURNING *`,
+        values,
+      );
+      await client.query("COMMIT");
+      const row = result.rows[0];
+      return new Payment({
+        id: row.id,
+        display_id: row.display_id,
+        job_id: row.job_id,
+        user_id: row.user_id,
+        provider_id: row.provider_id,
+        amount: parseFloat(row.amount),
+        platform_fee: parseFloat(row.platform_fee),
+        provider_amount: parseFloat(row.provider_amount),
+        currency: row.currency,
+        payment_method: row.payment_method,
+        gateway: row.gateway,
+        status: row.status,
+        transaction_id: row.transaction_id,
+        failed_reason: row.failed_reason,
+        gst_rate: parseFloat(row.gst_rate ?? "18"),
+        gst_amount: parseFloat(row.gst_amount ?? "0"),
+        created_at: row.created_at,
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async getPaymentById(id: string): Promise<Payment | null> {

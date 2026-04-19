@@ -24,9 +24,11 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Pencil,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import toast from "react-hot-toast";
 
 export default function MyProposalsPage() {
   const queryClient = useQueryClient();
@@ -38,6 +40,10 @@ export default function MyProposalsPage() {
   const [pendingProposalId, setPendingProposalId] = useState<string | null>(
     null,
   );
+  const [editProposalId, setEditProposalId] = useState<string | null>(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [editHours, setEditHours] = useState("");
 
   // Fetch provider's proposals
   const {
@@ -59,6 +65,33 @@ export default function MyProposalsPage() {
       queryClient.invalidateQueries({ queryKey: ["my-proposals"] });
     },
   });
+
+  // Edit proposal mutation
+  const editMutation = useMutation({
+    mutationFn: ({ id, price, message, estimated_hours }: { id: string; price: number; message: string; estimated_hours?: number }) =>
+      proposalService.updateProposal(id, { price, message, estimated_hours }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-proposals"] });
+      setEditProposalId(null);
+      toast.success("Proposal updated successfully");
+    },
+    onError: () => toast.error("Failed to update proposal"),
+  });
+
+  const handleOpenEdit = (proposal: any) => {
+    setEditProposalId(proposal.id);
+    setEditPrice(String(proposal.price));
+    setEditMessage(proposal.message || "");
+    setEditHours(proposal.estimated_hours ? String(proposal.estimated_hours) : "");
+  };
+
+  const handleSubmitEdit = () => {
+    if (!editProposalId) return;
+    const price = parseFloat(editPrice);
+    if (!price || price <= 0) { toast.error("Price must be a positive number"); return; }
+    if (!editMessage.trim()) { toast.error("Message is required"); return; }
+    editMutation.mutate({ id: editProposalId, price, message: editMessage.trim(), estimated_hours: editHours ? Number(editHours) : undefined });
+  };
 
   // Filter proposals by status
   const filteredProposals =
@@ -335,16 +368,27 @@ export default function MyProposalsPage() {
                               View Request
                             </Button>
                             {proposal.status === "pending" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleWithdraw(proposal.id)}
-                                disabled={withdrawMutation.isPending}
-                              >
-                                {withdrawMutation.isPending
-                                  ? "Withdrawing..."
-                                  : "Withdraw"}
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenEdit(proposal)}
+                                  aria-label="Edit proposal"
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleWithdraw(proposal.id)}
+                                  disabled={withdrawMutation.isPending}
+                                >
+                                  {withdrawMutation.isPending
+                                    ? "Withdrawing..."
+                                    : "Withdraw"}
+                                </Button>
+                              </>
                             )}
                             {proposal.status === "accepted" && (
                               <Button
@@ -410,6 +454,60 @@ export default function MyProposalsPage() {
         variant="warning"
         isLoading={withdrawMutation.isPending}
       />
+
+      {/* Edit Proposal Modal */}
+      {editProposalId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Proposal</h2>
+              <button
+                onClick={() => setEditProposalId(null)}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg"
+                aria-label="Close edit modal"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (₹) *</label>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cover Letter *</label>
+                <textarea
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white resize-none"
+                  value={editMessage}
+                  onChange={(e) => setEditMessage(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estimated Hours</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
+                  value={editHours}
+                  placeholder="Optional"
+                  onChange={(e) => setEditHours(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setEditProposalId(null)}>Cancel</Button>
+                <Button onClick={handleSubmitEdit} isLoading={editMutation.isPending}>Save Changes</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }

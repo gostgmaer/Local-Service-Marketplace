@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from "@nestjs/common";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { CouponService } from "../services/coupon.service";
@@ -41,10 +42,18 @@ export class CouponController {
     @Body() createCouponDto: CreateCouponDto,
     @Request() req: any,
   ) {
+    // Validate expires_at is in the future
+    const expiresAt = new Date(createCouponDto.expires_at);
+    if (expiresAt <= new Date()) {
+      throw new BadRequestException(
+        "Coupon expiry date must be in the future",
+      );
+    }
+
     // Set the creator to the current admin user
     const couponData = {
       ...createCouponDto,
-      expires_at: new Date(createCouponDto.expires_at),
+      expires_at: expiresAt,
       created_by: req.user.userId,
     };
 

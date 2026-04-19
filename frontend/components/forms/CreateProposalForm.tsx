@@ -59,10 +59,13 @@ export function CreateProposalForm({
       onSuccess?.();
     },
     onError: (error: any) => {
+      const status = error.response?.status;
       const errorMessage =
-        error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        "Failed to submit proposal";
+        status === 409
+          ? "You already have an active proposal for this request"
+          : error.response?.data?.error?.message ||
+            error.response?.data?.message ||
+            "Failed to submit proposal";
       toast.error(errorMessage);
     },
   });

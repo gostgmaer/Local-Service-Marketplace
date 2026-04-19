@@ -114,6 +114,36 @@ services:
       timeout: 10s
       retries: 5
 
+  # One-shot container that creates all required Kafka topics before services start.
+  # Exits with code 0 once topics are created (idempotent — already-exists is not an error).
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: marketplace-kafka-init
+    profiles:
+      - scaling
+      - event
+      - events
+      - full
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - marketplace-network
+    # topic format: <name>:<partitions>:<replication-factor>
+    command: >
+      bash -c "
+        echo 'Waiting for Kafka to be ready...' &&
+        kafka-topics --bootstrap-server kafka:29092 --list &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic request_created --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic proposal_submitted --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic job_started --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic job_completed --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic payment_completed --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic review_submitted --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic notification_created --partitions 3 --replication-factor 1 &&
+        echo 'All Kafka topics created successfully.'
+      "
+
   # Microservices
   # identity-service: auth + user merged
   identity-service:

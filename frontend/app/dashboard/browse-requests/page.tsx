@@ -40,13 +40,15 @@ export default function BrowseRequestsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("open");
+  const [sortBy, setSortBy] = useState<string>("newest");
   const [proposalTargetId, setProposalTargetId] = useState<string | null>(null);
 
-  const hasActiveFilters = !!(searchTerm || selectedCategory || (statusFilter && statusFilter !== "open"));
+  const hasActiveFilters = !!(searchTerm || selectedCategory || (statusFilter && statusFilter !== "open") || (sortBy && sortBy !== "newest"));
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedCategory("");
     setStatusFilter("open");
+    setSortBy("newest");
   };
 
   const { data: provider } = useQuery({
@@ -67,12 +69,14 @@ export default function BrowseRequestsPage() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["browse-requests", statusFilter, selectedCategory, searchTerm],
+    queryKey: ["browse-requests", statusFilter, selectedCategory, searchTerm, sortBy],
     queryFn: ({ pageParam }: { pageParam: number }) =>
       requestService.getRequests({
         status: statusFilter || undefined,
         category_id: selectedCategory || undefined,
         search: searchTerm || undefined,
+        sort_by: sortBy === "newest" ? "created_at" : sortBy === "oldest" ? "created_at" : sortBy === "budget_high" || sortBy === "budget_low" ? "budget" : undefined,
+        sort_order: sortBy === "oldest" || sortBy === "budget_low" ? "asc" : "desc",
         limit: PAGE_SIZE,
         page: pageParam,
       }),
@@ -85,8 +89,14 @@ export default function BrowseRequestsPage() {
     enabled: isAuthenticated && can(Permission.REQUESTS_BROWSE),
   });
 
-  // Flatten all pages into a single list
-  const filteredRequests = requestPages?.pages.flatMap((p: any) => p?.data ?? []) ?? [];
+  // Flatten all pages into a single list; apply client-side urgency sort when selected
+  const rawRequests = requestPages?.pages.flatMap((p: any) => p?.data ?? []) ?? [];
+  const filteredRequests =
+    sortBy === "urgency"
+      ? [...rawRequests].sort(
+          (a: any, b: any) => (a.proposal_count ?? 0) - (b.proposal_count ?? 0),
+        )
+      : rawRequests;
   const totalCount = (requestPages?.pages[0] as any)?.total ?? 0;
 
   const { data: categories } = useQuery({
@@ -199,12 +209,13 @@ export default function BrowseRequestsPage() {
                       </select>
                     </div>
 
-                    {/* Category Filter */}
+                  {/* Category Filter */}
                     <div>
                       <select
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
+                        aria-label="Filter by category"
                       >
                         <option value="">All Categories</option>
                         {categories?.map((cat: any) => (
@@ -212,6 +223,22 @@ export default function BrowseRequestsPage() {
                             {cat.name}
                           </option>
                         ))}
+                      </select>
+                    </div>
+
+                    {/* Sort */}
+                    <div>
+                      <select
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        aria-label="Sort requests"
+                      >
+                        <option value="newest">Sort: Newest First</option>
+                        <option value="oldest">Sort: Oldest First</option>
+                        <option value="budget_high">Sort: Budget (High → Low)</option>
+                        <option value="budget_low">Sort: Budget (Low → High)</option>
+                        <option value="urgency">Sort: Fewest Proposals (Urgency)</option>
                       </select>
                     </div>
                   </div>
@@ -276,10 +303,29 @@ export default function BrowseRequestsPage() {
                               </div>
                               {request.location && (
                                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                  <MapPin className="h-4 w-4 mr-2" />
-                                  <span>
-                                    {request.location.city || "Location"}
-                                  </span>
+                                  <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+                                  <span>{request.location.city || "Location"}</span>
+                                  {(request.location.latitude && request.location.longitude) ? (
+                                    <a
+                                      href={`https://www.google.com/maps/search/?api=1&query=${request.location.latitude},${request.location.longitude}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="ml-2 text-primary-600 dark:text-primary-400 hover:underline text-xs"
+                                      aria-label="View location on Google Maps"
+                                    >
+                                      Map ↗
+                                    </a>
+                                  ) : request.location.city ? (
+                                    <a
+                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.location.city)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="ml-2 text-primary-600 dark:text-primary-400 hover:underline text-xs"
+                                      aria-label="View city on Google Maps"
+                                    >
+                                      Map ↗
+                                    </a>
+                                  ) : null}
                                 </div>
                               )}
                               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">

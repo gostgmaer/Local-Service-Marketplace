@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { Loading } from "@/components/ui/Loading";
 import { createReview } from "@/services/review-service";
+import { jobService } from "@/services/job-service";
 import { analytics } from "@/utils/analytics";
 import toast from "react-hot-toast";
 import { ArrowLeft, Star } from "lucide-react";
@@ -42,6 +43,20 @@ function SubmitReviewContent() {
       router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
+
+  // Gate: verify job exists and is completed before rendering the form
+  const { data: job, isLoading: jobLoading } = useQuery({
+    queryKey: ["job", jobId],
+    queryFn: () => jobService.getJobById(jobId!),
+    enabled: !!jobId && isAuthenticated,
+  });
+
+  useEffect(() => {
+    if (!jobLoading && job && job.status !== "completed") {
+      toast.error("Reviews can only be submitted for completed jobs");
+      router.push(ROUTES.DASHBOARD_JOB_DETAIL(jobId!));
+    }
+  }, [job, jobLoading, jobId, router]);
 
   const {
     register,
@@ -102,7 +117,7 @@ function SubmitReviewContent() {
     submitMutation.mutate(data);
   };
 
-  if (authLoading) {
+  if (authLoading || jobLoading) {
     return <Loading />;
   }
 
@@ -111,6 +126,11 @@ function SubmitReviewContent() {
   }
 
   if (!jobId || !providerId) {
+    return null;
+  }
+
+  // Job not completed — redirect handled in useEffect above; show nothing while redirecting
+  if (job && job.status !== "completed") {
     return null;
   }
 

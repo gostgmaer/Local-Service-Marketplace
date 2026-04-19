@@ -81,19 +81,28 @@ export class MessagingController {
   }
 
   @Get("conversations")
-  async getConversations(@Request() req: any) {
+  async getConversations(
+    @Request() req: any,
+    @Query("page", new ParseIntPipe({ optional: true })) page: number = 1,
+    @Query("limit", new ParseIntPipe({ optional: true })) limit: number = 20,
+  ) {
     this.logger.log(
-      `GET /messages/conversations - Get user conversations`,
+      `GET /messages/conversations - Get user conversations (page ${page}, limit ${limit})`,
       "MessagingController",
     );
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+    const safePage = Math.max(1, page);
     const conversations = await this.messageService.getUserConversations(
       req.user.userId,
     );
+    const start = (safePage - 1) * safeLimit;
+    const paged = conversations.slice(start, start + safeLimit);
     return {
-      data: conversations,
+      data: paged,
       total: conversations.length,
-      page: 1,
-      limit: conversations.length || 1,
+      page: safePage,
+      limit: safeLimit,
+      hasMore: start + safeLimit < conversations.length,
     };
   }
 

@@ -1,12 +1,12 @@
 import React from "react";
-import { Inbox, Search, FileX, AlertCircle } from "lucide-react";
+import { Inbox, Search, FileX, AlertCircle, Briefcase } from "lucide-react";
 import { Button } from "./Button";
 import { cn } from "@/utils/helpers";
 
 interface EmptyStateProps {
   title: string;
   description?: string;
-  icon?: "inbox" | "search" | "file" | "alert";
+  icon?: "inbox" | "search" | "file" | "alert" | "briefcase";
   action?: {
     label: string;
     onClick: () => void;
@@ -19,6 +19,7 @@ const icons = {
   search: Search,
   file: FileX,
   alert: AlertCircle,
+  briefcase: Briefcase,
 };
 
 export function EmptyState({

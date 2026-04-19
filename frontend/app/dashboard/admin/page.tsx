@@ -9,6 +9,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { adminService } from "@/services/admin-service";
 import { formatDate, formatRelativeTime } from "@/utils/helpers";
 import Link from "next/link";
@@ -105,6 +106,8 @@ export default function AdminDashboardPage() {
       ? Math.round(((jobStats?.byStatus?.disputed ?? 0) / totalJobs) * 100)
       : 0;
 
+  const isStatsLoading = !userStats || !disputeStats || !jobStats || !requestStats || !paymentStats;
+
   return (
     <ProtectedRoute requiredPermissions={[Permission.ADMIN_ACCESS]}>
       <Layout>
@@ -129,7 +132,17 @@ export default function AdminDashboardPage() {
 
               {/* Top KPI Bar */}
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-                {[
+                {isStatsLoading
+                  ? [...Array(5)].map((_, i) => (
+                      <Card key={i}>
+                        <CardContent className="p-5">
+                          <Skeleton className="h-9 w-9 rounded-lg mb-3" />
+                          <Skeleton className="h-7 w-16 mb-2" />
+                          <Skeleton className="h-3 w-24" />
+                        </CardContent>
+                      </Card>
+                    ))
+                  : [
                   {
                     label: "Total Users",
                     value: totalUsers,
@@ -186,67 +199,56 @@ export default function AdminDashboardPage() {
 
               {/* Performance Insights */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                <Card>
-                  <CardContent className="p-5">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      Requests Completion
-                    </p>
-                    <div className="mt-2 flex items-end justify-between">
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {requestCompletionRate}%
+                {isStatsLoading
+                  ? [...Array(3)].map((_, i) => (
+                      <Card key={i}>
+                        <CardContent className="p-5">
+                          <Skeleton className="h-3 w-32 mb-3" />
+                          <Skeleton className="h-8 w-16 mb-3" />
+                          <Skeleton className="h-2 w-full rounded-full" />
+                        </CardContent>
+                      </Card>
+                    ))
+                  : [
+                  {
+                    label: "Requests Completion",
+                    rate: requestCompletionRate,
+                    barColor: "bg-green-500",
+                    badge: <span className="text-sm text-green-600">Healthy</span>,
+                  },
+                  {
+                    label: "Jobs Success",
+                    rate: jobSuccessRate,
+                    barColor: "bg-blue-500",
+                    badge: <span className="text-sm text-blue-600">Stable</span>,
+                  },
+                  {
+                    label: "Dispute Pressure",
+                    rate: disputeRate,
+                    barColor: "bg-red-500",
+                    badge: <span className="text-sm text-red-600">{activeDisputes} open</span>,
+                  },
+                ].map(({ label, rate, barColor, badge }) => (
+                  <Card key={label}>
+                    <CardContent className="p-5">
+                      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        {label}
                       </p>
-                      <span className="text-sm text-green-600">Healthy</span>
-                    </div>
-                    <div className="mt-3 h-2 rounded-full bg-gray-100 dark:bg-gray-700">
-                      <div
-                        className="h-2 rounded-full bg-green-500"
-                        style={{ width: `${requestCompletionRate}%` }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-5">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      Jobs Success
-                    </p>
-                    <div className="mt-2 flex items-end justify-between">
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {jobSuccessRate}%
-                      </p>
-                      <span className="text-sm text-blue-600">Stable</span>
-                    </div>
-                    <div className="mt-3 h-2 rounded-full bg-gray-100 dark:bg-gray-700">
-                      <div
-                        className="h-2 rounded-full bg-blue-500"
-                        style={{ width: `${jobSuccessRate}%` }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-5">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      Dispute Pressure
-                    </p>
-                    <div className="mt-2 flex items-end justify-between">
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {disputeRate}%
-                      </p>
-                      <span className="text-sm text-red-600">
-                        {activeDisputes} open
-                      </span>
-                    </div>
-                    <div className="mt-3 h-2 rounded-full bg-gray-100 dark:bg-gray-700">
-                      <div
-                        className="h-2 rounded-full bg-red-500"
-                        style={{ width: `${Math.min(disputeRate, 100)}%` }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="mt-2 flex items-end justify-between">
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                          {rate}%
+                        </p>
+                        {badge}
+                      </div>
+                      <div className="mt-3 h-2 rounded-full bg-gray-100 dark:bg-gray-700">
+                        <div
+                          className={`h-2 rounded-full ${barColor}`}
+                          style={{ width: `${Math.min(rate, 100)}%` }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
 
               {/* Service Breakdown */}

@@ -16,10 +16,22 @@ import {
   ServiceUnavailableException,
 } from "../../common/exceptions/http.exceptions";
 
+// ── Simple per-service circuit breaker ─────────────────────────────────────
+type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
+interface CircuitBreaker {
+  state: CircuitState;
+  failures: number;
+  openedAt: number | null;
+}
+const CIRCUIT_FAILURE_THRESHOLD = 5;
+const CIRCUIT_RESET_MS = 30_000; // 30 seconds before half-open probe
+
 @Injectable()
 export class GatewayService {
   private readonly gatewaySecret: string;
   private readonly tenantId: string;
+  /** Per-service circuit breaker state (keyed by service name) */
+  private readonly circuits = new Map<string, CircuitBreaker>();
 
   constructor(
     private readonly httpService: HttpService,
@@ -34,6 +46,67 @@ export class GatewayService {
     this.tenantId = this.configService.get<string>("TENANT_ID", "default");
   }
 
+  // ── Circuit breaker helpers ───────────────────────────────────────────────
+
+  private getCircuit(serviceName: string): CircuitBreaker {
+    if (!this.circuits.has(serviceName)) {
+      this.circuits.set(serviceName, {
+        state: "CLOSED",
+        failures: 0,
+        openedAt: null,
+      });
+    }
+    return this.circuits.get(serviceName)!;
+  }
+
+  private recordSuccess(serviceName: string): void {
+    const cb = this.getCircuit(serviceName);
+    if (cb.state !== "CLOSED") {
+      this.logger.log(
+        `Circuit for ${serviceName} CLOSED (probe succeeded)`,
+        "GatewayService",
+      );
+    }
+    cb.state = "CLOSED";
+    cb.failures = 0;
+    cb.openedAt = null;
+  }
+
+  private recordFailure(serviceName: string): void {
+    const cb = this.getCircuit(serviceName);
+    cb.failures += 1;
+    if (cb.state === "HALF_OPEN" || cb.failures >= CIRCUIT_FAILURE_THRESHOLD) {
+      cb.state = "OPEN";
+      cb.openedAt = Date.now();
+      this.logger.warn(
+        `Circuit for ${serviceName} OPEN after ${cb.failures} failure(s)`,
+        "GatewayService",
+      );
+    }
+  }
+
+  private checkCircuit(serviceName: string): void {
+    const cb = this.getCircuit(serviceName);
+    if (cb.state === "CLOSED") return;
+
+    const elapsed = Date.now() - (cb.openedAt ?? 0);
+    if (cb.state === "OPEN" && elapsed >= CIRCUIT_RESET_MS) {
+      cb.state = "HALF_OPEN";
+      this.logger.log(
+        `Circuit for ${serviceName} HALF_OPEN — allowing probe request`,
+        "GatewayService",
+      );
+      return; // allow the probe through
+    }
+
+    if (cb.state === "OPEN") {
+      throw new ServiceUnavailableException(
+        `Service ${serviceName} is temporarily unavailable (circuit open)`,
+      );
+    }
+    // HALF_OPEN: fall through and let the request proceed
+  }
+
   /**
    * Forward request to appropriate microservice
    */
@@ -46,9 +119,10 @@ export class GatewayService {
     user?: any,
     isMultipart?: boolean,
   ): Promise<AxiosResponse> {
+    let serviceConfig: (typeof servicesConfig)[string] | undefined;
     try {
       const serviceName = this.getServiceName(path);
-      const serviceConfig = servicesConfig[serviceName];
+      serviceConfig = servicesConfig[serviceName];
 
       if (!serviceConfig) {
         this.logger.warn(
@@ -57,6 +131,9 @@ export class GatewayService {
         );
         throw new NotFoundException(`No resource found at ${path}`);
       }
+
+      // Circuit breaker check — throws ServiceUnavailableException when OPEN
+      this.checkCircuit(serviceConfig.name);
 
       // Strip /api/v1 prefix if present (microservices don't have this prefix)
       const cleanPath = path.startsWith("/api/v1")
@@ -101,6 +178,9 @@ export class GatewayService {
       // Make request to microservice
       const response = await firstValueFrom(this.httpService.request(config));
 
+      // Record success on 2xx/3xx (anything the upstream intentionally returned)
+      this.recordSuccess(serviceConfig.name);
+
       this.logger.log(
         `Response from ${serviceConfig.name}: ${response.status}`,
         "GatewayService",
@@ -124,12 +204,15 @@ export class GatewayService {
       }
 
       if (error.code === "ECONNREFUSED") {
+        // Record as a failure only for genuine connectivity problems
+        if (serviceConfig) this.recordFailure(serviceConfig.name);
         throw new ServiceUnavailableException(
           "Service temporarily unavailable",
         );
       }
 
       if (error.code === "ETIMEDOUT" || error.message.includes("timeout")) {
+        if (serviceConfig) this.recordFailure(serviceConfig.name);
         throw new GatewayTimeoutException("Service request timeout");
       }
 

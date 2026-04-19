@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,15 @@ export default function NotificationsPage() {
   const queryClient = useQueryClient();
   const { setUnreadCount } = useNotificationStore();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [unreadOnly, setUnreadOnly] = useState(false);
+
+  const TYPE_FILTERS = [
+    { value: "all", label: "All" },
+    { value: "payment", label: "Payments" },
+    { value: "message", label: "Messages" },
+    { value: "system", label: "System" },
+  ];
 
   function getNotificationIcon(type: string, read: boolean) {
     const base = read ? "bg-gray-200 dark:bg-gray-700" : "";
@@ -118,6 +127,17 @@ export default function NotificationsPage() {
             />
           ) : (
             <>
+              {/* Accessible live region for dynamic unread count changes */}
+              <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+              >
+                {notifications
+                  ? `${notifications.filter((n) => !n.read).length} unread notifications`
+                  : ""}
+              </div>
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -140,6 +160,40 @@ export default function NotificationsPage() {
                 )}
               </div>
 
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                {/* Type filter tabs */}
+                <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  {TYPE_FILTERS.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setTypeFilter(t.value)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors min-h-[36px] ${
+                        typeFilter === t.value
+                          ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                          : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                      aria-pressed={typeFilter === t.value}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Unread toggle */}
+                <button
+                  onClick={() => setUnreadOnly(!unreadOnly)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors min-h-[36px] ${
+                    unreadOnly
+                      ? "border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400"
+                  }`}
+                  aria-pressed={unreadOnly}
+                >
+                  <Bell className="h-3.5 w-3.5" />
+                  Unread only
+                </button>
+              </div>
+
               {isLoading ? (
                 <Card>
                   <CardContent>
@@ -153,10 +207,27 @@ export default function NotificationsPage() {
                   </CardContent>
                 </Card>
               ) : notifications && notifications.length > 0 ? (
+                (() => {
+                  const displayed = notifications.filter((n) => {
+                    const typeMatch =
+                      typeFilter === "all" ||
+                      (typeFilter === "payment" && (n.type === "payment_completed" || n.type === "payment_failed")) ||
+                      (typeFilter === "message" && n.type === "message_received") ||
+                      (typeFilter === "system" && !["payment_completed", "payment_failed", "message_received"].includes(n.type));
+                    const unreadMatch = !unreadOnly || !n.read;
+                    return typeMatch && unreadMatch;
+                  });
+                  return displayed.length === 0 ? (
+                    <EmptyState
+                      title="No notifications here"
+                      description={unreadOnly ? "You have no unread notifications in this category." : "No notifications match the selected filter."}
+                      icon="inbox"
+                    />
+                  ) : (
                 <Card>
                   <CardContent>
                     <div className="divide-y">
-                      {notifications.map((notification) => (
+                      {displayed.map((notification) => (
                         <div
                           key={notification.id}
                           className={`py-4 ${notification.read ? "opacity-60" : "bg-blue-50 dark:bg-blue-900/20"}`}
@@ -190,11 +261,14 @@ export default function NotificationsPage() {
                     </div>
                   </CardContent>
                 </Card>
+                  );
+                })()
               ) : (
                 <EmptyState
                   title="No notifications yet"
                   description="You'll be notified here about jobs, proposals, payments and messages."
                   icon="inbox"
+                  action={{ label: "Go to Dashboard", onClick: () => router.push(ROUTES.DASHBOARD) }}
                 />
               )}
             </>

@@ -54,14 +54,7 @@ export class JobService {
       JobService.name,
     );
 
-    // Check if job already exists for this request
-    const existingJob = await this.jobRepository.getJobByRequestId(
-      dto.request_id,
-    );
-    if (existingJob) {
-      throw new ConflictException("Job already exists for this request");
-    }
-
+    // Atomically checked inside jobRepository.createJob (FOR UPDATE transaction).
     const job = await this.jobRepository.createJob(dto);
 
     this.logger.log(`Job created successfully: ${job.id}`, JobService.name);

@@ -77,4 +77,11 @@ export class AttachmentRepository {
     const query = "DELETE FROM attachments WHERE id = $1";
     await this.pool.query(query, [id]);
   }
+
+  async getTotalSizeByMessageId(messageId: string): Promise<number> {
+    const query =
+      "SELECT COALESCE(SUM(file_size), 0)::bigint AS total FROM attachments WHERE message_id = $1";
+    const result = await this.pool.query(query, [messageId]);
+    return Number(result.rows[0]?.total ?? 0);
+  }
 }

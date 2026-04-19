@@ -43,12 +43,14 @@ export default function MessagesPage() {
     queryKey: ["conversations"],
     queryFn: () => messageService.getConversations(),
     enabled: isMessagingEnabled() && isAuthenticated,
+    refetchInterval: 30_000,
   });
 
   const { data: messages } = useQuery({
     queryKey: ["messages", selectedJobId],
     queryFn: () => messageService.getMessagesByJob(selectedJobId!),
     enabled: !!selectedJobId && isMessagingEnabled() && isAuthenticated,
+    refetchInterval: 15_000,
   });
 
   const handleSendMessage = async (e: React.FormEvent) => {
