@@ -119,7 +119,7 @@ export class GatewayService {
     user?: any,
     isMultipart?: boolean,
   ): Promise<AxiosResponse> {
-    let serviceConfig: (typeof servicesConfig)[string] | undefined;
+    let serviceConfig: (typeof servicesConfig)[keyof typeof servicesConfig] | undefined;
     try {
       const serviceName = this.getServiceName(path);
       serviceConfig = servicesConfig[serviceName];

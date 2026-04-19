@@ -93,8 +93,7 @@ describe("NotificationController", () => {
       ]);
       mockNotifService.getUnreadCount.mockResolvedValue(1);
       const result = await controller.getNotifications(
-        { user: null } as any,
-        "user-uuid-1",
+        { user: { userId: "user-uuid-1" } } as any,
         50,
       );
       expect(result.success).toBe(true);
@@ -105,7 +104,7 @@ describe("NotificationController", () => {
     it("should throw BadRequestException when in-app notifications disabled", async () => {
       mockFeatureFlags.inAppNotificationsEnabled = false;
       await expect(
-        controller.getNotifications({ user: null } as any, "user-uuid-1", 50),
+        controller.getNotifications({ user: { userId: "user-uuid-1" } } as any, 50),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -121,7 +120,7 @@ describe("NotificationController", () => {
   describe("getUnreadCount", () => {
     it("should return count", async () => {
       mockNotifService.getUnreadCount.mockResolvedValue(3);
-      const result = await controller.getUnreadCount("user-uuid-1");
+      const result = await controller.getUnreadCount({ user: { userId: "user-uuid-1" } } as any);
       expect(result.data.count).toBe(3);
     });
   });
@@ -130,8 +129,7 @@ describe("NotificationController", () => {
     it("should mark all as read", async () => {
       mockNotifService.markAllAsRead.mockResolvedValue(undefined);
       const result = await controller.markAllAsRead(
-        { user: null } as any,
-        "user-uuid-1",
+        { user: { userId: "user-uuid-1" } } as any,
       );
       expect(result.message).toContain("marked as read");
     });
@@ -142,8 +140,7 @@ describe("NotificationController", () => {
       mockNotifService.getNotificationById.mockResolvedValue(mockNotification);
       const result = await controller.getNotification(
         "notif-uuid-1",
-        { user: null } as any,
-        "user-uuid-1",
+        { user: { userId: "user-uuid-1" } } as any,
       );
       expect(result).toEqual(mockNotification);
     });
@@ -153,8 +150,7 @@ describe("NotificationController", () => {
       await expect(
         controller.getNotification(
           "notif-uuid-1",
-          { user: null } as any,
-          "user-uuid-1",
+          { user: { userId: "user-uuid-1" } } as any,
         ),
       ).rejects.toThrow(BadRequestException);
     });
@@ -166,8 +162,7 @@ describe("NotificationController", () => {
       mockNotifService.markAsRead.mockResolvedValue(readNotif);
       const result = await controller.markAsRead(
         "notif-uuid-1",
-        { user: null } as any,
-        "user-uuid-1",
+        { user: { userId: "user-uuid-1" } } as any,
       );
       expect(result.read).toBe(true);
     });
@@ -178,8 +173,7 @@ describe("NotificationController", () => {
       mockNotifService.deleteNotification.mockResolvedValue(undefined);
       await controller.deleteNotification(
         "notif-uuid-1",
-        { user: null } as any,
-        "user-uuid-1",
+        { user: { userId: "user-uuid-1" } } as any,
       );
       expect(mockNotifService.deleteNotification).toHaveBeenCalledWith(
         "notif-uuid-1",
