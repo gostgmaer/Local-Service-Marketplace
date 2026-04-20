@@ -65,18 +65,19 @@ export class DisputeRepository {
     jobId: string,
     openedBy: string,
     reason: string,
+    description?: string,
   ): Promise<Dispute> {
     const query = `
-      INSERT INTO disputes (id, display_id, job_id, opened_by, reason, status, created_at)
+      INSERT INTO disputes (id, display_id, job_id, opened_by, reason, description, status, created_at)
       VALUES (
         uuid_generate_v4(),
         UPPER(SUBSTRING(REPLACE(uuid_generate_v4()::text, '-', ''), 1, 11)),
-        $1, $2, $3, 'open', NOW()
+        $1, $2, $3, $4, 'open', NOW()
       )
-      RETURNING id, display_id, job_id, opened_by, reason, status,
+      RETURNING id, display_id, job_id, opened_by, reason, description, status,
                 resolution, resolved_by, resolved_at, created_at, updated_at
     `;
-    const result = await this.pool.query(query, [jobId, openedBy, reason]);
+    const result = await this.pool.query(query, [jobId, openedBy, reason, description ?? null]);
     return result.rows[0];
   }
 

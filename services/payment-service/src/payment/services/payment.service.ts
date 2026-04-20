@@ -169,6 +169,8 @@ export class PaymentService {
       }
       // Auto-generate and upload invoice (non-blocking)
       this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+      await this.cacheInvalidation.invalidateEntity("payments");
+      this.broadcastService.emit("payment", payment.id, "completed", [`user:${userId}`, `provider:${providerId}`, "admin"], { paymentId: payment.id, jobId }, userId);
       return { ...payment, status: "completed", transaction_id: cashTxnId };
     }
     // ─────────────────────────────────────────────────────────────────────────

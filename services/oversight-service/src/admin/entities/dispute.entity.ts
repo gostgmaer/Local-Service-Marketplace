@@ -4,6 +4,7 @@ export class Dispute {
   job_id: string;
   opened_by: string;
   reason: string;
+  description?: string;
   status: string;
   resolution?: string;
   resolved_by?: string;

@@ -57,6 +57,7 @@ export class DisputeService {
     jobId: string,
     openedBy: string,
     reason: string,
+    description?: string,
   ): Promise<Dispute> {
     this.logger.log(
       `Creating dispute for job ${jobId} by user ${openedBy}`,
@@ -96,6 +97,7 @@ export class DisputeService {
       jobId,
       openedBy,
       reason,
+      description,
     );
     await this.auditLogRepository.createAuditLog(
       openedBy,

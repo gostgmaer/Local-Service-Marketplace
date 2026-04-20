@@ -1,4 +1,4 @@
-import { IsUUID, IsString, MinLength } from "class-validator";
+import { IsUUID, IsString, MinLength, IsOptional } from "class-validator";
 
 export class CreateDisputeDto {
   @IsUUID()
@@ -7,4 +7,8 @@ export class CreateDisputeDto {
   @IsString()
   @MinLength(10)
   reason: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

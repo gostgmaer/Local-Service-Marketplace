@@ -6,6 +6,7 @@ import {
   OnGatewayInit,
   SubscribeMessage,
   ConnectedSocket,
+  MessageBody,
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
 import { Logger } from "@nestjs/common";
@@ -110,7 +111,7 @@ export class UpdatesGateway
   }
 
   @SubscribeMessage("join")
-  handleJoinRoom(@ConnectedSocket() client: AuthenticatedSocket, room: string) {
+  handleJoinRoom(@ConnectedSocket() client: AuthenticatedSocket, @MessageBody() room: string) {
     if (room && typeof room === "string") {
       client.join(room);
     }
