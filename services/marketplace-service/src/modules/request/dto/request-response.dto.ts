@@ -19,6 +19,7 @@ export class CategoryResponseDto {
 
 export class RequestResponseDto {
   id: string;
+  display_id?: string;
   user_id?: string | null;
   user_name?: string | null;
   category_id: string;
@@ -41,6 +42,7 @@ export class RequestResponseDto {
   static fromEntity(request: ServiceRequest): RequestResponseDto {
     return {
       id: request.id,
+      display_id: request.display_id,
       user_id: request.user_id,
       user_name: request.user_name,
       category_id: request.category_id,

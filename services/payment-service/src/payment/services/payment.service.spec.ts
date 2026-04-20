@@ -168,6 +168,7 @@ describe("PaymentService.createPayment", () => {
       "card",
       "txn_mock_123",
       "mock",
+      null,
     );
     expect(paymentRepository.updatePaymentStatus).toHaveBeenCalledWith(
       "pay-1",
@@ -215,6 +216,7 @@ describe("PaymentService.createPayment", () => {
       "card",
       expect.any(String),
       "mock",
+      null,
     );
   });
 

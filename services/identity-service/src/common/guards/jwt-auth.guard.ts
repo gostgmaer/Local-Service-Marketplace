@@ -72,6 +72,8 @@ export class JwtAuthGuard implements CanActivate {
 
     // Attach user info to request object for use in controllers/services
     request.user = {
+      sub: userId,
+      id: userId,
       userId,
       email: userEmail,
       role: userRole || "customer",
