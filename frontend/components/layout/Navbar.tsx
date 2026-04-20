@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { useNotifications } from "@/hooks/useNotifications";
-import { isNotificationsEnabled, isMessagingEnabled } from "@/config/features";
+import { useIsNotificationsEnabled, useIsMessagingEnabled } from "@/config/features";
 import { ROUTES } from "@/config/constants";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { SearchAutocomplete } from "@/components/ui/SearchAutocomplete";
@@ -37,6 +37,8 @@ export function Navbar() {
   const isProviderPending =
     role === "provider" && providerVerificationStatus === "pending";
   const { unreadCount } = useNotifications({ enabled: isAuthenticated });
+  const notificationsEnabled = useIsNotificationsEnabled();
+  const messagingEnabled = useIsMessagingEnabled();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -187,7 +189,7 @@ export function Navbar() {
                   )}
 
                 <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-100 dark:border-gray-800">
-                  {isNotificationsEnabled() && (
+                {notificationsEnabled && (
                     <Link
                       href={ROUTES.DASHBOARD_NOTIFICATIONS}
                       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
@@ -393,14 +395,14 @@ export function Navbar() {
                     label="Admin Panel"
                   />
                 )}
-                {isMessagingEnabled() && (
+                {messagingEnabled && (
                   <MobileLink
                     href={ROUTES.DASHBOARD_MESSAGES}
                     icon={FileText}
                     label="Messages"
                   />
                 )}
-                {isNotificationsEnabled() && (
+                {notificationsEnabled && (
                   <MobileLink
                     href={ROUTES.DASHBOARD_NOTIFICATIONS}
                     icon={Bell}

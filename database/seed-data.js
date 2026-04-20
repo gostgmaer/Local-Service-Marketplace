@@ -276,6 +276,17 @@ const realCouponCodes = [
 	'WEEKEND20', 'BIRTHDAY50', 'ANNIVERSARY30', 'STUDENT15', 'TRIAL25',
 ];
 
+const disputeDescriptions = [
+	'The provider completed only about half the work before leaving the site and is now unresponsive. The kitchen pipe is still leaking and there is water damage spreading. I paid the full agreed amount.',
+	'I was quoted Rs. 800 for the repair but was charged Rs. 2,200 at the end. The extra charges were never discussed or approved. I have the original proposal screenshot as evidence.',
+	'The technician used a cheap local part instead of the original branded component we agreed on. The same issue reappeared within 48 hours of the service visit.',
+	'Provider arrived 3.5 hours after the scheduled time with no communication. When I called, the phone was switched off. The late arrival made the job impossible to complete properly.',
+	'The service was performed incorrectly, resulting in damage to adjacent components. My washing machine was working partially before the visit — it is now completely non-functional.',
+	'The provider requested and received advance payment but never showed up on the scheduled day or the rescheduled day. All messages are being ignored.',
+	'The paint applied is already peeling in multiple spots within two weeks of completion. The provider used diluted paint without informing me despite charging for premium-grade paint.',
+	'Provider was rude and aggressive when I asked questions about the work process. Left the site without cleaning up the debris, leaving my house in a worse state than when they arrived.',
+];
+
 const disputeReasons = [
 	'The provider did not complete the work as described in the proposal. Key tasks were left incomplete without explanation.',
 	'Provider arrived 4 hours late with no communication and then left before finishing the job.',
@@ -360,6 +371,7 @@ module.exports = {
 	providerResponses,
 	realCouponCodes,
 	disputeReasons,
+	disputeDescriptions,
 	disputeResolutions,
 	conversationMessages,
 	contactSubjects,

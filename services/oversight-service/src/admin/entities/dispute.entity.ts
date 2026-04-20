@@ -5,6 +5,8 @@ export class Dispute {
   opened_by: string;
   reason: string;
   description?: string;
+  /** Array of { id, url } objects stored as JSONB — evidence images uploaded by the claimant */
+  evidence_images?: { id: string; url: string }[];
   status: string;
   resolution?: string;
   resolved_by?: string;

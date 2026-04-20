@@ -63,8 +63,6 @@ function PaymentReceiptContent() {
   });
 
   useRealtimeDetail(["payment:completed", "payment:updated", "payment:failed", "payment:refunded"], ["payment", paymentId], paymentId);
-  // Also refresh the linked job card when job status changes (e.g. completed, disputed)
-  useRealtimeDetail(["job:updated", "job:completed", "job:deleted"], ["job", payment?.job_id], payment?.job_id);
 
   const {
     data: payment,
@@ -76,6 +74,9 @@ function PaymentReceiptContent() {
     queryFn: () => paymentService.getPaymentById(paymentId),
     enabled: !!paymentId,
   });
+
+  // Also refresh the linked job card when job status changes (e.g. completed, disputed)
+  useRealtimeDetail(["job:updated", "job:completed", "job:deleted"], ["job", payment?.job_id], payment?.job_id);
 
   const { data: job } = useQuery({
     queryKey: ["job", payment?.job_id],

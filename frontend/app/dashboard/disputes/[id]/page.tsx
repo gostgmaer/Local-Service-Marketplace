@@ -22,6 +22,7 @@ import {
   User,
   CheckCircle,
   Clock,
+  ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -186,6 +187,38 @@ export default function DisputeDetailPage() {
                       </dt>
                       <dd className="text-sm text-gray-900 dark:text-white leading-relaxed">
                         {dispute.description}
+                      </dd>
+                    </div>
+                  )}
+                  {dispute.evidence_images && dispute.evidence_images.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <dt className="w-32 text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0 flex items-center gap-1">
+                        <ImageIcon className="h-4 w-4" />
+                        Evidence
+                      </dt>
+                      <dd className="flex-1">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {dispute.evidence_images.map((img, idx) => (
+                            <a
+                              key={img.id || idx}
+                              href={img.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-90 transition-opacity"
+                            >
+                              <img
+                                src={img.url}
+                                alt={`Evidence ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {dispute.evidence_images.length} photo
+                          {dispute.evidence_images.length !== 1 ? "s" : ""}{" "}
+                          attached — click to view full size
+                        </p>
                       </dd>
                     </div>
                   )}

@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
-import { isMessagingEnabled, isNotificationsEnabled } from "@/config/features";
+import { useIsMessagingEnabled, useIsNotificationsEnabled } from "@/config/features";
 import { useSidebarStore } from "@/store/sidebarStore";
 import { cn } from "@/utils/helpers";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -309,6 +309,8 @@ export function DashboardSidebar() {
   const { user } = useAuth();
   const { canAny } = usePermissions();
   const { isCollapsed, toggleSidebar } = useSidebarStore();
+  const messagingEnabled = useIsMessagingEnabled();
+  const notificationsEnabled = useIsNotificationsEnabled();
 
   const role = user?.role ?? "customer";
   const userPermissions: string[] =
@@ -341,8 +343,8 @@ export function DashboardSidebar() {
   });
 
   const bottomLinks = sharedBottomLinks(
-    isMessagingEnabled(),
-    isNotificationsEnabled(),
+    messagingEnabled,
+    notificationsEnabled,
   );
 
   const isActive = (href: string) => {

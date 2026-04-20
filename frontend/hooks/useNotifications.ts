@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { notificationService } from "@/services/notification-service";
-import { isNotificationsEnabled } from "@/config/features";
+import { useIsNotificationsEnabled } from "@/config/features";
 import { useSocketEvent } from "@/hooks/useSocket";
 
 interface UseNotificationsOptions {
@@ -41,7 +41,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Check if notifications are enabled via feature flag
-  const notificationsEnabled = isNotificationsEnabled();
+  const notificationsEnabled = useIsNotificationsEnabled();
 
   const fetchUnreadCount = useCallback(async () => {
     // Don't fetch if feature is disabled or not enabled via options

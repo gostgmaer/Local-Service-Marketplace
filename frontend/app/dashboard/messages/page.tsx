@@ -10,7 +10,7 @@ import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { useMessagingConnection } from "@/hooks/useMessagingSocket";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { usePresence } from "@/hooks/usePresence";
-import { isMessagingEnabled } from "@/config/features";
+import { useIsMessagingEnabled } from "@/config/features";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -28,6 +28,7 @@ export default function MessagesPage() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { can } = usePermissions();
+  const messagingEnabled = useIsMessagingEnabled();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showThread, setShowThread] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -48,7 +49,7 @@ export default function MessagesPage() {
       router.push(ROUTES.LOGIN);
     } else if (!authLoading && isAuthenticated && !can(Permission.MESSAGES_READ)) {
       router.push(ROUTES.DASHBOARD);
-    } else if (!authLoading && isAuthenticated && !isMessagingEnabled()) {
+    } else if (!authLoading && isAuthenticated && !messagingEnabled) {
       router.push(ROUTES.DASHBOARD);
     }
   }, [isAuthenticated, authLoading, router, can]);
@@ -64,13 +65,13 @@ export default function MessagesPage() {
   } = useQuery({
     queryKey: ["conversations"],
     queryFn: () => messageService.getConversations(),
-    enabled: isMessagingEnabled() && isAuthenticated,
+    enabled: messagingEnabled && isAuthenticated,
   });
 
   const { data: messages } = useQuery({
     queryKey: ["messages", selectedJobId],
     queryFn: () => messageService.getMessagesByJob(selectedJobId!),
-    enabled: !!selectedJobId && isMessagingEnabled() && isAuthenticated,
+    enabled: !!selectedJobId && messagingEnabled && isAuthenticated,
   });
 
   // Derive the other participant for presence

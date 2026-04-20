@@ -12,7 +12,11 @@ import { APP_CONFIG } from "@/config/constants";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { ToasterProvider } from "@/components/providers/ToasterProvider";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+}
+
+export function Providers({ children }: ProvidersProps) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -40,11 +44,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider refetchInterval={5 * 60} refetchOnWindowFocus={true}>
       <QueryClientProvider client={queryClient}>
-        <ErrorBoundary>{children}</ErrorBoundary>
-        <ToasterProvider />
-        {process.env.NODE_ENV === "development" && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
+          <ErrorBoundary>{children}</ErrorBoundary>
+          <ToasterProvider />
+          {process.env.NODE_ENV === "development" && (
+            <ReactQueryDevtools initialIsOpen={false} />
+          )}
       </QueryClientProvider>
     </SessionProvider>
   );

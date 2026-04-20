@@ -66,18 +66,25 @@ export class DisputeRepository {
     openedBy: string,
     reason: string,
     description?: string,
+    evidenceImages?: { id: string; url: string }[],
   ): Promise<Dispute> {
     const query = `
-      INSERT INTO disputes (id, display_id, job_id, opened_by, reason, description, status, created_at)
+      INSERT INTO disputes (id, display_id, job_id, opened_by, reason, description, evidence_images, status, created_at)
       VALUES (
         uuid_generate_v4(),
         UPPER(SUBSTRING(REPLACE(uuid_generate_v4()::text, '-', ''), 1, 11)),
-        $1, $2, $3, $4, 'open', NOW()
+        $1, $2, $3, $4, $5::jsonb, 'open', NOW()
       )
-      RETURNING id, display_id, job_id, opened_by, reason, description, status,
+      RETURNING id, display_id, job_id, opened_by, reason, description, evidence_images, status,
                 resolution, resolved_by, resolved_at, created_at, updated_at
     `;
-    const result = await this.pool.query(query, [jobId, openedBy, reason, description ?? null]);
+    const result = await this.pool.query(query, [
+      jobId,
+      openedBy,
+      reason,
+      description ?? null,
+      JSON.stringify(evidenceImages ?? []),
+    ]);
     return result.rows[0];
   }
 
@@ -100,7 +107,7 @@ export class DisputeRepository {
 
     const [dataResult, countResult] = await Promise.all([
       this.pool.query(
-        `SELECT id, display_id, job_id, opened_by, reason, description, status,
+        `SELECT id, display_id, job_id, opened_by, reason, description, evidence_images, status,
                 resolution, resolved_by, resolved_at, created_at, updated_at
          FROM disputes ${where}
          ORDER BY created_at DESC
@@ -119,7 +126,7 @@ export class DisputeRepository {
   async getDisputeById(id: string): Promise<Dispute | null> {
     id = await resolveId(this.pool, "disputes", id);
     const query = `
-      SELECT id, display_id, job_id, opened_by, reason, description, status,
+      SELECT id, display_id, job_id, opened_by, reason, description, evidence_images, status,
              resolution, resolved_by, resolved_at, created_at
       FROM disputes
       WHERE id = $1
@@ -134,7 +141,7 @@ export class DisputeRepository {
     offset: number = 0,
   ): Promise<Dispute[]> {
     const query = `
-      SELECT id, display_id, job_id, opened_by, reason, description, status,
+      SELECT id, display_id, job_id, opened_by, reason, description, evidence_images, status,
              resolution, resolved_by, resolved_at, created_at
       FROM disputes
       ORDER BY created_at DESC

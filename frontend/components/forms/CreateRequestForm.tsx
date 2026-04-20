@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { requestService } from "@/services/request-service";
 import { cn } from "@/utils/helpers";
 import {
@@ -22,6 +23,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
+  ImageIcon,
 } from "lucide-react";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
 
@@ -100,6 +102,8 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const { config: siteConfig } = usePublicSettings();
 
   const { data: categoriesData } = useQuery({
@@ -134,6 +138,7 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
         budget: data.budget,
         urgency: data.urgency,
         preferred_date: data.preferred_date || undefined,
+        imageFiles: imageFiles.length ? imageFiles : undefined,
         location:
           data.address || data.city
             ? {
@@ -423,6 +428,30 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                   className="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors"
                 />
               </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <ImageIcon className="h-4 w-4 text-gray-400" />
+                  Photos{" "}
+                  <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Add photos to help providers understand the job — up to 5 images.
+                </p>
+                <ImageUpload
+                  onUpload={(files) => {
+                    setImageFiles(files);
+                    const previews = files.map((f) => URL.createObjectURL(f));
+                    setImagePreviews(previews);
+                  }}
+                  maxFiles={5}
+                  currentImages={imagePreviews}
+                  onRemove={(idx) => {
+                    setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+                    setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+                  }}
+                />
+              </div>
             </CardContent>
           </Card>
         )}
@@ -532,6 +561,12 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                     ]
                       .filter(Boolean)
                       .join(", ")}
+                  />
+                )}
+                {imageFiles.length > 0 && (
+                  <ReviewRow
+                    label="Photos"
+                    value={`${imageFiles.length} photo${imageFiles.length !== 1 ? "s" : ""} attached`}
                   />
                 )}
               </div>

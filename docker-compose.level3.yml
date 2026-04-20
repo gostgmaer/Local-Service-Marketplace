@@ -93,7 +93,6 @@ services:
       - CACHE_ENABLED=true
       - WORKERS_ENABLED=true
       - WORKER_CONCURRENCY=10
-      - IN_APP_NOTIFICATIONS_ENABLED=true
       - DB_POOL_MAX=20
     deploy:
       resources:

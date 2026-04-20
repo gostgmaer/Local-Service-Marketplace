@@ -190,9 +190,6 @@ services:
       - DATABASE_SSL=true
       - CACHE_ENABLED=true
       - WORKERS_ENABLED=true
-      - IN_APP_NOTIFICATIONS_ENABLED=true
-      - PUSH_NOTIFICATIONS_ENABLED=true
-      - NOTIFICATION_PREFERENCES_ENABLED=true
       - DB_POOL_MAX=20
       - DB_POOL_MIN=5
     read_only: true

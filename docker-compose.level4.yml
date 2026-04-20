@@ -106,9 +106,6 @@ services:
       - WORKER_CONCURRENCY=10
       - EVENT_BUS_ENABLED=true
       - KAFKA_BROKERS=kafka:29092
-      - IN_APP_NOTIFICATIONS_ENABLED=true
-      - PUSH_NOTIFICATIONS_ENABLED=true
-      - NOTIFICATION_PREFERENCES_ENABLED=true
       - DB_POOL_MAX=20
     deploy:
       resources:

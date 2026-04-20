@@ -755,6 +755,8 @@ CREATE TABLE disputes (
   job_id UUID NOT NULL REFERENCES jobs(id),
   opened_by UUID NOT NULL REFERENCES users(id),
   reason TEXT NOT NULL,
+  description TEXT,
+  evidence_images JSONB NOT NULL DEFAULT '[]'::jsonb,
   status TEXT NOT NULL CHECK (status IN ('open', 'investigating', 'resolved', 'closed')),
   resolution TEXT,
   resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -762,6 +764,9 @@ CREATE TABLE disputes (
   created_at TIMESTAMP DEFAULT now() NOT NULL,
   updated_at TIMESTAMP
 );
+
+COMMENT ON COLUMN disputes.evidence_images IS
+  'Array of { id: uuid, url: string } objects — evidence photos uploaded by the claimant';
 
 CREATE INDEX idx_disputes_job_id ON disputes(job_id);
 -- idx_disputes_status omitted: superseded by idx_disputes_status_created_at below
@@ -1012,7 +1017,17 @@ INSERT INTO system_settings (key, value, description, type) VALUES
   ('contact_address',                '123 Marketplace Tower, MG Road, Bengaluru, Karnataka 560001',
                                               'Public office address shown on the contact page',                             'textarea'),
   ('terms_version',                  '1.0',   'Current version of the Terms of Service document',                           'text'),
-  ('privacy_version',                '1.0',   'Current version of the Privacy Policy document',                             'text')
+  ('privacy_version',                '1.0',   'Current version of the Privacy Policy document',                             'text'),
+  -- ── Feature Flags (migration 044) ─────────────────────────────────────────
+  ('notifications_enabled',           'false', 'Master switch: enable the notification system (in-app bell, email, SMS, push)', 'boolean'),
+  ('in_app_notifications_enabled',    'false', 'Enable real-time in-app notification bell and feed for users',                  'boolean'),
+  ('push_notifications_enabled',      'false', 'Enable browser/FCM push notification delivery (requires Firebase credentials)', 'boolean'),
+  ('email_notifications_enabled',     'true',  'Enable email notification delivery via the email-service',                     'boolean'),
+  ('sms_notifications_enabled',       'false', 'Enable SMS notification delivery via the sms-service',                        'boolean'),
+  ('messaging_enabled',               'false', 'Enable the messaging/chat feature (shows Messages nav link and /dashboard/messages route)', 'boolean'),
+  ('whatsapp_enabled',                'false', 'Enable WhatsApp notification delivery (requires WHATSAPP_PROVIDER + credentials in comms-service)', 'boolean'),
+  ('notification_preferences_enabled','false', 'Allow users to manage their own notification channel preferences',             'boolean'),
+  ('device_tracking_enabled',         'false', 'Enable device registration for push notifications',                           'boolean')
 ON CONFLICT (key) DO NOTHING;
 
 -- =====================================================
@@ -2454,6 +2469,10 @@ VALUES
   ('037', 'make_document_url_nullable', 'integrated_in_schema', 0),
   ('038', 'production_hardening_indexes', 'integrated_in_schema', 0),
   ('039', 'add_invoice_url_to_payments', 'integrated_in_schema', 0),
-  ('040', 'fix_money_column_types', 'integrated_in_schema', 0)
+  ('040', 'fix_money_column_types', 'integrated_in_schema', 0),
+  ('041', 'add_dispute_description', 'integrated_in_schema', 0),
+  ('042', 'add_customer_job_update_status_permission', 'integrated_in_schema', 0),
+  ('043', 'add_dispute_evidence_images', 'integrated_in_schema', 0),
+  ('044', 'feature_flag_settings', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

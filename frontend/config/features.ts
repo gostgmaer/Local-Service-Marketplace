@@ -1,46 +1,59 @@
 /**
- * Feature Flags Configuration
- * Central place to check if features are enabled based on environment variables
+ * Feature Flag helpers
+ *
+ * All flag values come from the admin system_settings table via
+ * /public/site-config. They are part of SiteConfig and accessed through
+ * `usePublicSettings()` — a single React Query call shared across the whole
+ * app, cached in localStorage for instant loads and refreshed every 60 s.
+ *
+ * Use the hooks below in client components.
  */
 
-export const featureFlags = {
-  // Notification System
-  notifications: {
-    enabled: process.env.NEXT_PUBLIC_NOTIFICATIONS_ENABLED === "true",
-    email: process.env.NEXT_PUBLIC_EMAIL_ENABLED === "true",
-    sms: process.env.NEXT_PUBLIC_SMS_ENABLED === "true",
-    inApp: process.env.NEXT_PUBLIC_IN_APP_NOTIFICATIONS_ENABLED === "true",
-    push: process.env.NEXT_PUBLIC_PUSH_NOTIFICATIONS_ENABLED === "true",
-  },
+import { usePublicSettings } from "@/hooks/usePublicSettings";
+import type { SiteConfig } from "@/services/public-settings-service";
 
-  // Messaging/Chat
-  messaging: process.env.NEXT_PUBLIC_MESSAGING_ENABLED === "true",
+/** The feature-flag slice of SiteConfig for components that need only flags. */
+export type FeatureFlags = Pick<
+  SiteConfig,
+  | "notificationsEnabled"
+  | "inAppNotificationsEnabled"
+  | "pushNotificationsEnabled"
+  | "emailNotificationsEnabled"
+  | "smsNotificationsEnabled"
+  | "messagingEnabled"
+  | "whatsappEnabled"
+  | "notificationPreferencesEnabled"
+  | "deviceTrackingEnabled"
+>;
 
-  // Analytics
-  analytics: process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === "true",
-} as const;
+/** Returns all feature flags from the shared site config. */
+export function useFeatureFlags(): FeatureFlags {
+  const { config } = usePublicSettings();
+  return {
+    notificationsEnabled:           config.notificationsEnabled,
+    inAppNotificationsEnabled:      config.inAppNotificationsEnabled,
+    pushNotificationsEnabled:       config.pushNotificationsEnabled,
+    emailNotificationsEnabled:      config.emailNotificationsEnabled,
+    smsNotificationsEnabled:        config.smsNotificationsEnabled,
+    messagingEnabled:               config.messagingEnabled,
+    whatsappEnabled:                config.whatsappEnabled,
+    notificationPreferencesEnabled: config.notificationPreferencesEnabled,
+    deviceTrackingEnabled:          config.deviceTrackingEnabled,
+  };
+}
 
-/**
- * Check if any notification feature is enabled
- */
-export const isNotificationsEnabled = () => {
+/** Returns true when the notification system (bell, feed, or push) is active. */
+export function useIsNotificationsEnabled(): boolean {
+  const { config } = usePublicSettings();
   return (
-    featureFlags.notifications.enabled ||
-    featureFlags.notifications.inApp ||
-    featureFlags.notifications.push
+    config.notificationsEnabled ||
+    config.inAppNotificationsEnabled ||
+    config.pushNotificationsEnabled
   );
-};
+}
 
-/**
- * Check if messaging is enabled
- */
-export const isMessagingEnabled = () => {
-  return featureFlags.messaging;
-};
+/** Returns true when the messaging/chat feature is active. */
+export function useIsMessagingEnabled(): boolean {
+  return usePublicSettings().config.messagingEnabled;
+}
 
-/**
- * Check if analytics is enabled
- */
-export const isAnalyticsEnabled = () => {
-  return featureFlags.analytics;
-};

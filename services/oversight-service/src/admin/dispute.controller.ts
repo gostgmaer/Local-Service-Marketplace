@@ -41,6 +41,7 @@ export class DisputeController {
       userId,
       dto.reason,
       dto.description,
+      dto.evidence_images,
     );
   }
 

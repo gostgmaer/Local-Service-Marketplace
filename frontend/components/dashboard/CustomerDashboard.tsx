@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { ROUTES } from "@/config/constants";
-import { isNotificationsEnabled } from "@/config/features";
+import { useIsNotificationsEnabled } from "@/config/features";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 export default function CustomerDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const notificationsEnabled = useIsNotificationsEnabled();
 
   useRealtimeList(["request:created", "request:updated", "request:deleted"], ["my-requests"]);
   useRealtimeList(["job:created", "job:updated", "job:completed"], ["my-jobs"]);
@@ -53,7 +54,7 @@ export default function CustomerDashboard() {
   const { data: notifications, isLoading: notificationsLoading } = useQuery({
     queryKey: ["notifications-preview"],
     queryFn: () => notificationService.getNotifications({ limit: 5 }),
-    enabled: isAuthenticated && isNotificationsEnabled(),
+    enabled: isAuthenticated && notificationsEnabled,
   });
 
   const hasError = requestsError || jobsError;
@@ -94,7 +95,7 @@ export default function CustomerDashboard() {
 
         {/* Quick Stats */}
         <div
-          className={`grid grid-cols-1 ${isNotificationsEnabled() ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4 mb-8`}
+          className={`grid grid-cols-1 ${notificationsEnabled ? "md:grid-cols-3" : "md:grid-cols-2"} gap-4 mb-8`}
         >
           {requestsLoading ? (
             <SkeletonStatCard />
@@ -139,7 +140,7 @@ export default function CustomerDashboard() {
             </Card>
           )}
 
-          {isNotificationsEnabled() &&
+          {notificationsEnabled &&
             (notificationsLoading ? (
               <SkeletonStatCard />
             ) : (
@@ -290,7 +291,7 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Recent Notifications */}
-        {isNotificationsEnabled() && (
+        {notificationsEnabled && (
           <Card className="mt-8">
             <CardHeader>
               <div className="flex items-center justify-between">

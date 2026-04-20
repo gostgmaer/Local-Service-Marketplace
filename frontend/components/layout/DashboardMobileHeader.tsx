@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
-import { isMessagingEnabled, isNotificationsEnabled } from "@/config/features";
+import { useIsMessagingEnabled, useIsNotificationsEnabled } from "@/config/features";
 import { cn } from "@/utils/helpers";
 import {
   Menu,
@@ -229,6 +229,8 @@ export function DashboardMobileHeader() {
   const { user, logout } = useAuth();
   const { canAny } = usePermissions();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const messagingEnabled = useIsMessagingEnabled();
+  const notificationsEnabled = useIsNotificationsEnabled();
 
   const role = user?.role ?? "customer";
   const userPermissions: string[] =
@@ -252,7 +254,7 @@ export function DashboardMobileHeader() {
   });
 
   const bottomItems: NavItem[] = [
-    ...(isMessagingEnabled()
+    ...(messagingEnabled
       ? [
           {
             label: "Messages",
@@ -261,7 +263,7 @@ export function DashboardMobileHeader() {
           },
         ]
       : []),
-    ...(isNotificationsEnabled()
+    ...(notificationsEnabled
       ? [
           {
             label: "Notifications",
