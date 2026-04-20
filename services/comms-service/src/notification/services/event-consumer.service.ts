@@ -56,10 +56,7 @@ export class EventConsumerService implements OnModuleInit {
   private async handleEvent(event: any): Promise<void> {
     // Normalize: oversight uses `event` field, others use `eventType`
     const eventType = event.eventType || event.event;
-    this.logger.log(
-      `Processing event: ${eventType}`,
-      "EventConsumerService",
-    );
+    this.logger.log(`Processing event: ${eventType}`, "EventConsumerService");
 
     try {
       switch (eventType) {
@@ -117,15 +114,12 @@ export class EventConsumerService implements OnModuleInit {
     }
   }
 
-  private async handleRequestCreated(event: any): Promise<void> {
-    const ref = event.data.requestDisplayId || event.data.displayId || "";
-    const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notify(
-      event.data.userId,
-      "request",
-      `Your service request has been created successfully${refSuffix}`,
-      "request_created",
-    );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async handleRequestCreated(_event: any): Promise<void> {
+    // The requester already knows they posted a request — no self-notification.
+    // Provider notifications for matching requests are handled by the
+    // marketplace-service broadcast to the `providers` room in real-time.
+    // Nothing to do here.
   }
 
   private async handleProposalSubmitted(event: any): Promise<void> {
@@ -234,15 +228,30 @@ export class EventConsumerService implements OnModuleInit {
 
   private async handlePaymentCompleted(event: any): Promise<void> {
     // Payment emails are already sent by payment-service directly.
-    // EventConsumer is responsible for the in-app notification only.
+    // EventConsumer is responsible for in-app notifications only.
     const ref = event.data.paymentDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notify(
-      event.data.userId,
-      "payment",
-      `Payment of ₹${event.data.amount} ${event.data.currency ?? "INR"} completed successfully${refSuffix}`,
-      "payment_completed",
-    );
+    const amount = event.data.amount
+      ? `₹${event.data.amount} ${event.data.currency ?? "INR"}`
+      : "";
+    // Notify customer
+    if (event.data.userId) {
+      await this.notify(
+        event.data.userId,
+        "payment",
+        `Payment${amount ? ` of ${amount}` : ""} completed successfully${refSuffix}`,
+        "payment_completed",
+      );
+    }
+    // Notify provider — they received payment for their service
+    if (event.data.providerId) {
+      await this.notify(
+        event.data.providerId,
+        "payment",
+        `You received payment${amount ? ` of ${amount}` : ""} for your service${refSuffix}`,
+        "payment_completed",
+      );
+    }
   }
 
   private async handlePaymentFailed(event: any): Promise<void> {

@@ -277,6 +277,8 @@ export class PaymentService {
         data: {
           paymentId: payment.id,
           jobId: payment.job_id,
+          userId,
+          providerId,
           amount: payment.amount,
           currency: payment.currency,
           status: "completed",
@@ -436,6 +438,8 @@ export class PaymentService {
         data: {
           paymentId: payment.id,
           jobId: payment.job_id,
+          userId,
+          providerId: payment.provider_id,
           amount: payment.amount,
           currency: payment.currency,
           status: "completed",
