@@ -462,7 +462,6 @@ export default function BrowseRequestsPage() {
                 </p>
                 <CreateProposalForm
                   requestId={proposalTargetRequest.id}
-                  providerId={provider?.id}
                   onSuccess={() => {
                     setProposalTargetId(null);
                     queryClient.invalidateQueries({ queryKey: ["my-proposals"] });

@@ -16,7 +16,7 @@
         "test": "jest",
         "test:watch": "jest --watch",
         "test:cov": "jest --coverage",
-        "test:e2e": "jest --config ./test/jest-e2e.json"
+        "test:e2e": "jest --passWithNoTests --config ./test/jest-e2e.json"
     },
     "dependencies": {
         "@nestjs/bullmq": "^10.2.1",

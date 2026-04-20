@@ -16,14 +16,12 @@ import toast from "react-hot-toast";
 
 interface CreateProposalFormProps {
   requestId: string;
-  providerId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export function CreateProposalForm({
   requestId,
-  providerId,
   onSuccess,
   onCancel,
 }: CreateProposalFormProps) {
@@ -32,8 +30,6 @@ export function CreateProposalForm({
   const form = useForm({
     resolver: zodResolver(createProposalSchema),
     defaultValues: {
-      request_id: requestId,
-      provider_id: providerId || "",
       price: 0,
       estimated_hours: undefined,
       message: "",
@@ -76,13 +72,6 @@ export function CreateProposalForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <input type="hidden" {...register("request_id")} value={requestId} />
-      <input
-        type="hidden"
-        {...register("provider_id")}
-        value={providerId || ""}
-      />
-
       <div>
         <Input
           label="Your Price"

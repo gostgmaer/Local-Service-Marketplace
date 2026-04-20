@@ -184,7 +184,7 @@ export class SystemSettingService {
       { url: process.env.INFRASTRUCTURE_SERVICE_URL || "http://localhost:3012" },
     ];
 
-    const secret = process.env.INTERNAL_SERVICE_SECRET;
+    const secret = process.env.GATEWAY_INTERNAL_SECRET;
     if (!secret) return;
 
     await Promise.allSettled(

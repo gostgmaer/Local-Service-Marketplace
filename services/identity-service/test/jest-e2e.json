@@ -6,6 +6,9 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "transformIgnorePatterns": [
+    "/node_modules/(?!(@otplib|otplib|@scure)/)"
+  ],
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/../src/$1"
   }

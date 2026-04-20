@@ -58,6 +58,14 @@ export class ProposalService {
       ProposalService.name,
     );
 
+    if (!dto.request_id) {
+      throw new BadRequestException("request_id is required");
+    }
+
+    if (!dto.provider_id) {
+      throw new BadRequestException("provider_id is required");
+    }
+
     // Validate price
     if (dto.price < 0) {
       throw new BadRequestException("Price must be a positive number");

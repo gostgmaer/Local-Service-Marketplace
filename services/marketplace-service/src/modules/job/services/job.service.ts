@@ -252,6 +252,7 @@ export class JobService {
     id: string,
     dto: UpdateJobStatusDto,
     userId: string,
+    providerId: string | undefined,
     userRole: string,
     userPermissions?: string[],
   ): Promise<JobResponseDto> {
@@ -270,7 +271,7 @@ export class JobService {
     if (
       !userPermissions?.includes("jobs.manage") &&
       existingJob.customer_id !== userId &&
-      existingJob.provider_id !== userId
+      existingJob.provider_id !== providerId
     ) {
       throw new ForbiddenException("You are not authorized to update this job");
     }
@@ -303,7 +304,7 @@ export class JobService {
 
     // Role-based transition enforcement
     const isCustomer = existingJob.customer_id === userId;
-    const isProvider = existingJob.provider_id === userId;
+    const isProvider = existingJob.provider_id === providerId;
 
     if (!userPermissions?.includes("jobs.manage")) {
       const customerAllowed = ["completed", "disputed"];
@@ -395,7 +396,7 @@ export class JobService {
 
     // Notify other party about status change — queue if workers enabled, else inline
     const notifyUserId =
-      existingJob.provider_id === userId
+      existingJob.provider_id === providerId
         ? existingJob.customer_id
         : existingJob.provider_id;
     if (this.workersEnabled) {

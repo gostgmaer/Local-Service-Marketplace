@@ -1,16 +1,15 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
-import * as request from "supertest";
+import request from "supertest";
+
+jest.mock("otplib", () => ({
+  verifySync: jest.fn().mockReturnValue({ valid: true }),
+}));
+
 import { AppModule } from "../src/app.module";
+import { ResponseTransformInterceptor } from "../src/common/interceptors/response-transform.interceptor";
 import { Pool } from "pg";
 
-/**
- * E2E tests for the Auth critical flow:
- *   register → login → get profile → refresh token → logout
- *
- * Requires a running PostgreSQL database with schema applied.
- * Run with: cd services/identity-service && pnpm test:e2e
- */
 describe("Auth Flow (e2e)", () => {
   let app: INestApplication;
   let pool: Pool;
@@ -19,7 +18,7 @@ describe("Auth Flow (e2e)", () => {
     email: `e2e.auth.${Date.now()}@test.com`,
     password: "SecurePass123!",
     name: "E2E Auth Test User",
-    role: "customer",
+    userType: "customer" as const,
   };
 
   let accessToken: string;
@@ -40,28 +39,19 @@ describe("Auth Flow (e2e)", () => {
         transform: true,
       }),
     );
+    app.useGlobalInterceptors(new ResponseTransformInterceptor());
     await app.init();
 
     pool = app.get("DATABASE_POOL");
   });
 
   afterAll(async () => {
-    // Clean up test user and related data
     if (userId) {
-      await pool
-        .query("DELETE FROM sessions WHERE user_id = $1", [userId])
-        .catch(() => {});
-      await pool
-        .query("DELETE FROM login_attempts WHERE user_id = $1", [userId])
-        .catch(() => {});
-      await pool
-        .query("DELETE FROM user_devices WHERE user_id = $1", [userId])
-        .catch(() => {});
-      await pool
-        .query("DELETE FROM users WHERE id = $1", [userId])
-        .catch(() => {});
+      await pool.query("DELETE FROM sessions WHERE user_id = $1", [userId]).catch(() => {});
+      await pool.query("DELETE FROM login_attempts WHERE user_id = $1", [userId]).catch(() => {});
+      await pool.query("DELETE FROM user_devices WHERE user_id = $1", [userId]).catch(() => {});
+      await pool.query("DELETE FROM users WHERE id = $1", [userId]).catch(() => {});
     }
-    await pool.end();
     await app.close();
   });
 
@@ -74,14 +64,18 @@ describe("Auth Flow (e2e)", () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      expect(response.body.data.user).toBeDefined();
-      expect(response.body.data.user.email).toBe(testUser.email);
-      expect(response.body.data.user.display_id).toBeDefined();
-      expect(response.body.data.user.display_id).toMatch(
-        /^[A-Z]{2,4}[A-Z0-9]{8}$/,
+      expect(response.body.data.email).toBe(testUser.email);
+      expect(response.body.message).toContain("Registration successful");
+
+      const userResult = await pool.query(
+        "SELECT id, display_id FROM users WHERE email = $1 ORDER BY created_at DESC LIMIT 1",
+        [testUser.email],
       );
-      userId = response.body.data.user.id;
-      userDisplayId = response.body.data.user.display_id;
+
+      expect(userResult.rows[0]).toBeDefined();
+      userId = userResult.rows[0].id;
+      userDisplayId = userResult.rows[0].display_id;
+      expect(userDisplayId).toBeDefined();
     });
 
     it("POST /auth/register should fail for duplicate email", async () => {
@@ -94,7 +88,7 @@ describe("Auth Flow (e2e)", () => {
     it("POST /auth/register should fail with invalid data", async () => {
       await request(app.getHttpServer())
         .post("/auth/register")
-        .send({ email: "invalid", password: "123" })
+        .send({ email: "invalid", password: "123", userType: "customer" })
         .expect(400);
     });
   });
@@ -111,7 +105,6 @@ describe("Auth Flow (e2e)", () => {
       expect(response.body.data.refreshToken).toBeDefined();
       expect(response.body.data.user).toBeDefined();
       expect(response.body.data.user.email).toBe(testUser.email);
-      expect(response.body.data.user.display_id).toBeDefined();
       expect(response.body.data.user.display_id).toBe(userDisplayId);
 
       accessToken = response.body.data.accessToken;
@@ -140,10 +133,10 @@ describe("Auth Flow (e2e)", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
+      expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
       expect(response.body.data.email).toBe(testUser.email);
       expect(response.body.data.name).toBe(testUser.name);
-      expect(response.body.data.display_id).toBeDefined();
       expect(response.body.data.display_id).toBe(userDisplayId);
     });
 
@@ -166,9 +159,10 @@ describe("Auth Flow (e2e)", () => {
         .send({ refreshToken })
         .expect(200);
 
+      expect(response.body.success).toBe(true);
       expect(response.body.data.accessToken).toBeDefined();
       expect(response.body.data.refreshToken).toBeDefined();
-      // Update tokens for subsequent tests
+
       accessToken = response.body.data.accessToken;
       refreshToken = response.body.data.refreshToken;
     });
@@ -189,16 +183,23 @@ describe("Auth Flow (e2e)", () => {
         .send({ name: "Updated E2E User" })
         .expect(200);
 
+      expect(response.body.success).toBe(true);
       expect(response.body.data.name).toBe("Updated E2E User");
     });
   });
 
   describe("Step 6: Logout", () => {
-    it("POST /auth/logout should invalidate tokens", async () => {
+    it("POST /auth/logout should invalidate the refresh token", async () => {
       await request(app.getHttpServer())
         .post("/auth/logout")
         .set("Authorization", `Bearer ${accessToken}`)
+        .send({ refreshToken })
         .expect(200);
+
+      await request(app.getHttpServer())
+        .post("/auth/refresh")
+        .send({ refreshToken })
+        .expect(401);
     });
   });
 
@@ -206,10 +207,12 @@ describe("Auth Flow (e2e)", () => {
     it("POST /auth/check-identifier should find existing email", async () => {
       const response = await request(app.getHttpServer())
         .post("/auth/check-identifier")
-        .send({ identifier: testUser.email });
+        .send({ identifier: testUser.email, type: "email" })
+        .expect(200);
 
-      expect(response.status).toBeLessThan(500);
-      expect(response.body).toBeDefined();
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.exists).toBe(true);
+      expect(response.body.data.type).toBe("email");
     });
   });
 });

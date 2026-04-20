@@ -8,11 +8,13 @@ import {
 } from "class-validator";
 
 export class CreateProposalDto {
+  @IsOptional()
   @IsString()
-  request_id: string;
+  request_id?: string;
 
+  @IsOptional()
   @IsString()
-  provider_id: string;
+  provider_id?: string;
 
   @IsNumber()
   @Min(1, { message: 'Proposal price must be at least 1' })

@@ -4,14 +4,6 @@ import { z } from "zod";
  * Create proposal validation schema
  */
 export const createProposalSchema = z.object({
-  request_id: z
-    .string()
-    .uuid("Invalid request ID")
-    .min(1, "Request ID is required"),
-  provider_id: z
-    .string()
-    .uuid("Invalid provider ID")
-    .min(1, "Provider ID is required"),
   price: z
     .number()
     .positive("Price must be greater than 0")

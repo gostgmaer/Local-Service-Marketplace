@@ -116,6 +116,7 @@ export class JobController {
       id,
       updateJobStatusDto,
       req.user.userId,
+      req.user.providerId,
       req.user.role,
       req.user.permissions,
     );
