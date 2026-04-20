@@ -59,8 +59,8 @@ export default function RequestDetailPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  useRealtimeDetail(["request:updated"], ["request", requestId], requestId);
-  useRealtimeDetail(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated"], ["proposals", requestId], requestId);
+  useRealtimeDetail(["request:updated", "request:deleted", "proposal:accepted"], ["request", requestId], requestId);
+  useRealtimeDetail(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated", "proposal:withdrawn", "proposal:deleted"], ["proposals", requestId], requestId);
 
   const { data: request, isLoading } = useQuery({
     queryKey: ["request", requestId],
@@ -271,7 +271,7 @@ export default function RequestDetailPage() {
                       )}
                     </div>
 
-                    {/* GST breakdown visible only to customer (owner) — no platform fee shown */}
+                    {/* GST breakdown visible only to customer (owner) — no platform fee shown, urgency baked into Service Amount */}
                     {isOwner && request.budget > 0 && (() => {
                       const budget = request.budget;
                       const urgency = request.urgency ?? "medium";
@@ -286,14 +286,8 @@ export default function RequestDetailPage() {
                           <p className="text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider text-[10px] mb-1">Estimated Price Breakdown</p>
                           <div className="flex justify-between">
                             <span className="text-gray-500">Service Amount</span>
-                            <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(budget)}</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(subtotal)}</span>
                           </div>
-                          {surcharge > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-amber-600">Urgency ({urgency} +{surchargePercent}%)</span>
-                              <span className="font-medium text-amber-600">+{formatCurrency(surcharge)}</span>
-                            </div>
-                          )}
                           <div className="flex justify-between">
                             <span className="text-gray-500">GST ({siteConfig.gstRate}% on service fee)</span>
                             <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(gst)}</span>

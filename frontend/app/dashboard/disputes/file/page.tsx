@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,11 +11,13 @@ import { z } from "zod";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { disputeService } from "@/services/dispute-service";
 import { jobService } from "@/services/job-service";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { uploadRequestImages } from "@/services/file-service";
+import { ArrowLeft, AlertTriangle, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -46,6 +48,11 @@ function FileDisputeContent() {
   const { user } = useAuth();
   const prefillJobId = searchParams.get("jobId") || "";
 
+  const [evidenceImages, setEvidenceImages] = useState<
+    { id: string; url: string }[]
+  >([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -66,8 +73,29 @@ function FileDisputeContent() {
     enabled: !!user && !prefillJobId,
   });
 
+  const handleImageUpload = async (files: File[]) => {
+    if (!files.length) return;
+    setUploadingImages(true);
+    try {
+      const uploaded = await uploadRequestImages(files);
+      setEvidenceImages((prev) => [...prev, ...uploaded]);
+    } catch {
+      toast.error("Failed to upload images. Please try again.");
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleImageRemove = (index: number) => {
+    setEvidenceImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const mutation = useMutation({
-    mutationFn: (data: FormData) => disputeService.createDispute(data),
+    mutationFn: (data: FormData) =>
+      disputeService.createDispute({
+        ...data,
+        evidence_images: evidenceImages.length ? evidenceImages : undefined,
+      }),
     onSuccess: async (_dispute, data) => {
       // Mark the job as disputed so its status reflects the open dispute
       try {
@@ -182,6 +210,30 @@ function FileDisputeContent() {
                 )}
               </div>
 
+              {/* Evidence Images */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <ImageIcon className="h-4 w-4" />
+                  Evidence Photos{" "}
+                  <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  Upload photos showing the issue â€” up to 10 images. These will
+                  be reviewed by our team.
+                </p>
+                <ImageUpload
+                  onUpload={handleImageUpload}
+                  maxFiles={10}
+                  currentImages={evidenceImages.map((img) => img.url)}
+                  onRemove={handleImageRemove}
+                />
+                {uploadingImages && (
+                  <p className="text-xs text-primary-600 mt-2 animate-pulse">
+                    Uploading imagesâ€¦
+                  </p>
+                )}
+              </div>
+
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
                 <p className="text-sm text-amber-800 dark:text-amber-300">
                   <strong>Note:</strong> Filing a dispute pauses any pending
@@ -195,7 +247,7 @@ function FileDisputeContent() {
                 <Button
                   type="submit"
                   variant="primary"
-                  isLoading={mutation.isPending}
+                  isLoading={mutation.isPending || uploadingImages}
                   className="flex-1"
                 >
                   Submit Dispute

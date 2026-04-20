@@ -299,14 +299,20 @@ export class MessagingGateway
         return null;
       }
 
-      // Verify HMAC-SHA256 signature
+      // Verify HMAC-SHA256 signature (timing-safe to prevent side-channel attacks)
       const signatureInput = `${headerB64}.${payloadB64}`;
       const expectedSig = crypto
         .createHmac("sha256", this.jwtSecret)
         .update(signatureInput)
         .digest("base64url");
 
-      if (expectedSig !== signatureB64) {
+      const sigBuf = Buffer.from(signatureB64, "base64url");
+      const expectedBuf = Buffer.from(expectedSig, "base64url");
+
+      if (
+        sigBuf.length !== expectedBuf.length ||
+        !crypto.timingSafeEqual(sigBuf, expectedBuf)
+      ) {
         this.logger.warn("JWT signature verification failed");
         return null;
       }

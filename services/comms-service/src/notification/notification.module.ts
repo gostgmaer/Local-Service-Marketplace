@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { BullModule } from "@nestjs/bullmq";
+import { ConfigModule } from "@nestjs/config";
 import { NotificationController } from "./notification.controller";
 import { NotificationPreferencesController } from "./controllers/notification-preferences.controller";
 import { DeviceController } from "./controllers/device.controller";
@@ -23,6 +24,7 @@ import { UpdatesModule } from "../updates/updates.module";
 
 @Module({
   imports: [
+    ConfigModule,
     BullModule.registerQueue(
       { name: "comms.email" },
       { name: "comms.sms" },

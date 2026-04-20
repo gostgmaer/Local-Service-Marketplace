@@ -107,6 +107,16 @@ export class PublicController {
       "realtime_enabled",
       // Timezone
       "default_timezone",
+      // Feature flags
+      "notifications_enabled",
+      "in_app_notifications_enabled",
+      "push_notifications_enabled",
+      "email_notifications_enabled",
+      "sms_notifications_enabled",
+      "messaging_enabled",
+      "whatsapp_enabled",
+      "notification_preferences_enabled",
+      "device_tracking_enabled",
     ];
 
     const results = await Promise.allSettled(
@@ -157,6 +167,16 @@ export class PublicController {
       realtimeEnabled: get(idx++, "true") === "true",
       // Timezone
       defaultTimezone: get(idx++, "Asia/Kolkata"),
+      // ── Feature flags (also returned here so one call covers all settings) ─
+      notificationsEnabled:           get(idx++, "false") === "true",
+      inAppNotificationsEnabled:      get(idx++, "false") === "true",
+      pushNotificationsEnabled:       get(idx++, "false") === "true",
+      emailNotificationsEnabled:      get(idx++, "true")  === "true",
+      smsNotificationsEnabled:        get(idx++, "false") === "true",
+      messagingEnabled:               get(idx++, "false") === "true",
+      whatsappEnabled:                get(idx++, "false") === "true",
+      notificationPreferencesEnabled: get(idx++, "false") === "true",
+      deviceTrackingEnabled:          get(idx++, "false") === "true",
     };
   }
 }

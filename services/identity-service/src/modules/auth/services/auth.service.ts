@@ -1570,28 +1570,16 @@ export class AuthService {
   }
 
   /**
-   * Check if OTP services (SMS/Email) are enabled and available
+   * Check if OTP services (SMS/Email) are enabled and available.
+   * All delivery goes through comms-service (notification service) — identity-service
+   * does not own SMS/email credentials directly.
    */
   isOtpServiceAvailable(type: "email" | "phone"): boolean {
     try {
       if (type === "phone") {
-        // Check if SMS service is configured
-        const smsEnabled =
-          this.configService.get<string>("SMS_SERVICE_ENABLED", "false") ===
-          "true";
-        const twilioSid = this.configService.get<string>("TWILIO_ACCOUNT_SID");
-        const twilioToken = this.configService.get<string>("TWILIO_AUTH_TOKEN");
-
-        return smsEnabled && !!twilioSid && !!twilioToken;
+        return this.notificationClient.isSmsEnabled();
       } else if (type === "email") {
-        // Check if Email service is configured
-        const emailEnabled =
-          this.configService.get<string>("EMAIL_SERVICE_ENABLED", "false") ===
-          "true";
-        const smtpHost = this.configService.get<string>("SMTP_HOST");
-        const smtpUser = this.configService.get<string>("SMTP_USER");
-
-        return emailEnabled && !!smtpHost && !!smtpUser;
+        return this.notificationClient.isEmailEnabled();
       }
 
       return false;

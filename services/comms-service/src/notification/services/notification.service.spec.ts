@@ -85,7 +85,7 @@ describe("NotificationService", () => {
   });
 
   describe("createNotification", () => {
-    it("should create notification and queue email", async () => {
+    it("should create notification and queue push delivery by default", async () => {
       mockNotifRepo.createNotification.mockResolvedValue(mockNotification);
       mockDeliveryRepo.createDelivery.mockResolvedValue({ id: "del-1" });
 
@@ -101,6 +101,28 @@ describe("NotificationService", () => {
         "request_created",
         "Your request was created",
       );
+      // push delivery only — email is opt-in via sendEmail option
+      expect(mockDeliveryRepo.createDelivery).toHaveBeenCalledTimes(1);
+      expect(mockPushQueue.add).toHaveBeenCalledWith(
+        "deliver-push",
+        expect.objectContaining({
+          userId: "user-uuid-1",
+          type: "request_created",
+        }),
+      );
+    });
+
+    it("should create email + push deliveries when sendEmail is true", async () => {
+      mockNotifRepo.createNotification.mockResolvedValue(mockNotification);
+      mockDeliveryRepo.createDelivery.mockResolvedValue({ id: "del-1" });
+
+      await service.createNotification(
+        "user-uuid-1",
+        "request_created",
+        "Your request was created",
+        { sendEmail: true },
+      );
+
       expect(mockDeliveryRepo.createDelivery).toHaveBeenCalledTimes(2); // email + push
       expect(mockEmailQueue.add).toHaveBeenCalledWith(
         "deliver-email",

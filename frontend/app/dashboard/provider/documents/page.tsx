@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -28,6 +29,9 @@ export default function ProviderDocumentsPage() {
   const { user, isAuthenticated } = useAuth();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
+
+  // Refresh when admin verifies/rejects provider documents or updates profile
+  useRealtimeList(["provider:updated"], ["my-provider-profile", user?.id]);
 
   const [gstin, setGstin] = useState("");
   const [pan, setPan] = useState("");

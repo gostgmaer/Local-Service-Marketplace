@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { requestService } from "@/services/request-service";
 import { cn } from "@/utils/helpers";
 import {
@@ -22,6 +23,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
+  ImageIcon,
 } from "lucide-react";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
 
@@ -100,6 +102,8 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const { config: siteConfig } = usePublicSettings();
 
   const { data: categoriesData } = useQuery({
@@ -134,6 +138,7 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
         budget: data.budget,
         urgency: data.urgency,
         preferred_date: data.preferred_date || undefined,
+        imageFiles: imageFiles.length ? imageFiles : undefined,
         location:
           data.address || data.city
             ? {
@@ -360,15 +365,9 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                 <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-3.5 space-y-1.5 text-xs">
                   <p className="text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider text-[10px] mb-2">Estimated Price Breakdown</p>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Base Budget</span>
-                    <span className="font-medium text-gray-900 dark:text-gray-100">₹{budgetNum.toLocaleString("en-IN")}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Service Amount</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">₹{subtotal.toLocaleString("en-IN")}</span>
                   </div>
-                  {urgencySurcharge > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-amber-600 dark:text-amber-400">Urgency Surcharge ({urgencySurchargePercent}%)</span>
-                      <span className="font-medium text-amber-600 dark:text-amber-400">+₹{urgencySurcharge.toLocaleString("en-IN")}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">GST ({siteConfig.gstRate}% on service fee)</span>
                     <span className="font-medium text-gray-700 dark:text-gray-300">₹{gstAmount.toLocaleString("en-IN")}</span>
@@ -427,6 +426,30 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                   {...register("preferred_date")}
                   min={new Date().toISOString().split("T")[0]}
                   className="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <ImageIcon className="h-4 w-4 text-gray-400" />
+                  Photos{" "}
+                  <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Add photos to help providers understand the job — up to 5 images.
+                </p>
+                <ImageUpload
+                  onUpload={(files) => {
+                    setImageFiles(files);
+                    const previews = files.map((f) => URL.createObjectURL(f));
+                    setImagePreviews(previews);
+                  }}
+                  maxFiles={5}
+                  currentImages={imagePreviews}
+                  onRemove={(idx) => {
+                    setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+                    setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+                  }}
                 />
               </div>
             </CardContent>
@@ -501,12 +524,7 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                 <ReviewRow
                   label="Budget"
                   value={`\u20b9${watchedValues.budget ?? 0}`}
-                />                {urgencySurcharge > 0 && (
-                  <ReviewRow
-                    label="Urgency Surcharge"
-                    value={`+₹${urgencySurcharge} (${urgencySurchargePercent}%)`}
-                  />
-                )}
+                />
                 {budgetNum > 0 && (
                   <>
                     <ReviewRow
@@ -543,6 +561,12 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                     ]
                       .filter(Boolean)
                       .join(", ")}
+                  />
+                )}
+                {imageFiles.length > 0 && (
+                  <ReviewRow
+                    label="Photos"
+                    value={`${imageFiles.length} photo${imageFiles.length !== 1 ? "s" : ""} attached`}
                   />
                 )}
               </div>

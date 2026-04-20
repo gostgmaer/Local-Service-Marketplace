@@ -12,8 +12,7 @@ export class BroadcastService {
     private readonly logger: LoggerService,
     private readonly settingsCache: SettingsCacheService,
   ) {
-    this.commsUrl =
-      process.env.COMMS_SERVICE_URL || "http://localhost:3007";
+    this.commsUrl = process.env.COMMS_SERVICE_URL || "http://localhost:3007";
     this.internalSecret = process.env.GATEWAY_INTERNAL_SECRET || "";
   }
 
@@ -44,12 +43,21 @@ export class BroadcastService {
           "x-internal-secret": this.internalSecret,
         },
         body,
-      }).catch((err) => {
-        this.logger.warn(
-          `Broadcast failed for ${entityType}:${action}: ${err.message}`,
-          "BroadcastService",
-        );
-      });
+      })
+        .then((res) => {
+          if (!res.ok) {
+            this.logger.warn(
+              `Broadcast HTTP error for ${entityType}:${action} — status ${res.status}`,
+              "BroadcastService",
+            );
+          }
+        })
+        .catch((err) => {
+          this.logger.warn(
+            `Broadcast network error for ${entityType}:${action}: ${err.message}`,
+            "BroadcastService",
+          );
+        });
     } catch (error: any) {
       this.logger.warn(
         `Broadcast error for ${entityType}:${action}: ${error.message}`,

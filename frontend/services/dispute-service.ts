@@ -7,6 +7,7 @@ export interface Dispute {
   opened_by: string;
   reason: string;
   description?: string;
+  evidence_images?: { id: string; url: string }[];
   status: "open" | "investigating" | "resolved" | "closed";
   resolution?: string;
   resolved_by?: string;
@@ -20,6 +21,7 @@ export interface CreateDisputeData {
   job_id: string;
   reason: string;
   description?: string;
+  evidence_images?: { id: string; url: string }[];
 }
 
 class DisputeService {
@@ -28,6 +30,7 @@ class DisputeService {
       job_id: data.job_id,
       reason: data.reason,
       description: data.description,
+      evidence_images: data.evidence_images,
     });
     return response.data;
   }

@@ -52,7 +52,7 @@ export default function BrowseRequestsPage() {
     setSortBy("newest");
   };
 
-  useRealtimeList(["request:created", "request:updated"], ["browse-requests"]);
+  useRealtimeList(["request:created", "request:updated", "request:deleted"], ["browse-requests"]);
 
   const { data: provider } = useQuery({
     queryKey: ["my-provider-profile", user?.id],

@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe, RequestMethod } from "@nestjs/common";
+import { ValidationPipe } from "@nestjs/common";
 import { AppModule } from "./app.module";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
@@ -90,19 +90,21 @@ async function bootstrap() {
   // WebSocket proxy — forward /updates namespace to comms-service
   // Must be registered BEFORE NestJS starts listening so the Express app
   // handles the upgrade before the catch-all controller.
-  const commsUrl =
-    process.env.COMMS_SERVICE_URL || "http://localhost:3007";
+  const commsUrl = process.env.COMMS_SERVICE_URL || "http://localhost:3007";
   const wsProxy = createProxyMiddleware({
     target: commsUrl,
     ws: true,
     changeOrigin: true,
-    // socket.io uses /socket.io/ path under /updates and /messaging namespaces
-    pathFilter: ["/updates", "/messaging", "/socket.io"],
+    // pathFilter limits which requests this proxy handles — avoids intercepting
+    // NestJS API routes. Mounted at root so the full path (/socket.io/...) is
+    // preserved when forwarded to comms-service (Express strips the prefix when
+    // using app.use("/socket.io", proxy), breaking the socket.io handshake).
+    pathFilter: ["/socket.io", "/updates", "/messaging"],
   });
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.use("/updates", wsProxy);
-  expressApp.use("/messaging", wsProxy);
-  expressApp.use("/socket.io", wsProxy);
+  // Mount at root — pathFilter above restricts which paths are proxied.
+  // DO NOT use expressApp.use("/socket.io", wsProxy) — that strips the path prefix.
+  expressApp.use(wsProxy);
 
   app.enableShutdownHooks();
 

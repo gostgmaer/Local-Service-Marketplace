@@ -14,9 +14,14 @@ export class UpdatesService {
       action: dto.action,
       userId: dto.userId,
       relatedIds: dto.relatedIds,
+      data: dto.data,
       timestamp: new Date().toISOString(),
     };
 
     this.gateway.broadcast(event, payload, dto.rooms);
+  }
+
+  isUserOnline(userId: string): boolean {
+    return this.gateway.isUserOnline(userId);
   }
 }

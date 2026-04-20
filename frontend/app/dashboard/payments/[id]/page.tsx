@@ -75,6 +75,9 @@ function PaymentReceiptContent() {
     enabled: !!paymentId,
   });
 
+  // Also refresh the linked job card when job status changes (e.g. completed, disputed)
+  useRealtimeDetail(["job:updated", "job:completed", "job:deleted"], ["job", payment?.job_id], payment?.job_id);
+
   const { data: job } = useQuery({
     queryKey: ["job", payment?.job_id],
     queryFn: () => jobService.getJobById(payment!.job_id),
@@ -295,20 +298,24 @@ function PaymentReceiptContent() {
                     {formatCurrency(providerAmount)}
                   </span>
                 </div>
-                <div className="flex justify-between px-4 py-3">
-                  <span className="text-gray-600 dark:text-gray-400">Platform Fee</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {formatCurrency(platformFee)}
-                  </span>
-                </div>
-                <div className="flex justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/40">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    GST <span className="text-xs">({gstRate}% on platform fee)</span>
-                  </span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {formatCurrency(gst)}
-                  </span>
-                </div>
+                {/* Provider sees Platform Fee (not GST); Customer sees GST (not Platform Fee) */}
+                {user?.role === "provider" ? (
+                  <div className="flex justify-between px-4 py-3">
+                    <span className="text-gray-600 dark:text-gray-400">Platform Fee</span>
+                    <span className="font-medium text-red-500">
+                      -{formatCurrency(platformFee)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between px-4 py-3">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      GST <span className="text-xs">({gstRate}% on service fee)</span>
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {formatCurrency(gst)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between px-4 py-3 bg-primary-50 dark:bg-primary-900/20">
                   <span className="font-bold text-gray-900 dark:text-white">Total Charged</span>
                   <span className="font-extrabold text-primary-700 dark:text-primary-300">

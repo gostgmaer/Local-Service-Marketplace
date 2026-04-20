@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeList } from "@/hooks/useRealtimeList";
-import { isNotificationsEnabled } from "@/config/features";
+import { useIsNotificationsEnabled } from "@/config/features";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -25,6 +25,7 @@ export default function NotificationsPage() {
   const queryClient = useQueryClient();
   const { setUnreadCount } = useNotificationStore();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const notificationsEnabled = useIsNotificationsEnabled();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
 
@@ -75,7 +76,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(ROUTES.LOGIN);
-    } else if (!authLoading && isAuthenticated && !isNotificationsEnabled()) {
+    } else if (!authLoading && isAuthenticated && !notificationsEnabled) {
       router.push(ROUTES.DASHBOARD);
     }
   }, [isAuthenticated, authLoading, router]);
@@ -90,7 +91,7 @@ export default function NotificationsPage() {
   } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => notificationService.getNotifications({ limit: 50 }),
-    enabled: isNotificationsEnabled() && isAuthenticated,
+    enabled: notificationsEnabled && isAuthenticated,
   });
 
   const markAsReadMutation = useMutation({

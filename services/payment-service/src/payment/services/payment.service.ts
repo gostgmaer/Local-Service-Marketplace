@@ -169,6 +169,8 @@ export class PaymentService {
       }
       // Auto-generate and upload invoice (non-blocking)
       this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+      await this.cacheInvalidation.invalidateEntity("payments");
+      this.broadcastService.emit("payment", payment.id, "completed", [`user:${userId}`, `provider:${providerId}`, "admin"], { paymentId: payment.id, jobId }, userId);
       return { ...payment, status: "completed", transaction_id: cashTxnId };
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -275,6 +277,8 @@ export class PaymentService {
         data: {
           paymentId: payment.id,
           jobId: payment.job_id,
+          userId,
+          providerId,
           amount: payment.amount,
           currency: payment.currency,
           status: "completed",
@@ -381,7 +385,7 @@ export class PaymentService {
     );
 
     await this.cacheInvalidation.invalidateEntity("payments");
-    this.broadcastService.emit("payment", payment.id, status === "failed" ? "failed" : status === "refunded" ? "refunded" : "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id }, payment.user_id);
+    this.broadcastService.emit("payment", payment.id, status === "failed" ? "failed" : status === "refunded" ? "refunded" : "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id, jobId: payment.job_id }, payment.user_id);
 
     return result;
   }
@@ -434,6 +438,8 @@ export class PaymentService {
         data: {
           paymentId: payment.id,
           jobId: payment.job_id,
+          userId,
+          providerId: payment.provider_id,
           amount: payment.amount,
           currency: payment.currency,
           status: "completed",

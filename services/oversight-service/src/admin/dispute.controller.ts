@@ -36,7 +36,13 @@ export class DisputeController {
     @Body() dto: CreateDisputeDto,
     @Headers("x-user-id") userId: string,
   ) {
-    return this.disputeService.createDispute(dto.job_id, userId, dto.reason);
+    return this.disputeService.createDispute(
+      dto.job_id,
+      userId,
+      dto.reason,
+      dto.description,
+      dto.evidence_images,
+    );
   }
 
   @Get("my")

@@ -363,20 +363,8 @@ function JobCheckout({ jobId }: { jobId: string }) {
                 <div className="mb-6 space-y-2 text-sm text-gray-700 dark:text-gray-300">
                   <div className="flex items-center justify-between">
                     <span>Service Amount</span>
-                    <span>{formatCurrency(amount)}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  {appliedCoupon && (
-                    <div className="flex items-center justify-between text-green-600 dark:text-green-400">
-                      <span>Coupon discount ({appliedCoupon.discountPercent}%)</span>
-                      <span>–{formatCurrency(amount * appliedCoupon.discountPercent / 100)}</span>
-                    </div>
-                  )}
-                  {urgencySurcharge > 0 && (
-                    <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
-                      <span>Urgency Surcharge ({pb?.urgency_level} +{pb?.urgency_surcharge_percent}%)</span>
-                      <span>+{formatCurrency(urgencySurcharge)}</span>
-                    </div>
-                  )}
                   <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
                     <span>GST ({siteConfig.gstRate}% on service fee)</span>
                     <span>{formatCurrency(gstAmt)}</span>

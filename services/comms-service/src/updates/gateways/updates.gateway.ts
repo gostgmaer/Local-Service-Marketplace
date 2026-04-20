@@ -6,6 +6,7 @@ import {
   OnGatewayInit,
   SubscribeMessage,
   ConnectedSocket,
+  MessageBody,
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
 import { Logger } from "@nestjs/common";
@@ -87,6 +88,11 @@ export class UpdatesGateway
       if (payload.role === "admin") {
         client.join("admin");
       }
+      if (payload.role === "provider") {
+        // All providers join a shared room so marketplace broadcasts (e.g. new requests)
+        // can be delivered to every connected provider at once.
+        client.join("providers");
+      }
       if (payload.providerId) {
         client.join(`provider:${payload.providerId}`);
       }
@@ -110,7 +116,7 @@ export class UpdatesGateway
   }
 
   @SubscribeMessage("join")
-  handleJoinRoom(@ConnectedSocket() client: AuthenticatedSocket, room: string) {
+  handleJoinRoom(@ConnectedSocket() client: AuthenticatedSocket, @MessageBody() room: string) {
     if (room && typeof room === "string") {
       client.join(room);
     }
@@ -124,6 +130,11 @@ export class UpdatesGateway
     } else {
       this.server.emit(event, payload);
     }
+  }
+
+  isUserOnline(userId: string): boolean {
+    const sockets = this.userSockets.get(userId);
+    return sockets !== undefined && sockets.size > 0;
   }
 
   private verifyJwt(token: string): any {

@@ -51,7 +51,9 @@ export default function EarningsPage() {
   });
   const router = useRouter();
 
-  useRealtimeList(["payment:completed"], ["provider-earnings"]);
+  useRealtimeList(["payment:completed", "payment:updated", "payment:failed", "payment:refunded"], ["provider-earnings"]);
+  useRealtimeList(["payment:completed", "payment:updated", "payment:failed", "payment:refunded"], ["provider-transactions"]);
+  useRealtimeList(["payment:completed", "payment:refunded"], ["provider-payouts"]);
 
   const {
     data: provider,

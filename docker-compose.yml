@@ -396,14 +396,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - EMAIL_SERVICE_URL=${EMAIL_SERVICE_URL:-https://email-microservice-seven.vercel.app}
-      - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
       - SMS_SERVICE_URL=${SMS_SERVICE_URL:-https://sms-delivery-service.vercel.app}
-      - SMS_ENABLED=${SMS_ENABLED:-false}
       - SMS_API_KEY=${SMS_API_KEY:-change-me-to-a-strong-random-secret}
-      - IN_APP_NOTIFICATIONS_ENABLED=${IN_APP_NOTIFICATIONS_ENABLED:-false}
-      - PUSH_NOTIFICATIONS_ENABLED=${PUSH_NOTIFICATIONS_ENABLED:-false}
-      - NOTIFICATION_PREFERENCES_ENABLED=${NOTIFICATION_PREFERENCES_ENABLED:-false}
-      - DEVICE_TRACKING_ENABLED=${DEVICE_TRACKING_ENABLED:-false}
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
@@ -413,6 +407,8 @@ services:
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL:-http://localhost:4100}
       - DEFAULT_TENANT_ID=${FILE_DEFAULT_TENANT_ID:-default}
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - JWT_SECRET=${JWT_SECRET}
     networks:
       - marketplace-network
     healthcheck:
@@ -589,6 +585,7 @@ services:
       - PAYMENT_SERVICE_URL=http://payment-service:3006
       - MESSAGING_SERVICE_URL=http://comms-service:3007
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
+      - COMMS_SERVICE_URL=http://comms-service:3007
       - REVIEW_SERVICE_URL=http://marketplace-service:3003
       - ADMIN_SERVICE_URL=http://oversight-service:3010
       - ANALYTICS_SERVICE_URL=http://oversight-service:3010

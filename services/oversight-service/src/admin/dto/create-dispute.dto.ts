@@ -1,4 +1,20 @@
-import { IsUUID, IsString, MinLength } from "class-validator";
+import {
+  IsUUID,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
+
+class EvidenceImageDto {
+  @IsString()
+  id: string;
+
+  @IsString()
+  url: string;
+}
 
 export class CreateDisputeDto {
   @IsUUID()
@@ -7,4 +23,14 @@ export class CreateDisputeDto {
   @IsString()
   @MinLength(10)
   reason: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EvidenceImageDto)
+  evidence_images?: EvidenceImageDto[];
 }

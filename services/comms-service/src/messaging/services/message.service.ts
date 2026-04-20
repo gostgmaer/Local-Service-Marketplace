@@ -13,6 +13,7 @@ import {
 import { EmailClient } from "../../notification/clients/email.client";
 import { UserClient } from "../../common/user/user.client";
 import { NotificationPreferencesService } from "../../notification/services/notification-preferences.service";
+import { NotificationService } from "../../notification/services/notification.service";
 import { UpdatesService } from "../../updates/updates.service";
 
 @Injectable()
@@ -24,6 +25,7 @@ export class MessageService {
     private readonly emailClient: EmailClient,
     private readonly userClient: UserClient,
     private readonly notificationPreferencesService: NotificationPreferencesService,
+    private readonly notificationService: NotificationService,
     private readonly updatesService: UpdatesService,
   ) {}
 
@@ -59,7 +61,7 @@ export class MessageService {
       "MessageService",
     );
 
-    // Notify the other participant via email only if they have message_alerts enabled
+    // Notify the other participant: always in-app, email only if offline and they have message_alerts enabled
     this.messageRepository
       .getJobRecipientId(newMessage.job_id, senderId)
       .then(async (recipientId) => {
@@ -75,31 +77,32 @@ export class MessageService {
           rooms: [`user:${senderId}`, `user:${recipientId}`],
         });
 
-        // Check notification preferences before sending the alert
+        // Check notification preferences before sending any alert
         const alertsEnabled =
           await this.notificationPreferencesService.checkNotificationEnabled(
             recipientId,
             "message_alerts",
           );
         if (!alertsEnabled) return;
-        const recipientEmail = await this.userClient.getUserEmail(recipientId);
-        if (!recipientEmail) return;
-        return this.emailClient.sendEmail({
-          to: recipientEmail,
-          template: "MESSAGE_RECEIVED",
-          variables: {
-            recipientName: recipientEmail.split("@")[0],
-            senderName: "A job participant",
-            messagePreview:
-              message.length > 100 ? `${message.substring(0, 97)}...` : message,
-            receivedAt: new Date().toISOString(),
-            replyUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/jobs/${newMessage.job_id}/messages`,
-          },
-        });
+
+        // Create in-app notification — this also fires the `notification:created`
+        // WebSocket event which increments the badge and shows a toast on the frontend.
+        // Email is only sent when the recipient has no active WebSocket connection.
+        const isOnline = this.updatesService.isUserOnline(recipientId);
+        const preview =
+          sanitizedMessage.length > 80
+            ? `${sanitizedMessage.substring(0, 77)}...`
+            : sanitizedMessage;
+        await this.notificationService.createNotification(
+          recipientId,
+          "message",
+          `New message: ${preview}`,
+          { sendEmail: !isOnline },
+        );
       })
       .catch((err: any) => {
         this.logger.warn(
-          `Failed to send new message email notification: ${err.message}`,
+          `Failed to send new message notification: ${err.message}`,
           "MessageService",
         );
       });

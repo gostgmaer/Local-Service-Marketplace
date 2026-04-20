@@ -11,7 +11,7 @@ const {
 	indianFirstNames, indianLastNames, indianServiceBusinessNames,
 	providerBios, requestDescriptionsByCategory, proposalMessages,
 	reviewCommentsByRating, providerResponses, realCouponCodes,
-	disputeReasons, disputeResolutions, conversationMessages,
+	disputeReasons, disputeDescriptions, disputeResolutions, conversationMessages,
 	contactSubjects, contactMessageBodies,
 } = require('./seed-data');
 
@@ -493,7 +493,7 @@ class DatabaseSeeder {
 			'providers.list', 'providers.read', 'categories.read',
 			'requests.create', 'requests.read', 'requests.update', 'requests.delete',
 			'proposals.read', 'proposals.accept', 'proposals.reject',
-			'jobs.create', 'jobs.read',
+			'jobs.create', 'jobs.read', 'jobs.update_status',
 			'reviews.create', 'reviews.read', 'reviews.update',
 			'favorites.manage',
 			'payments.create', 'payments.read',
@@ -1689,14 +1689,16 @@ class DatabaseSeeder {
 			const status = randomPick(["open", "investigating", "resolved", "closed"]);
 			const isResolved = status === "resolved" || status === "closed";
 			const success = await safeInsert(
-				`INSERT INTO disputes (id, display_id, job_id, opened_by, reason, status, resolution, resolved_by, resolved_at, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+				`INSERT INTO disputes (id, display_id, job_id, opened_by, reason, description, evidence_images, status, resolution, resolved_by, resolved_at, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 				[
 					uuid(),
 					displayId('DSP'),
 					job.id,
 					job.customer_id,
 					randomPick(disputeReasons),
+					randomPick(disputeDescriptions),
+					JSON.stringify([]),
 					status,
 					isResolved ? randomPick(disputeResolutions) : null,
 					isResolved && adminId ? adminId : null,
@@ -1970,6 +1972,16 @@ class DatabaseSeeder {
 			{ key: "contact_address",                  value: "123 Marketplace Tower, MG Road, Bengaluru, Karnataka 560001", type: "textarea", description: "Public office address shown on the contact page" },
 			{ key: "terms_version",                    value: "1.0",   type: "text",     description: "Current version of the Terms of Service document" },
 			{ key: "privacy_version",                  value: "1.0",   type: "text",     description: "Current version of the Privacy Policy document" },
+			// ── Feature Flags (migration 044) ─────────────────────────────────
+			{ key: "notifications_enabled",            value: "false", type: "boolean",  description: "Master switch: enable the notification system (in-app bell, email, SMS, push)" },
+			{ key: "in_app_notifications_enabled",     value: "false", type: "boolean",  description: "Enable real-time in-app notification bell and feed for users" },
+			{ key: "push_notifications_enabled",       value: "false", type: "boolean",  description: "Enable browser/FCM push notification delivery (requires Firebase credentials)" },
+			{ key: "email_notifications_enabled",      value: "true",  type: "boolean",  description: "Enable email notification delivery via the email-service" },
+			{ key: "sms_notifications_enabled",        value: "false", type: "boolean",  description: "Enable SMS notification delivery via the sms-service" },
+			{ key: "messaging_enabled",                value: "false", type: "boolean",  description: "Enable the messaging/chat feature (shows Messages nav link and /dashboard/messages route)" },
+			{ key: "whatsapp_enabled",                 value: "false", type: "boolean",  description: "Enable WhatsApp notification delivery (requires WHATSAPP_PROVIDER + credentials in comms-service)" },
+			{ key: "notification_preferences_enabled", value: "false", type: "boolean",  description: "Allow users to manage their own notification channel preferences" },
+			{ key: "device_tracking_enabled",          value: "false", type: "boolean",  description: "Enable device registration for push notifications" },
 		];
 
 		let count = 0;

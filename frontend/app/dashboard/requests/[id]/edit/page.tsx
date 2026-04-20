@@ -15,6 +15,7 @@ import { Select } from "@/components/ui/Select";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { requestService, UpdateRequestData } from "@/services/request-service";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { ArrowLeft, Lock, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -55,6 +56,10 @@ export default function EditRequestPage() {
     value: cat.id,
     label: cat.name,
   }));
+
+  // If the request is accepted or cancelled while this edit page is open, the lock
+  // banner appears automatically — no page refresh needed.
+  useRealtimeDetail(["request:updated", "request:deleted", "proposal:accepted"], ["request", requestId], requestId);
 
   const isOwner = !!user?.id && user.id === request?.user_id;
   const isEditable = isOwner && request?.status === "open";

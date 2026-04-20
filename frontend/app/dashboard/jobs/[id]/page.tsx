@@ -69,8 +69,8 @@ export default function JobDetailPage() {
   const { config: siteConfig } = usePublicSettings();
   const jobId = params.id as string;
 
-  useRealtimeDetail(["job:created", "job:updated", "job:completed", "job:deleted"], ["job", jobId], jobId);
-  useRealtimeDetail(["payment:completed", "payment:created"], ["job-payments", jobId], jobId);
+  useRealtimeDetail(["job:created", "job:updated", "job:completed", "job:deleted", "dispute:created"], ["job", jobId], jobId);
+  useRealtimeDetail(["payment:completed", "payment:created", "payment:updated", "payment:failed", "payment:refunded"], ["job-payments", jobId], jobId);
   useRealtimeDetail(["review:created"], ["job-review", jobId], jobId);
 
   const { data: job, isLoading, error } = useQuery({
@@ -290,18 +290,10 @@ export default function JobDetailPage() {
                     <InfoRow label="Agreed / Final Amount" value={<span className="text-lg font-bold text-primary-600">{formatCurrency(agreedAmount)}</span>} />
                   </div>
 
-                  {/* --- Customer sees GST + total (no platform fee); Provider sees earnings --- */}
+                  {/* --- Customer sees Service Amount + GST + total (urgency baked into Service Amount); Provider sees earnings --- */}
                   {pb && isCustomer && (
                     <div className="pt-2 space-y-2 text-xs">
-                      {pb.urgency_surcharge > 0 && (
-                        <InfoRow
-                          label={`Urgency Surcharge (${pb.urgency_level} +${pb.urgency_surcharge_percent}%)`}
-                          value={<span className="text-amber-600">+{formatCurrency(pb.urgency_surcharge)}</span>}
-                        />
-                      )}
-                      {pb.urgency_surcharge > 0 && (
-                        <InfoRow label="Subtotal" value={formatCurrency(pb.subtotal)} />
-                      )}
+                      <InfoRow label="Service Amount" value={formatCurrency(pb.subtotal)} />
                       <InfoRow label={`GST (${siteConfig.gstRate}% on service fee)`} value={formatCurrency(pb.gst_amount)} />
                       <div className="pt-2 border-t border-dashed border-gray-200 dark:border-gray-700">
                         <InfoRow label="Total Payable (incl. GST)" value={<span className="text-base font-bold text-green-600 dark:text-green-400">{formatCurrency(pb.total_payable)}</span>} />
@@ -538,14 +530,8 @@ export default function JobDetailPage() {
           <div className="rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-3 space-y-1.5 text-xs mb-4">
             <div className="flex justify-between">
               <span className="text-gray-500">Service Amount</span>
-              <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(pb.base_amount)}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(pb.subtotal)}</span>
             </div>
-            {pb.urgency_surcharge > 0 && (
-              <div className="flex justify-between">
-                <span className="text-amber-600">Urgency ({pb.urgency_level} +{pb.urgency_surcharge_percent}%)</span>
-                <span className="font-medium text-amber-600">+{formatCurrency(pb.urgency_surcharge)}</span>
-              </div>
-            )}
             <div className="flex justify-between">
               <span className="text-gray-500">GST ({siteConfig.gstRate}% on service fee)</span>
               <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(pb.gst_amount)}</span>

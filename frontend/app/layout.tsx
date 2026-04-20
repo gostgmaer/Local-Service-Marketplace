@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
-import { API_URL } from "@/config/constants";
 
 import { Providers } from "./providers";
 
@@ -53,6 +52,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
   return (
     <html lang="en" className={`${inter.variable} ${jakartaSans.variable}`}>
       <head>
