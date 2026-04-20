@@ -35,7 +35,7 @@ import {
  */
 @Controller("dlq")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@RequirePermissions("admin.access")
+@RequirePermissions("infrastructure.jobs")
 export class DeadLetterQueueController {
   constructor(
     private readonly dlqService: DeadLetterQueueService,

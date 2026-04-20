@@ -96,13 +96,14 @@ export class SystemSettingService {
       value,
     );
 
-    // Create audit log
+    // Create audit log (entity_id is UUID — store setting key in metadata)
     await this.auditLogRepository.createAuditLog(
       adminId,
       "update_system_setting",
       "system_setting",
-      key,
+      adminId,
       {
+        key,
         oldValue: existingSetting.value,
         newValue: value,
       },
@@ -155,8 +156,9 @@ export class SystemSettingService {
       adminId,
       "create_system_setting",
       "system_setting",
-      dto.key,
+      adminId,
       {
+        key: dto.key,
         value: dto.value,
         description: dto.description,
       },

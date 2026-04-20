@@ -45,6 +45,20 @@ export interface Job {
   proposal_estimated_hours?: number | null;
   proposal_start_date?: string | null;
   proposal_completion_date?: string | null;
+  // Computed pricing breakdown from backend
+  price_breakdown?: {
+    base_amount: number;
+    urgency_level: string;
+    urgency_surcharge_percent: number;
+    urgency_surcharge: number;
+    subtotal: number;
+    platform_fee_percent: number;
+    platform_fee: number;
+    provider_amount: number;
+    gst_rate: number;
+    gst_amount: number;
+    total_payable: number;
+  } | null;
   // Legacy nested shapes (list endpoint may still return these)
   request?: { id?: string; description?: string };
   proposal?: { id?: string; message?: string };

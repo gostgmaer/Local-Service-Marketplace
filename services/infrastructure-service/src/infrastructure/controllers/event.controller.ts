@@ -25,7 +25,7 @@ import { CreateEventDto } from "../dto/create-event.dto";
 import { EventQueryDto } from "../dto/event-query.dto";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@RequirePermissions("admin.access")
+@RequirePermissions("infrastructure.events")
 @Controller("events")
 export class EventController {
   constructor(

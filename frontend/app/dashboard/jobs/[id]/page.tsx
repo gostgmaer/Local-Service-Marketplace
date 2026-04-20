@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -65,6 +66,7 @@ export default function JobDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { config: siteConfig } = usePublicSettings();
   const jobId = params.id as string;
 
   useRealtimeDetail(["job:created", "job:updated", "job:completed", "job:deleted"], ["job", jobId], jobId);
@@ -146,9 +148,10 @@ export default function JobDetailPage() {
   const requestBudget = job.request_budget ?? 0;
   const proposalPrice = job.proposal_price ?? job.actual_amount ?? 0;
   const agreedAmount = job.actual_amount ?? proposalPrice;
+  const pb = job.price_breakdown;
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={["jobs.read"]}>
       <Layout>
         <div className="container-custom py-8 mx-auto">
           <Link href={ROUTES.DASHBOARD_JOBS} className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6 text-sm">
@@ -195,7 +198,7 @@ export default function JobDetailPage() {
                   }}
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
-                  <Banknote className="h-4 w-4 mr-2" />Confirm Cash Payment
+                  <Banknote className="h-4 w-4 mr-2" />Pay {pb ? formatCurrency(pb.total_payable) : "Cash"}
                 </Button>
               )}
               {isCustomer && job.status === "completed" && !existingReview && (
@@ -286,6 +289,33 @@ export default function JobDetailPage() {
                   <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
                     <InfoRow label="Agreed / Final Amount" value={<span className="text-lg font-bold text-primary-600">{formatCurrency(agreedAmount)}</span>} />
                   </div>
+
+                  {/* --- Customer sees GST + total (no platform fee); Provider sees earnings --- */}
+                  {pb && isCustomer && (
+                    <div className="pt-2 space-y-2 text-xs">
+                      {pb.urgency_surcharge > 0 && (
+                        <InfoRow
+                          label={`Urgency Surcharge (${pb.urgency_level} +${pb.urgency_surcharge_percent}%)`}
+                          value={<span className="text-amber-600">+{formatCurrency(pb.urgency_surcharge)}</span>}
+                        />
+                      )}
+                      {pb.urgency_surcharge > 0 && (
+                        <InfoRow label="Subtotal" value={formatCurrency(pb.subtotal)} />
+                      )}
+                      <InfoRow label={`GST (${siteConfig.gstRate}% on service fee)`} value={formatCurrency(pb.gst_amount)} />
+                      <div className="pt-2 border-t border-dashed border-gray-200 dark:border-gray-700">
+                        <InfoRow label="Total Payable (incl. GST)" value={<span className="text-base font-bold text-green-600 dark:text-green-400">{formatCurrency(pb.total_payable)}</span>} />
+                      </div>
+                    </div>
+                  )}
+                  {pb && isProvider && (
+                    <div className="pt-2 space-y-2 text-xs">
+                      <InfoRow label={`Platform Fee (${pb.platform_fee_percent}%)`} value={<span className="text-red-500">-{formatCurrency(pb.platform_fee)}</span>} />
+                      <div className="pt-2 border-t border-dashed border-gray-200 dark:border-gray-700">
+                        <InfoRow label="You will receive" value={<span className="text-base font-bold text-green-600 dark:text-green-400">{formatCurrency(pb.provider_amount)}</span>} />
+                      </div>
+                    </div>
+                  )}
                   <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
                     <InfoRow
                       label="Payment Status"
@@ -503,30 +533,40 @@ export default function JobDetailPage() {
       </Layout>
 
       <Modal isOpen={showCashPaymentDialog} onClose={() => { setShowCashPaymentDialog(false); setCashPaymentAmount(""); }} title="Confirm Cash Payment" size="sm">
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Enter the amount the customer paid in cash.</p>
-        {agreedAmount > 0 && (
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Confirm the cash payment for this job.</p>
+        {pb && (
+          <div className="rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-3 space-y-1.5 text-xs mb-4">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Service Amount</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(pb.base_amount)}</span>
+            </div>
+            {pb.urgency_surcharge > 0 && (
+              <div className="flex justify-between">
+                <span className="text-amber-600">Urgency ({pb.urgency_level} +{pb.urgency_surcharge_percent}%)</span>
+                <span className="font-medium text-amber-600">+{formatCurrency(pb.urgency_surcharge)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-500">GST ({siteConfig.gstRate}% on service fee)</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(pb.gst_amount)}</span>
+            </div>
+            <div className="flex justify-between pt-1.5 border-t border-dashed border-gray-200 dark:border-gray-700">
+              <span className="font-semibold text-gray-900 dark:text-gray-100">Total Payable</span>
+              <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(pb.total_payable)}</span>
+            </div>
+          </div>
+        )}
+        {!pb && agreedAmount > 0 && (
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Agreed amount: <span className="font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(agreedAmount)}</span></p>
         )}
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            className="w-full pl-7 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Enter amount"
-            value={cashPaymentAmount}
-            onChange={(e) => setCashPaymentAmount(e.target.value)}
-          />
-        </div>
         <div className="flex justify-end gap-3 mt-4">
           <Button variant="outline" size="sm" onClick={() => { setShowCashPaymentDialog(false); setCashPaymentAmount(""); }}>Cancel</Button>
           <Button
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
             isLoading={cashPaymentMutation.isPending}
-            disabled={!cashPaymentAmount || Number(cashPaymentAmount) <= 0}
-            onClick={() => cashPaymentMutation.mutate(Number(cashPaymentAmount))}
+            disabled={agreedAmount <= 0}
+            onClick={() => cashPaymentMutation.mutate(agreedAmount)}
           >
             <Banknote className="h-4 w-4 mr-2" />Confirm Payment
           </Button>

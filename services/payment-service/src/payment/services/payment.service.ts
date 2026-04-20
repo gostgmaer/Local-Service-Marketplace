@@ -125,11 +125,12 @@ export class PaymentService {
 
     // ── Cash payment: skip gateway entirely ──────────────────────────────────
     const isCash = paymentMethod === "cash";
+    const jobUrgency = job?.request_urgency ?? null;
     if (isCash) {
       // Generate a unique, traceable transaction ID for cash receipts
       const cashTxnId = `CASH-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
       // Calculate GST-inclusive total so the stored amount matches what was agreed
-      const fees = await this.paymentRepository.calculateFees(finalAmount);
+      const fees = await this.paymentRepository.calculateFees(finalAmount, jobUrgency);
       const payment = await this.paymentRepository.createPayment(
         jobId,
         userId,
@@ -139,6 +140,7 @@ export class PaymentService {
         "cash",
         cashTxnId,
         "cash",
+        jobUrgency,
       );
       await this.paymentRepository.updatePaymentStatus(
         payment.id,
@@ -173,7 +175,7 @@ export class PaymentService {
 
     // Calculate GST-inclusive total BEFORE calling the gateway so the customer
     // is charged the correct amount (base service price + GST on platform fee).
-    const fees = await this.paymentRepository.calculateFees(finalAmount);
+    const fees = await this.paymentRepository.calculateFees(finalAmount, jobUrgency);
 
     // Charge via payment gateway — per-request override via X-Payment-Gateway header
     const chargeParams = {
@@ -200,6 +202,7 @@ export class PaymentService {
       "card",
       chargeResult.transactionId,
       activeGatewayName,
+      jobUrgency,
     );
 
     // Mark as completed immediately for succeeded gateway responses.

@@ -33,10 +33,15 @@ import { UpdateMessageDto } from "./dto/update-message.dto";
 import { CreateAttachmentDto } from "./dto/create-attachment.dto";
 import { MessageQueryDto } from "./dto/message-query.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
+import {
+  PermissionsGuard as RolesGuard,
+  RequirePermissions,
+} from "@/common/rbac";
 import { FileServiceClient } from "../common/file-service.client";
 import "multer";
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@RequirePermissions("messages.read")
 @Controller("messages")
 export class MessagingController {
   constructor(

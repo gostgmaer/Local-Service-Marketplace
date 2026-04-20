@@ -130,7 +130,11 @@ export function LocationPicker({
   }, [handleMapClick]);
 
   const initializeMap = useCallback(() => {
-    if (!mapRef.current || typeof google === "undefined") return;
+    if (
+      !mapRef.current ||
+      typeof google === "undefined" ||
+      !google.maps?.places?.AutocompleteService
+    ) return;
 
     const defaultCenter = value
       ? { lat: value.lat, lng: value.lng }
@@ -147,7 +151,7 @@ export function LocationPicker({
     setMap(mapInstance);
 
     // Initialize services
-    autocompleteRef.current = new google.maps.places.AutocompleteSuggestion();
+    autocompleteRef.current = new google.maps.places.AutocompleteService();
     geocoderRef.current = new google.maps.Geocoder();
 
     // Add click listener to map
@@ -192,7 +196,7 @@ export function LocationPicker({
     );
     if (existingScript) {
       // Script already in DOM — wait for it to load or init immediately
-      if (typeof window !== "undefined" && window.google?.maps) {
+      if (typeof window !== "undefined" && window.google?.maps?.places?.AutocompleteService) {
         initializeMap();
       } else {
         existingScript.addEventListener("load", () => initializeMap());
@@ -201,7 +205,7 @@ export function LocationPicker({
     }
 
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.defer = true;
     script.onload = () => initializeMap();
@@ -212,8 +216,8 @@ export function LocationPicker({
   useEffect(() => {
     if (!mapRef.current || map) return;
 
-    // Check if Google Maps is loaded
-    if (typeof window !== "undefined" && window.google) {
+    // Check if Google Maps is loaded (including places library)
+    if (typeof window !== "undefined" && window.google?.maps?.places?.AutocompleteService) {
       initializeMap();
     } else {
       // Load Google Maps script

@@ -11,6 +11,10 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
+import {
+  PermissionsGuard as RolesGuard,
+  RequirePermissions,
+} from "@/common/rbac";
 import { DeviceRepository } from "../repositories/device.repository";
 
 export class RegisterDeviceDto {
@@ -28,7 +32,8 @@ export class RegisterDeviceDto {
  * - DELETE /devices/:deviceId - Remove device token
  */
 @Controller("devices")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@RequirePermissions("notifications.view")
 export class DeviceController {
   constructor(private readonly deviceRepository: DeviceRepository) {}
 

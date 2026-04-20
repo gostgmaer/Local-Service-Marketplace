@@ -467,7 +467,7 @@ function PaymentReceiptContent() {
 
 export default function PaymentReceiptPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={["payments.read"]}>
       <PaymentReceiptContent />
     </ProtectedRoute>
   );

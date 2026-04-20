@@ -89,6 +89,21 @@ export default function ProfilePage() {
     );
   }
 
+  if (!can(Permission.PROFILE_VIEW)) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Access Denied
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">You do not have permission to view this page.</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   if (profileError) {
     return (
       <Layout>

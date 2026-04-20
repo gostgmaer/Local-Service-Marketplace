@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/utils/permissions";
 import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { useMessagingConnection } from "@/hooks/useMessagingSocket";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
@@ -25,6 +27,7 @@ export default function MessagesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { can } = usePermissions();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showThread, setShowThread] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -39,14 +42,16 @@ export default function MessagesPage() {
   // Online presence
   const { isOnline, requestOnlineStatus } = usePresence();
 
-  // Redirect if not authenticated or messaging is disabled
+  // Redirect if not authenticated, missing permission, or messaging is disabled
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(ROUTES.LOGIN);
+    } else if (!authLoading && isAuthenticated && !can(Permission.MESSAGES_READ)) {
+      router.push(ROUTES.DASHBOARD);
     } else if (!authLoading && isAuthenticated && !isMessagingEnabled()) {
       router.push(ROUTES.DASHBOARD);
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, can]);
 
   useRealtimeList(["message:created"], ["conversations"]);
   useRealtimeList(["message:created"], ["messages", selectedJobId]);

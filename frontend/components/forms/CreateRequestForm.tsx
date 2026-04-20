@@ -23,6 +23,14 @@ import {
   ChevronLeft,
   Check,
 } from "lucide-react";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
+
+const URGENCY_SURCHARGE: Record<string, number> = {
+  low: 0,
+  medium: 0,
+  high: 10,
+  urgent: 20,
+};
 
 // Extended schema for the form (superset of API schema)
 const createRequestFormSchema = z.object({
@@ -92,6 +100,7 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const { config: siteConfig } = usePublicSettings();
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -124,7 +133,7 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
         description: data.description,
         budget: data.budget,
         urgency: data.urgency,
-        preferred_date: data.preferred_date,
+        preferred_date: data.preferred_date || undefined,
         location:
           data.address || data.city
             ? {
@@ -156,6 +165,15 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
   const selectedCategory = categories.find(
     (c: any) => c.id === watchedValues.category_id,
   );
+
+  // Live GST + urgency estimate for the customer
+  const budgetNum = Number(watchedValues.budget) || 0;
+  const urgencySurchargePercent = URGENCY_SURCHARGE[watchedValues.urgency ?? "medium"] ?? 0;
+  const urgencySurcharge = Math.round(((budgetNum * urgencySurchargePercent) / 100) * 100) / 100;
+  const subtotal = Math.round((budgetNum + urgencySurcharge) * 100) / 100;
+  const platformFee = Math.floor((subtotal * siteConfig.platformFeePercentage) / 100);
+  const gstAmount = Math.round(((platformFee * siteConfig.gstRate) / 100) * 100) / 100;
+  const estimatedTotal = Math.round((subtotal + gstAmount) * 100) / 100;
 
   const nextStep = async () => {
     const fields: (keyof RequestFormData)[][] = [
@@ -338,7 +356,29 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                 required
                 {...register("budget")}
               />
-
+              {budgetNum > 0 && (
+                <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-3.5 space-y-1.5 text-xs">
+                  <p className="text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider text-[10px] mb-2">Estimated Price Breakdown</p>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Base Budget</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">₹{budgetNum.toLocaleString("en-IN")}</span>
+                  </div>
+                  {urgencySurcharge > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-amber-600 dark:text-amber-400">Urgency Surcharge ({urgencySurchargePercent}%)</span>
+                      <span className="font-medium text-amber-600 dark:text-amber-400">+₹{urgencySurcharge.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">GST ({siteConfig.gstRate}% on service fee)</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">₹{gstAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between pt-1.5 border-t border-dashed border-gray-200 dark:border-gray-700">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">Estimated Total</span>
+                    <span className="font-bold text-green-600 dark:text-green-400">₹{estimatedTotal.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2.5">
                   How soon do you need this?{" "}
@@ -461,8 +501,24 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                 <ReviewRow
                   label="Budget"
                   value={`\u20b9${watchedValues.budget ?? 0}`}
-                />
-                <ReviewRow
+                />                {urgencySurcharge > 0 && (
+                  <ReviewRow
+                    label="Urgency Surcharge"
+                    value={`+₹${urgencySurcharge} (${urgencySurchargePercent}%)`}
+                  />
+                )}
+                {budgetNum > 0 && (
+                  <>
+                    <ReviewRow
+                      label="GST"
+                      value={`₹${gstAmount} (${siteConfig.gstRate}%)`}
+                    />
+                    <ReviewRow
+                      label="Est. Total"
+                      value={`₹${estimatedTotal.toLocaleString("en-IN")}`}
+                    />
+                  </>
+                )}                <ReviewRow
                   label="Urgency"
                   value={
                     URGENCY_OPTIONS.find(

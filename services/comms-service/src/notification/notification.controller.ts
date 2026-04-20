@@ -37,9 +37,14 @@ import { UnsubscribeDto, CheckUnsubscribeDto } from "./dto/unsubscribe.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { InternalServiceGuard } from "@/common/guards/internal-service.guard";
 import { SkipAuth } from "@/common/decorators/skip-auth.decorator";
+import {
+  PermissionsGuard as RolesGuard,
+  RequirePermissions,
+} from "@/common/rbac";
 import { NotificationQueryDto } from "./dto/notification-query.dto";
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@RequirePermissions("notifications.view")
 @Controller("notifications")
 export class NotificationController {
   constructor(

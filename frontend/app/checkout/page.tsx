@@ -85,17 +85,20 @@ function JobCheckout({ jobId }: { jobId: string }) {
   const payMutation = useMutation({
     mutationFn: async () => {
       if (!job) throw new Error("Job not found");
+      // Always send base amount — the payment service applies urgency surcharge,
+      // platform fee, and GST internally.
+      const baseAmount = job.actual_amount || 0;
       if (selectedMethod === "cash") {
         return paymentService.confirmCashPayment(
           job.id,
           job.provider_id || (job as any)?.provider?.id || "",
-          totalDue,
+          baseAmount,
         );
       }
       return paymentService.createPayment({
         job_id: job.id,
         provider_id: job.provider_id || (job as any)?.provider?.id || "",
-        amount: job.actual_amount || 0,
+        amount: baseAmount,
         currency: "INR",
         payment_method: selectedMethod,
         ...(appliedCoupon ? { coupon_code: appliedCoupon.code } : {}),
@@ -163,14 +166,17 @@ function JobCheckout({ jobId }: { jobId: string }) {
   }
 
   const amount = job.actual_amount || 0;
+  const pb = job.price_breakdown;
 
-  // Compute GST + platform fee breakdown using public settings (same formula as backend)
+  // Use backend price_breakdown if available; otherwise fall back to local calculation
   const discountedAmount = appliedCoupon
     ? Math.round(amount * (1 - appliedCoupon.discountPercent / 100) * 100) / 100
     : amount;
-  const platformFeeAmt = Math.floor(discountedAmount * siteConfig.platformFeePercentage / 100);
-  const gstAmt = Math.round((platformFeeAmt * siteConfig.gstRate / 100) * 100) / 100;
-  const totalDue = Math.round((discountedAmount + gstAmt) * 100) / 100;
+  const urgencySurcharge = pb?.urgency_surcharge ?? 0;
+  const subtotal = pb ? Math.round((discountedAmount + urgencySurcharge) * 100) / 100 : discountedAmount;
+  const platformFeeAmt = pb?.platform_fee ?? Math.floor(subtotal * siteConfig.platformFeePercentage / 100);
+  const gstAmt = pb?.gst_amount ?? Math.round((platformFeeAmt * siteConfig.gstRate / 100) * 100) / 100;
+  const totalDue = pb?.total_payable ?? Math.round((subtotal + gstAmt) * 100) / 100;
 
   return (
     <Layout>
@@ -365,12 +371,14 @@ function JobCheckout({ jobId }: { jobId: string }) {
                       <span>–{formatCurrency(amount * appliedCoupon.discountPercent / 100)}</span>
                     </div>
                   )}
+                  {urgencySurcharge > 0 && (
+                    <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                      <span>Urgency Surcharge ({pb?.urgency_level} +{pb?.urgency_surcharge_percent}%)</span>
+                      <span>+{formatCurrency(urgencySurcharge)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
-                    <span>Platform Fee ({siteConfig.platformFeePercentage}%)</span>
-                    <span>{formatCurrency(platformFeeAmt)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
-                    <span>GST ({siteConfig.gstRate}% on platform fee)</span>
+                    <span>GST ({siteConfig.gstRate}% on service fee)</span>
                     <span>{formatCurrency(gstAmt)}</span>
                   </div>
                   <div className="flex items-center justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2">

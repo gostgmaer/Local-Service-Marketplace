@@ -1,5 +1,20 @@
 import { Job } from "../entities/job.entity";
 
+/** Computed pricing breakdown attached by the service layer. */
+export interface PriceBreakdown {
+  base_amount: number;
+  urgency_level: string;
+  urgency_surcharge_percent: number;
+  urgency_surcharge: number;
+  subtotal: number;
+  platform_fee_percent: number;
+  platform_fee: number;
+  provider_amount: number;
+  gst_rate: number;
+  gst_amount: number;
+  total_payable: number;
+}
+
 export class JobResponseDto {
   id: string;
   display_id?: string;
@@ -38,6 +53,8 @@ export class JobResponseDto {
   proposal_estimated_hours?: number | null;
   proposal_start_date?: Date | null;
   proposal_completion_date?: Date | null;
+  // Computed pricing
+  price_breakdown?: PriceBreakdown | null;
 
   static fromEntity(job: Job): JobResponseDto {
     return {
@@ -74,7 +91,9 @@ export class JobResponseDto {
       proposal_estimated_hours: job.proposal_estimated_hours ?? null,
       // Fall back to the job's own timestamps when the provider didn't set dates
       proposal_start_date: job.proposal_start_date ?? job.started_at ?? null,
-      proposal_completion_date: job.proposal_completion_date ?? job.completed_at ?? null,
+      proposal_completion_date:
+        job.proposal_completion_date ?? job.completed_at ?? null,
+      price_breakdown: null,
     };
   }
 }

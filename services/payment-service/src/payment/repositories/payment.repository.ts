@@ -27,17 +27,30 @@ export class PaymentRepository {
     }
   }
 
+  /** Urgency → surcharge % mapping (mirrors marketplace-service). */
+  private readonly URGENCY_SURCHARGE: Record<string, number> = {
+    low: 0,
+    medium: 0,
+    high: 10,
+    urgent: 20,
+  };
+
   /**
    * Calculates platform fee, GST, and total for a given base amount WITHOUT
    * touching the database. Used by PaymentService to get the GST-inclusive
    * total before charging the payment gateway.
    */
-  async calculateFees(baseAmount: number): Promise<{
+  async calculateFees(
+    baseAmount: number,
+    urgency?: string | null,
+  ): Promise<{
     platformFee: number;
     providerAmount: number;
     gstAmount: number;
     gstRate: number;
     totalAmount: number;
+    urgencySurcharge: number;
+    subtotal: number;
   }> {
     const [feeRateStr, gstRateStr] = await Promise.all([
       this.getSystemSetting("platform_fee_percentage", "15"),
@@ -47,12 +60,26 @@ export class PaymentRepository {
       Math.max(0, Math.min(100, parseFloat(feeRateStr) || 15)) / 100;
     const gstRate = Math.max(0, Math.min(100, parseFloat(gstRateStr) || 18));
 
-    const platformFee = Math.floor(baseAmount * feeRate);
-    const providerAmount = baseAmount - platformFee;
-    const gstAmount = parseFloat(((platformFee * gstRate) / 100).toFixed(2));
-    const totalAmount = Math.round((baseAmount + gstAmount) * 100) / 100;
+    const urgencySurchargePercent =
+      this.URGENCY_SURCHARGE[urgency ?? "medium"] ?? 0;
+    const urgencySurcharge =
+      Math.round(((baseAmount * urgencySurchargePercent) / 100) * 100) / 100;
+    const subtotal = Math.round((baseAmount + urgencySurcharge) * 100) / 100;
 
-    return { platformFee, providerAmount, gstAmount, gstRate, totalAmount };
+    const platformFee = Math.floor(subtotal * feeRate);
+    const providerAmount = subtotal - platformFee;
+    const gstAmount = parseFloat(((platformFee * gstRate) / 100).toFixed(2));
+    const totalAmount = Math.round((subtotal + gstAmount) * 100) / 100;
+
+    return {
+      platformFee,
+      providerAmount,
+      gstAmount,
+      gstRate,
+      totalAmount,
+      urgencySurcharge,
+      subtotal,
+    };
   }
 
   async createPayment(
@@ -64,6 +91,7 @@ export class PaymentRepository {
     paymentMethod?: string,
     transactionId?: string,
     gateway?: string,
+    urgency?: string | null,
   ): Promise<Payment> {
     const id = uuidv4();
     [jobId, providerId] = await Promise.all([
@@ -80,12 +108,19 @@ export class PaymentRepository {
       Math.max(0, Math.min(100, parseFloat(feeRateStr) || 15)) / 100;
     const gstRate = Math.max(0, Math.min(100, parseFloat(gstRateStr) || 18));
 
-    // amount = base service price (what customer agreed to pay)
-    // totalAmount = what customer is actually charged (base + GST on platform fee)
-    const platformFee = Math.floor(amount * feeRate);
-    const providerAmount = amount - platformFee; // provider receives base minus platform fee
+    // Apply urgency surcharge on base amount
+    const urgencySurchargePercent =
+      this.URGENCY_SURCHARGE[urgency ?? "medium"] ?? 0;
+    const urgencySurcharge =
+      Math.round(((amount * urgencySurchargePercent) / 100) * 100) / 100;
+    const subtotal = Math.round((amount + urgencySurcharge) * 100) / 100;
+
+    // subtotal = base + urgency surcharge
+    // totalAmount = subtotal + GST on platform fee (what customer is charged)
+    const platformFee = Math.floor(subtotal * feeRate);
+    const providerAmount = subtotal - platformFee; // provider receives subtotal minus platform fee
     const gstAmount = parseFloat(((platformFee * gstRate) / 100).toFixed(2));
-    const totalAmount = Math.round((amount + gstAmount) * 100) / 100;
+    const totalAmount = Math.round((subtotal + gstAmount) * 100) / 100;
 
     const values = [
       id,

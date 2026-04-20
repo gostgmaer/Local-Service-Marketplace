@@ -29,8 +29,10 @@ export default function SubscriptionPage() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(ROUTES.LOGIN);
+    } else if (!authLoading && isAuthenticated && !can(Permission.SUBSCRIPTIONS_MANAGE)) {
+      router.push(ROUTES.DASHBOARD);
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, can]);
 
   if (authLoading || providerLoading) {
     return <Loading />;

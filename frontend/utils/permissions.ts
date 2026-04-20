@@ -52,6 +52,7 @@ export const Permission = {
   PROPOSALS_READ: "proposals.read",
   PROPOSALS_UPDATE: "proposals.update",
   PROPOSALS_ACCEPT: "proposals.accept",
+  PROPOSALS_REJECT: "proposals.reject",
   PROPOSALS_MANAGE: "proposals.manage",
 
   // Jobs

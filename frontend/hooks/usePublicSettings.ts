@@ -32,5 +32,5 @@ export function usePublicSettings(): {
     retry: 1,
   });
 
-  return { config: data ?? SITE_CONFIG_DEFAULTS, isLoading };
+  return { config: { ...SITE_CONFIG_DEFAULTS, ...(data ?? {}) }, isLoading };
 }

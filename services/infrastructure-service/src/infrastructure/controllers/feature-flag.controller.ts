@@ -26,7 +26,7 @@ import { UpdateFeatureFlagDto } from "../dto/update-feature-flag.dto";
 import { FeatureFlagQueryDto } from "../dto/feature-flag-query.dto";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@RequirePermissions("admin.access")
+@RequirePermissions("infrastructure.feature_flags")
 @Controller("feature-flags")
 export class FeatureFlagController {
   constructor(

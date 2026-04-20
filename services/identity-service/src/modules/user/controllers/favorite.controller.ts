@@ -17,8 +17,13 @@ import { Logger } from "winston";
 import { FavoriteService } from "../services/favorite.service";
 import { CreateFavoriteDto } from "../dto/create-favorite.dto";
 import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
+import {
+  PermissionsGuard as RolesGuard,
+  RequirePermissions,
+} from "@/common/rbac";
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@RequirePermissions("favorites.manage")
 @Controller("favorites")
 export class FavoriteController {
   constructor(

@@ -83,7 +83,7 @@ export default function DisputeDetailPage() {
   const currentStep = STATUS_STEPS.indexOf(dispute.status as any);
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={["disputes.read"]}>
       <Layout>
         <div className="container-custom py-8 max-w-3xl mx-auto">
           <Link

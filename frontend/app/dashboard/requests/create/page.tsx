@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function CreateRequestPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={["requests.create"]}>
       <Layout>
         <div className="container-custom py-10">
           <div className=" mx-auto mb-8 text-center">

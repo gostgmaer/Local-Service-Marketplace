@@ -137,6 +137,21 @@ export class RequestService {
       location_id = location.id;
     }
 
+    // Auto-compute expiry_date if not explicitly provided
+    if (!dto.expiry_date) {
+      if (dto.preferred_date) {
+        // Expire on the preferred date itself (end of day)
+        dto.expiry_date = new Date(
+          new Date(dto.preferred_date).getTime() + 24 * 60 * 60 * 1000 - 1,
+        ).toISOString();
+      } else {
+        // Default: 30 days from now
+        dto.expiry_date = new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000,
+        ).toISOString();
+      }
+    }
+
     const request = await this.requestRepository.createRequest({
       ...dto,
       location_id,

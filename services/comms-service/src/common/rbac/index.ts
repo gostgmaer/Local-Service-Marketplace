@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { SetMetadata } from "@nestjs/common";
+import { IS_PUBLIC_KEY } from "@/common/decorators/skip-auth.decorator";
 
 // ── Metadata keys ────────────────────────────────────────────────────
 export const PERMISSIONS_KEY = "permissions";
@@ -81,6 +82,13 @@ export class PermissionsGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // Skip permission checks for @SkipAuth() routes (internal service routes)
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],

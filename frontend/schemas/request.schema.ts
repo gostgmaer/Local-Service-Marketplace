@@ -35,6 +35,8 @@ export const createRequestSchema = z.object({
     .number()
     .positive("Budget must be greater than 0")
     .max(10000000, "Budget cannot exceed \u20b910,00,000"),
+  urgency: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  preferred_date: z.string().optional().or(z.literal("")),
   location: locationSchema.optional(),
 });
 
