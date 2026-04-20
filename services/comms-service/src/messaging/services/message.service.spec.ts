@@ -6,6 +6,7 @@ import { NotFoundException } from "../../common/exceptions/http.exceptions";
 import { EmailClient } from "../../notification/clients/email.client";
 import { UserClient } from "../../common/user/user.client";
 import { NotificationPreferencesService } from "../../notification/services/notification-preferences.service";
+import { UpdatesService } from "../../updates/updates.service";
 
 const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
 const mockEmailClient = {
@@ -55,6 +56,7 @@ describe("MessageService", () => {
         { provide: EmailClient, useValue: mockEmailClient },
         { provide: UserClient, useValue: mockUserClient },
         { provide: NotificationPreferencesService, useValue: mockNotificationPreferencesService },
+        { provide: UpdatesService, useValue: { broadcast: jest.fn() } },
       ],
     }).compile();
 
@@ -111,6 +113,7 @@ describe("MessageService", () => {
         "job-uuid-1",
         1,
         20,
+        undefined,
       );
     });
 
@@ -128,6 +131,7 @@ describe("MessageService", () => {
         "job-uuid-1",
         1,
         20,
+        undefined,
       );
     });
   });

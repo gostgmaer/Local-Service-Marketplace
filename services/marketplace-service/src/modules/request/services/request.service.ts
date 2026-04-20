@@ -30,6 +30,8 @@ import { KafkaService } from "../../../kafka/kafka.service";
 import { RedisService } from "../../../redis/redis.service";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserClient } from "../../../common/user/user.client";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class RequestService {
@@ -47,6 +49,8 @@ export class RequestService {
     private readonly logger: LoggerService,
     @InjectQueue("marketplace.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async createRequest(dto: CreateRequestDto): Promise<RequestResponseDto> {
@@ -131,6 +135,21 @@ export class RequestService {
         country: dto.location.country,
       });
       location_id = location.id;
+    }
+
+    // Auto-compute expiry_date if not explicitly provided
+    if (!dto.expiry_date) {
+      if (dto.preferred_date) {
+        // Expire on the preferred date itself (end of day)
+        dto.expiry_date = new Date(
+          new Date(dto.preferred_date).getTime() + 24 * 60 * 60 * 1000 - 1,
+        ).toISOString();
+      } else {
+        // Default: 30 days from now
+        dto.expiry_date = new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000,
+        ).toISOString();
+      }
     }
 
     const request = await this.requestRepository.createRequest({
@@ -240,6 +259,9 @@ export class RequestService {
         status: request.status,
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", request.id, "created", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
 
     return RequestResponseDto.fromEntity(request);
   }
@@ -489,6 +511,9 @@ export class RequestService {
       },
     });
 
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", updatedRequest.id, "updated", [`user:${updatedRequest.user_id}`, "admin"], { requestId: updatedRequest.id }, updatedRequest.user_id);
+
     return RequestResponseDto.fromEntity(updatedRequest);
   }
 
@@ -565,6 +590,9 @@ export class RequestService {
         status: "cancelled",
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", request.id, "updated", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
   }
 
   async deleteRequest(id: string): Promise<void> {
@@ -576,6 +604,9 @@ export class RequestService {
     }
 
     await this.requestRepository.deleteRequest(request.id);
+
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", request.id, "deleted", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
 
     this.logger.log(`Request deleted successfully: ${id}`, RequestService.name);
   }
@@ -611,5 +642,24 @@ export class RequestService {
   }> {
     this.logger.log(`Fetching request stats`, RequestService.name);
     return this.requestRepository.getRequestStats();
+  }
+
+  async searchRequests(query: {
+    q: string;
+    category?: string;
+    location?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: any[]; total: number }> {
+    this.logger.log(
+      `Full-text search: q="${query.q}" category=${query.category} location=${query.location}`,
+      RequestService.name,
+    );
+    return this.requestRepository.fullTextSearch(query.q, {
+      category: query.category,
+      location: query.location,
+      page: query.page,
+      limit: query.limit,
+    });
   }
 }

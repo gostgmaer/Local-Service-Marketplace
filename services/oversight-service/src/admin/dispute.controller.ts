@@ -14,6 +14,7 @@ import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { DisputeService } from "./services/dispute.service";
 import { CreateDisputeDto } from "./dto/create-dispute.dto";
+import { UserDisputeQueryDto } from "./dto/user-dispute-query.dto";
 
 /**
  * User-facing dispute endpoints.
@@ -41,14 +42,12 @@ export class DisputeController {
   @Get("my")
   async getMyDisputes(
     @Headers("x-user-id") userId: string,
-    @Query("status") status?: string,
-    @Query("page") page?: string,
-    @Query("limit") limit?: string,
+    @Query() query: UserDisputeQueryDto,
   ) {
     return this.disputeService.getUserDisputes(userId, {
-      status,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
+      status: query.status,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
     });
   }
 

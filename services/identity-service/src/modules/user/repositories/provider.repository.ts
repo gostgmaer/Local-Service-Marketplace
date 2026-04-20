@@ -193,7 +193,9 @@ export class ProviderRepository {
     if (offset !== undefined) {
       values.push(offset);
       query = `
-        SELECT DISTINCT providers.*
+        SELECT DISTINCT providers.id, providers.display_id, providers.user_id, providers.business_name,
+          providers.description, providers.verification_status, providers.profile_picture_url,
+          providers.rating, providers.total_jobs_completed, providers.created_at
         FROM providers
         ${whereClause}
 				ORDER BY ${orderColumn} ${orderDirection}, providers.id DESC
@@ -201,7 +203,9 @@ export class ProviderRepository {
       `;
     } else {
       query = `
-      SELECT DISTINCT providers.*
+      SELECT DISTINCT providers.id, providers.display_id, providers.user_id, providers.business_name,
+        providers.description, providers.verification_status, providers.profile_picture_url,
+        providers.rating, providers.total_jobs_completed, providers.created_at
       FROM providers
       ${whereClause}
 			ORDER BY ${orderColumn} ${orderDirection}, providers.id DESC
@@ -453,5 +457,49 @@ export class ProviderRepository {
     `;
     const result = await this.pool.query(query, [radius, providerId]);
     return result.rows[0];
+  }
+
+  /**
+   * Find providers near a geographic point using the Haversine formula.
+   * Returns providers whose location is within `radiusKm` kilometres,
+   * sorted by distance (closest first).
+   */
+  async findNearby(
+    lat: number,
+    lng: number,
+    radiusKm: number,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<(Provider & { distance_km: number })[]> {
+    const query = `
+      SELECT p.*,
+        (6371 * acos(
+          cos(radians($1)) * cos(radians(l.latitude))
+          * cos(radians(l.longitude) - radians($2))
+          + sin(radians($1)) * sin(radians(l.latitude))
+        )) AS distance_km
+      FROM providers p
+      JOIN locations l ON l.user_id = p.user_id
+      WHERE p.deleted_at IS NULL
+        AND p.is_verified = true
+        AND (6371 * acos(
+          cos(radians($1)) * cos(radians(l.latitude))
+          * cos(radians(l.longitude) - radians($2))
+          + sin(radians($1)) * sin(radians(l.latitude))
+        )) <= $3
+      ORDER BY distance_km ASC
+      LIMIT $4 OFFSET $5
+    `;
+    const result = await this.pool.query(query, [
+      lat,
+      lng,
+      radiusKm,
+      limit,
+      offset,
+    ]);
+    return result.rows.map((r) => ({
+      ...r,
+      distance_km: parseFloat(r.distance_km),
+    }));
   }
 }

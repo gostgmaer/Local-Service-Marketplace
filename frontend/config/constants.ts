@@ -1,5 +1,15 @@
 // Application-wide constants and configuration
 
+/** Base URL for all REST API calls (points to the API gateway). */
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
+
+/** Base URL for all WebSocket connections (points to the API gateway). */
+export const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ||
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+  API_URL;
+
 export const APP_CONFIG = {
   // Pagination
   PAGE_SIZE: 20,

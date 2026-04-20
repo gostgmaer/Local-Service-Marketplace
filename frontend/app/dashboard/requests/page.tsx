@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -35,6 +36,8 @@ export default function RequestsPage() {
       router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
+
+  useRealtimeList(["request:created", "request:updated"], ["requests"]);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["requests", page, limit, filters],

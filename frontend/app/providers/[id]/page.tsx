@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -50,6 +51,8 @@ export default function ProviderDetailPage() {
   const { user } = useAuth();
   const providerId = params.id as string;
 
+  useRealtimeDetail(["provider:updated"], ["provider", providerId], providerId);
+  useRealtimeDetail(["review:created", "review:updated"], ["provider-reviews", providerId], providerId);
 
   const {
     data: provider,

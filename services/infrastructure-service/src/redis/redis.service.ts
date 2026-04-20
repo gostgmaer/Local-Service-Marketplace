@@ -100,4 +100,31 @@ export class RedisService implements OnModuleDestroy {
     if (!this.cacheEnabled || !this.redisClient) return 0;
     return this.redisClient.exists(key);
   }
+
+  async delPattern(pattern: string): Promise<void> {
+    if (!this.cacheEnabled || !this.redisClient) return;
+
+    try {
+      let cursor = "0";
+      do {
+        const [nextCursor, keys] = await this.redisClient.scan(
+          cursor,
+          "MATCH",
+          pattern,
+          "COUNT",
+          100,
+        );
+        cursor = nextCursor;
+        if (keys.length > 0) {
+          await this.redisClient.del(...keys);
+        }
+      } while (cursor !== "0");
+    } catch (error: any) {
+      this.logger.error(
+        `Redis DEL pattern error for ${pattern}: ${error.message}`,
+        error.stack,
+        "RedisService",
+      );
+    }
+  }
 }

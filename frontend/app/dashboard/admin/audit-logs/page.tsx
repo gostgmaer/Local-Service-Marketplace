@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -70,6 +71,8 @@ export default function AuditLogsPage() {
   const [actionFilter, setActionFilter] = useState("");
   const [search, setSearch] = useState("");
   const limit = 25;
+
+  useRealtimeList(["setting:updated", "user:updated", "dispute:updated"], ["admin-audit-logs"]);
 
   const {
     data: rawData,

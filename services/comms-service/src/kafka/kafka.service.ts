@@ -53,6 +53,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
             "proposal-events",
             "job-events",
             "payment-events",
+            "dispute-events",
           ],
           fromBeginning: false,
         });

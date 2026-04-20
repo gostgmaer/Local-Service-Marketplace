@@ -352,7 +352,7 @@ CREATE TABLE service_requests (
   category_id UUID NOT NULL REFERENCES service_categories(id),
   location_id UUID REFERENCES locations(id),
   description TEXT NOT NULL,
-  budget BIGINT NOT NULL CHECK (budget > 0),
+  budget NUMERIC(12,2) NOT NULL CHECK (budget > 0),
   images JSONB,
   preferred_date DATE,
   urgency TEXT DEFAULT 'medium' CHECK (urgency IN ('low', 'medium', 'high', 'urgent')),
@@ -399,7 +399,7 @@ CREATE TABLE proposals (
   display_id VARCHAR(11) UNIQUE NOT NULL,
   request_id UUID NOT NULL REFERENCES service_requests(id) ON DELETE CASCADE,
   provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
-  price BIGINT NOT NULL CHECK (price > 0),
+  price NUMERIC(12,2) NOT NULL CHECK (price > 0),
   message TEXT,
   estimated_hours DECIMAL(10, 2),
   start_date DATE,
@@ -429,7 +429,7 @@ CREATE TABLE jobs (
   provider_id UUID NOT NULL REFERENCES providers(id),
   customer_id UUID NOT NULL REFERENCES users(id),
   proposal_id UUID REFERENCES proposals(id),
-  actual_amount BIGINT,
+  actual_amount NUMERIC(12,2),
   cancelled_by UUID REFERENCES users(id) ON DELETE SET NULL,
   cancellation_reason TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'scheduled', 'in_progress', 'completed', 'cancelled', 'disputed')),
@@ -462,9 +462,9 @@ CREATE TABLE payments (
   job_id UUID NOT NULL REFERENCES jobs(id),
   user_id UUID NOT NULL REFERENCES users(id),
   provider_id UUID NOT NULL REFERENCES providers(id),
-  amount BIGINT NOT NULL CHECK (amount > 0),
-  platform_fee BIGINT DEFAULT 0,
-  provider_amount BIGINT,
+  amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+  platform_fee NUMERIC(12,2) DEFAULT 0,
+  provider_amount NUMERIC(12,2),
   currency TEXT NOT NULL DEFAULT 'INR',
   payment_method TEXT,
   gateway TEXT NOT NULL DEFAULT 'mock',
@@ -975,6 +975,7 @@ INSERT INTO system_settings (key, value, description, type) VALUES
   ('review_submission_window_days',  '90',    'Days after job completion within which a customer can submit a review',       'number'),
   ('dispute_window_days',            '30',    'Days after job completion within which a dispute can be filed',              'number'),
   ('refund_window_days',             '30',    'Days after payment completion within which a refund can be requested',       'number'),
+  ('dispute_escalation_days',        '7',     'Days before an unresolved dispute is auto-escalated',                        'number'),
   -- ── Payments ───────────────────────────────────────────────────────────────
   ('gst_rate',                       '18',    'GST rate percentage applied to the platform fee (e.g. 18 means 18%)',        'number'),
   -- ── Security & Auth ────────────────────────────────────────────────────────
@@ -989,10 +990,14 @@ INSERT INTO system_settings (key, value, description, type) VALUES
   -- ── Rate Limits ────────────────────────────────────────────────────────────
   ('rate_limit_max_requests',        '500',   'Maximum requests per rate-limit window for general API endpoints',           'number'),
   ('auth_rate_limit_max_requests',   '10',    'Maximum authentication requests per 15-minute window per IP',                'number'),
+  ('rate_limit_window_ms',           '60000', 'Rate-limit sliding window duration in milliseconds',                         'number'),
   -- ── Cache & Performance ────────────────────────────────────────────────────
-  ('provider_cache_ttl_seconds',     '300',   'Redis cache TTL in seconds for provider profile data',                       'number'),
-  ('request_cache_ttl_seconds',      '300',   'Redis cache TTL in seconds for service request list data',                   'number'),
-  ('job_cache_ttl_seconds',          '180',   'Redis cache TTL in seconds for job records',                                 'number'),
+  ('get_cache_enabled',              'false', 'Master switch to enable Redis caching for all GET API responses',            'boolean'),
+  ('realtime_enabled',               'true',  'Master switch to enable real-time WebSocket broadcasts and live updates',    'boolean'),
+  ('cache_ttl_seconds',              '300',   'TTL in seconds for cached GET API responses when caching is enabled',        'number'),
+  ('provider_cache_ttl_seconds',     '600',   'Redis cache TTL in seconds for provider profile data',                       'number'),
+  ('request_cache_ttl_seconds',      '120',   'Redis cache TTL in seconds for service request list data',                   'number'),
+  ('job_cache_ttl_seconds',          '60',    'Redis cache TTL in seconds for job records',                                 'number'),
   ('default_page_limit',             '20',    'Default number of items returned per page for all paginated endpoints',      'number'),
   -- ── Data Retention ─────────────────────────────────────────────────────────
   ('notification_retention_days',    '90',    'Days before old notification records are purged from the database',          'number'),
@@ -2236,6 +2241,7 @@ INSERT INTO permissions (id, name, display_name, description, resource, action) 
   (uuid_generate_v4(), 'proposals.read', 'Read Proposals', 'View proposals', 'proposals', 'read'),
   (uuid_generate_v4(), 'proposals.update', 'Update Proposal', 'Update own proposals', 'proposals', 'update'),
   (uuid_generate_v4(), 'proposals.accept', 'Accept Proposal', 'Accept proposals on own requests', 'proposals', 'accept'),
+  (uuid_generate_v4(), 'proposals.reject', 'Reject Proposal', 'Reject proposals on own requests', 'proposals', 'reject'),
   (uuid_generate_v4(), 'proposals.manage', 'Manage All Proposals', 'Manage any proposal', 'proposals', 'manage'),
 
   -- Jobs
@@ -2343,6 +2349,7 @@ WHERE r.name = 'customer'
     'requests.delete',
     'proposals.read',
     'proposals.accept',
+    'proposals.reject',
     'jobs.create',
     'jobs.read',
     'reviews.create',
@@ -2445,6 +2452,7 @@ VALUES
   ('036', 'secure_attachment_file_id', 'integrated_in_schema', 0),
   ('037', 'make_document_url_nullable', 'integrated_in_schema', 0),
   ('038', 'production_hardening_indexes', 'integrated_in_schema', 0),
-  ('039', 'add_invoice_url_to_payments', 'integrated_in_schema', 0)
+  ('039', 'add_invoice_url_to_payments', 'integrated_in_schema', 0),
+  ('040', 'fix_money_column_types', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

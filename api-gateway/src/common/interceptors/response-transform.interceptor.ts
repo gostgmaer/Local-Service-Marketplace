@@ -10,10 +10,12 @@ import { map } from "rxjs/operators";
 import { Request, Response } from "express";
 
 export interface PaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
+  page?: number;
+  limit?: number;
+  total?: number;
+  totalPages?: number;
+  nextCursor?: string | null;
+  hasMore?: boolean;
 }
 
 export interface StandardResponse<T = any> {
@@ -62,6 +64,24 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
           typeof (data as any).success === "boolean"
         ) {
           const partial = data as any;
+          let innerData = partial.data ?? null;
+          let innerMeta = partial.meta ?? null;
+
+          // Detect pagination inside partial.data to avoid data.data nesting
+          if (innerData && typeof innerData === "object" && !innerMeta) {
+            if ("data" in innerData && "total" in innerData) {
+              const query = request.query || {};
+              const page = parseInt(query.page as string) || 1;
+              const limit = parseInt(query.limit as string) || 20;
+              const total = innerData.total as number;
+              innerMeta = { page: innerData.page ?? page, limit: innerData.limit ?? limit, total, totalPages: Math.ceil(total / (innerData.limit ?? limit)) };
+              innerData = innerData.data;
+            } else if ("data" in innerData && "nextCursor" in innerData) {
+              innerMeta = { nextCursor: innerData.nextCursor ?? null, hasMore: innerData.hasMore ?? false };
+              innerData = innerData.data;
+            }
+          }
+
           return {
             success: partial.success,
             statusCode: partial.statusCode || statusCode,
@@ -69,8 +89,8 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
               typeof partial.message === "string"
                 ? partial.message
                 : this.generateMessage(method, statusCode, path),
-            data: partial.data ?? null,
-            meta: partial.meta ?? null,
+            data: innerData,
+            meta: innerMeta,
           } as StandardResponse<T>;
         }
 
@@ -130,8 +150,12 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
               totalPages: Math.ceil(total / currentLimit),
             };
           } else if ("data" in rawData && "nextCursor" in rawData) {
-            // Cursor-based pagination — no numeric meta
+            // Cursor-based pagination
             responseData = (rawData as any).data;
+            meta = {
+              nextCursor: (rawData as any).nextCursor ?? null,
+              hasMore: (rawData as any).hasMore ?? false,
+            };
           }
         }
 

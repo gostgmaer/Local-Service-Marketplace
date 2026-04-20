@@ -6,12 +6,13 @@ import {
   OnModuleDestroy,
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
-import { Kafka, Producer } from "kafkajs";
+import { Kafka, Producer, Consumer } from "kafkajs";
 
 @Injectable()
 export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private kafka: Kafka;
   private producer: Producer;
+  private consumer: Consumer;
   private isEnabled: boolean;
   private isConnected: boolean = false;
 
@@ -35,6 +36,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.producer = this.kafka.producer();
+      this.consumer = this.kafka.consumer({ groupId: "payment-service-group" });
     }
   }
 
@@ -42,9 +44,16 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     if (this.isEnabled) {
       try {
         await this.producer.connect();
+        await this.consumer.connect();
+
+        await this.consumer.subscribe({
+          topics: ["dispute-events"],
+          fromBeginning: false,
+        });
+
         this.isConnected = true;
         this.logger.log(
-          "Kafka producer connected successfully",
+          "Kafka producer and consumer connected successfully",
           "KafkaService",
         );
       } catch (error: any) {
@@ -62,8 +71,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     if (this.isConnected) {
+      await this.consumer.disconnect();
       await this.producer.disconnect();
-      this.logger.log("Kafka producer disconnected", "KafkaService");
+      this.logger.log("Kafka producer and consumer disconnected", "KafkaService");
     }
   }
 
@@ -103,5 +113,34 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   isKafkaEnabled(): boolean {
     return this.isEnabled && this.isConnected;
+  }
+
+  async startConsuming(callback: (event: any) => Promise<void>): Promise<void> {
+    if (!this.isEnabled || !this.isConnected) {
+      this.logger.log(
+        "Kafka consumer not started - event bus disabled",
+        "KafkaService",
+      );
+      return;
+    }
+
+    await this.consumer.run({
+      eachMessage: async ({ topic, message }) => {
+        try {
+          const event = JSON.parse(message.value.toString());
+          this.logger.log(
+            `Received event from ${topic}: ${event.event || event.eventType}`,
+            "KafkaService",
+          );
+          await callback(event);
+        } catch (error: any) {
+          this.logger.error(
+            `Failed to process event: ${error.message}`,
+            error.stack,
+            "KafkaService",
+          );
+        }
+      },
+    });
   }
 }

@@ -39,6 +39,8 @@ function createService(overrides: {
     paymentRepository,
     { sendEmail: jest.fn() } as any,
     { getUserById: jest.fn() } as any,
+    { invalidateEntity: jest.fn() } as any,
+    { emit: jest.fn() } as any,
   );
 
   return { service, paymentRepository, refundRepository };

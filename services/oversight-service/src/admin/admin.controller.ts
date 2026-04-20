@@ -30,7 +30,6 @@ import { UpdateContactMessageDto } from "./dto/update-contact-message.dto";
 import { DisputeListQueryDto } from "./dto/dispute-list-query.dto";
 import { AuditLogQueryDto } from "./dto/audit-log-query.dto";
 import { ContactMessageListQueryDto } from "./dto/contact-message-list-query.dto";
-import { SystemSettingQueryDto } from "./dto/system-setting-query.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import {
   PermissionsGuard as RolesGuard,
@@ -111,8 +110,8 @@ export class AdminController {
   @RequirePermissions("settings.manage")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get("settings")
-  async getSettings(@Query() queryDto: SystemSettingQueryDto) {
-    return this.systemSettingService.getAllSettings(queryDto);
+  async getSettings() {
+    return this.systemSettingService.getAllSettings();
   }
 
   @RequirePermissions("settings.manage")

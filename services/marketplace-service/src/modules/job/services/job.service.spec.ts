@@ -18,6 +18,10 @@ const makeRedis = () =>
 const makeAnalytics = () => ({ track: jest.fn() }) as any;
 const makeQueue = () =>
   ({ add: jest.fn().mockResolvedValue(undefined) }) as any;
+const makeCacheInvalidation = () =>
+  ({ invalidateEntity: jest.fn(), invalidateAll: jest.fn() }) as any;
+const makeBroadcast = () =>
+  ({ emit: jest.fn().mockResolvedValue(undefined) }) as any;
 
 describe("JobService list validation", () => {
   const createService = () => {
@@ -36,6 +40,8 @@ describe("JobService list validation", () => {
       makeAnalytics(),
       makeLogger(),
       makeQueue(),
+      makeCacheInvalidation(),
+      makeBroadcast(),
     );
 
     return { service };
@@ -95,6 +101,8 @@ describe("JobService.createJob", () => {
       makeAnalytics(),
       makeLogger(),
       makeQueue(),
+      makeCacheInvalidation(),
+      makeBroadcast(),
     );
 
     await expect(
@@ -131,6 +139,8 @@ describe("JobService.createJob", () => {
       analytics,
       makeLogger(),
       makeQueue(),
+      makeCacheInvalidation(),
+      makeBroadcast(),
     );
 
     const dto = {
@@ -177,6 +187,8 @@ describe("JobService.completeJob", () => {
       makeAnalytics(),
       makeLogger(),
       makeQueue(),
+      makeCacheInvalidation(),
+      makeBroadcast(),
     );
 
     await expect(
@@ -198,6 +210,8 @@ describe("JobService.completeJob", () => {
       makeAnalytics(),
       makeLogger(),
       makeQueue(),
+      makeCacheInvalidation(),
+      makeBroadcast(),
     );
 
     await expect(
@@ -221,6 +235,8 @@ describe("JobService.completeJob", () => {
       makeAnalytics(),
       makeLogger(),
       makeQueue(),
+      makeCacheInvalidation(),
+      makeBroadcast(),
     );
 
     await expect(
@@ -254,6 +270,8 @@ describe("JobService.completeJob", () => {
       analytics,
       makeLogger(),
       makeQueue(),
+      makeCacheInvalidation(),
+      makeBroadcast(),
     );
 
     await service.completeJob("job-2", "cust-2", "customer");

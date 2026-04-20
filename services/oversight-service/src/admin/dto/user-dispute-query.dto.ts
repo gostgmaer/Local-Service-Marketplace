@@ -1,0 +1,31 @@
+import { Type } from "class-transformer";
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+
+export enum SortOrder {
+  ASC = "asc",
+  DESC = "desc",
+}
+
+export class UserDisputeQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.DESC;
+}

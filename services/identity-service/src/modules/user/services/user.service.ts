@@ -16,6 +16,8 @@ import {
   NotFoundException,
 } from "@/common/exceptions/http.exceptions";
 import { NotificationClient } from "../../../common/notification/notification.client";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class UserService {
@@ -28,6 +30,8 @@ export class UserService {
     private readonly notificationClient: NotificationClient,
     @InjectQueue("identity.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   private sendEmailNotification(payload: {
@@ -81,6 +85,8 @@ export class UserService {
         createUserDto,
         passwordHash,
       );
+      await this.cacheInvalidation.invalidateEntity("users");
+      this.broadcastService.emit("user", created.id, "created", ["admin"]);
       return this.mapToDto(created);
     } catch (error: any) {
       if (error?.code === "23505") {
@@ -117,6 +123,9 @@ export class UserService {
       },
     });
 
+    await this.cacheInvalidation.invalidateEntity("users");
+    this.broadcastService.emit("user", updated.id, "updated", [`user:${updated.id}`, "admin"], { userId: updated.id }, updated.id);
+
     return this.mapToDto(updated);
   }
 
@@ -137,6 +146,9 @@ export class UserService {
         timestamp: new Date().toISOString(),
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("users");
+    this.broadcastService.emit("user", updated.id, "updated", [`user:${updated.id}`, "admin"], { userId: updated.id }, updated.id);
 
     return this.mapToDto(updated);
   }
@@ -166,6 +178,9 @@ export class UserService {
         timestamp: new Date().toISOString(),
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("users");
+    this.broadcastService.emit("user", updated.id, "updated", [`user:${updated.id}`, "admin"], { userId: updated.id }, updated.id);
 
     return this.mapToDto(updated);
   }
@@ -216,6 +231,9 @@ export class UserService {
       },
     });
 
+    await this.cacheInvalidation.invalidateEntity("users");
+    this.broadcastService.emit("user", deleted.id, "deleted", ["admin"], { userId: deleted.id });
+
     return this.mapToDto(deleted);
   }
 
@@ -224,6 +242,9 @@ export class UserService {
     if (!restored) {
       throw new NotFoundException(`Deleted user with ID ${userId} not found`);
     }
+
+    await this.cacheInvalidation.invalidateEntity("users");
+    this.broadcastService.emit("user", restored.id, "updated", [`user:${restored.id}`, "admin"], { userId: restored.id });
 
     return this.mapToDto(restored);
   }
@@ -275,6 +296,9 @@ export class UserService {
       updateUserDto.timezone,
       updateUserDto.language,
     );
+
+    await this.cacheInvalidation.invalidateEntity("users");
+    this.broadcastService.emit("user", updatedUser.id, "updated", [`user:${updatedUser.id}`], { userId: updatedUser.id }, updatedUser.id);
 
     return this.mapToDto(updatedUser);
   }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { ROUTES } from "@/config/constants";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -23,11 +24,20 @@ import {
   formatRelativeTime,
   formatDateTime,
   formatCurrency,
+  cn,
 } from "@/utils/helpers";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 import toast from "react-hot-toast";
 import { ArrowLeft, Edit, MapPin, XCircle } from "lucide-react";
+
+const URGENCY_SURCHARGE: Record<string, number> = {
+  low: 0,
+  medium: 0,
+  high: 10,
+  urgent: 20,
+};
 
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -39,6 +49,7 @@ export default function RequestDetailPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { can } = usePermissions();
   const isProvider = can(Permission.PROVIDER_PROFILE_VIEW);
+  const { config: siteConfig } = usePublicSettings();
   const requestId = params.id as string;
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -47,6 +58,9 @@ export default function RequestDetailPage() {
       router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
+
+  useRealtimeDetail(["request:updated"], ["request", requestId], requestId);
+  useRealtimeDetail(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated"], ["proposals", requestId], requestId);
 
   const { data: request, isLoading } = useQuery({
     queryKey: ["request", requestId],
@@ -228,7 +242,69 @@ export default function RequestDetailPage() {
                           {request.category?.name || "N/A"}
                         </p>
                       </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Urgency</p>
+                        <p className={cn("text-lg font-semibold", {
+                          "text-green-600": request.urgency === "low",
+                          "text-blue-600": !request.urgency || request.urgency === "medium",
+                          "text-amber-600": request.urgency === "high",
+                          "text-red-600": request.urgency === "urgent",
+                        })}>
+                          {request.urgency === "low" ? "Flexible" : request.urgency === "high" ? "This Week" : request.urgency === "urgent" ? "ASAP" : "Soon"}
+                        </p>
+                      </div>
+                      {request.preferred_date && (
+                        <div>
+                          <p className="text-sm text-gray-500">Preferred Date</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {formatDateTime(request.preferred_date)}
+                          </p>
+                        </div>
+                      )}
+                      {request.expiry_date && (
+                        <div>
+                          <p className="text-sm text-gray-500">Expires</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {formatDateTime(request.expiry_date)}
+                          </p>
+                        </div>
+                      )}
                     </div>
+
+                    {/* GST breakdown visible only to customer (owner) — no platform fee shown */}
+                    {isOwner && request.budget > 0 && (() => {
+                      const budget = request.budget;
+                      const urgency = request.urgency ?? "medium";
+                      const surchargePercent = URGENCY_SURCHARGE[urgency] ?? 0;
+                      const surcharge = Math.round(((budget * surchargePercent) / 100) * 100) / 100;
+                      const subtotal = Math.round((budget + surcharge) * 100) / 100;
+                      const pFee = Math.floor((subtotal * siteConfig.platformFeePercentage) / 100);
+                      const gst = Math.round(((pFee * siteConfig.gstRate) / 100) * 100) / 100;
+                      const total = Math.round((subtotal + gst) * 100) / 100;
+                      return (
+                        <div className="mt-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-3 space-y-1.5 text-xs">
+                          <p className="text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider text-[10px] mb-1">Estimated Price Breakdown</p>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Service Amount</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(budget)}</span>
+                          </div>
+                          {surcharge > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-amber-600">Urgency ({urgency} +{surchargePercent}%)</span>
+                              <span className="font-medium text-amber-600">+{formatCurrency(surcharge)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">GST ({siteConfig.gstRate}% on service fee)</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(gst)}</span>
+                          </div>
+                          <div className="flex justify-between pt-1.5 border-t border-dashed border-gray-200 dark:border-gray-700">
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">Est. Total Payable</span>
+                            <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(total)}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Attached images — public URLs, no extra API call needed */}
                     {Array.isArray(request.images) && request.images.length > 0 && (
@@ -329,6 +405,23 @@ export default function RequestDetailPage() {
                                 </>
                               )}
                             </div>
+                            {/* Provider sees platform fee breakdown — never GST */}
+                            {proposal.price > 0 && (() => {
+                              const pFee = Math.floor((proposal.price * siteConfig.platformFeePercentage) / 100);
+                              const youReceive = proposal.price - pFee;
+                              return (
+                                <div className="mt-2 space-y-1 text-xs text-gray-500">
+                                  <div className="flex justify-between">
+                                    <span>Platform Fee ({siteConfig.platformFeePercentage}%)</span>
+                                    <span className="text-red-500">-{formatCurrency(pFee)}</span>
+                                  </div>
+                                  <div className="flex justify-between font-semibold text-gray-900 dark:text-gray-100">
+                                    <span>You will receive</span>
+                                    <span className="text-green-600">{formatCurrency(youReceive)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
@@ -381,6 +474,30 @@ export default function RequestDetailPage() {
                               </>
                             )}
                           </div>
+
+                          {/* Customer sees GST + total on each proposal — no platform fee */}
+                          {isOwner && proposal.price > 0 && (() => {
+                            const pPrice = proposal.price;
+                            const pFee = Math.floor((pPrice * siteConfig.platformFeePercentage) / 100);
+                            const gst = Math.round(((pFee * siteConfig.gstRate) / 100) * 100) / 100;
+                            const total = Math.round((pPrice + gst) * 100) / 100;
+                            return (
+                              <div className="mb-3 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-2.5 space-y-1 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Service Price</span>
+                                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(pPrice)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">GST ({siteConfig.gstRate}% on service fee)</span>
+                                  <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(gst)}</span>
+                                </div>
+                                <div className="flex justify-between pt-1 border-t border-dashed border-gray-200 dark:border-gray-700">
+                                  <span className="font-semibold text-gray-900 dark:text-gray-100">Total Payable</span>
+                                  <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(total)}</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {isOwner && proposal.status === "pending" && (
                             <div className="flex gap-2">

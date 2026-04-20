@@ -19,6 +19,7 @@ import { EmailClient } from "./clients/email.client";
 import { SmsClient } from "./clients/sms.client";
 import { WhatsAppClient } from "./clients/whatsapp.client";
 import { UserClient } from "../common/user/user.client";
+import { UpdatesModule } from "../updates/updates.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UserClient } from "../common/user/user.client";
       { name: "comms.push" },
       { name: "comms.whatsapp" },
     ),
+    UpdatesModule,
   ],
   controllers: [
     NotificationController,

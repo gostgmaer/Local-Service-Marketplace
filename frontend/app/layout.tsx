@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { API_URL } from "@/config/constants";
 
 import { Providers } from "./providers";
 
@@ -57,11 +58,11 @@ export default function RootLayout({
       <head>
         <link
           rel="preconnect"
-          href={process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700"}
+          href={API_URL}
         />
         <link
           rel="dns-prefetch"
-          href={process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700"}
+          href={API_URL}
         />
       </head>
       <body className="font-sans antialiased">

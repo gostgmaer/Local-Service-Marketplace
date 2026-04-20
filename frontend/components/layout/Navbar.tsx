@@ -404,7 +404,8 @@ export function Navbar() {
                   <MobileLink
                     href={ROUTES.DASHBOARD_NOTIFICATIONS}
                     icon={Bell}
-                    label={`Notifications${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
+                    label="Notifications"
+                    badge={unreadCount}
                   />
                 )}
                 <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
@@ -466,10 +467,12 @@ function MobileLink({
   href,
   icon: Icon,
   label,
+  badge,
 }: {
   href: string;
   icon: React.ElementType;
   label: string;
+  badge?: number;
 }) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname?.startsWith(href + "/");
@@ -483,7 +486,14 @@ function MobileLink({
           : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
       )}
     >
-      <Icon className="h-4 w-4 flex-shrink-0" />
+      <div className="relative flex-shrink-0">
+        <Icon className="h-4 w-4" />
+        {badge != null && badge > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center h-3.5 w-3.5 text-[8px] font-bold text-white bg-red-500 rounded-full">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
+      </div>
       {label}
     </Link>
   );

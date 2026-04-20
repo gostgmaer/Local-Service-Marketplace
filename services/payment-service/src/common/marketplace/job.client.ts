@@ -10,6 +10,7 @@ export interface JobData {
   status: string;
   actual_amount?: number;
   proposal_id?: string;
+  request_urgency?: string | null;
 }
 
 @Injectable()

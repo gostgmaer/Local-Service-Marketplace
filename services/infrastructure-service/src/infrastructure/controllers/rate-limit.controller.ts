@@ -21,7 +21,7 @@ import { RateLimitService } from "../services/rate-limit.service";
 import { CheckRateLimitDto } from "../dto/check-rate-limit.dto";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@RequirePermissions("admin.access")
+@RequirePermissions("infrastructure.rate_limits")
 @Controller("rate-limits")
 export class RateLimitController {
   constructor(

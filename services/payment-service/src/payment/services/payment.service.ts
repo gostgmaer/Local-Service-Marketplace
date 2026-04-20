@@ -22,6 +22,8 @@ import { JobClient } from "../../common/marketplace/job.client";
 import { AnalyticsClient } from "../../common/analytics/analytics.client";
 import { PaymentGatewayService } from "../gateway/payment-gateway.service";
 import { InvoiceService } from "./invoice.service";
+import { CacheInvalidationService } from "../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../common/services/broadcast.service";
 import {
   PaginatedTransactionResponseDto,
   SortOrder,
@@ -48,6 +50,8 @@ export class PaymentService {
     private readonly analyticsClient: AnalyticsClient,
     private readonly paymentGateway: PaymentGatewayService,
     private readonly invoiceService: InvoiceService,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async createPayment(
@@ -121,11 +125,12 @@ export class PaymentService {
 
     // ── Cash payment: skip gateway entirely ──────────────────────────────────
     const isCash = paymentMethod === "cash";
+    const jobUrgency = job?.request_urgency ?? null;
     if (isCash) {
       // Generate a unique, traceable transaction ID for cash receipts
       const cashTxnId = `CASH-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
       // Calculate GST-inclusive total so the stored amount matches what was agreed
-      const fees = await this.paymentRepository.calculateFees(finalAmount);
+      const fees = await this.paymentRepository.calculateFees(finalAmount, jobUrgency);
       const payment = await this.paymentRepository.createPayment(
         jobId,
         userId,
@@ -135,6 +140,7 @@ export class PaymentService {
         "cash",
         cashTxnId,
         "cash",
+        jobUrgency,
       );
       await this.paymentRepository.updatePaymentStatus(
         payment.id,
@@ -169,7 +175,7 @@ export class PaymentService {
 
     // Calculate GST-inclusive total BEFORE calling the gateway so the customer
     // is charged the correct amount (base service price + GST on platform fee).
-    const fees = await this.paymentRepository.calculateFees(finalAmount);
+    const fees = await this.paymentRepository.calculateFees(finalAmount, jobUrgency);
 
     // Charge via payment gateway — per-request override via X-Payment-Gateway header
     const chargeParams = {
@@ -196,6 +202,7 @@ export class PaymentService {
       "card",
       chargeResult.transactionId,
       activeGatewayName,
+      jobUrgency,
     );
 
     // Mark as completed immediately for succeeded gateway responses.
@@ -318,6 +325,9 @@ export class PaymentService {
       this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
     }
 
+    await this.cacheInvalidation.invalidateEntity("payments");
+    this.broadcastService.emit("payment", payment.id, paymentStatus === "completed" ? "completed" : "created", [`user:${userId}`, `provider:${providerId}`, "admin"], { paymentId: payment.id, jobId }, userId);
+
     return payment;
   }
 
@@ -354,7 +364,7 @@ export class PaymentService {
     const allowedTransitions: Record<string, string[]> = {
       pending: ["completed", "failed"],
       completed: ["refunded"],
-      failed: [],
+      failed: ["pending", "completed"],
       refunded: [],
     };
     const allowed = allowedTransitions[payment.status] ?? [];
@@ -364,11 +374,80 @@ export class PaymentService {
       );
     }
 
-    return this.paymentRepository.updatePaymentStatus(
+    const result = await this.paymentRepository.updatePaymentStatus(
       payment.id,
       status,
       transactionId,
     );
+
+    await this.cacheInvalidation.invalidateEntity("payments");
+    this.broadcastService.emit("payment", payment.id, status === "failed" ? "failed" : status === "refunded" ? "refunded" : "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id }, payment.user_id);
+
+    return result;
+  }
+
+  /**
+   * Retry a failed payment by re-charging the gateway.
+   */
+  async retryPayment(paymentId: string, userId: string): Promise<Payment> {
+    this.logger.log(`Retrying payment ${paymentId}`, "PaymentService");
+
+    const payment = await this.getPaymentById(paymentId);
+
+    if (payment.user_id !== userId) {
+      throw new BadRequestException("You are not the owner of this payment");
+    }
+
+    if (payment.status !== "failed") {
+      throw new BadRequestException("Only failed payments can be retried");
+    }
+
+    // Re-charge via gateway
+    const user = await this.userClient.getUserById(userId).catch(() => null);
+    const chargeParams = {
+      amount: payment.amount,
+      currency: payment.currency,
+      description: `Job ${payment.job_id} payment (retry)`,
+      customerEmail: user?.email,
+      customerName: user?.name,
+      metadata: { job_id: payment.job_id, user_id: userId, provider_id: payment.provider_id },
+    };
+
+    const chargeResult = await this.paymentGateway.charge(chargeParams);
+
+    const newStatus = chargeResult.status === "succeeded" ? "completed" : "pending";
+
+    // Allow transition from failed → completed/pending for retries
+    await this.paymentRepository.updatePaymentStatus(
+      payment.id,
+      newStatus,
+      chargeResult.transactionId,
+    );
+
+    this.logger.log(`Payment retry ${payment.id} → ${newStatus}`, "PaymentService");
+
+    if (newStatus === "completed") {
+      await this.kafkaService.publishEvent("payment-events", {
+        eventType: "payment_completed",
+        eventId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        data: {
+          paymentId: payment.id,
+          jobId: payment.job_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: "completed",
+          transactionId: chargeResult.transactionId,
+        },
+      });
+
+      this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+    }
+
+    await this.cacheInvalidation.invalidateEntity("payments");
+    this.broadcastService.emit("payment", payment.id, newStatus === "completed" ? "completed" : "updated", [`user:${userId}`, "admin"], { paymentId: payment.id, jobId: payment.job_id }, userId);
+
+    return { ...payment, status: newStatus as any, transaction_id: chargeResult.transactionId };
   }
 
   async getPaymentsByUser(userId: string): Promise<Payment[]> {

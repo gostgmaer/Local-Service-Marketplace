@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
@@ -43,6 +44,8 @@ export default function AdminUserDetailPage() {
   const [suspendReason, setSuspendReason] = useState("");
   const [showSuspendForm, setShowSuspendForm] = useState(false);
   const [showActivateConfirm, setShowActivateConfirm] = useState(false);
+
+  useRealtimeDetail(["user:updated"], ["admin-user", userId], userId);
 
   const {
     data: user,

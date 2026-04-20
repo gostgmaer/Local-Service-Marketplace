@@ -423,6 +423,7 @@ class DatabaseSeeder {
 			['proposals.read', 'Read Proposals', 'View proposals', 'proposals', 'read'],
 			['proposals.update', 'Update Proposal', 'Update own proposals', 'proposals', 'update'],
 			['proposals.accept', 'Accept Proposal', 'Accept proposals on own requests', 'proposals', 'accept'],
+			['proposals.reject', 'Reject Proposal', 'Reject proposals on own requests', 'proposals', 'reject'],
 			['proposals.manage', 'Manage All Proposals', 'Manage any proposal', 'proposals', 'manage'],
 			['jobs.create', 'Create Job', 'Create jobs from accepted proposals', 'jobs', 'create'],
 			['jobs.read', 'Read Jobs', 'View job details', 'jobs', 'read'],
@@ -491,7 +492,7 @@ class DatabaseSeeder {
 			'dashboard.view', 'profile.view', 'profile.update',
 			'providers.list', 'providers.read', 'categories.read',
 			'requests.create', 'requests.read', 'requests.update', 'requests.delete',
-			'proposals.read', 'proposals.accept',
+			'proposals.read', 'proposals.accept', 'proposals.reject',
 			'jobs.create', 'jobs.read',
 			'reviews.create', 'reviews.read', 'reviews.update',
 			'favorites.manage',
@@ -1935,6 +1936,7 @@ class DatabaseSeeder {
 			{ key: "review_submission_window_days",    value: "90",    type: "number",   description: "Days after job completion within which a customer can submit a review" },
 			{ key: "dispute_window_days",              value: "30",    type: "number",   description: "Days after job completion within which a dispute can be filed" },
 			{ key: "refund_window_days",               value: "30",    type: "number",   description: "Days after payment completion within which a refund can be requested" },
+			{ key: "dispute_escalation_days",           value: "7",     type: "number",   description: "Days before an unresolved dispute is auto-escalated" },
 			// ── Security & Auth ───────────────────────────────────────────────
 			{ key: "max_login_attempts",               value: "5",     type: "number",   description: "Maximum failed login attempts before account is temporarily locked" },
 			{ key: "session_timeout_minutes",          value: "15",    type: "number",   description: "JWT access token lifetime in minutes" },
@@ -1947,10 +1949,14 @@ class DatabaseSeeder {
 			// ── Rate Limits ───────────────────────────────────────────────────
 			{ key: "rate_limit_max_requests",          value: "500",   type: "number",   description: "Maximum requests per rate-limit window for general API endpoints" },
 			{ key: "auth_rate_limit_max_requests",     value: "10",    type: "number",   description: "Maximum authentication requests per 15-minute window per IP" },
+			{ key: "rate_limit_window_ms",             value: "60000", type: "number",   description: "Rate-limit sliding window duration in milliseconds" },
 			// ── Cache & Performance ───────────────────────────────────────────
-			{ key: "provider_cache_ttl_seconds",       value: "300",   type: "number",   description: "Redis cache TTL in seconds for provider profile data" },
-			{ key: "request_cache_ttl_seconds",        value: "300",   type: "number",   description: "Redis cache TTL in seconds for service request list data" },
-			{ key: "job_cache_ttl_seconds",            value: "180",   type: "number",   description: "Redis cache TTL in seconds for job records" },
+			{ key: "get_cache_enabled",                value: "false", type: "boolean",  description: "Master switch to enable Redis caching for all GET API responses across all services" },
+			{ key: "realtime_enabled",                 value: "true",  type: "boolean",  description: "Master switch to enable real-time WebSocket broadcasts and live updates across all services" },
+			{ key: "cache_ttl_seconds",                value: "300",   type: "number",   description: "TTL in seconds for cached GET API responses when caching is enabled" },
+			{ key: "provider_cache_ttl_seconds",       value: "600",   type: "number",   description: "Redis cache TTL in seconds for provider profile data" },
+			{ key: "request_cache_ttl_seconds",        value: "120",   type: "number",   description: "Redis cache TTL in seconds for service request list data" },
+			{ key: "job_cache_ttl_seconds",            value: "60",    type: "number",   description: "Redis cache TTL in seconds for job records" },
 			{ key: "default_page_limit",               value: "20",    type: "number",   description: "Default number of items returned per page for all paginated endpoints" },
 			// ── Data Retention ────────────────────────────────────────────────
 			{ key: "notification_retention_days",      value: "90",    type: "number",   description: "Days before old notification records are purged from the database" },

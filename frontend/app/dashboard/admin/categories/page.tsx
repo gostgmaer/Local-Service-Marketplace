@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -143,6 +144,8 @@ function CategoryFormModal({
 export default function AdminCategoriesPage() {
   const [modalCategory, setModalCategory] = useState<any | null | "new">(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useRealtimeList(["category:created", "category:updated", "category:deleted"], ["admin-categories"]);
 
   const {
     data: categories,

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -31,6 +32,9 @@ import {
 export default function ProviderDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+
+  useRealtimeList(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated"], ["my-proposals"]);
+  useRealtimeList(["job:created", "job:updated", "job:completed"], ["my-jobs"]);
 
   const {
     data: proposals,

@@ -70,15 +70,43 @@ export class PublicController {
   @Get("site-config")
   async getSiteConfig() {
     const keys = [
+      // Contact & branding
       "support_email",
       "contact_phone",
       "contact_address",
+      // Upload limits
       "max_file_upload_size_mb",
       "allowed_file_types",
+      // Pricing
       "gst_rate",
       "platform_fee_percentage",
       "default_currency",
+      // Pagination
       "default_page_limit",
+      // Maintenance
+      "maintenance_mode",
+      "maintenance_message",
+      // Registration & auth
+      "registration_enabled",
+      "provider_registration_enabled",
+      "guest_requests_enabled",
+      // Limits & policies
+      "max_active_requests_per_customer",
+      "max_proposal_count",
+      "max_services_per_provider",
+      "request_expiry_days",
+      "job_auto_complete_days",
+      "dispute_window_days",
+      "refund_window_days",
+      "review_submission_window_days",
+      "min_review_length",
+      // Legal
+      "terms_version",
+      "privacy_version",
+      // Realtime
+      "realtime_enabled",
+      // Timezone
+      "default_timezone",
     ];
 
     const results = await Promise.allSettled(
@@ -90,19 +118,45 @@ export class PublicController {
         ? ((results[i] as PromiseFulfilledResult<any>).value?.value ?? fallback)
         : fallback;
 
+    let idx = 0;
     return {
-      supportEmail: get(0, "support@marketplace.com"),
-      contactPhone: get(1, ""),
-      contactAddress: get(2, ""),
-      maxFileUploadSizeMb: parseInt(get(3, "10"), 10) || 10,
-      allowedFileTypes: get(
-        4,
-        "image/jpeg,image/png,image/webp,application/pdf",
-      ),
-      gstRate: parseFloat(get(5, "18")) || 18,
-      platformFeePercentage: parseFloat(get(6, "15")) || 15,
-      currency: get(7, "INR"),
-      defaultPageLimit: parseInt(get(8, "20"), 10) || 20,
+      // Contact & branding
+      supportEmail: get(idx++, "support@marketplace.com"),
+      contactPhone: get(idx++, ""),
+      contactAddress: get(idx++, ""),
+      // Upload limits
+      maxFileUploadSizeMb: parseInt(get(idx++, "10"), 10) || 10,
+      allowedFileTypes: get(idx++, "image/jpeg,image/png,image/webp,application/pdf"),
+      // Pricing
+      gstRate: parseFloat(get(idx++, "18")) || 18,
+      platformFeePercentage: parseFloat(get(idx++, "15")) || 15,
+      currency: get(idx++, "INR"),
+      // Pagination
+      defaultPageLimit: parseInt(get(idx++, "20"), 10) || 20,
+      // Maintenance
+      maintenanceMode: get(idx++, "false") === "true",
+      maintenanceMessage: get(idx++, ""),
+      // Registration & auth
+      registrationEnabled: get(idx++, "true") === "true",
+      providerRegistrationEnabled: get(idx++, "true") === "true",
+      guestRequestsEnabled: get(idx++, "true") === "true",
+      // Limits & policies
+      maxActiveRequestsPerCustomer: parseInt(get(idx++, "10"), 10) || 10,
+      maxProposalCount: parseInt(get(idx++, "10"), 10) || 10,
+      maxServicesPerProvider: parseInt(get(idx++, "10"), 10) || 10,
+      requestExpiryDays: parseInt(get(idx++, "30"), 10) || 30,
+      jobAutoCompleteDays: parseInt(get(idx++, "7"), 10) || 7,
+      disputeWindowDays: parseInt(get(idx++, "30"), 10) || 30,
+      refundWindowDays: parseInt(get(idx++, "30"), 10) || 30,
+      reviewSubmissionWindowDays: parseInt(get(idx++, "90"), 10) || 90,
+      minReviewLength: parseInt(get(idx++, "10"), 10) || 10,
+      // Legal
+      termsVersion: get(idx++, "1.0"),
+      privacyVersion: get(idx++, "1.0"),
+      // Realtime
+      realtimeEnabled: get(idx++, "true") === "true",
+      // Timezone
+      defaultTimezone: get(idx++, "Asia/Kolkata"),
     };
   }
 }

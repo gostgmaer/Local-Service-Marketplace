@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { ROUTES } from "@/config/constants";
 import { isNotificationsEnabled } from "@/config/features";
 import { Layout } from "@/components/layout/Layout";
@@ -22,6 +23,10 @@ import { EmptyState } from "@/components/ui/EmptyState";
 export default function CustomerDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+
+  useRealtimeList(["request:created", "request:updated"], ["my-requests"]);
+  useRealtimeList(["job:created", "job:updated", "job:completed"], ["my-jobs"]);
+  useRealtimeList(["notification:created"], ["notifications-preview"]);
 
   const {
     data: requests,

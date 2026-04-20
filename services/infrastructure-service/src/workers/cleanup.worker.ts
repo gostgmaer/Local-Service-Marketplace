@@ -5,6 +5,7 @@ import { Job, Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { EventRepository } from "../infrastructure/repositories/event.repository";
 import { BackgroundJobRepository } from "../infrastructure/repositories/background-job.repository";
+import { DeadLetterQueueService } from "../common/dlq/dead-letter-queue.service";
 import { DEFAULT_JOB_OPTIONS } from "../bullmq/bullmq-default-options";
 
 @Processor("infra.cleanup", {
@@ -17,6 +18,7 @@ export class InfraCleanupWorker extends WorkerHost implements OnModuleInit {
     @InjectQueue("infra.cleanup") private readonly cleanupQueue: Queue,
     private readonly eventRepository: EventRepository,
     private readonly backgroundJobRepository: BackgroundJobRepository,
+    private readonly dlqService: DeadLetterQueueService,
   ) {
     super();
   }
@@ -36,6 +38,13 @@ export class InfraCleanupWorker extends WorkerHost implements OnModuleInit {
       { ...DEFAULT_JOB_OPTIONS, repeat: { pattern: "0 3 * * 0" } },
     );
 
+    // Weekly Sunday 4 AM — purge old DLQ entries
+    await this.cleanupQueue.add(
+      "purge-old-dlq-entries",
+      {},
+      { ...DEFAULT_JOB_OPTIONS, repeat: { pattern: "0 4 * * 0" } },
+    );
+
     this.logger.log(
       "Infrastructure cleanup repeatable jobs registered",
       "InfraCleanupWorker",
@@ -49,6 +58,8 @@ export class InfraCleanupWorker extends WorkerHost implements OnModuleInit {
           return this.handlePurgeOldEvents();
         case "purge-old-background-jobs":
           return this.handlePurgeOldBackgroundJobs();
+        case "purge-old-dlq-entries":
+          return this.handlePurgeDlqEntries();
         default:
           throw new Error(`Unknown job name: ${job.name}`);
       }
@@ -83,6 +94,19 @@ export class InfraCleanupWorker extends WorkerHost implements OnModuleInit {
       await this.backgroundJobRepository.deleteCompletedBefore(cutoff);
     this.logger.log(
       `Purged ${count} old background jobs`,
+      "InfraCleanupWorker",
+    );
+  }
+
+  private async handlePurgeDlqEntries(): Promise<void> {
+    const retentionDays = 30;
+    this.logger.log(
+      `Purging DLQ entries older than ${retentionDays} days`,
+      "InfraCleanupWorker",
+    );
+    const count = await this.dlqService.purgeOldFailedJobs(retentionDays);
+    this.logger.log(
+      `Purged ${count} old DLQ entries`,
       "InfraCleanupWorker",
     );
   }

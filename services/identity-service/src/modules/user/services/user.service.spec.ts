@@ -49,6 +49,8 @@ describe("UserService", () => {
       logger,
       notificationClient,
       notificationQueue,
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
 
     return {

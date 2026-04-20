@@ -29,6 +29,7 @@ import { MarketplaceModule } from "../common/marketplace/marketplace.module";
 import { AnalyticsModule } from "../common/analytics/analytics.module";
 import { PaymentGatewayModule } from "./gateway/payment-gateway.module";
 import { FileServiceClient } from "../common/file-service.client";
+import { DisputeEventConsumerService } from "./services/dispute-event-consumer.service";
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { FileServiceClient } from "../common/file-service.client";
     PricingPlanRepository,
     SubscriptionRepository,
     FileServiceClient,
+    DisputeEventConsumerService,
   ],
   exports: [
     PaymentService,

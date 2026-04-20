@@ -46,6 +46,20 @@ export class JobRepository {
     LEFT JOIN proposals prop   ON j.proposal_id = prop.id
   `;
 
+  /** Lean SELECT for list views — only fields the UI cards actually render. */
+  private readonly LIST_SELECT = `
+    SELECT
+      j.id, j.display_id, j.status, j.created_at, j.started_at, j.completed_at,
+      j.actual_amount, j.customer_id, j.provider_id, j.request_id,
+      cu.name  AS customer_name,
+      pu.name  AS provider_name,
+      pr.rating AS provider_rating
+    FROM jobs j
+    LEFT JOIN users cu     ON j.customer_id = cu.id
+    LEFT JOIN providers pr ON j.provider_id = pr.id
+    LEFT JOIN users pu     ON pr.user_id = pu.id
+  `;
+
   /** Normalise a raw DB row into a typed Job object. */
   private mapRow(row: any): Job {
     return {
@@ -194,9 +208,11 @@ export class JobRepository {
     ]);
 
     let query = `
-      SELECT j.*,
+      SELECT j.id, j.display_id, j.status, j.created_at, j.started_at, j.completed_at,
+        j.actual_amount, j.customer_id, j.provider_id, j.request_id,
         pu.name AS provider_name,
-        cu.name AS customer_name
+        cu.name AS customer_name,
+        p.rating AS provider_rating
       FROM jobs j
       LEFT JOIN providers p ON j.provider_id = p.id
       LEFT JOIN users pu ON p.user_id = pu.id
@@ -389,7 +405,7 @@ export class JobRepository {
 
   async getJobsByProvider(providerId: string): Promise<Job[]> {
     const result = await this.pool.query(
-      `${this.ENRICHED_SELECT} WHERE j.provider_id = $1 ORDER BY j.started_at DESC`,
+      `${this.LIST_SELECT} WHERE j.provider_id = $1 ORDER BY j.started_at DESC`,
       [providerId],
     );
     return result.rows.map(this.mapRow.bind(this));
@@ -405,7 +421,7 @@ export class JobRepository {
 
   async getJobsByCustomer(userId: string): Promise<Job[]> {
     const result = await this.pool.query(
-      `${this.ENRICHED_SELECT} WHERE j.customer_id = $1 ORDER BY j.started_at DESC`,
+      `${this.LIST_SELECT} WHERE j.customer_id = $1 ORDER BY j.started_at DESC`,
       [userId],
     );
     return result.rows.map(this.mapRow.bind(this));
@@ -413,7 +429,7 @@ export class JobRepository {
 
   async getJobsByProviderUser(userId: string): Promise<Job[]> {
     const result = await this.pool.query(
-      `${this.ENRICHED_SELECT} WHERE pr.user_id = $1 ORDER BY j.started_at DESC`,
+      `${this.LIST_SELECT} WHERE pr.user_id = $1 ORDER BY j.started_at DESC`,
       [userId],
     );
     return result.rows.map(this.mapRow.bind(this));

@@ -85,10 +85,13 @@ export class ProposalRepository {
   ): Promise<Proposal[]> {
     requestId = await resolveId(this.pool, "service_requests", requestId);
     const query = `
-      SELECT id, display_id, request_id, provider_id, price, message, estimated_hours, start_date, completion_date, rejected_reason, status, created_at, updated_at
-      FROM proposals
-      WHERE request_id = $1
-      ORDER BY created_at DESC
+      SELECT p.id, p.display_id, p.request_id, p.provider_id, p.price, p.message, p.estimated_hours, p.start_date, p.completion_date, p.rejected_reason, p.status, p.created_at, p.updated_at,
+             u.name AS provider_name, pr.rating AS provider_rating
+      FROM proposals p
+      LEFT JOIN providers pr ON p.provider_id = pr.id
+      LEFT JOIN users u ON pr.user_id = u.id
+      WHERE p.request_id = $1
+      ORDER BY p.created_at DESC
       LIMIT $2
     `;
 

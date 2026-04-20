@@ -10,6 +10,7 @@ import { UpdateJobStatusDto, JobStatus } from "../dto/update-job-status.dto";
 import {
   JobResponseDto,
   PaginatedJobResponseDto,
+  PriceBreakdown,
 } from "../dto/job-response.dto";
 import { JobQueryDto, JobSortBy, SortOrder } from "../dto/job-query.dto";
 import {
@@ -27,6 +28,8 @@ import { RedisService } from "../../../redis/redis.service";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserClient } from "../../../common/user/user.client";
 import { AnalyticsClient } from "../../../common/analytics/analytics.client";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class JobService {
@@ -44,8 +47,63 @@ export class JobService {
     private readonly logger: LoggerService,
     @InjectQueue("marketplace.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {
     this.workersEnabled = process.env.WORKERS_ENABLED === "true";
+  }
+
+  /** Urgency → surcharge % mapping. Configurable via system_settings later. */
+  private readonly URGENCY_SURCHARGE: Record<string, number> = {
+    low: 0,
+    medium: 0,
+    high: 10,
+    urgent: 20,
+  };
+
+  /**
+   * Compute a full price breakdown (platform fee, urgency surcharge, GST, total)
+   * using the same system_settings the payment-service reads.
+   */
+  private async computePriceBreakdown(
+    baseAmount: number,
+    urgency: string | null | undefined,
+  ): Promise<PriceBreakdown> {
+    const [feeRateStr, gstRateStr] = await Promise.all([
+      this.jobRepository.getSystemSetting("platform_fee_percentage", "15"),
+      this.jobRepository.getSystemSetting("gst_rate", "18"),
+    ]);
+
+    const platformFeePercent = Math.max(
+      0,
+      Math.min(100, parseFloat(feeRateStr) || 15),
+    );
+    const gstRate = Math.max(0, Math.min(100, parseFloat(gstRateStr) || 18));
+
+    const urgencyLevel = urgency ?? "medium";
+    const urgencySurchargePercent = this.URGENCY_SURCHARGE[urgencyLevel] ?? 0;
+    const urgencySurcharge =
+      Math.round(((baseAmount * urgencySurchargePercent) / 100) * 100) / 100;
+    const subtotal = Math.round((baseAmount + urgencySurcharge) * 100) / 100;
+
+    const platformFee = Math.floor((subtotal * platformFeePercent) / 100);
+    const providerAmount = subtotal - platformFee;
+    const gstAmount = Math.round(((platformFee * gstRate) / 100) * 100) / 100;
+    const totalPayable = Math.round((subtotal + gstAmount) * 100) / 100;
+
+    return {
+      base_amount: baseAmount,
+      urgency_level: urgencyLevel,
+      urgency_surcharge_percent: urgencySurchargePercent,
+      urgency_surcharge: urgencySurcharge,
+      subtotal,
+      platform_fee_percent: platformFeePercent,
+      platform_fee: platformFee,
+      provider_amount: providerAmount,
+      gst_rate: gstRate,
+      gst_amount: gstAmount,
+      total_payable: totalPayable,
+    };
   }
 
   async createJob(dto: CreateJobDto): Promise<JobResponseDto> {
@@ -139,6 +197,9 @@ export class JobService {
       },
     });
 
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", job.id, "created", [`user:${dto.customer_id}`, `provider:${dto.provider_id}`, "admin"], { jobId: job.id }, dto.customer_id);
+
     return JobResponseDto.fromEntity(job);
   }
 
@@ -163,6 +224,15 @@ export class JobService {
     }
 
     const response = JobResponseDto.fromEntity(job);
+
+    // Attach computed price breakdown when there is a known amount
+    const baseAmount = job.actual_amount ?? job.proposal_price ?? 0;
+    if (baseAmount > 0) {
+      response.price_breakdown = await this.computePriceBreakdown(
+        baseAmount,
+        job.request_urgency,
+      );
+    }
 
     // Cache the result
     if (this.redisService.isCacheEnabled()) {
@@ -375,6 +445,9 @@ export class JobService {
       metadata: { status: job.status, providerId: job.provider_id },
     });
 
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", job.id, "updated", [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"], { jobId: job.id }, userId);
+
     return JobResponseDto.fromEntity(job);
   }
 
@@ -520,6 +593,9 @@ export class JobService {
       resourceId: job.id,
       metadata: { providerId: job.provider_id, requestId: job.request_id },
     });
+
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", job.id, "completed", [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"], { jobId: job.id }, userId);
 
     return JobResponseDto.fromEntity(job);
   }
@@ -833,5 +909,8 @@ export class JobService {
         cancelledBy: userId,
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", existingJob.id, "deleted", [`user:${existingJob.customer_id}`, `provider:${existingJob.provider_id}`, "admin"], { jobId: existingJob.id }, userId);
   }
 }

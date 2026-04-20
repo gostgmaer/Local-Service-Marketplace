@@ -130,7 +130,11 @@ export function LocationPicker({
   }, [handleMapClick]);
 
   const initializeMap = useCallback(() => {
-    if (!mapRef.current || typeof google === "undefined") return;
+    if (
+      !mapRef.current ||
+      typeof google === "undefined" ||
+      !google.maps?.places?.AutocompleteService
+    ) return;
 
     const defaultCenter = value
       ? { lat: value.lat, lng: value.lng }
@@ -185,6 +189,21 @@ export function LocationPicker({
       setMapUnavailable(true);
       return;
     }
+
+    // Prevent loading the script multiple times
+    const existingScript = document.querySelector(
+      'script[src*="maps.googleapis.com/maps/api/js"]',
+    );
+    if (existingScript) {
+      // Script already in DOM — wait for it to load or init immediately
+      if (typeof window !== "undefined" && window.google?.maps?.places?.AutocompleteService) {
+        initializeMap();
+      } else {
+        existingScript.addEventListener("load", () => initializeMap());
+      }
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
@@ -197,8 +216,8 @@ export function LocationPicker({
   useEffect(() => {
     if (!mapRef.current || map) return;
 
-    // Check if Google Maps is loaded
-    if (typeof window !== "undefined" && window.google) {
+    // Check if Google Maps is loaded (including places library)
+    if (typeof window !== "undefined" && window.google?.maps?.places?.AutocompleteService) {
       initializeMap();
     } else {
       // Load Google Maps script

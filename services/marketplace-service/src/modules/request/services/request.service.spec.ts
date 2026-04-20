@@ -24,6 +24,8 @@ describe("RequestService list validation", () => {
       {} as any,
       { log: jest.fn(), warn: jest.fn() } as any,
       { add: jest.fn() } as any, // notificationQueue
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
 
     return { service };
@@ -95,6 +97,8 @@ describe("RequestService.createRequest", () => {
       userClient,
       { log: jest.fn(), warn: jest.fn() } as any,
       { add: jest.fn().mockResolvedValue(undefined) } as any, // notificationQueue
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
 
     return { service, requestRepository, categoryRepository, userClient };
@@ -193,6 +197,8 @@ describe("RequestService.getRequestById", () => {
       {} as any,
       { log: jest.fn(), warn: jest.fn() } as any,
       { add: jest.fn() } as any,
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
   }
 
@@ -248,6 +254,8 @@ describe("RequestService.updateRequest", () => {
       { getUserEmail: jest.fn().mockResolvedValue(null) } as any,
       { log: jest.fn(), warn: jest.fn() } as any,
       { add: jest.fn() } as any,
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
   }
 

@@ -28,7 +28,7 @@ import { UpdateJobStatusDto } from "../dto/update-job-status.dto";
 import { BackgroundJobQueryDto } from "../dto/background-job-query.dto";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@RequirePermissions("admin.access")
+@RequirePermissions("infrastructure.jobs")
 @Controller("background-jobs")
 export class BackgroundJobController {
   constructor(

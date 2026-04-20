@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Layout } from "@/components/layout/Layout";
 import { Modal } from "@/components/ui/Modal";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -414,6 +415,8 @@ export default function ProviderVerificationPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("pending");
   const limit = 10;
+
+  useRealtimeList(["provider:created", "provider:updated"], ["admin-providers"]);
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["admin-providers", statusFilter, page],

@@ -24,6 +24,8 @@ describe("ProposalService list validation", () => {
       {} as any, // userClient
       { log: jest.fn(), warn: jest.fn() } as any, // logger
       { add: jest.fn() } as any, // notificationQueue
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any, // cacheInvalidation
+      { emit: jest.fn().mockResolvedValue(undefined) } as any, // broadcastService
     );
 
     return { service };
@@ -100,6 +102,8 @@ describe("ProposalService.createProposal", () => {
       userClient,
       { log: jest.fn(), warn: jest.fn() } as any,
       { add: jest.fn().mockResolvedValue(undefined) } as any,
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
 
     return { service, proposalRepository, userClient };
@@ -248,6 +252,8 @@ describe("ProposalService.acceptProposal", () => {
       userClient,
       { log: jest.fn(), warn: jest.fn() } as any,
       { add: jest.fn().mockResolvedValue(undefined) } as any,
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
 
     return { service, proposalRepository, jobRepository, requestRepository };

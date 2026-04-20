@@ -30,6 +30,8 @@ import {
 import { KafkaService } from "../../../kafka/kafka.service";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserClient } from "../../../common/user/user.client";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class ProposalService {
@@ -46,6 +48,8 @@ export class ProposalService {
     private readonly logger: LoggerService,
     @InjectQueue("marketplace.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async createProposal(dto: CreateProposalDto): Promise<ProposalResponseDto> {
@@ -234,7 +238,8 @@ export class ProposalService {
         status: proposal.status,
       },
     });
-
+    await this.cacheInvalidation.invalidateEntity("proposals");
+    this.broadcastService.emit("proposal", proposal.id, "created", [`user:${proposal.provider_id}`, "admin"], { proposalId: proposal.id, requestId: proposal.request_id }, proposal.provider_id);
     return ProposalResponseDto.fromEntity(proposal);
   }
 
@@ -429,6 +434,10 @@ export class ProposalService {
       },
     });
 
+    await this.cacheInvalidation.invalidateEntity("proposals");
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("proposal", proposal.id, "accepted", [`user:${proposal.provider_id}`, "admin"], { proposalId: proposal.id, requestId: proposal.request_id }, proposal.provider_id);
+
     return ProposalResponseDto.fromEntity(proposal);
   }
 
@@ -521,6 +530,9 @@ export class ProposalService {
         status: proposal.status,
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("proposals");
+    this.broadcastService.emit("proposal", proposal.id, "rejected", [`user:${proposal.provider_id}`, "admin"], { proposalId: proposal.id }, proposal.provider_id);
 
     return ProposalResponseDto.fromEntity(proposal);
   }
@@ -736,6 +748,9 @@ export class ProposalService {
       },
     });
 
+    await this.cacheInvalidation.invalidateEntity("proposals");
+    this.broadcastService.emit("proposal", proposal.id, "withdrawn", [`user:${proposal.provider_id}`, "admin"], { proposalId: proposal.id }, proposal.provider_id);
+
     return ProposalResponseDto.fromEntity(proposal);
   }
 
@@ -823,6 +838,9 @@ export class ProposalService {
       }
     }
 
+    await this.cacheInvalidation.invalidateEntity("proposals");
+    this.broadcastService.emit("proposal", proposal.id, "updated", [`user:${proposal.provider_id}`, "admin"], { proposalId: proposal.id }, proposal.provider_id);
+
     return ProposalResponseDto.fromEntity(proposal);
   }
 
@@ -861,6 +879,9 @@ export class ProposalService {
       existingProposal.id,
       existingProposal.provider_id,
     );
+
+    await this.cacheInvalidation.invalidateEntity("proposals");
+    this.broadcastService.emit("proposal", existingProposal.id, "deleted", ["admin"], { proposalId: existingProposal.id }, existingProposal.provider_id);
 
     this.logger.log(
       `Proposal deleted successfully: ${id}`,

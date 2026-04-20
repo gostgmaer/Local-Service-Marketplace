@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/utils/permissions";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -20,12 +23,18 @@ import { Briefcase, Star, CheckCircle } from "lucide-react";
 export default function JobsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { can } = usePermissions();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(ROUTES.LOGIN);
+    } else if (!authLoading && isAuthenticated && !can(Permission.JOBS_READ)) {
+      router.push(ROUTES.DASHBOARD);
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, can]);
+
+  useRealtimeList(["job:created", "job:updated", "job:completed", "job:deleted"], ["my-jobs"]);
+
   const {
     data: jobs,
     isLoading,

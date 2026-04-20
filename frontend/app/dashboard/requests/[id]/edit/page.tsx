@@ -124,7 +124,7 @@ export default function EditRequestPage() {
     <ProtectedRoute requiredPermissions={[Permission.REQUESTS_UPDATE]}>
       <Layout>
         <div className="container-custom py-8">
-          <div className="max-w-2xl mx-auto">
+          <div className=" mx-auto">
             <Link
               href={ROUTES.DASHBOARD_REQUEST_DETAIL(requestId)}
               className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6"

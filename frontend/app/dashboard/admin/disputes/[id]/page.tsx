@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
@@ -62,6 +63,8 @@ export default function AdminDisputeDetailPage() {
   const [resolution, setResolution] = useState("");
   const [outcome, setOutcome] = useState<OutcomeValue>("award_customer");
   const [showResolveConfirm, setShowResolveConfirm] = useState(false);
+
+  useRealtimeDetail(["dispute:updated"], ["admin-dispute", disputeId], disputeId);
 
   const {
     data: dispute,

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -86,6 +87,15 @@ export default function AdminDashboardPage() {
     enabled: can(Permission.ADMIN_ACCESS),
     staleTime: 60_000,
   });
+
+  // Real-time invalidation for admin dashboard queries
+  useRealtimeList(["user:created", "user:updated"], ["admin-users-recent"]);
+  useRealtimeList(["user:created", "user:updated"], ["admin-users-stats"]);
+  useRealtimeList(["dispute:created", "dispute:updated"], ["admin-disputes-recent"]);
+  useRealtimeList(["dispute:created", "dispute:updated"], ["admin-disputes-stats"]);
+  useRealtimeList(["job:created", "job:updated"], ["admin-jobs-stats"]);
+  useRealtimeList(["request:created", "request:updated", "request:deleted"], ["admin-requests-stats"]);
+  useRealtimeList(["payment:created", "payment:updated"], ["admin-payments-stats"]);
 
   const totalUsers = userStats?.total ?? 0;
   const activeDisputes = disputeStats?.byStatus?.open ?? 0;

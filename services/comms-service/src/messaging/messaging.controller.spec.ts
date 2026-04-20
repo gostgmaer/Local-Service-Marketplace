@@ -83,8 +83,7 @@ describe("MessagingController", () => {
       const result = await controller.getMessagesForJob(
         "job-uuid-1",
         { user: { userId: "user-uuid-1" } },
-        1,
-        20,
+        { page: 1, limit: 20 },
       );
       expect(result).toEqual(paginated);
     });
@@ -96,8 +95,7 @@ describe("MessagingController", () => {
       mockMessageService.getUserConversations.mockResolvedValue(convos);
       const result = await controller.getConversations(
         { user: { userId: "user-uuid-1" } },
-        1,
-        20,
+        { page: 1, limit: 20 },
       );
       expect(result.data).toEqual(convos);
       expect(result.total).toBe(1);

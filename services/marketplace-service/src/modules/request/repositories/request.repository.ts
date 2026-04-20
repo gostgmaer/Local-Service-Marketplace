@@ -125,10 +125,8 @@ export class RequestRepository {
     let query = `
       SELECT 
         r.id, r.display_id, r.user_id, r.category_id, r.location_id, r.description, r.budget, r.status, 
-        r.images, r.preferred_date, r.urgency, r.expiry_date, r.view_count, 
-        r.guest_name, r.guest_email, r.guest_phone,
-        r.created_at, r.updated_at,
-        l.id as loc_id, l.latitude, l.longitude, l.address, l.city, l.state, l.zip_code, l.country, l.created_at as loc_created_at,
+        r.urgency, r.guest_name, r.created_at, r.updated_at,
+        l.latitude, l.longitude, l.address, l.city,
         sc.id as cat_id, sc.name as cat_name, sc.icon as cat_icon,
         u.name as user_full_name
       FROM service_requests r
@@ -237,25 +235,17 @@ export class RequestRepository {
         created_at: row.created_at,
         urgency: row.urgency || "medium",
         view_count: row.view_count || 0,
-        images: row.images,
-        preferred_date: row.preferred_date,
-        expiry_date: row.expiry_date,
         updated_at: row.updated_at,
+        guest_name: row.guest_name,
       };
 
       // Add location if exists
-      if (row.loc_id) {
+      if (row.latitude) {
         request.location = {
-          id: row.loc_id,
-          user_id: row.user_id,
           latitude: parseFloat(row.latitude),
           longitude: parseFloat(row.longitude),
           address: row.address,
           city: row.city,
-          state: row.state,
-          zip_code: row.zip_code,
-          country: row.country,
-          created_at: row.loc_created_at,
         } as LocationEntity;
       }
 
@@ -711,5 +701,49 @@ export class RequestRepository {
     `;
     const result = await this.pool.query(query, [startDate, endDate, limit]);
     return result.rows;
+  }
+
+  async fullTextSearch(
+    q: string,
+    options: { category?: string; location?: string; page?: number; limit?: number } = {},
+  ): Promise<{ data: any[]; total: number }> {
+    const { category, location, page = 1, limit = 20 } = options;
+    const offset = (page - 1) * limit;
+
+    const conditions: string[] = ["s.search_vector @@ plainto_tsquery('english', $1)"];
+    const params: any[] = [q];
+    let paramIndex = 2;
+
+    if (category) {
+      conditions.push(`s.category = $${paramIndex++}`);
+      params.push(category);
+    }
+    if (location) {
+      conditions.push(`s.location = $${paramIndex++}`);
+      params.push(location);
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const countQuery = `SELECT COUNT(*)::int AS count FROM service_request_search s WHERE ${whereClause}`;
+    const countResult = await this.pool.query(countQuery, params);
+    const total = countResult.rows[0].count;
+
+    params.push(limit, offset);
+    const dataQuery = `
+      SELECT r.id, r.display_id, r.description, r.status, r.budget, r.urgency,
+             r.preferred_date, r.created_at,
+             s.category, s.location,
+             ts_rank(s.search_vector, plainto_tsquery('english', $1)) AS rank
+      FROM service_request_search s
+      JOIN service_requests r ON r.id = s.request_id
+      WHERE ${whereClause}
+        AND r.deleted_at IS NULL
+      ORDER BY rank DESC, r.created_at DESC
+      LIMIT $${paramIndex++} OFFSET $${paramIndex}
+    `;
+    const result = await this.pool.query(dataQuery, params);
+
+    return { data: result.rows, total };
   }
 }

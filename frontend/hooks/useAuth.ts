@@ -3,7 +3,7 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { ROUTES, getDashboardHomeByRole } from "@/config/constants";
+import { ROUTES, getDashboardHomeByRole, API_URL } from "@/config/constants";
 import { authService, SignupData } from "@/services/auth-service";
 import toast from "react-hot-toast";
 
@@ -122,7 +122,6 @@ export function useAuth() {
   };
 
   const requestOTP = async (phone: string) => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
     const response = await fetch(
       `${API_URL}/api/v1/user/auth/phone/otp/request`,
       {
@@ -143,7 +142,6 @@ export function useAuth() {
   };
 
   const requestEmailOTP = async (email: string) => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
     const response = await fetch(
       `${API_URL}/api/v1/user/auth/email/otp/request`,
       {
@@ -192,13 +190,11 @@ export function useAuth() {
 
   const loginWithGoogle = () => {
     // Redirect to backend OAuth endpoint
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
     window.location.href = `${API_URL}/api/v1/user/auth/google`;
   };
 
   const loginWithFacebook = () => {
     // Redirect to backend OAuth endpoint
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
     window.location.href = `${API_URL}/api/v1/user/auth/facebook`;
   };
 

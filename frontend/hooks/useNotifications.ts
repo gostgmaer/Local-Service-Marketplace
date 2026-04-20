@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { notificationService } from "@/services/notification-service";
 import { isNotificationsEnabled } from "@/config/features";
+import { useSocketEvent } from "@/hooks/useSocket";
 
 interface NotificationCount {
   unreadCount: number;
@@ -26,7 +27,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   // Check if notifications are enabled via feature flag
   const notificationsEnabled = isNotificationsEnabled();
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     // Don't fetch if feature is disabled or not enabled via options
     if (!enabled || !notificationsEnabled) {
       setIsLoading(false);
@@ -42,7 +43,10 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       setUnreadCount(0); // Reset count on error
       setIsLoading(false);
     }
-  };
+  }, [enabled, notificationsEnabled]);
+
+  // Re-fetch unread count when a new notification arrives via socket
+  useSocketEvent("notification:created", fetchUnreadCount);
 
   useEffect(() => {
     // Only fetch if enabled and notifications feature is enabled
@@ -55,10 +59,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     // Initial fetch
     fetchUnreadCount();
 
-    // Poll every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-
-    return () => clearInterval(interval);
+    return () => {};
   }, [enabled, notificationsEnabled]); // Re-run when enabled state changes
 
   return {

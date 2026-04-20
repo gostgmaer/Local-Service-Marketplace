@@ -14,7 +14,7 @@ function PaymentMethodsContent() {
 
 export default function PaymentMethodsPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={["payments.read"]}>
       <PaymentMethodsContent />
     </ProtectedRoute>
   );

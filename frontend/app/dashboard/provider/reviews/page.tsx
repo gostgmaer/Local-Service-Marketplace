@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -18,6 +19,8 @@ export default function ProviderReviewsPage() {
   const pathname = usePathname();
   const { user, isAuthenticated } = useAuth();
   const { can } = usePermissions();
+
+  useRealtimeList(["review:created"], ["my-provider-profile", user?.id]);
 
   const {
     data: provider,

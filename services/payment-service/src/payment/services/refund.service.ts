@@ -11,6 +11,8 @@ import {
 } from "../../common/exceptions/http.exceptions";
 import { NotificationClient } from "../../common/notification/notification.client";
 import { UserClient } from "../../common/user/user.client";
+import { CacheInvalidationService } from "../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../common/services/broadcast.service";
 
 @Injectable()
 export class RefundService {
@@ -26,6 +28,8 @@ export class RefundService {
     private readonly paymentRepository: PaymentRepository,
     private readonly notificationClient: NotificationClient,
     private readonly userClient: UserClient,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async createRefund(paymentId: string, amount?: number): Promise<Refund> {
@@ -90,6 +94,10 @@ export class RefundService {
       `Refund created and queued for processing: ${refund.id}`,
       "RefundService",
     );
+
+    // Broadcast refund event to customer and admins
+    await this.cacheInvalidation.invalidateEntity("payments");
+    this.broadcastService.emit("refund", refund.id, "created", [`user:${payment.user_id}`, "admin"], { paymentId, refundId: refund.id }, payment.user_id);
 
     // NOTE: The refund notification email is intentionally NOT sent here.
     // It is sent by the refund worker AFTER the gateway confirms the refund,

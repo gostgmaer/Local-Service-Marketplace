@@ -52,7 +52,7 @@ function CreateRequestContent() {
 
   const form = useForm({
     resolver: zodResolver(createRequestSchema),
-    defaultValues: { category_id: "", description: "", budget: 0 },
+    defaultValues: { category_id: "", description: "", budget: 0, urgency: "medium" as const, preferred_date: "" },
   });
 
   const {
@@ -120,6 +120,8 @@ function CreateRequestContent() {
     // Prepare request data with location
     const requestData: any = {
       ...data,
+      // Only send preferred_date if user selected one
+      ...(data.preferred_date ? { preferred_date: data.preferred_date } : {}),
       location: {
         latitude: location.lat,
         longitude: location.lng,
@@ -254,6 +256,39 @@ function CreateRequestContent() {
                   {errors.budget && (
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">
                       {errors.budget.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Select
+                    label="Urgency"
+                    {...register("urgency")}
+                    options={[
+                      { value: "low", label: "Low — No rush" },
+                      { value: "medium", label: "Medium — Within a week" },
+                      { value: "high", label: "High — Within a day or two" },
+                      { value: "urgent", label: "Urgent — As soon as possible" },
+                    ]}
+                  />
+                  {errors.urgency && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {errors.urgency.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Input
+                    label="Preferred Date (Optional)"
+                    type="date"
+                    {...register("preferred_date")}
+                    min={new Date().toISOString().split("T")[0]}
+                    helperText="When would you like the service to be performed?"
+                  />
+                  {errors.preferred_date && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {errors.preferred_date.message}
                     </p>
                   )}
                 </div>

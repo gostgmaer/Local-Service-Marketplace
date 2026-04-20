@@ -20,6 +20,8 @@ import {
 import { RedisService } from "../../../redis/redis.service";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserRepository } from "../repositories/user.repository";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class ProviderService {
@@ -37,6 +39,8 @@ export class ProviderService {
     private readonly userRepo: UserRepository,
     @InjectQueue("identity.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {
     this.defaultLimit = parseInt(
       this.configService.get<string>("DEFAULT_PAGE_LIMIT", "20"),
@@ -156,6 +160,9 @@ export class ProviderService {
       await this.redisService.delPattern("provider:*");
     }
 
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "created", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+
     return this.getProvider(provider.id);
   }
 
@@ -230,6 +237,9 @@ export class ProviderService {
     if (this.redisService.isCacheEnabled()) {
       await this.redisService.del(`provider:${provider.id}`);
     }
+
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "updated", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
 
     return this.getProvider(provider.id);
   }
@@ -477,6 +487,9 @@ export class ProviderService {
       await this.redisService.del(`provider:${provider.id}`);
     }
 
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "updated", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+
     return {
       id: newService.id,
       provider_id: provider.id,
@@ -493,6 +506,9 @@ export class ProviderService {
     if (this.redisService.isCacheEnabled()) {
       await this.redisService.del(`provider:${providerId}`);
     }
+
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", providerId, "updated", ["admin"], { providerId }, "system");
   }
 
   async getProviderAvailability(providerId: string): Promise<any[]> {
@@ -535,6 +551,9 @@ export class ProviderService {
 
     // Delete provider
     await this.providerRepo.delete(provider.id);
+
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "deleted", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
 
     this.logger.info("Provider deleted successfully", {
       context: "ProviderService",
@@ -601,6 +620,22 @@ export class ProviderService {
       }
     }
 
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", providerId, "updated", [`provider:${providerId}`, "admin"], { providerId });
+
     return this.getProvider(providerId);
+  }
+
+  /**
+   * Find providers near a geographic point.
+   */
+  async findNearbyProviders(
+    lat: number,
+    lng: number,
+    radiusKm: number = 25,
+    limit: number = 20,
+    offset: number = 0,
+  ) {
+    return this.providerRepo.findNearby(lat, lng, radiusKm, limit, offset);
   }
 }

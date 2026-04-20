@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Permission } from "@/utils/permissions";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
+import { useMessagingConnection } from "@/hooks/useMessagingSocket";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { usePresence } from "@/hooks/usePresence";
 import { isMessagingEnabled } from "@/config/features";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -14,25 +20,41 @@ import { Loading } from "@/components/ui/Loading";
 import { SkeletonListItem } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { messageService, Conversation } from "@/services/message-service";
-import { formatDateTime, cn } from "@/utils/helpers";
-import { Send, ArrowLeft } from "lucide-react";
+import { formatDateTime, formatRelativeTime, cn } from "@/utils/helpers";
+import { Send, ArrowLeft, CheckCheck } from "lucide-react";
 
 export default function MessagesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { can } = usePermissions();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showThread, setShowThread] = useState(false);
   const [messageText, setMessageText] = useState("");
+  const [activeReceiverId, setActiveReceiverId] = useState<string | null>(null);
 
-  // Redirect if not authenticated or messaging is disabled
+  // Connect to /messaging namespace for typing & presence
+  useMessagingConnection();
+
+  // Typing indicator
+  const { isOtherTyping, sendTyping } = useTypingIndicator(activeReceiverId);
+
+  // Online presence
+  const { isOnline, requestOnlineStatus } = usePresence();
+
+  // Redirect if not authenticated, missing permission, or messaging is disabled
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(ROUTES.LOGIN);
+    } else if (!authLoading && isAuthenticated && !can(Permission.MESSAGES_READ)) {
+      router.push(ROUTES.DASHBOARD);
     } else if (!authLoading && isAuthenticated && !isMessagingEnabled()) {
       router.push(ROUTES.DASHBOARD);
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, can]);
+
+  useRealtimeList(["message:created"], ["conversations"]);
+  useRealtimeList(["message:created"], ["messages", selectedJobId]);
 
   const {
     data: conversations,
@@ -43,15 +65,34 @@ export default function MessagesPage() {
     queryKey: ["conversations"],
     queryFn: () => messageService.getConversations(),
     enabled: isMessagingEnabled() && isAuthenticated,
-    refetchInterval: 30_000,
   });
 
   const { data: messages } = useQuery({
     queryKey: ["messages", selectedJobId],
     queryFn: () => messageService.getMessagesByJob(selectedJobId!),
     enabled: !!selectedJobId && isMessagingEnabled() && isAuthenticated,
-    refetchInterval: 15_000,
   });
+
+  // Derive the other participant for presence
+  const selectedConversation = useMemo(
+    () => conversations?.find((c: Conversation) => c.job_id === selectedJobId),
+    [conversations, selectedJobId],
+  );
+  const receiverId = selectedConversation?.participant?.id ?? null;
+
+  // Keep activeReceiverId in sync
+  useEffect(() => {
+    setActiveReceiverId(receiverId);
+  }, [receiverId]);
+
+  // Request presence for all conversation participants on load
+  useEffect(() => {
+    if (!conversations) return;
+    const participantIds = conversations
+      .map((c: Conversation) => c.participant?.id)
+      .filter(Boolean) as string[];
+    if (participantIds.length > 0) requestOnlineStatus(participantIds);
+  }, [conversations, requestOnlineStatus]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +104,7 @@ export default function MessagesPage() {
         message: messageText,
       });
       setMessageText("");
+      sendTyping(false);
       queryClient.invalidateQueries({ queryKey: ["messages", selectedJobId] });
     } catch (error) {
       console.error("Failed to send message");
@@ -123,9 +165,27 @@ export default function MessagesPage() {
                             : "hover:bg-gray-50 dark:hover:bg-gray-800"
                         }`}
                       >
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          Job #{conv.job_id.slice(0, 8)}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {conv.participant?.id && (
+                              <span
+                                className={`inline-block h-2.5 w-2.5 rounded-full ${isOnline(conv.participant.id) ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                                title={isOnline(conv.participant.id) ? "Online" : "Offline"}
+                              />
+                            )}
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              Job #{conv.job_id.slice(0, 8)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {conv.last_message_at && (
+                              <span className="text-xs text-gray-400">{formatRelativeTime(conv.last_message_at)}</span>
+                            )}
+                            {!!conv.unread_count && conv.unread_count > 0 && (
+                              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 text-xs font-medium text-white bg-primary-600 rounded-full">{conv.unread_count}</span>
+                            )}
+                          </div>
+                        </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                           {conv.last_message}
                         </p>
@@ -156,9 +216,19 @@ export default function MessagesPage() {
                     <ArrowLeft className="h-4 w-4" /> Back to conversations
                   </button>
                   <h2 className="font-semibold text-gray-900 dark:text-white">
-                    {selectedJobId
-                      ? `Job #${selectedJobId.slice(0, 8)}`
-                      : "Select a conversation"}
+                    {selectedJobId ? (
+                      <span className="flex items-center gap-2">
+                        {`Job #${selectedJobId.slice(0, 8)}`}
+                        {receiverId && (
+                          <span
+                            className={`inline-block h-2.5 w-2.5 rounded-full ${isOnline(receiverId) ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                            title={isOnline(receiverId) ? "Online" : "Offline"}
+                          />
+                        )}
+                      </span>
+                    ) : (
+                      "Select a conversation"
+                    )}
                   </h2>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col">
@@ -179,25 +249,41 @@ export default function MessagesPage() {
                               }`}
                             >
                               <p className="text-sm">{message.message}</p>
-                              <p
-                                className={`text-xs mt-1 ${
+                              <div
+                                className={`flex items-center gap-1 mt-1 ${
                                   message.sender_id === user?.id
                                     ? "text-primary-100"
                                     : "text-gray-500 dark:text-gray-400"
                                 }`}
                               >
-                                {formatDateTime(message.created_at)}
-                              </p>
+                                <span className="text-xs">
+                                  {formatDateTime(message.created_at)}
+                                </span>
+                                {message.sender_id === user?.id && message.read && (
+                                  <CheckCheck className="h-3.5 w-3.5" />
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
 
+                      {/* Typing indicator */}
+                      {isOtherTyping && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 italic mb-2">
+                          typing...
+                        </p>
+                      )}
+
                       {/* Message Input */}
                       <form onSubmit={handleSendMessage} className="flex gap-2">
                         <Input
                           value={messageText}
-                          onChange={(e) => setMessageText(e.target.value)}
+                          onChange={(e) => {
+                            setMessageText(e.target.value);
+                            if (e.target.value.trim()) sendTyping(true);
+                            else sendTyping(false);
+                          }}
                           placeholder="Type a message..."
                           className="flex-1"
                         />

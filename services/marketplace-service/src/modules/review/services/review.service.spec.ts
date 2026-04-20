@@ -67,6 +67,8 @@ function createService(repoOverrides: Partial<{
     makeKafka(),
     makeQueue(), // notificationQueue
     makeQueue(), // ratingQueue
+    { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+    { emit: jest.fn().mockResolvedValue(undefined) } as any,
   );
 
   return { service, reviewRepository };

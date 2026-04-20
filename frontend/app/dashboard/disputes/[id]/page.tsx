@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +44,8 @@ export default function DisputeDetailPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const disputeId = params.id as string;
 
+  useRealtimeDetail(["dispute:updated"], ["dispute", disputeId], disputeId);
+
   const {
     data: dispute,
     isLoading,
@@ -80,7 +83,7 @@ export default function DisputeDetailPage() {
   const currentStep = STATUS_STEPS.indexOf(dispute.status as any);
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={["disputes.read"]}>
       <Layout>
         <div className="container-custom py-8 max-w-3xl mx-auto">
           <Link

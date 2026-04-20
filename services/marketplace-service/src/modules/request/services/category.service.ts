@@ -5,6 +5,8 @@ import { ServiceCategory } from "../entities/service-category.entity";
 import { NotFoundException } from "../../../common/exceptions/http.exceptions";
 import { RedisService } from "../../../redis/redis.service";
 import { UpdateCategoryDto } from "../dto/update-category.dto";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class CategoryService {
@@ -15,6 +17,8 @@ export class CategoryService {
     private readonly redisService: RedisService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async getAllCategories(): Promise<{
@@ -91,6 +95,9 @@ export class CategoryService {
       await this.redisService.del("categories:all");
     }
 
+    await this.cacheInvalidation.invalidateEntity("categories");
+    this.broadcastService.emit("category", category.id, "created", ["admin"]);
+
     return category;
   }
 
@@ -122,6 +129,9 @@ export class CategoryService {
       ]);
     }
 
+    await this.cacheInvalidation.invalidateEntity("categories");
+    this.broadcastService.emit("category", id, "updated", ["admin"]);
+
     return updated;
   }
 
@@ -145,6 +155,9 @@ export class CategoryService {
         this.redisService.del(`category:${id}`),
       ]);
     }
+
+    await this.cacheInvalidation.invalidateEntity("categories");
+    this.broadcastService.emit("category", id, "deleted", ["admin"]);
   }
 
   async searchCategories(

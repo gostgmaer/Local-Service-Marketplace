@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { APP_INTERCEPTOR } from "@nestjs/core";
 import { RequestModule } from "./modules/request/request.module";
 import { ProposalModule } from "./modules/proposal/proposal.module";
 import { JobModule } from "./modules/job/job.module";
@@ -14,6 +15,9 @@ import { AnalyticsModule } from "./common/analytics/analytics.module";
 import { HealthController } from "./common/health/health.controller";
 import { BullMQCoreModule } from "./bullmq/bullmq.module";
 import { WorkersModule } from "./workers/workers.module";
+import { GetCacheInterceptor } from "./common/interceptors/get-cache.interceptor";
+import { CacheController } from "./common/controllers/cache.controller";
+import { SharedModule } from "./common/shared.module";
 
 const conditionalModules =
   process.env.WORKERS_ENABLED === "true" ? [WorkersModule] : [];
@@ -25,6 +29,7 @@ const conditionalModules =
     DatabaseModule,
     BullMQCoreModule,
     RedisModule,
+    SharedModule,
     KafkaModule.register(),
     NotificationModule,
     UserModule,
@@ -35,6 +40,9 @@ const conditionalModules =
     ReviewModule,
     ...conditionalModules,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, CacheController],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: GetCacheInterceptor },
+  ],
 })
 export class AppModule {}

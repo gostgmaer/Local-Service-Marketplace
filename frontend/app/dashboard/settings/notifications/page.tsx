@@ -14,7 +14,7 @@ function NotificationSettingsContent() {
 
 export default function NotificationSettingsPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermissions={["notifications.view"]}>
       <NotificationSettingsContent />
     </ProtectedRoute>
   );

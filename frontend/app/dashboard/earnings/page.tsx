@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { usePagination } from "@/hooks/usePagination";
@@ -49,6 +50,8 @@ export default function EarningsPage() {
     initialLimit: 10,
   });
   const router = useRouter();
+
+  useRealtimeList(["payment:completed"], ["provider-earnings"]);
 
   const {
     data: provider,
