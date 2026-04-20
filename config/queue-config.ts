@@ -81,7 +81,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'exponential',
         delay: 5000, // 5s, 10s, 20s
       },
-      removeOnComplete: { count: 100 },
+      removeOnComplete: true,
       removeOnFail: { count: 50 },
       timeout: 10000, // 10 seconds
       priority: JobPriority.HIGH,
@@ -105,7 +105,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'exponential',
         delay: 10000, // 10s, 20s, 40s
       },
-      removeOnComplete: { count: 100 },
+      removeOnComplete: true,
       removeOnFail: { count: 50 },
       timeout: 15000, // 15 seconds
       priority: JobPriority.HIGH,
@@ -129,7 +129,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'exponential',
         delay: 3000, // 3s, 6s, 12s
       },
-      removeOnComplete: { count: 100 },
+      removeOnComplete: true,
       removeOnFail: { count: 50 },
       timeout: 5000, // 5 seconds
       priority: JobPriority.HIGH,
@@ -205,7 +205,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'exponential',
         delay: 10000, // 10s, 20s, 40s, 80s, 160s
       },
-      removeOnComplete: { count: 50 },
+      removeOnComplete: true,
       removeOnFail: { count: 100 },
       timeout: 30000, // 30 seconds
       priority: JobPriority.CRITICAL,
@@ -229,7 +229,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'exponential',
         delay: 15000, // 15s, 30s, 60s
       },
-      removeOnComplete: { count: 100 },
+      removeOnComplete: true,
       removeOnFail: { count: 100 },
       timeout: 30000, // 30 seconds
       priority: JobPriority.CRITICAL,
@@ -253,7 +253,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'exponential',
         delay: 30000, // 30s, 60s, 120s, 240s, 480s
       },
-      removeOnComplete: { count: 50 },
+      removeOnComplete: true,
       removeOnFail: { count: 100 },
       timeout: 20000, // 20 seconds
       priority: JobPriority.HIGH,
@@ -553,7 +553,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'fixed',
         delay: 10000,
       },
-      removeOnComplete: { count: 1000 },
+      removeOnComplete: true,
       removeOnFail: { count: 100 },
       timeout: 30000, // 30 seconds
       priority: JobPriority.NORMAL,
@@ -602,7 +602,7 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
         type: 'exponential',
         delay: 5000,
       },
-      removeOnComplete: { count: 500 },
+      removeOnComplete: true,
       removeOnFail: { count: 50 },
       timeout: 10000, // 10 seconds
       priority: JobPriority.HIGH,
@@ -654,8 +654,8 @@ export const QUEUE_CONFIGS: Record<string, QueueConfig> = {
     name: 'infra.dlq',
     defaultJobOptions: {
       attempts: 1, // DLQ jobs are already failed
-      removeOnComplete: { count: 1000 },
-      removeOnFail: false, // Keep all DLQ failures
+      removeOnComplete: true,
+      removeOnFail: { count: 500 },
       timeout: 30000, // 30 seconds
       priority: JobPriority.LOW,
     },

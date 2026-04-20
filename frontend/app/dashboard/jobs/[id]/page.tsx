@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -65,6 +66,10 @@ export default function JobDetailPage() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const jobId = params.id as string;
+
+  useRealtimeDetail(["job:created", "job:updated", "job:completed", "job:deleted"], ["job", jobId], jobId);
+  useRealtimeDetail(["payment:completed", "payment:created"], ["job-payments", jobId], jobId);
+  useRealtimeDetail(["review:created"], ["job-review", jobId], jobId);
 
   const { data: job, isLoading, error } = useQuery({
     queryKey: ["job", jobId],

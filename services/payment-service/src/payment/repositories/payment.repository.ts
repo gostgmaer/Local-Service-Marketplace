@@ -346,7 +346,10 @@ export class PaymentRepository {
 
     // payments table has user_id and provider_id — no cross-service JOIN needed
     let query = `
-      SELECT p.*
+      SELECT p.id, p.display_id, p.job_id, p.user_id, p.provider_id,
+        p.amount, p.platform_fee, p.provider_amount, p.currency,
+        p.payment_method, p.status, p.transaction_id, p.failed_reason,
+        p.created_at, p.paid_at
       FROM payments p
       WHERE p.user_id = $1 OR p.provider_id = $1
     `;

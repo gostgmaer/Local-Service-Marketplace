@@ -12,6 +12,7 @@ import { Avatar } from "@/components/ui/Avatar";
 
 import { favoriteService } from "@/services/favorite-service";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { Heart, Star, ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +28,8 @@ export default function FavoritesPage() {
   const [pendingProviderId, setPendingProviderId] = useState<string | null>(
     null,
   );
+
+  useRealtimeList(["favorite:created", "favorite:deleted"], ["favorites"]);
 
   const {
     data: favorites,

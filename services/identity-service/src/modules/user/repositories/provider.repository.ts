@@ -193,7 +193,9 @@ export class ProviderRepository {
     if (offset !== undefined) {
       values.push(offset);
       query = `
-        SELECT DISTINCT providers.*
+        SELECT DISTINCT providers.id, providers.display_id, providers.user_id, providers.business_name,
+          providers.description, providers.verification_status, providers.profile_picture_url,
+          providers.rating, providers.total_jobs_completed, providers.created_at
         FROM providers
         ${whereClause}
 				ORDER BY ${orderColumn} ${orderDirection}, providers.id DESC
@@ -201,7 +203,9 @@ export class ProviderRepository {
       `;
     } else {
       query = `
-      SELECT DISTINCT providers.*
+      SELECT DISTINCT providers.id, providers.display_id, providers.user_id, providers.business_name,
+        providers.description, providers.verification_status, providers.profile_picture_url,
+        providers.rating, providers.total_jobs_completed, providers.created_at
       FROM providers
       ${whereClause}
 			ORDER BY ${orderColumn} ${orderDirection}, providers.id DESC

@@ -30,6 +30,8 @@ import { KafkaService } from "../../../kafka/kafka.service";
 import { RedisService } from "../../../redis/redis.service";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserClient } from "../../../common/user/user.client";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class RequestService {
@@ -47,6 +49,8 @@ export class RequestService {
     private readonly logger: LoggerService,
     @InjectQueue("marketplace.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async createRequest(dto: CreateRequestDto): Promise<RequestResponseDto> {
@@ -240,6 +244,9 @@ export class RequestService {
         status: request.status,
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", request.id, "created", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
 
     return RequestResponseDto.fromEntity(request);
   }
@@ -489,6 +496,9 @@ export class RequestService {
       },
     });
 
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", updatedRequest.id, "updated", [`user:${updatedRequest.user_id}`, "admin"], { requestId: updatedRequest.id }, updatedRequest.user_id);
+
     return RequestResponseDto.fromEntity(updatedRequest);
   }
 
@@ -565,6 +575,9 @@ export class RequestService {
         status: "cancelled",
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", request.id, "updated", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
   }
 
   async deleteRequest(id: string): Promise<void> {

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -26,6 +27,9 @@ export default function JobsPage() {
       router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
+
+  useRealtimeList(["job:created", "job:updated", "job:completed", "job:deleted"], ["my-jobs"]);
+
   const {
     data: jobs,
     isLoading,

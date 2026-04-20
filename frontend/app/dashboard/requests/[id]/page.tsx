@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { ROUTES } from "@/config/constants";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -47,6 +48,9 @@ export default function RequestDetailPage() {
       router.push(ROUTES.LOGIN);
     }
   }, [isAuthenticated, authLoading, router]);
+
+  useRealtimeDetail(["request:updated"], ["request", requestId], requestId);
+  useRealtimeDetail(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated"], ["proposals", requestId], requestId);
 
   const { data: request, isLoading } = useQuery({
     queryKey: ["request", requestId],

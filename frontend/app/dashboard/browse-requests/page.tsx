@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { useRouter } from "next/navigation";
@@ -50,6 +51,8 @@ export default function BrowseRequestsPage() {
     setStatusFilter("open");
     setSortBy("newest");
   };
+
+  useRealtimeList(["request:created", "request:updated"], ["browse-requests"]);
 
   const { data: provider } = useQuery({
     queryKey: ["my-provider-profile", user?.id],

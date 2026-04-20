@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { useRouter } from "next/navigation";
@@ -46,6 +47,8 @@ export default function MyProposalsPage() {
   const [editHours, setEditHours] = useState("");
 
   // Fetch provider's proposals
+  useRealtimeList(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated", "proposal:withdrawn", "proposal:deleted"], ["my-proposals"]);
+
   const {
     data: proposals,
     isLoading,

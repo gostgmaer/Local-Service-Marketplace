@@ -11,6 +11,8 @@ import {
 import { SystemSettingQueryDto } from "../dto/system-setting-query.dto";
 import { resolvePagination } from "../../common/pagination/list-query-validation.util";
 import { CreateSystemSettingDto } from "../dto/create-system-setting.dto";
+import { CacheInvalidationService } from "../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../common/services/broadcast.service";
 
 @Injectable()
 export class SystemSettingService {
@@ -19,6 +21,8 @@ export class SystemSettingService {
     private readonly auditLogRepository: AuditLogRepository,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async getAllSettings(
@@ -124,6 +128,16 @@ export class SystemSettingService {
       "SystemSettingService",
     );
 
+    await this.cacheInvalidation.invalidateEntity("settings");
+    this.broadcastService.emit("setting", key, "updated", ["admin"], { key, value }, adminId);
+
+    // If cache was disabled, flush all service caches
+    if (key === "get_cache_enabled" && value === "false") {
+      this.flushAllServiceCaches().catch((err) => {
+        this.logger.warn(`Failed to flush service caches: ${err.message}`, "SystemSettingService");
+      });
+    }
+
     return updatedSetting;
   }
 
@@ -169,5 +183,30 @@ export class SystemSettingService {
     );
 
     return newSetting;
+  }
+
+  private async flushAllServiceCaches(): Promise<void> {
+    const services = [
+      { url: process.env.IDENTITY_SERVICE_URL || "http://localhost:3001" },
+      { url: process.env.MARKETPLACE_SERVICE_URL || "http://localhost:3003" },
+      { url: process.env.PAYMENT_SERVICE_URL || "http://localhost:3006" },
+      { url: process.env.COMMS_SERVICE_URL || "http://localhost:3007" },
+      { url: process.env.INFRASTRUCTURE_SERVICE_URL || "http://localhost:3012" },
+    ];
+
+    const secret = process.env.INTERNAL_SERVICE_SECRET;
+    if (!secret) return;
+
+    await Promise.allSettled(
+      services.map((svc) =>
+        fetch(`${svc.url}/cache/flush-all`, {
+          method: "POST",
+          headers: { "x-internal-secret": secret, "Content-Type": "application/json" },
+        }),
+      ),
+    );
+
+    // Also flush own cache
+    await this.cacheInvalidation.invalidateAll();
   }
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { isNotificationsEnabled } from "@/config/features";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -78,6 +79,8 @@ export default function NotificationsPage() {
       router.push(ROUTES.DASHBOARD);
     }
   }, [isAuthenticated, authLoading, router]);
+
+  useRealtimeList(["notification:new"], ["notifications"]);
 
   const {
     data: notifications,

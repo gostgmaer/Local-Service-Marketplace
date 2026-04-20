@@ -14,6 +14,8 @@ import {
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserClient } from "../../../common/user/user.client";
 import { KafkaService } from "../../../kafka/kafka.service";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class ReviewService {
@@ -29,6 +31,8 @@ export class ReviewService {
     @InjectQueue("marketplace.notification")
     private readonly notificationQueue: Queue,
     @InjectQueue("marketplace.rating") private readonly ratingQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
@@ -173,6 +177,9 @@ export class ReviewService {
       })
       .catch(() => null);
 
+    await this.cacheInvalidation.invalidateEntity("reviews");
+    this.broadcastService.emit("review", review.id, "created", [`provider:${createReviewDto.provider_id}`, "admin"], { reviewId: review.id }, createReviewDto.reviewer_id);
+
     return review;
   }
 
@@ -273,6 +280,9 @@ export class ReviewService {
         .catch(() => null);
     }
 
+    await this.cacheInvalidation.invalidateEntity("reviews");
+    this.broadcastService.emit("review", review.id, "updated", [`provider:${review.provider_id}`, "admin"], { reviewId: review.id }, review.reviewer_id);
+
     return review;
   }
 
@@ -290,6 +300,9 @@ export class ReviewService {
     this.ratingQueue
       .add("recalculate-provider-rating", { providerId: review.provider_id })
       .catch(() => null);
+
+    await this.cacheInvalidation.invalidateEntity("reviews");
+    this.broadcastService.emit("review", review.id, "deleted", ["admin"], { reviewId: review.id });
 
     this.logger.log(`Review ${id} deleted successfully`, "ReviewService");
   }

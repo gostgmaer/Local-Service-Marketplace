@@ -1,8 +1,6 @@
 import { Module, Global } from "@nestjs/common";
 import Redis from "ioredis";
 import { RedisService } from "./redis.service";
-import { CacheWarmingService } from "./cache-warming.service";
-import { UserModule } from "../modules/user/user.module";
 
 import { ConfigModule, ConfigService } from "@nestjs/config";
 
@@ -27,8 +25,7 @@ const redisClientProvider = {
 
 @Global()
 @Module({
-  imports: [UserModule],
-  providers: [redisClientProvider, RedisService, CacheWarmingService],
+  providers: [redisClientProvider, RedisService],
   exports: ["REDIS_CLIENT", RedisService],
 })
 export class RedisModule {}

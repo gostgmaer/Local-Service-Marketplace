@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { isMessagingEnabled } from "@/config/features";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -14,7 +15,7 @@ import { Loading } from "@/components/ui/Loading";
 import { SkeletonListItem } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { messageService, Conversation } from "@/services/message-service";
-import { formatDateTime, cn } from "@/utils/helpers";
+import { formatDateTime, formatRelativeTime, cn } from "@/utils/helpers";
 import { Send, ArrowLeft } from "lucide-react";
 
 export default function MessagesPage() {
@@ -34,6 +35,8 @@ export default function MessagesPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  useRealtimeList(["message:created"], ["conversations"]);
+
   const {
     data: conversations,
     isLoading,
@@ -43,14 +46,12 @@ export default function MessagesPage() {
     queryKey: ["conversations"],
     queryFn: () => messageService.getConversations(),
     enabled: isMessagingEnabled() && isAuthenticated,
-    refetchInterval: 30_000,
   });
 
   const { data: messages } = useQuery({
     queryKey: ["messages", selectedJobId],
     queryFn: () => messageService.getMessagesByJob(selectedJobId!),
     enabled: !!selectedJobId && isMessagingEnabled() && isAuthenticated,
-    refetchInterval: 15_000,
   });
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -123,9 +124,19 @@ export default function MessagesPage() {
                             : "hover:bg-gray-50 dark:hover:bg-gray-800"
                         }`}
                       >
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          Job #{conv.job_id.slice(0, 8)}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            Job #{conv.job_id.slice(0, 8)}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {conv.last_message_at && (
+                              <span className="text-xs text-gray-400">{formatRelativeTime(conv.last_message_at)}</span>
+                            )}
+                            {!!conv.unread_count && conv.unread_count > 0 && (
+                              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 text-xs font-medium text-white bg-primary-600 rounded-full">{conv.unread_count}</span>
+                            )}
+                          </div>
+                        </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                           {conv.last_message}
                         </p>

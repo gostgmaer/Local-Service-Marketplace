@@ -13,6 +13,7 @@ import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { paymentService } from "@/services/payment-service";
 import { jobService } from "@/services/job-service";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
 import { ROUTES } from "@/config/constants";
 import { formatCurrency, formatRelativeTime } from "@/utils/helpers";
@@ -52,6 +53,8 @@ function PaymentReceiptContent() {
   const { config: siteConfig } = usePublicSettings();
   const paymentId = params.id as string;
   const [copied, setCopied] = useState(false);
+
+  useRealtimeDetail(["payment:completed", "payment:updated"], ["payment", paymentId], paymentId);
 
   const {
     data: payment,

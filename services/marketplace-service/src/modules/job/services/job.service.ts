@@ -27,6 +27,8 @@ import { RedisService } from "../../../redis/redis.service";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserClient } from "../../../common/user/user.client";
 import { AnalyticsClient } from "../../../common/analytics/analytics.client";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class JobService {
@@ -44,6 +46,8 @@ export class JobService {
     private readonly logger: LoggerService,
     @InjectQueue("marketplace.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {
     this.workersEnabled = process.env.WORKERS_ENABLED === "true";
   }
@@ -138,6 +142,9 @@ export class JobService {
         status: job.status,
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", job.id, "created", [`user:${dto.customer_id}`, `provider:${dto.provider_id}`, "admin"], { jobId: job.id }, dto.customer_id);
 
     return JobResponseDto.fromEntity(job);
   }
@@ -375,6 +382,9 @@ export class JobService {
       metadata: { status: job.status, providerId: job.provider_id },
     });
 
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", job.id, "updated", [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"], { jobId: job.id }, userId);
+
     return JobResponseDto.fromEntity(job);
   }
 
@@ -520,6 +530,9 @@ export class JobService {
       resourceId: job.id,
       metadata: { providerId: job.provider_id, requestId: job.request_id },
     });
+
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", job.id, "completed", [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"], { jobId: job.id }, userId);
 
     return JobResponseDto.fromEntity(job);
   }
@@ -833,5 +846,8 @@ export class JobService {
         cancelledBy: userId,
       },
     });
+
+    await this.cacheInvalidation.invalidateEntity("jobs");
+    this.broadcastService.emit("job", existingJob.id, "deleted", [`user:${existingJob.customer_id}`, `provider:${existingJob.provider_id}`, "admin"], { jobId: existingJob.id }, userId);
   }
 }

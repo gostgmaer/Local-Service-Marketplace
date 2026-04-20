@@ -231,6 +231,26 @@ export class DeadLetterQueueService {
   }
 
   /**
+   * Purge failed jobs older than the specified number of days
+   * regardless of status. Used for DLQ auto-purge.
+   */
+  async purgeOldFailedJobs(daysOld: number = 30): Promise<number> {
+    const query = `
+      DELETE FROM failed_jobs
+      WHERE failed_at < NOW() - INTERVAL '${daysOld} days'
+    `;
+
+    const result = await this.pool.query(query);
+
+    this.logger.log(
+      `Purged ${result.rowCount} failed jobs older than ${daysOld} days`,
+      "DeadLetterQueueService",
+    );
+
+    return result.rowCount || 0;
+  }
+
+  /**
    * Get statistics about failed jobs by queue
    */
   async getFailedJobStats(): Promise<{

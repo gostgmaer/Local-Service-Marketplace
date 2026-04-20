@@ -1948,6 +1948,8 @@ class DatabaseSeeder {
 			{ key: "rate_limit_max_requests",          value: "500",   type: "number",   description: "Maximum requests per rate-limit window for general API endpoints" },
 			{ key: "auth_rate_limit_max_requests",     value: "10",    type: "number",   description: "Maximum authentication requests per 15-minute window per IP" },
 			// ── Cache & Performance ───────────────────────────────────────────
+			{ key: "get_cache_enabled",                value: "false", type: "boolean",  description: "Master switch to enable Redis caching for all GET API responses across all services" },
+			{ key: "cache_ttl_seconds",                value: "300",   type: "number",   description: "TTL in seconds for cached GET API responses when caching is enabled" },
 			{ key: "provider_cache_ttl_seconds",       value: "300",   type: "number",   description: "Redis cache TTL in seconds for provider profile data" },
 			{ key: "request_cache_ttl_seconds",        value: "300",   type: "number",   description: "Redis cache TTL in seconds for service request list data" },
 			{ key: "job_cache_ttl_seconds",            value: "180",   type: "number",   description: "Redis cache TTL in seconds for job records" },
@@ -1955,6 +1957,8 @@ class DatabaseSeeder {
 			// ── Data Retention ────────────────────────────────────────────────
 			{ key: "notification_retention_days",      value: "90",    type: "number",   description: "Days before old notification records are purged from the database" },
 			{ key: "failed_delivery_retention_days",   value: "30",    type: "number",   description: "Days before failed notification delivery records are purged" },
+			// ── Worker Cleanup ────────────────────────────────────────────────
+			{ key: "worker_dlq_retention_days",        value: "30",    type: "number",   description: "Days before failed DLQ job entries are automatically purged" },
 			// ── File Uploads ──────────────────────────────────────────────────
 			{ key: "max_file_upload_size_mb",          value: "10",    type: "number",   description: "Maximum file upload size in megabytes" },
 			{ key: "allowed_file_types",               value: "image/jpeg,image/png,image/webp,application/pdf", type: "textarea", description: "Comma-separated list of allowed MIME types for file uploads" },

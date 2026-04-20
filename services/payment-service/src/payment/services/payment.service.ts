@@ -22,6 +22,8 @@ import { JobClient } from "../../common/marketplace/job.client";
 import { AnalyticsClient } from "../../common/analytics/analytics.client";
 import { PaymentGatewayService } from "../gateway/payment-gateway.service";
 import { InvoiceService } from "./invoice.service";
+import { CacheInvalidationService } from "../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../common/services/broadcast.service";
 import {
   PaginatedTransactionResponseDto,
   SortOrder,
@@ -48,6 +50,8 @@ export class PaymentService {
     private readonly analyticsClient: AnalyticsClient,
     private readonly paymentGateway: PaymentGatewayService,
     private readonly invoiceService: InvoiceService,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {}
 
   async createPayment(
@@ -318,6 +322,9 @@ export class PaymentService {
       this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
     }
 
+    await this.cacheInvalidation.invalidateEntity("payments");
+    this.broadcastService.emit("payment", payment.id, paymentStatus === "completed" ? "completed" : "created", [`user:${userId}`, `provider:${providerId}`, "admin"], { paymentId: payment.id, jobId }, userId);
+
     return payment;
   }
 
@@ -364,11 +371,16 @@ export class PaymentService {
       );
     }
 
-    return this.paymentRepository.updatePaymentStatus(
+    const result = await this.paymentRepository.updatePaymentStatus(
       payment.id,
       status,
       transactionId,
     );
+
+    await this.cacheInvalidation.invalidateEntity("payments");
+    this.broadcastService.emit("payment", payment.id, "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id }, payment.user_id);
+
+    return result;
   }
 
   async getPaymentsByUser(userId: string): Promise<Payment[]> {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -21,6 +22,8 @@ export default function MyDisputesPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const limit = 10;
+
+  useRealtimeList(["dispute:created", "dispute:updated"], ["my-disputes"]);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["my-disputes", statusFilter, page],

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { usePagination } from "@/hooks/usePagination";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -47,6 +48,9 @@ export default function PaymentHistoryPage() {
       router.replace(ROUTES.DASHBOARD_EARNINGS);
     }
   }, [isAuthenticated, authLoading, user, router]);
+
+  useRealtimeList(["payment:completed", "payment:created", "payment:updated"], ["payment-history"]);
+
   const {
     data: payments,
     isLoading,

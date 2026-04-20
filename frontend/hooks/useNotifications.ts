@@ -55,10 +55,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     // Initial fetch
     fetchUnreadCount();
 
-    // Poll every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-
-    return () => clearInterval(interval);
+    return () => {};
   }, [enabled, notificationsEnabled]); // Re-run when enabled state changes
 
   return {

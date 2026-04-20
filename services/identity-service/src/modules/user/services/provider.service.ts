@@ -20,6 +20,8 @@ import {
 import { RedisService } from "../../../redis/redis.service";
 import { NotificationClient } from "../../../common/notification/notification.client";
 import { UserRepository } from "../repositories/user.repository";
+import { CacheInvalidationService } from "../../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../../common/services/broadcast.service";
 
 @Injectable()
 export class ProviderService {
@@ -37,6 +39,8 @@ export class ProviderService {
     private readonly userRepo: UserRepository,
     @InjectQueue("identity.notification")
     private readonly notificationQueue: Queue,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
   ) {
     this.defaultLimit = parseInt(
       this.configService.get<string>("DEFAULT_PAGE_LIMIT", "20"),
@@ -156,6 +160,9 @@ export class ProviderService {
       await this.redisService.delPattern("provider:*");
     }
 
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "created", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+
     return this.getProvider(provider.id);
   }
 
@@ -230,6 +237,9 @@ export class ProviderService {
     if (this.redisService.isCacheEnabled()) {
       await this.redisService.del(`provider:${provider.id}`);
     }
+
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "updated", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
 
     return this.getProvider(provider.id);
   }
@@ -600,6 +610,9 @@ export class ProviderService {
         }
       }
     }
+
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", providerId, "updated", [`provider:${providerId}`, "admin"], { providerId });
 
     return this.getProvider(providerId);
   }

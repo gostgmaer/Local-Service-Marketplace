@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -529,6 +530,8 @@ export default function AdminSettingsPage() {
   useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  useRealtimeList(["setting:updated"], ["admin-system-settings"]);
 
   const {
     data: settings,

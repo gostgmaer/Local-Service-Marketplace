@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
@@ -80,6 +81,8 @@ export default function AdminDisputesPage() {
     serverFilters.find((f) => f.id === "status")?.value || "",
   );
   const activeSort = serverSorting[0];
+
+  useRealtimeList(["dispute:created", "dispute:updated"], ["admin-disputes"]);
 
   const {
     data: disputes,
