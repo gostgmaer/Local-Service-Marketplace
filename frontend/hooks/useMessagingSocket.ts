@@ -1,19 +1,19 @@
 "use client";
 
+import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
-import { useEffect, useRef, useCallback } from "react";
 import { create } from "zustand";
 import { WS_URL } from "@/config/constants";
 
-interface SocketStore {
+interface MessagingSocketStore {
   socket: Socket | null;
   connected: boolean;
   setSocket: (socket: Socket | null) => void;
   setConnected: (connected: boolean) => void;
 }
 
-export const useSocketStore = create<SocketStore>((set) => ({
+export const useMessagingSocketStore = create<MessagingSocketStore>((set) => ({
   socket: null,
   connected: false,
   setSocket: (socket) => set({ socket }),
@@ -21,17 +21,16 @@ export const useSocketStore = create<SocketStore>((set) => ({
 }));
 
 /**
- * Hook that manages the socket.io connection lifecycle.
- * Call once at the dashboard layout level.
+ * Hook that manages the /messaging namespace socket.io connection.
+ * Call once at the messages page level.
  */
-export function useSocketConnection() {
+export function useMessagingConnection() {
   const { data: session, status } = useSession();
   const socketRef = useRef<Socket | null>(null);
-  const { setSocket, setConnected } = useSocketStore();
+  const { setSocket, setConnected } = useMessagingSocketStore();
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.accessToken) {
-      // Not authenticated — disconnect if connected
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -41,10 +40,9 @@ export function useSocketConnection() {
       return;
     }
 
-    // Already connected with this token
     if (socketRef.current?.connected) return;
 
-    const socket = io(`${WS_URL}/updates`, {
+    const socket = io(`${WS_URL}/messaging`, {
       auth: { token: session.accessToken },
       transports: ["websocket"],
       reconnection: true,
@@ -53,25 +51,10 @@ export function useSocketConnection() {
       reconnectionAttempts: Infinity,
     });
 
-    socket.on("connect", () => {
-      setConnected(true);
-    });
-
-    socket.on("disconnect", () => {
-      setConnected(false);
-    });
-
+    socket.on("connect", () => setConnected(true));
+    socket.on("disconnect", () => setConnected(false));
     socket.on("connect_error", (err) => {
-      console.warn("[socket] connection error:", err.message);
-      setConnected(false);
-    });
-
-    // Server signals realtime is disabled — stop reconnecting
-    socket.on("realtime_disabled", () => {
-      console.info("[socket] realtime disabled by admin — disconnecting");
-      socket.disconnect();
-      socketRef.current = null;
-      setSocket(null);
+      console.warn("[messaging-socket] connection error:", err.message);
       setConnected(false);
     });
 
@@ -89,27 +72,25 @@ export function useSocketConnection() {
 }
 
 /**
- * Hook to get the current socket instance.
+ * Get the current /messaging namespace socket instance.
  */
-export function useSocket() {
-  return useSocketStore((s) => s.socket);
+export function useMessagingSocket() {
+  return useMessagingSocketStore((s) => s.socket);
 }
 
 /**
- * Subscribe to a socket event. Returns an unsubscribe function.
- * Stable across re-renders via callback ref.
+ * Subscribe to a /messaging namespace event.
  */
-export function useSocketEvent(
+export function useMessagingEvent(
   event: string,
   handler: (payload: any) => void,
 ) {
-  const socket = useSocket();
+  const socket = useMessagingSocket();
   const handlerRef = useRef(handler);
   handlerRef.current = handler;
 
   useEffect(() => {
     if (!socket) return;
-
     const fn = (payload: any) => handlerRef.current(payload);
     socket.on(event, fn);
     return () => {

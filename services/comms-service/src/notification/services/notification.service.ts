@@ -22,6 +22,7 @@ import {
 } from "../dto/send-notification.dto";
 import { SendEmailDto } from "../dto/send-email.dto";
 import { SendSmsDto } from "../dto/send-sms.dto";
+import { UpdatesService } from "../../updates/updates.service";
 
 @Injectable()
 export class NotificationService {
@@ -40,6 +41,7 @@ export class NotificationService {
     private readonly emailClient: EmailClient,
     private readonly smsClient: SmsClient,
     private readonly featureFlags: FeatureFlagService,
+    private readonly updatesService: UpdatesService,
   ) {}
 
   async createNotification(
@@ -91,6 +93,16 @@ export class NotificationService {
       `Notification created and queued successfully: ${notification.id}`,
       "NotificationService",
     );
+
+    // Broadcast real-time event so the frontend notification badge updates instantly
+    this.updatesService.broadcast({
+      entityType: "notification",
+      entityId: notification.id,
+      action: "created",
+      userId,
+      rooms: [`user:${userId}`],
+    });
+
     return notification;
   }
 

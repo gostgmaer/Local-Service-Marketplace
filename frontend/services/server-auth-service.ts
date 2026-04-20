@@ -17,8 +17,7 @@ import {
   isValidBackendRefreshResponse,
   AUTH_ENDPOINTS,
 } from "@/types/auth-alignment";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
+import { API_URL } from "@/config/constants";
 
 // Standardized API Response interface (mirrors api-client.ts)
 interface StandardResponse<T = any> {

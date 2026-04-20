@@ -59,6 +59,26 @@ export class ProviderController {
 		return this.providerService.createProvider(createProviderDto);
 	}
 
+	@Get("nearby")
+	@HttpCode(HttpStatus.OK)
+	async getNearbyProviders(
+		@Query("lat") lat: string,
+		@Query("lng") lng: string,
+		@Query("radius") radius?: string,
+		@Query("limit") limit?: string,
+		@Query("offset") offset?: string,
+	) {
+		const latNum = parseFloat(lat);
+		const lngNum = parseFloat(lng);
+		if (isNaN(latNum) || isNaN(lngNum)) {
+			throw new BadRequestException("lat and lng query params are required and must be valid numbers");
+		}
+		const radiusKm = radius ? parseFloat(radius) : 25;
+		const lim = limit ? parseInt(limit, 10) : 20;
+		const off = offset ? parseInt(offset, 10) : 0;
+		return this.providerService.findNearbyProviders(latNum, lngNum, radiusKm, lim, off);
+	}
+
 	@Get(":id")
 	@HttpCode(HttpStatus.OK)
 	async getProvider(@Param("id", FlexibleIdPipe) id: string): Promise<ProviderResponseDto> {

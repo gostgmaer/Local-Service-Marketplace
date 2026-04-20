@@ -975,6 +975,7 @@ INSERT INTO system_settings (key, value, description, type) VALUES
   ('review_submission_window_days',  '90',    'Days after job completion within which a customer can submit a review',       'number'),
   ('dispute_window_days',            '30',    'Days after job completion within which a dispute can be filed',              'number'),
   ('refund_window_days',             '30',    'Days after payment completion within which a refund can be requested',       'number'),
+  ('dispute_escalation_days',        '7',     'Days before an unresolved dispute is auto-escalated',                        'number'),
   -- ── Payments ───────────────────────────────────────────────────────────────
   ('gst_rate',                       '18',    'GST rate percentage applied to the platform fee (e.g. 18 means 18%)',        'number'),
   -- ── Security & Auth ────────────────────────────────────────────────────────
@@ -989,10 +990,14 @@ INSERT INTO system_settings (key, value, description, type) VALUES
   -- ── Rate Limits ────────────────────────────────────────────────────────────
   ('rate_limit_max_requests',        '500',   'Maximum requests per rate-limit window for general API endpoints',           'number'),
   ('auth_rate_limit_max_requests',   '10',    'Maximum authentication requests per 15-minute window per IP',                'number'),
+  ('rate_limit_window_ms',           '60000', 'Rate-limit sliding window duration in milliseconds',                         'number'),
   -- ── Cache & Performance ────────────────────────────────────────────────────
-  ('provider_cache_ttl_seconds',     '300',   'Redis cache TTL in seconds for provider profile data',                       'number'),
-  ('request_cache_ttl_seconds',      '300',   'Redis cache TTL in seconds for service request list data',                   'number'),
-  ('job_cache_ttl_seconds',          '180',   'Redis cache TTL in seconds for job records',                                 'number'),
+  ('get_cache_enabled',              'false', 'Master switch to enable Redis caching for all GET API responses',            'boolean'),
+  ('realtime_enabled',               'true',  'Master switch to enable real-time WebSocket broadcasts and live updates',    'boolean'),
+  ('cache_ttl_seconds',              '300',   'TTL in seconds for cached GET API responses when caching is enabled',        'number'),
+  ('provider_cache_ttl_seconds',     '600',   'Redis cache TTL in seconds for provider profile data',                       'number'),
+  ('request_cache_ttl_seconds',      '120',   'Redis cache TTL in seconds for service request list data',                   'number'),
+  ('job_cache_ttl_seconds',          '60',    'Redis cache TTL in seconds for job records',                                 'number'),
   ('default_page_limit',             '20',    'Default number of items returned per page for all paginated endpoints',      'number'),
   -- ── Data Retention ─────────────────────────────────────────────────────────
   ('notification_retention_days',    '90',    'Days before old notification records are purged from the database',          'number'),

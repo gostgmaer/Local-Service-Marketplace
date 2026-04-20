@@ -103,6 +103,7 @@ const GROUP_CONFIG: Record<
       "review_submission_window_days",
       "review_auto_approve_days",
       "dispute_window_days",
+      "dispute_escalation_days",
       "refund_window_days",
     ],
   },
@@ -123,13 +124,15 @@ const GROUP_CONFIG: Record<
   ratelimit: {
     label: "Rate Limits",
     icon: Zap,
-    keys: ["rate_limit_max_requests", "auth_rate_limit_max_requests"],
+    keys: ["rate_limit_max_requests", "auth_rate_limit_max_requests", "rate_limit_window_ms"],
   },
   cache: {
     label: "Cache & Performance",
     icon: Database,
     keys: [
+      "get_cache_enabled",
       "realtime_enabled",
+      "cache_ttl_seconds",
       "provider_cache_ttl_seconds",
       "request_cache_ttl_seconds",
       "job_cache_ttl_seconds",
@@ -380,6 +383,15 @@ const EMPTY_FORM = {
 };
 const KEY_PATTERN = /^[a-z][a-z0-9_]*$/;
 
+/** Keys/patterns that must not be created as system settings. */
+const BLOCKED_KEY_PATTERNS = [
+  /payment_method/,
+  /saved_payment/,
+  /default_payment/,
+  /card_brand/,
+  /billing_email/,
+];
+
 const TYPE_OPTIONS: { value: SettingType; label: string; hint: string }[] = [
   { value: "text", label: "Text", hint: "Single-line text input" },
   { value: "number", label: "Number", hint: "Numeric input" },
@@ -408,6 +420,12 @@ function AddSettingForm({
     if (!KEY_PATTERN.test(form.key)) {
       setError(
         "Key must start with a lowercase letter and use only lowercase letters, digits, and underscores.",
+      );
+      return;
+    }
+    if (BLOCKED_KEY_PATTERNS.some((p) => p.test(form.key))) {
+      setError(
+        "Payment-related settings cannot be created here. Payment methods are managed per-user from the Payment Methods page.",
       );
       return;
     }

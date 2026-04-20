@@ -27,7 +27,7 @@ export const SITE_CONFIG_DEFAULTS: SiteConfig = {
   defaultPageLimit: 20,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3700";
+import { API_URL } from "@/config/constants";
 
 /**
  * Fetches site config from the backend.

@@ -361,7 +361,7 @@ export class PaymentService {
     const allowedTransitions: Record<string, string[]> = {
       pending: ["completed", "failed"],
       completed: ["refunded"],
-      failed: [],
+      failed: ["pending", "completed"],
       refunded: [],
     };
     const allowed = allowedTransitions[payment.status] ?? [];
@@ -378,9 +378,73 @@ export class PaymentService {
     );
 
     await this.cacheInvalidation.invalidateEntity("payments");
-    this.broadcastService.emit("payment", payment.id, "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id }, payment.user_id);
+    this.broadcastService.emit("payment", payment.id, status === "failed" ? "failed" : status === "refunded" ? "refunded" : "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id }, payment.user_id);
 
     return result;
+  }
+
+  /**
+   * Retry a failed payment by re-charging the gateway.
+   */
+  async retryPayment(paymentId: string, userId: string): Promise<Payment> {
+    this.logger.log(`Retrying payment ${paymentId}`, "PaymentService");
+
+    const payment = await this.getPaymentById(paymentId);
+
+    if (payment.user_id !== userId) {
+      throw new BadRequestException("You are not the owner of this payment");
+    }
+
+    if (payment.status !== "failed") {
+      throw new BadRequestException("Only failed payments can be retried");
+    }
+
+    // Re-charge via gateway
+    const user = await this.userClient.getUserById(userId).catch(() => null);
+    const chargeParams = {
+      amount: payment.amount,
+      currency: payment.currency,
+      description: `Job ${payment.job_id} payment (retry)`,
+      customerEmail: user?.email,
+      customerName: user?.name,
+      metadata: { job_id: payment.job_id, user_id: userId, provider_id: payment.provider_id },
+    };
+
+    const chargeResult = await this.paymentGateway.charge(chargeParams);
+
+    const newStatus = chargeResult.status === "succeeded" ? "completed" : "pending";
+
+    // Allow transition from failed → completed/pending for retries
+    await this.paymentRepository.updatePaymentStatus(
+      payment.id,
+      newStatus,
+      chargeResult.transactionId,
+    );
+
+    this.logger.log(`Payment retry ${payment.id} → ${newStatus}`, "PaymentService");
+
+    if (newStatus === "completed") {
+      await this.kafkaService.publishEvent("payment-events", {
+        eventType: "payment_completed",
+        eventId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        data: {
+          paymentId: payment.id,
+          jobId: payment.job_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: "completed",
+          transactionId: chargeResult.transactionId,
+        },
+      });
+
+      this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+    }
+
+    await this.cacheInvalidation.invalidateEntity("payments");
+    this.broadcastService.emit("payment", payment.id, newStatus === "completed" ? "completed" : "updated", [`user:${userId}`, "admin"], { paymentId: payment.id, jobId: payment.job_id }, userId);
+
+    return { ...payment, status: newStatus as any, transaction_id: chargeResult.transactionId };
   }
 
   async getPaymentsByUser(userId: string): Promise<Payment[]> {

@@ -9,6 +9,7 @@ import { MessagingGateway } from "./gateways/messaging.gateway";
 import { FileServiceClient } from "../common/file-service.client";
 import { NotificationModule } from "../notification/notification.module";
 import { UserModule } from "../common/user/user.module";
+import { UpdatesModule } from "../updates/updates.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UserModule } from "../common/user/user.module";
     }),
     NotificationModule,
     UserModule,
+    UpdatesModule,
   ],
   controllers: [MessagingController],
   providers: [

@@ -11,7 +11,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
-import { paymentService, PricingPlan } from "@/services/payment-service";
+import { paymentService, PricingPlan, SavedPaymentMethod } from "@/services/payment-service";
 import { getProviderProfileByUserId } from "@/services/user-service";
 import { jobService } from "@/services/job-service";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
@@ -23,6 +23,8 @@ import {
   ArrowLeft,
   Briefcase,
   Tag,
+  Banknote,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -41,12 +43,26 @@ function JobCheckout({ jobId }: { jobId: string }) {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<string>("cash");
 
   const { data: job, isLoading } = useQuery({
     queryKey: ["job", jobId],
     queryFn: () => jobService.getJobById(jobId),
     enabled: !!jobId,
   });
+
+  const { data: savedMethods = [] } = useQuery({
+    queryKey: ["payment-methods"],
+    queryFn: () => paymentService.getPaymentMethods(),
+  });
+
+  // Auto-select the default saved payment method when loaded
+  useEffect(() => {
+    const defaultMethod = savedMethods.find((m) => m.is_default);
+    if (defaultMethod && selectedMethod === "cash") {
+      setSelectedMethod(defaultMethod.id);
+    }
+  }, [savedMethods]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleApplyCoupon = async () => {
     const code = couponCode.trim();
@@ -69,11 +85,19 @@ function JobCheckout({ jobId }: { jobId: string }) {
   const payMutation = useMutation({
     mutationFn: async () => {
       if (!job) throw new Error("Job not found");
+      if (selectedMethod === "cash") {
+        return paymentService.confirmCashPayment(
+          job.id,
+          job.provider_id || (job as any)?.provider?.id || "",
+          totalDue,
+        );
+      }
       return paymentService.createPayment({
         job_id: job.id,
         provider_id: job.provider_id || (job as any)?.provider?.id || "",
         amount: job.actual_amount || 0,
         currency: "INR",
+        payment_method: selectedMethod,
         ...(appliedCoupon ? { coupon_code: appliedCoupon.code } : {}),
       });
     },
@@ -260,6 +284,74 @@ function JobCheckout({ jobId }: { jobId: string }) {
                       )}
                     </>
                   )}
+                </div>
+                {/* Payment Method Selector */}
+                <div className="mb-5">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-2">
+                    <Wallet className="h-4 w-4" />
+                    Payment Method
+                  </label>
+                  <div className="space-y-2">
+                    {/* Cash option — always available */}
+                    <label
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedMethod === "cash"
+                          ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="cash"
+                        checked={selectedMethod === "cash"}
+                        onChange={() => setSelectedMethod("cash")}
+                        className="accent-primary-600"
+                      />
+                      <Banknote className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">Cash</span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Pay directly to the service provider</p>
+                      </div>
+                    </label>
+                    {/* Saved payment methods */}
+                    {savedMethods.map((m) => (
+                      <label
+                        key={m.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedMethod === m.id
+                            ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={m.id}
+                          checked={selectedMethod === m.id}
+                          onChange={() => setSelectedMethod(m.id)}
+                          className="accent-primary-600"
+                        />
+                        <CreditCard className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {m.card_brand || m.payment_type}{" "}
+                            {m.last_four ? `•••• ${m.last_four}` : ""}
+                          </span>
+                          {m.is_default && (
+                            <span className="ml-2 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                              Default
+                            </span>
+                          )}
+                          {m.expiry_month && m.expiry_year && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Expires {m.expiry_month.toString().padStart(2, "0")}/{m.expiry_year}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 {/* Price breakdown */}
                 <div className="mb-6 space-y-2 text-sm text-gray-700 dark:text-gray-300">

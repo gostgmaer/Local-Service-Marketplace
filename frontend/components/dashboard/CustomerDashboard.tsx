@@ -26,7 +26,7 @@ export default function CustomerDashboard() {
 
   useRealtimeList(["request:created", "request:updated"], ["my-requests"]);
   useRealtimeList(["job:created", "job:updated", "job:completed"], ["my-jobs"]);
-  useRealtimeList(["notification:new"], ["notifications-preview"]);
+  useRealtimeList(["notification:created"], ["notifications-preview"]);
 
   const {
     data: requests,

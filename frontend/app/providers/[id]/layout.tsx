@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
+import { API_URL } from "@/config/constants";
 
 const INTERNAL_API =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:3700";
+  process.env.INTERNAL_API_URL || API_URL;
 
 export async function generateMetadata({
   params,

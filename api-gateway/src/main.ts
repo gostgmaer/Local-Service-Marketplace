@@ -96,11 +96,12 @@ async function bootstrap() {
     target: commsUrl,
     ws: true,
     changeOrigin: true,
-    // socket.io uses /socket.io/ path under the /updates namespace
-    pathFilter: ["/updates", "/socket.io"],
+    // socket.io uses /socket.io/ path under /updates and /messaging namespaces
+    pathFilter: ["/updates", "/messaging", "/socket.io"],
   });
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.use("/updates", wsProxy);
+  expressApp.use("/messaging", wsProxy);
   expressApp.use("/socket.io", wsProxy);
 
   app.enableShutdownHooks();

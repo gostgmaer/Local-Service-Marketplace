@@ -11,6 +11,7 @@ import { getQueueToken } from "@nestjs/bullmq";
 import { NotFoundException } from "../../common/exceptions/http.exceptions";
 import { ForbiddenException, BadRequestException } from "@nestjs/common";
 import { NotificationChannel } from "../dto/send-notification.dto";
+import { UpdatesService } from "../../updates/updates.service";
 
 const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
 
@@ -76,6 +77,7 @@ describe("NotificationService", () => {
         { provide: EmailClient, useValue: mockEmailClient },
         { provide: SmsClient, useValue: mockSmsClient },
         { provide: FeatureFlagService, useValue: mockFeatureFlags },
+        { provide: UpdatesService, useValue: { broadcast: jest.fn() } },
       ],
     }).compile();
 

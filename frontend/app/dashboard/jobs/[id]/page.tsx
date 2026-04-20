@@ -150,7 +150,7 @@ export default function JobDetailPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="container-custom py-8 max-w-5xl mx-auto">
+        <div className="container-custom py-8 mx-auto">
           <Link href={ROUTES.DASHBOARD_JOBS} className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6 text-sm">
             <ArrowLeft className="h-4 w-4 mr-2" />Back to My Jobs
           </Link>

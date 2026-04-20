@@ -11,46 +11,53 @@ import {
 } from "lucide-react";
 import { SettingsLayout } from "@/components/layout/SettingsLayout";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
+import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/config/constants";
 
-const settingsCards = [
-  {
-    href: ROUTES.DASHBOARD_SETTINGS_NOTIFICATIONS,
-    icon: Bell,
-    title: "Notifications",
-    description:
-      "Control which alerts and emails you receive for activity on your account.",
-    color: "text-blue-500",
-    bg: "bg-blue-50 dark:bg-blue-900/20",
-  },
-  {
-    href: ROUTES.DASHBOARD_SETTINGS_PASSWORD,
-    icon: Lock,
-    title: "Password & Security",
-    description: "Update your password and enable two-factor authentication.",
-    color: "text-green-500",
-    bg: "bg-green-50 dark:bg-green-900/20",
-  },
-  {
-    href: ROUTES.DASHBOARD_SETTINGS_PAYMENT_METHODS,
-    icon: CreditCard,
-    title: "Payment Methods",
-    description:
-      "Add or remove saved cards and UPI accounts for faster checkout.",
-    color: "text-purple-500",
-    bg: "bg-purple-50 dark:bg-purple-900/20",
-  },
-  {
-    href: ROUTES.DASHBOARD_SETTINGS_SUBSCRIPTION,
-    icon: Crown,
-    title: "Subscription",
-    description: "View your active plan, upgrade, or manage billing details.",
-    color: "text-amber-500",
-    bg: "bg-amber-50 dark:bg-amber-900/20",
-  },
-];
-
 function SettingsContent() {
+  const { user } = useAuth();
+  const role = user?.role;
+
+  const settingsCards = [
+    {
+      href: ROUTES.DASHBOARD_SETTINGS_NOTIFICATIONS,
+      icon: Bell,
+      title: "Notifications",
+      description:
+        "Control which alerts and emails you receive for activity on your account.",
+      color: "text-blue-500",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      roles: ["customer", "provider", "admin"],
+    },
+    {
+      href: ROUTES.DASHBOARD_SETTINGS_PASSWORD,
+      icon: Lock,
+      title: "Password & Security",
+      description: "Update your password and enable two-factor authentication.",
+      color: "text-green-500",
+      bg: "bg-green-50 dark:bg-green-900/20",
+      roles: ["customer", "provider", "admin"],
+    },
+    {
+      href: ROUTES.DASHBOARD_SETTINGS_PAYMENT_METHODS,
+      icon: CreditCard,
+      title: "Payment Methods",
+      description:
+        "Add or remove saved cards and UPI accounts for faster checkout.",
+      color: "text-purple-500",
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      roles: ["customer", "provider"],
+    },
+    {
+      href: ROUTES.DASHBOARD_SETTINGS_SUBSCRIPTION,
+      icon: Crown,
+      title: "Subscription",
+      description: "View your active plan, upgrade, or manage billing details.",
+      color: "text-amber-500",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      roles: ["provider"],
+    },
+  ].filter((card) => card.roles.includes(role ?? ""));
   return (
     <SettingsLayout>
       <div>

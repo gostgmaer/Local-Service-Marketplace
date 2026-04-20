@@ -13,6 +13,7 @@ import {
 import { EmailClient } from "../../notification/clients/email.client";
 import { UserClient } from "../../common/user/user.client";
 import { NotificationPreferencesService } from "../../notification/services/notification-preferences.service";
+import { UpdatesService } from "../../updates/updates.service";
 
 @Injectable()
 export class MessageService {
@@ -23,6 +24,7 @@ export class MessageService {
     private readonly emailClient: EmailClient,
     private readonly userClient: UserClient,
     private readonly notificationPreferencesService: NotificationPreferencesService,
+    private readonly updatesService: UpdatesService,
   ) {}
 
   async createMessage(
@@ -62,6 +64,17 @@ export class MessageService {
       .getJobRecipientId(newMessage.job_id, senderId)
       .then(async (recipientId) => {
         if (!recipientId) return;
+
+        // Broadcast real-time event to both participants
+        this.updatesService.broadcast({
+          entityType: "message",
+          entityId: newMessage.id,
+          action: "created",
+          userId: senderId,
+          relatedIds: { jobId: newMessage.job_id },
+          rooms: [`user:${senderId}`, `user:${recipientId}`],
+        });
+
         // Check notification preferences before sending the alert
         const alertsEnabled =
           await this.notificationPreferencesService.checkNotificationEnabled(

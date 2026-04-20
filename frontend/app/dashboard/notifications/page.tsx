@@ -80,7 +80,7 @@ export default function NotificationsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  useRealtimeList(["notification:new"], ["notifications"]);
+  useRealtimeList(["notification:created"], ["notifications"]);
 
   const {
     data: notifications,

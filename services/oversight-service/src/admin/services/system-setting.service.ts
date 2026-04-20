@@ -8,8 +8,6 @@ import {
   ConflictException,
   BadRequestException,
 } from "../../common/exceptions/http.exceptions";
-import { SystemSettingQueryDto } from "../dto/system-setting-query.dto";
-import { resolvePagination } from "../../common/pagination/list-query-validation.util";
 import { CreateSystemSettingDto } from "../dto/create-system-setting.dto";
 import { CacheInvalidationService } from "../../common/services/cache-invalidation.service";
 import { BroadcastService } from "../../common/services/broadcast.service";
@@ -25,26 +23,13 @@ export class SystemSettingService {
     private readonly broadcastService: BroadcastService,
   ) {}
 
-  async getAllSettings(
-    queryDto: SystemSettingQueryDto,
-  ): Promise<{
-    data: SystemSetting[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const pagination = resolvePagination(queryDto, { page: 1, limit: 50 });
+  async getAllSettings(): Promise<SystemSetting[]> {
     this.logger.log(
-      `Fetching system settings (page: ${pagination.page}, limit: ${pagination.limit}, offset: ${pagination.offset})`,
+      "Fetching all system settings",
       "SystemSettingService",
     );
 
-    const [data, total] = await Promise.all([
-      this.systemSettingRepository.findSettings(queryDto, pagination),
-      this.systemSettingRepository.countSettings(queryDto),
-    ]);
-
-    return { data, total, page: pagination.page, limit: pagination.limit };
+    return this.systemSettingRepository.getAllSettings();
   }
 
   async getSettingByKey(key: string): Promise<SystemSetting> {

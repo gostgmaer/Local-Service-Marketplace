@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Calendar,
   Shield,
+  Banknote,
 } from "lucide-react";
 import {
   paymentService,
@@ -35,6 +36,7 @@ export function PaymentMethods() {
       setMethods(data || []);
     } catch (error) {
       console.error("Failed to load payment methods:", error);
+      toast.error("Failed to load payment methods");
     } finally {
       setLoading(false);
     }
@@ -43,6 +45,7 @@ export function PaymentMethods() {
   const setDefault = async (methodId: string) => {
     try {
       await paymentService.setDefaultPaymentMethod(methodId);
+      toast.success("Default payment method updated");
       loadPaymentMethods();
     } catch (error) {
       console.error("Failed to set default:", error);
@@ -149,13 +152,30 @@ export function PaymentMethods() {
             </div>
           </div>
 
+          {/* Cash — always available */}
+          <div className="p-4 border-b border-gray-200 flex items-center gap-4 bg-emerald-50 dark:bg-emerald-900/10">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-lg flex items-center justify-center text-white">
+              <Banknote className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Cash</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Always available — pay directly to the service provider
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs font-medium rounded-full">
+              <Check className="w-3 h-3" />
+              Available
+            </span>
+          </div>
+
           {/* Payment Methods List */}
           {methods.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
               <CreditCard className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p className="mb-2">No payment methods saved</p>
+              <p className="mb-2">No other payment methods saved</p>
               <p className="text-sm">
-                Add a payment method to make checkout faster
+                Cash is always available. Add a card or PayPal for faster online checkout.
               </p>
             </div>
           ) : (

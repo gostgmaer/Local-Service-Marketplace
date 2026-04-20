@@ -49,7 +49,7 @@ export default function PaymentHistoryPage() {
     }
   }, [isAuthenticated, authLoading, user, router]);
 
-  useRealtimeList(["payment:completed", "payment:created", "payment:updated"], ["payment-history"]);
+  useRealtimeList(["payment:completed", "payment:created", "payment:updated", "payment:failed", "payment:refunded"], ["payment-history"]);
 
   const {
     data: payments,

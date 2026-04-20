@@ -147,7 +147,7 @@ export function LocationPicker({
     setMap(mapInstance);
 
     // Initialize services
-    autocompleteRef.current = new google.maps.places.AutocompleteService();
+    autocompleteRef.current = new google.maps.places.AutocompleteSuggestion();
     geocoderRef.current = new google.maps.Geocoder();
 
     // Add click listener to map
@@ -185,8 +185,23 @@ export function LocationPicker({
       setMapUnavailable(true);
       return;
     }
+
+    // Prevent loading the script multiple times
+    const existingScript = document.querySelector(
+      'script[src*="maps.googleapis.com/maps/api/js"]',
+    );
+    if (existingScript) {
+      // Script already in DOM — wait for it to load or init immediately
+      if (typeof window !== "undefined" && window.google?.maps) {
+        initializeMap();
+      } else {
+        existingScript.addEventListener("load", () => initializeMap());
+      }
+      return;
+    }
+
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     script.onload = () => initializeMap();

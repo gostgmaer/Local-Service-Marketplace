@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -53,8 +53,16 @@ function PaymentReceiptContent() {
   const { config: siteConfig } = usePublicSettings();
   const paymentId = params.id as string;
   const [copied, setCopied] = useState(false);
+  const queryClient = useQueryClient();
 
-  useRealtimeDetail(["payment:completed", "payment:updated"], ["payment", paymentId], paymentId);
+  const retryMutation = useMutation({
+    mutationFn: () => paymentService.retryPayment(paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment", paymentId] });
+    },
+  });
+
+  useRealtimeDetail(["payment:completed", "payment:updated", "payment:failed", "payment:refunded"], ["payment", paymentId], paymentId);
 
   const {
     data: payment,
@@ -141,7 +149,7 @@ function PaymentReceiptContent() {
 
   return (
     <Layout>
-      <div className="container-custom py-8 max-w-2xl mx-auto print:py-4">
+      <div className="container-custom py-8  mx-auto print:py-4">
         {/* Top bar — hidden on print */}
         <div className="mb-6 flex items-center justify-between print:hidden">
           <Button variant="ghost" onClick={() => router.back()}>
@@ -171,9 +179,21 @@ function PaymentReceiptContent() {
               </div>
             )}
             {payment.status === "failed" && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3 text-sm text-red-800 dark:text-red-300">
-                <XCircle className="h-4 w-4 flex-shrink-0" />
-                <span>Payment failed. {payment.failed_reason ? `Reason: ${payment.failed_reason}` : "Please try again."}</span>
+              <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3 text-sm text-red-800 dark:text-red-300">
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>Payment failed. {payment.failed_reason ? `Reason: ${payment.failed_reason}` : "Please try again."}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => retryMutation.mutate()}
+                  isLoading={retryMutation.isPending}
+                  className="ml-4 flex-shrink-0"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                  Retry
+                </Button>
               </div>
             )}
             <div className="flex items-start justify-between gap-4">

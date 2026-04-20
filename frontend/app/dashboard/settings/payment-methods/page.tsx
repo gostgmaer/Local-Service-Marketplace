@@ -14,7 +14,7 @@ function PaymentMethodsContent() {
 
 export default function PaymentMethodsPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRoles={["customer", "provider"]}>
       <PaymentMethodsContent />
     </ProtectedRoute>
   );

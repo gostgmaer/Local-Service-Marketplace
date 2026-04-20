@@ -625,4 +625,17 @@ export class ProviderService {
 
     return this.getProvider(providerId);
   }
+
+  /**
+   * Find providers near a geographic point.
+   */
+  async findNearbyProviders(
+    lat: number,
+    lng: number,
+    radiusKm: number = 25,
+    limit: number = 20,
+    offset: number = 0,
+  ) {
+    return this.providerRepo.findNearby(lat, lng, radiusKm, limit, offset);
+  }
 }

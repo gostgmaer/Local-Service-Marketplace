@@ -246,6 +246,13 @@ class PaymentService {
     );
     return apiClient.extractList<Payout>(response.data);
   }
+
+  async retryPayment(paymentId: string): Promise<Payment> {
+    const response = await apiClient.post<Payment>(
+      `/payments/${paymentId}/retry`,
+    );
+    return response.data;
+  }
 }
 
 export interface SavedPaymentMethod {

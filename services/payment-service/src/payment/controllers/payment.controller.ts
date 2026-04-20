@@ -282,6 +282,20 @@ export class PaymentController {
   }
 
   /**
+   * Retry a failed payment
+   * POST /payments/:id/retry
+   */
+  @Post(":id/retry")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async retryPayment(
+    @Param("id", StrictUuidPipe) id: string,
+    @Request() req: any,
+  ) {
+    return this.paymentService.retryPayment(id, req.user.userId);
+  }
+
+  /**
    * Get provider earnings summary
    * GET /payments/provider/:providerId/summary
    */
