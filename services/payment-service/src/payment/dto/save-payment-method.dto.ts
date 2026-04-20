@@ -9,6 +9,7 @@ import {
   IsEmail,
   IsUUID,
 } from "class-validator";
+import { Type } from "class-transformer";
 
 export class SavePaymentMethodDto {
   @IsUUID()
@@ -27,12 +28,14 @@ export class SavePaymentMethodDto {
   last_four?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   @Max(12)
   expiry_month?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   expiry_year?: number;
 

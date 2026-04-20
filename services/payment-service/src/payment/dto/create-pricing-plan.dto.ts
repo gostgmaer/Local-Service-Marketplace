@@ -7,6 +7,7 @@ import {
   Min,
   MinLength,
 } from "class-validator";
+import { Type } from "class-transformer";
 
 export class CreatePricingPlanDto {
   @IsString()
@@ -17,6 +18,7 @@ export class CreatePricingPlanDto {
   @IsString()
   description?: string;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   price: number;
