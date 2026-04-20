@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, master]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
 
@@ -33,9 +36,7 @@ jobs:
           default_bump: patch
           release_branches: main,master
           tag_prefix: v
-          major_string_token: "BREAKING CHANGE,major:"
-          minor_string_token: "feat:"
-          patch_string_token: "fix:,chore:,refactor:,perf:,style:,docs:,test:,build:,ci:"
+          custom_release_rules: "major:major,feat:minor,fix:patch,chore:patch,refactor:patch,perf:patch,style:patch,docs:patch,test:patch,build:patch,ci:patch"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
