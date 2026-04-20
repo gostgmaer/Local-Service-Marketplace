@@ -166,8 +166,11 @@ export class DisputeService {
   async getDisputeForUser(id: string, userId: string): Promise<Dispute> {
     const dispute = await this.disputeRepository.getDisputeById(id);
     if (!dispute) throw new NotFoundException("Dispute not found");
-    // Only allow access to the user who opened the dispute
-    if (dispute.opened_by !== userId) {
+    // Allow access to the user who opened the dispute
+    if (dispute.opened_by === userId) return dispute;
+    // Also allow the other job party (provider or customer)
+    const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id);
+    if (userId !== customerId && userId !== providerUserId) {
       throw new ForbiddenException("You do not have access to this dispute");
     }
     return dispute;

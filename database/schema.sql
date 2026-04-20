@@ -2352,6 +2352,7 @@ WHERE r.name = 'customer'
     'proposals.reject',
     'jobs.create',
     'jobs.read',
+    'jobs.update_status',
     'reviews.create',
     'reviews.read',
     'reviews.update',

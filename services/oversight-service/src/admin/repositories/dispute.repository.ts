@@ -119,7 +119,7 @@ export class DisputeRepository {
   async getDisputeById(id: string): Promise<Dispute | null> {
     id = await resolveId(this.pool, "disputes", id);
     const query = `
-      SELECT id, display_id, job_id, opened_by, reason, status, 
+      SELECT id, display_id, job_id, opened_by, reason, description, status,
              resolution, resolved_by, resolved_at, created_at
       FROM disputes
       WHERE id = $1
@@ -134,7 +134,7 @@ export class DisputeRepository {
     offset: number = 0,
   ): Promise<Dispute[]> {
     const query = `
-      SELECT id, display_id, job_id, opened_by, reason, status, 
+      SELECT id, display_id, job_id, opened_by, reason, description, status,
              resolution, resolved_by, resolved_at, created_at
       FROM disputes
       ORDER BY created_at DESC

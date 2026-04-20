@@ -493,7 +493,7 @@ class DatabaseSeeder {
 			'providers.list', 'providers.read', 'categories.read',
 			'requests.create', 'requests.read', 'requests.update', 'requests.delete',
 			'proposals.read', 'proposals.accept', 'proposals.reject',
-			'jobs.create', 'jobs.read',
+			'jobs.create', 'jobs.read', 'jobs.update_status',
 			'reviews.create', 'reviews.read', 'reviews.update',
 			'favorites.manage',
 			'payments.create', 'payments.read',
