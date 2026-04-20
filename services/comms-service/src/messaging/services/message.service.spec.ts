@@ -6,6 +6,7 @@ import { NotFoundException } from "../../common/exceptions/http.exceptions";
 import { EmailClient } from "../../notification/clients/email.client";
 import { UserClient } from "../../common/user/user.client";
 import { NotificationPreferencesService } from "../../notification/services/notification-preferences.service";
+import { NotificationService } from "../../notification/services/notification.service";
 import { UpdatesService } from "../../updates/updates.service";
 
 const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
@@ -20,6 +21,23 @@ const mockNotificationPreferencesService = {
   checkNotificationEnabled: jest.fn().mockResolvedValue(true),
   getPreferences: jest.fn(),
   updatePreferences: jest.fn(),
+};
+
+const mockNotificationService = {
+  createNotification: jest.fn().mockResolvedValue({ id: "notif-uuid-1" }),
+  sendNotification: jest.fn().mockResolvedValue({ success: true }),
+  getNotificationById: jest.fn(),
+  getNotificationsByUserId: jest.fn(),
+  markAsRead: jest.fn(),
+  getUnreadCount: jest.fn().mockResolvedValue(0),
+  getTotalCount: jest.fn().mockResolvedValue(0),
+  markAllAsRead: jest.fn(),
+  deleteNotification: jest.fn(),
+  sendEmailDirect: jest.fn().mockResolvedValue({ success: true }),
+  sendSmsDirect: jest.fn().mockResolvedValue({ success: true }),
+  sendOtp: jest.fn().mockResolvedValue({ success: true }),
+  verifyOtp: jest.fn().mockResolvedValue(true),
+  enqueueWhatsAppOtp: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockMessage = {
@@ -56,6 +74,7 @@ describe("MessageService", () => {
         { provide: EmailClient, useValue: mockEmailClient },
         { provide: UserClient, useValue: mockUserClient },
         { provide: NotificationPreferencesService, useValue: mockNotificationPreferencesService },
+        { provide: NotificationService, useValue: mockNotificationService },
         { provide: UpdatesService, useValue: { broadcast: jest.fn() } },
       ],
     }).compile();
