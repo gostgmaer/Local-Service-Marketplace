@@ -36,4 +36,9 @@ export class SettingsCacheService {
     const val = await this.getSetting("cache_ttl_seconds", "300");
     return parseInt(val, 10) || 300;
   }
+
+  async isRealtimeEnabled(): Promise<boolean> {
+    const val = await this.getSetting("realtime_enabled", "true");
+    return val === "true";
+  }
 }

@@ -25,13 +25,15 @@ export class EventConsumerService implements OnModuleInit {
   }
 
   private async handleEvent(event: any): Promise<void> {
+    // Normalize: oversight uses `event` field, others use `eventType`
+    const eventType = event.eventType || event.event;
     this.logger.log(
-      `Processing event: ${event.eventType}`,
+      `Processing event: ${eventType}`,
       "EventConsumerService",
     );
 
     try {
-      switch (event.eventType) {
+      switch (eventType) {
         case "request_created":
           await this.handleRequestCreated(event);
           break;
@@ -67,6 +69,9 @@ export class EventConsumerService implements OnModuleInit {
           break;
         case "review_submitted":
           await this.handleReviewSubmitted(event);
+          break;
+        case "dispute_status_changed":
+          await this.handleDisputeStatusChanged(event);
           break;
         default:
           this.logger.log(
@@ -233,6 +238,27 @@ export class EventConsumerService implements OnModuleInit {
       event.data.providerId,
       "review",
       `A customer has submitted a review for your service${refSuffix}`,
+    );
+  }
+
+  private async handleDisputeStatusChanged(event: any): Promise<void> {
+    // Dispute events use top-level fields (not nested under data)
+    const disputeId = event.dispute_id;
+    const newStatus = event.new_status;
+    const resolution = event.resolution;
+
+    // Notify the user who opened the dispute
+    // Note: opened_by user ID is not in the Kafka event — we notify via the
+    // dispute_id reference. The admin_id is available for audit.
+    // For now, skip if we don't have a userId — the broadcast service already
+    // notifies via WebSocket rooms.
+    if (!event.opened_by) return;
+
+    const resolutionSuffix = resolution ? ` (${resolution})` : "";
+    await this.notificationRepository.createNotification(
+      event.opened_by,
+      "dispute",
+      `Your dispute #${disputeId} has been updated to "${newStatus}"${resolutionSuffix}`,
     );
   }
 }

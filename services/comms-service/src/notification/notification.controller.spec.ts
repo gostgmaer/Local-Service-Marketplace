@@ -92,11 +92,11 @@ describe("NotificationController", () => {
         mockNotification,
       ]);
       mockNotifService.getUnreadCount.mockResolvedValue(1);
+      mockNotifService.getTotalCount.mockResolvedValue(1);
       const result = await controller.getNotifications(
         { user: { userId: "user-uuid-1" } } as any,
-        50,
+        { limit: 50 },
       );
-      expect(result.success).toBe(true);
       expect(result.data.notifications).toHaveLength(1);
       expect(result.data.unreadCount).toBe(1);
     });
@@ -104,7 +104,7 @@ describe("NotificationController", () => {
     it("should throw BadRequestException when in-app notifications disabled", async () => {
       mockFeatureFlags.inAppNotificationsEnabled = false;
       await expect(
-        controller.getNotifications({ user: { userId: "user-uuid-1" } } as any, 50),
+        controller.getNotifications({ user: { userId: "user-uuid-1" } } as any, { limit: 50 }),
       ).rejects.toThrow(BadRequestException);
     });
   });

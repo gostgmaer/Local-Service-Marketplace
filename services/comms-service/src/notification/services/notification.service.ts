@@ -114,13 +114,20 @@ export class NotificationService {
 
   async getNotificationsByUserId(
     userId: string,
-    limit: number = 50,
+    options: {
+      page?: number;
+      limit?: number;
+      sortBy?: string;
+      sortOrder?: string;
+      type?: string;
+      read?: boolean;
+    } = {},
   ): Promise<Notification[]> {
     this.logger.log(
       `Fetching notifications for user ${userId}`,
       "NotificationService",
     );
-    return this.notificationRepository.getNotificationsByUserId(userId, limit);
+    return this.notificationRepository.getNotificationsByUserId(userId, options);
   }
 
   async markAsRead(id: string, userId: string): Promise<Notification> {
@@ -156,8 +163,11 @@ export class NotificationService {
     return this.notificationRepository.getUnreadCount(userId);
   }
 
-  async getTotalCount(userId: string): Promise<number> {
-    return this.notificationRepository.countByUserId(userId);
+  async getTotalCount(
+    userId: string,
+    filters?: { type?: string; read?: boolean },
+  ): Promise<number> {
+    return this.notificationRepository.countByUserId(userId, filters);
   }
 
   async markAllAsRead(userId: string): Promise<void> {

@@ -122,6 +122,7 @@ export class MessageService {
     user: any,
     page: number = 1,
     limit: number = 20,
+    sortOrder?: string,
   ): Promise<PaginatedMessages> {
     this.logger.log(
       `Fetching messages for job ${jobId} for user ${user.userId} (page ${page}, limit ${limit})`,
@@ -142,7 +143,7 @@ export class MessageService {
       }
     }
 
-    return this.messageRepository.getMessagesForJob(jobId, page, limit);
+    return this.messageRepository.getMessagesForJob(jobId, page, limit, sortOrder);
   }
 
   async getUserConversations(userId: string): Promise<any[]> {

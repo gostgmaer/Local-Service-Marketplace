@@ -178,7 +178,7 @@ export class ReviewService {
       .catch(() => null);
 
     await this.cacheInvalidation.invalidateEntity("reviews");
-    this.broadcastService.emit("review", review.id, "created", [`provider:${createReviewDto.provider_id}`, "admin"], { reviewId: review.id }, createReviewDto.reviewer_id);
+    this.broadcastService.emit("review", review.id, "created", [`provider:${createReviewDto.provider_id}`, "admin"], { reviewId: review.id }, createReviewDto.user_id);
 
     return review;
   }
@@ -281,7 +281,7 @@ export class ReviewService {
     }
 
     await this.cacheInvalidation.invalidateEntity("reviews");
-    this.broadcastService.emit("review", review.id, "updated", [`provider:${review.provider_id}`, "admin"], { reviewId: review.id }, review.reviewer_id);
+    this.broadcastService.emit("review", review.id, "updated", [`provider:${review.provider_id}`, "admin"], { reviewId: review.id }, review.user_id);
 
     return review;
   }

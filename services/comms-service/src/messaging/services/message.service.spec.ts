@@ -111,6 +111,7 @@ describe("MessageService", () => {
         "job-uuid-1",
         1,
         20,
+        undefined,
       );
     });
 
@@ -128,6 +129,7 @@ describe("MessageService", () => {
         "job-uuid-1",
         1,
         20,
+        undefined,
       );
     });
   });

@@ -7,6 +7,7 @@ import { ResponseTransformInterceptor } from "./common/interceptors/response-tra
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
 import helmet from "helmet";
 import { json, urlencoded } from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -86,10 +87,29 @@ async function bootstrap() {
   // Health endpoints remain at root level for monitoring tools
 
   // Enable graceful shutdown hooks before listening
+  // WebSocket proxy — forward /updates namespace to comms-service
+  // Must be registered BEFORE NestJS starts listening so the Express app
+  // handles the upgrade before the catch-all controller.
+  const commsUrl =
+    process.env.COMMS_SERVICE_URL || "http://localhost:3007";
+  const wsProxy = createProxyMiddleware({
+    target: commsUrl,
+    ws: true,
+    changeOrigin: true,
+    // socket.io uses /socket.io/ path under the /updates namespace
+    pathFilter: ["/updates", "/socket.io"],
+  });
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.use("/updates", wsProxy);
+  expressApp.use("/socket.io", wsProxy);
+
   app.enableShutdownHooks();
 
   const port = process.env.PORT || 3700;
   const server = await app.listen(port);
+
+  // Attach WebSocket upgrade handler to the HTTP server
+  server.on("upgrade", wsProxy.upgrade);
 
   // Increase server timeouts for Render.com (1.2m request timeout + buffer)
   server.timeout = 120000;

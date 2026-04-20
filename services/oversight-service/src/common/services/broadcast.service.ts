@@ -1,5 +1,6 @@
 import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { SettingsCacheService } from "./settings-cache.service";
 
 @Injectable()
 export class BroadcastService {
@@ -9,6 +10,7 @@ export class BroadcastService {
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
+    private readonly settingsCache: SettingsCacheService,
   ) {
     this.commsUrl =
       process.env.COMMS_SERVICE_URL || "http://localhost:3007";
@@ -24,6 +26,8 @@ export class BroadcastService {
     userId?: string,
   ): Promise<void> {
     try {
+      if (!(await this.settingsCache.isRealtimeEnabled())) return;
+
       const body = JSON.stringify({
         entityType,
         entityId,

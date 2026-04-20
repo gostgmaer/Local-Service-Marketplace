@@ -64,15 +64,50 @@ export class NotificationRepository {
 
   async getNotificationsByUserId(
     userId: string,
-    limit: number = 50,
+    options: {
+      page?: number;
+      limit?: number;
+      sortBy?: string;
+      sortOrder?: string;
+      type?: string;
+      read?: boolean;
+    } = {},
   ): Promise<Notification[]> {
+    const {
+      page = 1,
+      limit = 50,
+      sortBy = "created_at",
+      sortOrder = "desc",
+      type,
+      read,
+    } = options;
+
+    const allowedSortColumns = ["created_at", "type"];
+    const safeSort = allowedSortColumns.includes(sortBy) ? sortBy : "created_at";
+    const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
+    const offset = (page - 1) * limit;
+
+    const conditions: string[] = ["user_id = $1"];
+    const params: any[] = [userId];
+    let paramIndex = 2;
+
+    if (type) {
+      conditions.push(`type = $${paramIndex++}`);
+      params.push(type);
+    }
+    if (read !== undefined) {
+      conditions.push(`read = $${paramIndex++}`);
+      params.push(read);
+    }
+
+    params.push(limit, offset);
     const query = `
       SELECT * FROM notifications 
-      WHERE user_id = $1 
-      ORDER BY created_at DESC 
-      LIMIT $2
+      WHERE ${conditions.join(" AND ")} 
+      ORDER BY ${safeSort} ${safeOrder} 
+      LIMIT $${paramIndex++} OFFSET $${paramIndex}
     `;
-    const result = await this.pool.query(query, [userId, limit]);
+    const result = await this.pool.query(query, params);
     return result.rows.map(
       (row) =>
         new Notification({
@@ -113,10 +148,25 @@ export class NotificationRepository {
     return parseInt(result.rows[0].count);
   }
 
-  async countByUserId(userId: string): Promise<number> {
-    const query =
-      "SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1";
-    const result = await this.pool.query(query, [userId]);
+  async countByUserId(
+    userId: string,
+    filters?: { type?: string; read?: boolean },
+  ): Promise<number> {
+    const conditions: string[] = ["user_id = $1"];
+    const params: any[] = [userId];
+    let paramIndex = 2;
+
+    if (filters?.type) {
+      conditions.push(`type = $${paramIndex++}`);
+      params.push(filters.type);
+    }
+    if (filters?.read !== undefined) {
+      conditions.push(`read = $${paramIndex++}`);
+      params.push(filters.read);
+    }
+
+    const query = `SELECT COUNT(*)::int AS count FROM notifications WHERE ${conditions.join(" AND ")}`;
+    const result = await this.pool.query(query, params);
     return result.rows[0].count;
   }
 

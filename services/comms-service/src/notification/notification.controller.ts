@@ -37,6 +37,7 @@ import { UnsubscribeDto, CheckUnsubscribeDto } from "./dto/unsubscribe.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { InternalServiceGuard } from "@/common/guards/internal-service.guard";
 import { SkipAuth } from "@/common/decorators/skip-auth.decorator";
+import { NotificationQueryDto } from "./dto/notification-query.dto";
 
 @UseGuards(JwtAuthGuard)
 @Controller("notifications")
@@ -55,7 +56,7 @@ export class NotificationController {
   @Get()
   async getNotifications(
     @Request() req: any,
-    @Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query() query: NotificationQueryDto,
   ) {
     const userId = req.user?.userId;
 
@@ -70,24 +71,28 @@ export class NotificationController {
       );
     }
 
+    const { page = 1, limit = 50, sortBy, sortOrder, type, read } = query;
+
     this.logger.log(
       `GET /notifications - Get notifications for user ${userId}`,
       "NotificationController",
     );
     const notifications =
-      await this.notificationService.getNotificationsByUserId(userId, limit);
-    const unreadCount = await this.notificationService.getUnreadCount(userId);
-    const total = await this.notificationService.getTotalCount(userId);
-    return {
-      success: true,
-      message: "Notifications retrieved successfully",
-      data: { notifications, unreadCount },
-      meta: {
-        page: 1,
+      await this.notificationService.getNotificationsByUserId(userId, {
+        page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+        sortBy,
+        sortOrder,
+        type,
+        read,
+      });
+    const unreadCount = await this.notificationService.getUnreadCount(userId);
+    const total = await this.notificationService.getTotalCount(userId, { type, read });
+    return {
+      data: { notifications, unreadCount },
+      total,
+      page,
+      limit,
     };
   }
 

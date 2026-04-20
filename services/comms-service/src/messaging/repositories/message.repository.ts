@@ -97,16 +97,18 @@ export class MessageRepository {
     jobId: string,
     page: number = 1,
     limit: number = 20,
+    sortOrder?: string,
   ): Promise<PaginatedMessages> {
     jobId = await resolveId(this.pool, "jobs", jobId);
     const offset = (page - 1) * limit;
+    const safeOrder = sortOrder === "desc" ? "DESC" : "ASC";
 
     // Single query: COUNT(*) OVER() avoids a separate COUNT round-trip
     const query = `
       SELECT *, COUNT(*) OVER() AS total_count
       FROM messages 
       WHERE job_id = $1 
-      ORDER BY created_at ASC 
+      ORDER BY created_at ${safeOrder} 
       LIMIT $2 OFFSET $3
     `;
     const result = await this.pool.query(query, [jobId, limit, offset]);

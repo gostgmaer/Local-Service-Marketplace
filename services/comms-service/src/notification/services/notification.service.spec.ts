@@ -152,10 +152,10 @@ describe("NotificationService", () => {
 
     it("should pass limit parameter", async () => {
       mockNotifRepo.getNotificationsByUserId.mockResolvedValue([]);
-      await service.getNotificationsByUserId("user-uuid-1", 10);
+      await service.getNotificationsByUserId("user-uuid-1", { limit: 10 });
       expect(mockNotifRepo.getNotificationsByUserId).toHaveBeenCalledWith(
         "user-uuid-1",
-        10,
+        { limit: 10 },
       );
     });
   });

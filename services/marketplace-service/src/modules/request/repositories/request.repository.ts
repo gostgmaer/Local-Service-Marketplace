@@ -702,4 +702,48 @@ export class RequestRepository {
     const result = await this.pool.query(query, [startDate, endDate, limit]);
     return result.rows;
   }
+
+  async fullTextSearch(
+    q: string,
+    options: { category?: string; location?: string; page?: number; limit?: number } = {},
+  ): Promise<{ data: any[]; total: number }> {
+    const { category, location, page = 1, limit = 20 } = options;
+    const offset = (page - 1) * limit;
+
+    const conditions: string[] = ["s.search_vector @@ plainto_tsquery('english', $1)"];
+    const params: any[] = [q];
+    let paramIndex = 2;
+
+    if (category) {
+      conditions.push(`s.category = $${paramIndex++}`);
+      params.push(category);
+    }
+    if (location) {
+      conditions.push(`s.location = $${paramIndex++}`);
+      params.push(location);
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const countQuery = `SELECT COUNT(*)::int AS count FROM service_request_search s WHERE ${whereClause}`;
+    const countResult = await this.pool.query(countQuery, params);
+    const total = countResult.rows[0].count;
+
+    params.push(limit, offset);
+    const dataQuery = `
+      SELECT r.id, r.display_id, r.description, r.status, r.budget, r.urgency,
+             r.preferred_date, r.created_at,
+             s.category, s.location,
+             ts_rank(s.search_vector, plainto_tsquery('english', $1)) AS rank
+      FROM service_request_search s
+      JOIN service_requests r ON r.id = s.request_id
+      WHERE ${whereClause}
+        AND r.deleted_at IS NULL
+      ORDER BY rank DESC, r.created_at DESC
+      LIMIT $${paramIndex++} OFFSET $${paramIndex}
+    `;
+    const result = await this.pool.query(dataQuery, params);
+
+    return { data: result.rows, total };
+  }
 }

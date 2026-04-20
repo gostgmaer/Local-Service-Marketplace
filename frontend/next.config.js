@@ -22,7 +22,19 @@ const apiOrigin = (() => {
 	}
 })();
 
-const extraConnectSrc = [extraConnectSrcEnv, apiOrigin].filter(Boolean).join(' ');
+// Derive WebSocket origin for CSP so socket.io connections through the gateway
+// are allowed (wss:// in production, ws:// in dev).
+const wsOrigin = (() => {
+	try {
+		const u = new URL(process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3700');
+		const wsScheme = u.protocol === 'https:' ? 'wss:' : 'ws:';
+		return `${wsScheme}//${u.hostname}:*`;
+	} catch {
+		return '';
+	}
+})();
+
+const extraConnectSrc = [extraConnectSrcEnv, apiOrigin, wsOrigin].filter(Boolean).join(' ');
 
 const nextConfig = {
 	// Use standalone output only for Docker builds
@@ -71,7 +83,7 @@ const nextConfig = {
 						key: "Content-Security-Policy",
 						value:
 							process.env.NODE_ENV === "production" ?
-								`default-src 'self'; script-src 'self' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${extraConnectSrc} https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`
+								`default-src 'self'; script-src 'self' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${extraConnectSrc} https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com wss://*.easydev.in; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`
 								: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ${extraConnectSrc} https://*.cloudinary.com https://*.amazonaws.com https://maps.googleapis.com http://localhost:* ws://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';`,
 					},
 					{ key: "Cross-Origin-Opener-Policy", value: "same-origin" },

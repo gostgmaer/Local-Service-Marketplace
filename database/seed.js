@@ -1949,6 +1949,7 @@ class DatabaseSeeder {
 			{ key: "auth_rate_limit_max_requests",     value: "10",    type: "number",   description: "Maximum authentication requests per 15-minute window per IP" },
 			// ── Cache & Performance ───────────────────────────────────────────
 			{ key: "get_cache_enabled",                value: "false", type: "boolean",  description: "Master switch to enable Redis caching for all GET API responses across all services" },
+			{ key: "realtime_enabled",                 value: "true",  type: "boolean",  description: "Master switch to enable real-time WebSocket broadcasts and live updates across all services" },
 			{ key: "cache_ttl_seconds",                value: "300",   type: "number",   description: "TTL in seconds for cached GET API responses when caching is enabled" },
 			{ key: "provider_cache_ttl_seconds",       value: "300",   type: "number",   description: "Redis cache TTL in seconds for provider profile data" },
 			{ key: "request_cache_ttl_seconds",        value: "300",   type: "number",   description: "Redis cache TTL in seconds for service request list data" },

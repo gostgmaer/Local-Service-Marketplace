@@ -6,7 +6,9 @@ import { useEffect, useRef, useCallback } from "react";
 import { create } from "zustand";
 
 const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3007";
+  process.env.NEXT_PUBLIC_WS_URL ||
+  process.env.NEXT_PUBLIC_API_GATEWAY_URL ||
+  "http://localhost:3700";
 
 interface SocketStore {
   socket: Socket | null;
@@ -65,6 +67,15 @@ export function useSocketConnection() {
 
     socket.on("connect_error", (err) => {
       console.warn("[socket] connection error:", err.message);
+      setConnected(false);
+    });
+
+    // Server signals realtime is disabled — stop reconnecting
+    socket.on("realtime_disabled", () => {
+      console.info("[socket] realtime disabled by admin — disconnecting");
+      socket.disconnect();
+      socketRef.current = null;
+      setSocket(null);
       setConnected(false);
     });
 

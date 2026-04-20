@@ -129,6 +129,7 @@ const GROUP_CONFIG: Record<
     label: "Cache & Performance",
     icon: Database,
     keys: [
+      "realtime_enabled",
       "provider_cache_ttl_seconds",
       "request_cache_ttl_seconds",
       "job_cache_ttl_seconds",

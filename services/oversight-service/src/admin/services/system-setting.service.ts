@@ -177,6 +177,9 @@ export class SystemSettingService {
       },
     );
 
+    await this.cacheInvalidation.invalidateEntity("settings");
+    this.broadcastService.emit("setting", dto.key, "created", ["admin"], { key: dto.key, value: dto.value }, adminId);
+
     this.logger.log(
       `System setting ${dto.key} created successfully`,
       "SystemSettingService",

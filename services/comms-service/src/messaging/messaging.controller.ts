@@ -31,6 +31,7 @@ import { AttachmentService } from "./services/attachment.service";
 import { CreateMessageDto } from "./dto/create-message.dto";
 import { UpdateMessageDto } from "./dto/update-message.dto";
 import { CreateAttachmentDto } from "./dto/create-attachment.dto";
+import { MessageQueryDto } from "./dto/message-query.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { FileServiceClient } from "../common/file-service.client";
 import "multer";
@@ -65,8 +66,7 @@ export class MessagingController {
   async getMessagesForJob(
     @Param("jobId", FlexibleIdPipe) jobId: string,
     @Request() req: any,
-    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query() query: MessageQueryDto,
   ) {
     this.logger.log(
       `GET /messages/jobs/${jobId}/messages - Get conversation for user ${req.user.userId}`,
@@ -75,8 +75,9 @@ export class MessagingController {
     const result = await this.messageService.getMessagesForJob(
       jobId,
       req.user,
-      page,
-      limit,
+      query.page ?? 1,
+      query.limit ?? 20,
+      query.sortOrder,
     );
     return result;
   }
@@ -84,15 +85,14 @@ export class MessagingController {
   @Get("conversations")
   async getConversations(
     @Request() req: any,
-    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query() query: MessageQueryDto,
   ) {
+    const safePage = Math.max(1, query.page ?? 1);
+    const safeLimit = Math.min(Math.max(1, query.limit ?? 20), 100);
     this.logger.log(
-      `GET /messages/conversations - Get user conversations (page ${page}, limit ${limit})`,
+      `GET /messages/conversations - Get user conversations (page ${safePage}, limit ${safeLimit})`,
       "MessagingController",
     );
-    const safeLimit = Math.min(Math.max(1, limit), 100);
-    const safePage = Math.max(1, page);
     const conversations = await this.messageService.getUserConversations(
       req.user.userId,
     );

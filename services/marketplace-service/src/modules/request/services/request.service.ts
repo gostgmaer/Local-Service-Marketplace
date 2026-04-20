@@ -590,6 +590,9 @@ export class RequestService {
 
     await this.requestRepository.deleteRequest(request.id);
 
+    await this.cacheInvalidation.invalidateEntity("requests");
+    this.broadcastService.emit("request", request.id, "deleted", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
+
     this.logger.log(`Request deleted successfully: ${id}`, RequestService.name);
   }
 
@@ -624,5 +627,24 @@ export class RequestService {
   }> {
     this.logger.log(`Fetching request stats`, RequestService.name);
     return this.requestRepository.getRequestStats();
+  }
+
+  async searchRequests(query: {
+    q: string;
+    category?: string;
+    location?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: any[]; total: number }> {
+    this.logger.log(
+      `Full-text search: q="${query.q}" category=${query.category} location=${query.location}`,
+      RequestService.name,
+    );
+    return this.requestRepository.fullTextSearch(query.q, {
+      category: query.category,
+      location: query.location,
+      page: query.page,
+      limit: query.limit,
+    });
   }
 }

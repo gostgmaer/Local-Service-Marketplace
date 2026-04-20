@@ -43,6 +43,8 @@ describe("PaymentService list validation", () => {
       makeAnalytics(),
       makeGateway(),
       {} as any, // invoiceService
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
 
     return { service };
@@ -133,6 +135,8 @@ describe("PaymentService.createPayment", () => {
       analytics,
       gateway,
       { generateAndUploadInvoice: jest.fn().mockResolvedValue(undefined) } as any, // invoiceService
+      { invalidateEntity: jest.fn(), invalidateAll: jest.fn() } as any,
+      { emit: jest.fn().mockResolvedValue(undefined) } as any,
     );
 
     return {

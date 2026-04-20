@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from "socket.io";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { SettingsCacheService } from "../../common/services/settings-cache.service";
 import * as crypto from "crypto";
 
 type AuthenticatedSocket = Socket & { userId?: string; userRole?: string };
@@ -31,7 +32,10 @@ export class UpdatesGateway
   private readonly userSockets = new Map<string, Set<string>>();
   private readonly jwtSecret: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly settingsCache: SettingsCacheService,
+  ) {
     this.jwtSecret = this.configService.get<string>("JWT_SECRET", "");
   }
 
@@ -41,6 +45,13 @@ export class UpdatesGateway
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
+      // Reject new connections when realtime is disabled
+      if (!(await this.settingsCache.isRealtimeEnabled())) {
+        client.emit("realtime_disabled");
+        client.disconnect();
+        return;
+      }
+
       const token =
         client.handshake.auth?.token || client.handshake.query?.token;
 

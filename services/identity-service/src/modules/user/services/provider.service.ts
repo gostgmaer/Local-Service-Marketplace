@@ -487,6 +487,9 @@ export class ProviderService {
       await this.redisService.del(`provider:${provider.id}`);
     }
 
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "updated", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+
     return {
       id: newService.id,
       provider_id: provider.id,
@@ -503,6 +506,9 @@ export class ProviderService {
     if (this.redisService.isCacheEnabled()) {
       await this.redisService.del(`provider:${providerId}`);
     }
+
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", providerId, "updated", ["admin"], { providerId }, "system");
   }
 
   async getProviderAvailability(providerId: string): Promise<any[]> {
@@ -545,6 +551,9 @@ export class ProviderService {
 
     // Delete provider
     await this.providerRepo.delete(provider.id);
+
+    await this.cacheInvalidation.invalidateEntity("providers");
+    this.broadcastService.emit("provider", provider.id, "deleted", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
 
     this.logger.info("Provider deleted successfully", {
       context: "ProviderService",

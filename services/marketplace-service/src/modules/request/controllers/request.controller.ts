@@ -23,6 +23,7 @@ import { RequestService } from "../services/request.service";
 import { CreateRequestDto } from "../dto/create-request.dto";
 import { UpdateRequestDto } from "../dto/update-request.dto";
 import { RequestQueryDto } from "../dto/request-query.dto";
+import { SearchRequestDto } from "../dto/search-request.dto";
 import {
   RequestResponseDto,
   PaginatedRequestResponseDto,
@@ -101,6 +102,16 @@ export class RequestController {
     @Req() req: any,
   ): Promise<PaginatedRequestResponseDto> {
     return this.requestService.getRequests(queryDto, req.user);
+  }
+
+  // Public — full-text search across service requests using PostgreSQL tsvector
+  @UseGuards(JwtAuthGuard)
+  @Get("search")
+  @HttpCode(HttpStatus.OK)
+  async searchRequests(
+    @Query() query: SearchRequestDto,
+  ) {
+    return this.requestService.searchRequests(query);
   }
 
   // Authenticated — fetch only the calling user's requests

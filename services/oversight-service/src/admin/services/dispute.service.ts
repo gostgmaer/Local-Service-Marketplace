@@ -19,6 +19,8 @@ import {
 import { KafkaService } from "../../kafka/kafka.service";
 import { NotificationClient } from "../../common/notification/notification.client";
 import { UserClient } from "../../common/user/user.client";
+import { CacheInvalidationService } from "../../common/services/cache-invalidation.service";
+import { BroadcastService } from "../../common/services/broadcast.service";
 
 // Valid status transitions: current → allowed next statuses
 // open disputes must be investigated before being resolved or closed
@@ -41,6 +43,8 @@ export class DisputeService {
     private readonly kafkaService: KafkaService,
     private readonly notificationClient: NotificationClient,
     private readonly userClient: UserClient,
+    private readonly cacheInvalidation: CacheInvalidationService,
+    private readonly broadcastService: BroadcastService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     @InjectQueue("oversight.notification")
@@ -141,6 +145,9 @@ export class DisputeService {
           );
         });
     }
+
+    await this.cacheInvalidation.invalidateEntity("disputes");
+    this.broadcastService.emit("dispute", dispute.id, "created", [`user:${openedBy}`, "admin"], { disputeId: dispute.id, jobId }, openedBy);
 
     return dispute;
   }
@@ -294,6 +301,7 @@ export class DisputeService {
         event: "dispute_status_changed",
         dispute_id: existingDispute.id,
         job_id: existingDispute.job_id,
+        opened_by: existingDispute.opened_by,
         previous_status: existingDispute.status,
         new_status: normalizedStatus,
         resolution,
@@ -346,6 +354,9 @@ export class DisputeService {
           );
         });
     }
+
+    await this.cacheInvalidation.invalidateEntity("disputes");
+    this.broadcastService.emit("dispute", id, "updated", [`user:${existingDispute.opened_by}`, "admin"], { disputeId: id, status: normalizedStatus }, adminId);
 
     this.logger.log(`Dispute ${id} updated successfully`, "DisputeService");
 
