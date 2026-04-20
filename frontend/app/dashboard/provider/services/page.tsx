@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
@@ -26,6 +27,9 @@ export default function ProviderServicesPage() {
   const { can } = usePermissions();
   const queryClient = useQueryClient();
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+
+  // Refresh categories list when admin adds/removes/updates a category
+  useRealtimeList(["category:created", "category:updated", "category:deleted"], ["categories"]);
 
   // Get the provider record for this user
   const { data: providerData } = useQuery({

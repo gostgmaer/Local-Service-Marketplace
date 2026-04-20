@@ -100,7 +100,7 @@ export class DisputeRepository {
 
     const [dataResult, countResult] = await Promise.all([
       this.pool.query(
-        `SELECT id, display_id, job_id, opened_by, reason, status,
+        `SELECT id, display_id, job_id, opened_by, reason, description, status,
                 resolution, resolved_by, resolved_at, created_at, updated_at
          FROM disputes ${where}
          ORDER BY created_at DESC

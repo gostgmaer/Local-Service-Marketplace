@@ -11,6 +11,7 @@ import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { getUserProfile, getProviderProfileByUserId } from "@/services/user-service";
 import { getProviderReviews } from "@/services/review-service";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import {
@@ -56,6 +57,10 @@ export default function ProfilePage() {
     queryFn: () => getProviderReviews(providerProfile?.id ?? ""),
     enabled: isAuthenticated && isProvider && !!providerProfile?.id,
   });
+
+  useRealtimeDetail(["user:updated"], ["my-profile"], user?.id);
+  useRealtimeDetail(["provider:updated"], ["my-provider-profile", user?.id], providerProfile?.id);
+  useRealtimeDetail(["review:created", "review:updated"], ["my-provider-reviews", providerProfile?.id], providerProfile?.id);
 
   const providerProfileRating = parseRating(providerProfile?.rating);
 

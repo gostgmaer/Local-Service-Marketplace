@@ -33,7 +33,7 @@ export default function ProviderDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
-  useRealtimeList(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated"], ["my-proposals"]);
+  useRealtimeList(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated", "proposal:withdrawn", "proposal:deleted"], ["my-proposals"]);
   useRealtimeList(["job:created", "job:updated", "job:completed"], ["my-jobs"]);
 
   const {

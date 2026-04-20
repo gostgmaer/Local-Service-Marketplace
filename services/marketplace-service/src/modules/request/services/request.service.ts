@@ -261,7 +261,7 @@ export class RequestService {
     });
 
     await this.cacheInvalidation.invalidateEntity("requests");
-    this.broadcastService.emit("request", request.id, "created", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
+    this.broadcastService.emit("request", request.id, "created", [`user:${request.user_id}`, "admin", "providers"], { requestId: request.id }, request.user_id);
 
     return RequestResponseDto.fromEntity(request);
   }

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useRealtimeList } from "@/hooks/useRealtimeList";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -86,6 +87,12 @@ export default function AdminAnalyticsPage() {
   const { user: _user } = useAuth();
   const { can } = usePermissions();
   const [days, setDays] = useState(30);
+
+  useRealtimeList(["user:created", "user:updated", "user:deleted"], ["admin-users-stats"]);
+  useRealtimeList(["job:created", "job:updated", "job:completed", "job:deleted"], ["admin-jobs-stats"]);
+  useRealtimeList(["request:created", "request:updated", "request:deleted"], ["admin-requests-stats"]);
+  useRealtimeList(["payment:completed", "payment:created", "payment:updated"], ["admin-payments-stats"]);
+  useRealtimeList(["dispute:created", "dispute:updated"], ["admin-disputes-stats"]);
 
   const {
     data: userStats,

@@ -41,7 +41,8 @@ export class RefundController {
    * POST /refunds/:paymentId
    */
   @Post(":paymentId")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequirePermissions("refunds.create")
   @HttpCode(HttpStatus.CREATED)
   async createRefund(
     @Param("paymentId", StrictUuidPipe) paymentId: string,

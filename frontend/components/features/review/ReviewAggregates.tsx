@@ -101,7 +101,7 @@ export function ReviewAggregates({ providerId }: { providerId?: string }) {
           <div className="text-center md:text-left">
             <div className="inline-flex items-baseline gap-2 mb-2">
               <span className="text-6xl font-bold text-gray-900">
-                {aggregate.average_rating.toFixed(1)}
+                {aggregate.average_rating}
               </span>
               <span className="text-2xl text-gray-600">/ 5.0</span>
             </div>
@@ -185,8 +185,7 @@ export function ReviewAggregates({ providerId }: { providerId?: string }) {
               </h4>
               <p className="text-sm text-blue-800">
                 This provider has earned the Trusted Pro badge by maintaining an
-                average rating of
-                {aggregate.average_rating.toFixed(1)} stars with{" "}
+                average rating of {aggregate.average_rating} stars with{" "}
                 {aggregate.total_reviews} verified reviews.
               </p>
             </div>

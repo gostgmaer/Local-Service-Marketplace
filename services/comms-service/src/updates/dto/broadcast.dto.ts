@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsObject } from "class-validator";
+import { IsString, IsOptional, IsObject, IsArray } from "class-validator";
 
 export class BroadcastDto {
   @IsString()
@@ -24,5 +24,11 @@ export class BroadcastDto {
   };
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   rooms?: string[];
+
+  @IsOptional()
+  @IsObject()
+  data?: Record<string, any>;
 }

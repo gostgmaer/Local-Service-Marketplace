@@ -413,6 +413,8 @@ services:
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL:-http://localhost:4100}
       - DEFAULT_TENANT_ID=${FILE_DEFAULT_TENANT_ID:-default}
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - JWT_SECRET=${JWT_SECRET}
     networks:
       - marketplace-network
     healthcheck:
@@ -589,6 +591,7 @@ services:
       - PAYMENT_SERVICE_URL=http://payment-service:3006
       - MESSAGING_SERVICE_URL=http://comms-service:3007
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
+      - COMMS_SERVICE_URL=http://comms-service:3007
       - REVIEW_SERVICE_URL=http://marketplace-service:3003
       - ADMIN_SERVICE_URL=http://oversight-service:3010
       - ANALYTICS_SERVICE_URL=http://oversight-service:3010

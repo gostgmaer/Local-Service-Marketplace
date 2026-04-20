@@ -88,6 +88,11 @@ export class UpdatesGateway
       if (payload.role === "admin") {
         client.join("admin");
       }
+      if (payload.role === "provider") {
+        // All providers join a shared room so marketplace broadcasts (e.g. new requests)
+        // can be delivered to every connected provider at once.
+        client.join("providers");
+      }
       if (payload.providerId) {
         client.join(`provider:${payload.providerId}`);
       }
@@ -125,6 +130,11 @@ export class UpdatesGateway
     } else {
       this.server.emit(event, payload);
     }
+  }
+
+  isUserOnline(userId: string): boolean {
+    const sockets = this.userSockets.get(userId);
+    return sockets !== undefined && sockets.size > 0;
   }
 
   private verifyJwt(token: string): any {

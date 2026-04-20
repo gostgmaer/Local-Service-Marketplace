@@ -37,7 +37,7 @@ export default function RequestsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  useRealtimeList(["request:created", "request:updated"], ["requests"]);
+  useRealtimeList(["request:created", "request:updated", "request:deleted", "proposal:created", "proposal:deleted"], ["requests"]);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["requests", page, limit, filters],

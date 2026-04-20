@@ -48,6 +48,7 @@ export class NotificationService {
     userId: string,
     type: string,
     message: string,
+    options: { sendEmail?: boolean } = {},
   ): Promise<Notification> {
     this.logger.log(
       `Creating notification for user ${userId}`,
@@ -59,28 +60,29 @@ export class NotificationService {
       message,
     );
 
-    // Create delivery records for email and push channels
-    const emailDelivery = await this.deliveryRepository.createDelivery(
-      notification.id,
-      "email",
-      "pending",
-    );
+    // Email delivery is opt-in — only queue for critical events when the user is offline.
+    // All other notifications are in-app only, delivered via WebSocket broadcast below.
+    if (options.sendEmail) {
+      const emailDelivery = await this.deliveryRepository.createDelivery(
+        notification.id,
+        "email",
+        "pending",
+      );
+      await this.emailQueue.add("deliver-email", {
+        deliveryId: emailDelivery.id,
+        notificationId: notification.id,
+        userId,
+        type,
+        message,
+      });
+    }
+
+    // Queue push delivery (always — push is separate from email)
     const pushDelivery = await this.deliveryRepository.createDelivery(
       notification.id,
       "push",
       "pending",
     );
-
-    // Queue email delivery — default options (3 retries, exp backoff) applied from queue defaults
-    await this.emailQueue.add("deliver-email", {
-      deliveryId: emailDelivery.id,
-      notificationId: notification.id,
-      userId,
-      type,
-      message,
-    });
-
-    // Queue push delivery
     await this.pushQueue.add("deliver-push", {
       deliveryId: pushDelivery.id,
       notificationId: notification.id,
@@ -90,17 +92,19 @@ export class NotificationService {
     });
 
     this.logger.log(
-      `Notification created and queued successfully: ${notification.id}`,
+      `Notification created: ${notification.id}, email=${options.sendEmail ?? false}`,
       "NotificationService",
     );
 
-    // Broadcast real-time event so the frontend notification badge updates instantly
+    // Broadcast real-time event — include message and type so the frontend can
+    // show a toast without an extra round-trip to the API.
     this.updatesService.broadcast({
       entityType: "notification",
       entityId: notification.id,
       action: "created",
       userId,
       rooms: [`user:${userId}`],
+      data: { message, notificationType: type },
     });
 
     return notification;

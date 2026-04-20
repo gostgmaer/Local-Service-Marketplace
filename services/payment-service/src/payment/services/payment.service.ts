@@ -383,7 +383,7 @@ export class PaymentService {
     );
 
     await this.cacheInvalidation.invalidateEntity("payments");
-    this.broadcastService.emit("payment", payment.id, status === "failed" ? "failed" : status === "refunded" ? "refunded" : "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id }, payment.user_id);
+    this.broadcastService.emit("payment", payment.id, status === "failed" ? "failed" : status === "refunded" ? "refunded" : "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id, jobId: payment.job_id }, payment.user_id);
 
     return result;
   }

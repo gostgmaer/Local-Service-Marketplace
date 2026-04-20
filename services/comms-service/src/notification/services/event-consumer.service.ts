@@ -6,7 +6,17 @@ import {
 } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { KafkaService } from "../../kafka/kafka.service";
-import { NotificationRepository } from "../repositories/notification.repository";
+import { NotificationService } from "./notification.service";
+import { UpdatesService } from "../../updates/updates.service";
+
+/**
+ * Events that are critical enough to warrant an email fallback when the
+ * recipient is not currently online. All other events are in-app only.
+ */
+const CRITICAL_EMAIL_EVENTS = new Set([
+  "proposal_submitted",
+  "proposal_accepted",
+]);
 
 @Injectable()
 export class EventConsumerService implements OnModuleInit {
@@ -14,7 +24,8 @@ export class EventConsumerService implements OnModuleInit {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     private readonly kafkaService: KafkaService,
-    private readonly notificationRepository: NotificationRepository,
+    private readonly notificationService: NotificationService,
+    private readonly updatesService: UpdatesService,
   ) {}
 
   async onModuleInit() {
@@ -22,6 +33,24 @@ export class EventConsumerService implements OnModuleInit {
       this.logger.log("Starting Kafka event consumer", "EventConsumerService");
       await this.kafkaService.startConsuming(this.handleEvent.bind(this));
     }
+  }
+
+  /**
+   * Helper that creates a notification and conditionally queues an email.
+   * Email is only sent for CRITICAL_EMAIL_EVENTS and only when the recipient
+   * does not have an active WebSocket connection (i.e. they are offline).
+   */
+  private async notify(
+    userId: string,
+    type: string,
+    message: string,
+    eventType: string,
+  ): Promise<void> {
+    const isCritical = CRITICAL_EMAIL_EVENTS.has(eventType);
+    const isOnline = this.updatesService.isUserOnline(userId);
+    await this.notificationService.createNotification(userId, type, message, {
+      sendEmail: isCritical && !isOnline,
+    });
   }
 
   private async handleEvent(event: any): Promise<void> {
@@ -65,7 +94,7 @@ export class EventConsumerService implements OnModuleInit {
           await this.handlePaymentFailed(event);
           break;
         case "payment_confirmation_needed":
-          await this.handlePaymentCompleted(event); // same as completed — notify customer
+          await this.handlePaymentCompleted(event);
           break;
         case "review_submitted":
           await this.handleReviewSubmitted(event);
@@ -75,13 +104,13 @@ export class EventConsumerService implements OnModuleInit {
           break;
         default:
           this.logger.log(
-            `Unhandled event type: ${event.eventType}`,
+            `Unhandled event type: ${eventType}`,
             "EventConsumerService",
           );
       }
     } catch (error: any) {
       this.logger.error(
-        `Error handling event ${event.eventType}: ${error.message}`,
+        `Error handling event ${eventType}: ${error.message}`,
         error.stack,
         "EventConsumerService",
       );
@@ -91,15 +120,15 @@ export class EventConsumerService implements OnModuleInit {
   private async handleRequestCreated(event: any): Promise<void> {
     const ref = event.data.requestDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.data.userId,
       "request",
       `Your service request has been created successfully${refSuffix}`,
+      "request_created",
     );
   }
 
   private async handleProposalSubmitted(event: any): Promise<void> {
-    // Notify request creator (customer) about new proposal
     const requestRef = event.data.requestDisplayId || "";
     const proposalRef =
       event.data.proposalDisplayId || event.data.displayId || "";
@@ -108,17 +137,16 @@ export class EventConsumerService implements OnModuleInit {
       proposalRef && `Proposal: ${proposalRef}`,
     ].filter(Boolean);
     const refSuffix = refParts.length ? ` (${refParts.join(", ")})` : "";
-    // customerId is the customer who owns the request; fall back to userId for legacy events
     const recipientId = event.data.customerId || event.data.userId;
-    await this.notificationRepository.createNotification(
+    await this.notify(
       recipientId,
       "proposal",
       `A provider has submitted a proposal for your request${refSuffix}`,
+      "proposal_submitted",
     );
   }
 
   private async handleProposalAccepted(event: any): Promise<void> {
-    // Notify provider about accepted proposal
     const jobRef = event.data.jobDisplayId || "";
     const proposalRef =
       event.data.proposalDisplayId || event.data.displayId || "";
@@ -127,15 +155,15 @@ export class EventConsumerService implements OnModuleInit {
       jobRef && `Job: ${jobRef}`,
     ].filter(Boolean);
     const refSuffix = refParts.length ? ` (${refParts.join(", ")})` : "";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.data.providerId,
       "proposal",
       `Your proposal has been accepted${refSuffix}`,
+      "proposal_accepted",
     );
   }
 
   private async handleProposalRejected(event: any): Promise<void> {
-    // Notify provider about rejected proposal
     const requestRef = event.data.requestDisplayId || "";
     const proposalRef =
       event.data.proposalDisplayId || event.data.displayId || "";
@@ -144,121 +172,118 @@ export class EventConsumerService implements OnModuleInit {
       requestRef && `Request: ${requestRef}`,
     ].filter(Boolean);
     const refSuffix = refParts.length ? ` (${refParts.join(", ")})` : "";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.data.providerId,
       "proposal",
       `Your proposal was not selected for this request${refSuffix}`,
+      "proposal_rejected",
     );
   }
 
   private async handleJobCreated(event: any): Promise<void> {
-    // Notify provider about job creation
     const ref = event.data.jobDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.data.providerId,
       "job",
       `A new job has been assigned to you${refSuffix}`,
+      "job_created",
     );
   }
 
   private async handleJobStarted(event: any): Promise<void> {
-    // Notify customer that job has started
     const ref = event.data.jobDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notificationRepository.createNotification(
-      event.data.userId, // Customer ID
+    await this.notify(
+      event.data.userId,
       "job",
       `The provider has started working on your job${refSuffix}`,
+      "job_started",
     );
   }
 
   private async handleJobCompleted(event: any): Promise<void> {
-    // In-app notification only — email is handled by the marketplace BullMQ worker
-    // to avoid duplicate emails to the customer.
     const ref = event.data.jobDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notificationRepository.createNotification(
-      event.data.userId, // Customer ID
+    await this.notify(
+      event.data.userId,
       "job",
       `Your job has been completed${refSuffix}`,
+      "job_completed",
     );
   }
 
   private async handleJobCancelled(event: any): Promise<void> {
-    // Notify both provider and customer about cancellation
     const ref = event.data.jobDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.data.providerId,
       "job",
       `A job assigned to you has been cancelled${refSuffix}`,
+      "job_cancelled",
     );
-    // Also notify the customer who placed the request
     if (event.data.userId) {
-      await this.notificationRepository.createNotification(
+      await this.notify(
         event.data.userId,
         "job",
         `Your job has been cancelled${refSuffix}`,
+        "job_cancelled",
       );
     }
   }
 
   private async handlePaymentCompleted(event: any): Promise<void> {
-    // Notify about successful payment
+    // Payment emails are already sent by payment-service directly.
+    // EventConsumer is responsible for the in-app notification only.
     const ref = event.data.paymentDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notificationRepository.createNotification(
-      event.data.userId, // Customer ID
+    await this.notify(
+      event.data.userId,
       "payment",
-      `Payment of ${event.data.amount} ${event.data.currency} completed successfully${refSuffix}`,
+      `Payment of ₹${event.data.amount} ${event.data.currency ?? "INR"} completed successfully${refSuffix}`,
+      "payment_completed",
     );
   }
 
   private async handlePaymentFailed(event: any): Promise<void> {
-    // Notify customer that their payment failed
+    // Payment emails are already sent by payment-service directly.
+    // EventConsumer is responsible for the in-app notification only.
     const ref = event.data.paymentDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
     const amount = event.data.amount
       ? `₹${event.data.amount} ${event.data.currency ?? "INR"}`
       : "your payment";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.data.userId,
       "payment",
       `Payment failed: ${amount} could not be processed${refSuffix}. Please retry or contact support.`,
+      "payment_failed",
     );
   }
 
   private async handleReviewSubmitted(event: any): Promise<void> {
-    // Notify provider that a review was submitted for their service
     if (!event.data.providerId) return;
     const ref = event.data.reviewDisplayId || event.data.displayId || "";
     const refSuffix = ref ? ` (Ref: ${ref})` : "";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.data.providerId,
       "review",
       `A customer has submitted a review for your service${refSuffix}`,
+      "review_submitted",
     );
   }
 
   private async handleDisputeStatusChanged(event: any): Promise<void> {
-    // Dispute events use top-level fields (not nested under data)
+    if (!event.opened_by) return;
     const disputeId = event.dispute_id;
     const newStatus = event.new_status;
     const resolution = event.resolution;
-
-    // Notify the user who opened the dispute
-    // Note: opened_by user ID is not in the Kafka event — we notify via the
-    // dispute_id reference. The admin_id is available for audit.
-    // For now, skip if we don't have a userId — the broadcast service already
-    // notifies via WebSocket rooms.
-    if (!event.opened_by) return;
-
     const resolutionSuffix = resolution ? ` (${resolution})` : "";
-    await this.notificationRepository.createNotification(
+    await this.notify(
       event.opened_by,
       "dispute",
       `Your dispute #${disputeId} has been updated to "${newStatus}"${resolutionSuffix}`,
+      "dispute_status_changed",
     );
   }
 }

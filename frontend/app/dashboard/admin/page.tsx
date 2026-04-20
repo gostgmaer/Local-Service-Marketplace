@@ -89,13 +89,13 @@ export default function AdminDashboardPage() {
   });
 
   // Real-time invalidation for admin dashboard queries
-  useRealtimeList(["user:created", "user:updated"], ["admin-users-recent"]);
-  useRealtimeList(["user:created", "user:updated"], ["admin-users-stats"]);
+  useRealtimeList(["user:created", "user:updated", "user:deleted"], ["admin-users-recent"]);
+  useRealtimeList(["user:created", "user:updated", "user:deleted"], ["admin-users-stats"]);
   useRealtimeList(["dispute:created", "dispute:updated"], ["admin-disputes-recent"]);
   useRealtimeList(["dispute:created", "dispute:updated"], ["admin-disputes-stats"]);
-  useRealtimeList(["job:created", "job:updated"], ["admin-jobs-stats"]);
+  useRealtimeList(["job:created", "job:updated", "job:completed", "job:deleted"], ["admin-jobs-stats"]);
   useRealtimeList(["request:created", "request:updated", "request:deleted"], ["admin-requests-stats"]);
-  useRealtimeList(["payment:created", "payment:updated"], ["admin-payments-stats"]);
+  useRealtimeList(["payment:created", "payment:completed", "payment:updated", "payment:failed", "payment:refunded"], ["admin-payments-stats"]);
 
   const totalUsers = userStats?.total ?? 0;
   const activeDisputes = disputeStats?.byStatus?.open ?? 0;

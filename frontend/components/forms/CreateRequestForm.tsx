@@ -360,15 +360,9 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                 <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-3.5 space-y-1.5 text-xs">
                   <p className="text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider text-[10px] mb-2">Estimated Price Breakdown</p>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Base Budget</span>
-                    <span className="font-medium text-gray-900 dark:text-gray-100">₹{budgetNum.toLocaleString("en-IN")}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Service Amount</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">₹{subtotal.toLocaleString("en-IN")}</span>
                   </div>
-                  {urgencySurcharge > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-amber-600 dark:text-amber-400">Urgency Surcharge ({urgencySurchargePercent}%)</span>
-                      <span className="font-medium text-amber-600 dark:text-amber-400">+₹{urgencySurcharge.toLocaleString("en-IN")}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">GST ({siteConfig.gstRate}% on service fee)</span>
                     <span className="font-medium text-gray-700 dark:text-gray-300">₹{gstAmount.toLocaleString("en-IN")}</span>
@@ -501,12 +495,7 @@ export function CreateRequestForm({ initialQuery = "", onSuccess }: Props) {
                 <ReviewRow
                   label="Budget"
                   value={`\u20b9${watchedValues.budget ?? 0}`}
-                />                {urgencySurcharge > 0 && (
-                  <ReviewRow
-                    label="Urgency Surcharge"
-                    value={`+₹${urgencySurcharge} (${urgencySurchargePercent}%)`}
-                  />
-                )}
+                />
                 {budgetNum > 0 && (
                   <>
                     <ReviewRow

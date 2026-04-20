@@ -24,7 +24,7 @@ export default function CustomerDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
-  useRealtimeList(["request:created", "request:updated"], ["my-requests"]);
+  useRealtimeList(["request:created", "request:updated", "request:deleted"], ["my-requests"]);
   useRealtimeList(["job:created", "job:updated", "job:completed"], ["my-jobs"]);
   useRealtimeList(["notification:created"], ["notifications-preview"]);
 

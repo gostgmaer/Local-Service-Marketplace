@@ -20,7 +20,7 @@ export default function ProviderReviewsPage() {
   const { user, isAuthenticated } = useAuth();
   const { can } = usePermissions();
 
-  useRealtimeList(["review:created"], ["my-provider-profile", user?.id]);
+  useRealtimeList(["review:created", "review:updated", "review:deleted"], ["my-provider-profile", user?.id]);
 
   const {
     data: provider,

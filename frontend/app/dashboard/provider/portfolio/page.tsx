@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
@@ -35,6 +36,8 @@ export default function ProviderPortfolioPage() {
     },
     enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
   });
+
+  useRealtimeDetail(["provider:updated"], ["my-provider-profile", user?.id], provider?.id);
 
   const tabs = [
     {

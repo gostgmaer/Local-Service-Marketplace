@@ -72,7 +72,21 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState("");
   const limit = 25;
 
-  useRealtimeList(["setting:updated", "user:updated", "dispute:updated"], ["admin-audit-logs"]);
+  useRealtimeList(
+    [
+      "user:created", "user:updated", "user:deleted",
+      "provider:created", "provider:updated",
+      "request:created", "request:updated", "request:deleted",
+      "proposal:created", "proposal:accepted", "proposal:rejected",
+      "proposal:updated", "proposal:withdrawn", "proposal:deleted",
+      "job:created", "job:updated", "job:completed", "job:deleted",
+      "payment:created", "payment:completed", "payment:updated", "payment:failed", "payment:refunded",
+      "review:created", "review:updated", "review:deleted",
+      "dispute:created", "dispute:updated",
+      "setting:created", "setting:updated",
+    ],
+    ["admin-audit-logs"],
+  );
 
   const {
     data: rawData,

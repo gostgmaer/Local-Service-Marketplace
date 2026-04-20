@@ -149,7 +149,9 @@ export class DisputeService {
     }
 
     await this.cacheInvalidation.invalidateEntity("disputes");
-    this.broadcastService.emit("dispute", dispute.id, "created", [`user:${openedBy}`, "admin"], { disputeId: dispute.id, jobId }, openedBy);
+    // Notify both the opener and the other job party (provider or customer) so both see the new dispute
+    const otherDisputePartyRoom = otherPartyId ? [`user:${otherPartyId}`] : [];
+    this.broadcastService.emit("dispute", dispute.id, "created", [`user:${openedBy}`, ...otherDisputePartyRoom, "admin"], { disputeId: dispute.id, jobId }, openedBy);
 
     return dispute;
   }
@@ -361,7 +363,16 @@ export class DisputeService {
     }
 
     await this.cacheInvalidation.invalidateEntity("disputes");
-    this.broadcastService.emit("dispute", id, "updated", [`user:${existingDispute.opened_by}`, "admin"], { disputeId: id, status: normalizedStatus }, adminId);
+    // Get both job parties so both the opener and the respondent see the resolution
+    const disputeJobParties = await this.disputeRepository.getJobParties(existingDispute.job_id).catch(() => ({ customerId: null, providerUserId: null }));
+    const disputeUpdateRooms: string[] = [`user:${existingDispute.opened_by}`, "admin"];
+    if (disputeJobParties.customerId && disputeJobParties.customerId !== existingDispute.opened_by) {
+      disputeUpdateRooms.splice(1, 0, `user:${disputeJobParties.customerId}`);
+    }
+    if (disputeJobParties.providerUserId && disputeJobParties.providerUserId !== existingDispute.opened_by) {
+      disputeUpdateRooms.splice(1, 0, `user:${disputeJobParties.providerUserId}`);
+    }
+    this.broadcastService.emit("dispute", id, "updated", disputeUpdateRooms, { disputeId: id, status: normalizedStatus }, adminId);
 
     this.logger.log(`Dispute ${id} updated successfully`, "DisputeService");
 
