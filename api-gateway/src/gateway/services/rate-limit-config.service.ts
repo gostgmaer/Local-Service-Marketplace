@@ -12,7 +12,7 @@ import { firstValueFrom } from "rxjs";
 export class RateLimitConfigService implements OnModuleInit, OnModuleDestroy {
   private config = {
     rate_limit_max_requests: parseInt(
-      process.env.RATE_LIMIT_MAX_REQUESTS || "500",
+      process.env.RATE_LIMIT_MAX_REQUESTS || "100",
       10,
     ),
     auth_rate_limit_max_requests: parseInt(

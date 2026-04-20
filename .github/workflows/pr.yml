@@ -5,6 +5,9 @@ on:
     branches: [main, master]
     types: [opened, synchronize, reopened]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
