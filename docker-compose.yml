@@ -456,6 +456,11 @@ services:
       - DATABASE_NAME=${DATABASE_NAME}
       - DATABASE_SSL=${DATABASE_SSL:-false}
       - AUTH_SERVICE_URL=http://identity-service:3001
+      - IDENTITY_SERVICE_URL=http://identity-service:3001
+      - MARKETPLACE_SERVICE_URL=http://marketplace-service:3003
+      - PAYMENT_SERVICE_URL=http://payment-service:3006
+      - COMMS_SERVICE_URL=http://comms-service:3007
+      - INFRASTRUCTURE_SERVICE_URL=http://infrastructure-service:3012
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
