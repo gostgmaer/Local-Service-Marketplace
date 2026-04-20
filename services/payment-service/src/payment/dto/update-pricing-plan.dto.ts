@@ -7,6 +7,7 @@ import {
   Min,
   MinLength,
 } from "class-validator";
+import { Type } from "class-transformer";
 
 export class UpdatePricingPlanDto {
   @IsOptional()
@@ -19,6 +20,7 @@ export class UpdatePricingPlanDto {
   description?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   price?: number;

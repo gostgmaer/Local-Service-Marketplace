@@ -6,6 +6,7 @@ import {
   Max,
   IsEnum,
 } from "class-validator";
+import { Type } from "class-transformer";
 
 export class CreatePaymentDto {
   @IsString()
@@ -14,6 +15,7 @@ export class CreatePaymentDto {
   @IsString()
   provider_id: string;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0.01)
   @Max(1_000_000)
