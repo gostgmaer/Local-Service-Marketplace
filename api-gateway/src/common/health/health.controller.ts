@@ -6,8 +6,8 @@ export class HealthController {
   @Get()
   check() {
     return {
-      status: "ok",
-      service: "api-gateway",
+      status: "healthy",
+      gateway: "api-gateway",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };

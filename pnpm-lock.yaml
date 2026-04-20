@@ -1131,7 +1131,7 @@ importers:
         specifier: ^4.17.21
         version: 4.17.25
       '@types/jest':
-        specifier: ^29.5.11
+        specifier: ^29.5.14
         version: 29.5.14
       '@types/multer':
         specifier: ^2.1.0

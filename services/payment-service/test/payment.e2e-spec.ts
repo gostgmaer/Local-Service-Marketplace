@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { Pool } from 'pg';
@@ -10,6 +11,11 @@ describe('PaymentController (e2e)', () => {
   let pool: Pool;
   let paymentId: string;
   let jobId: string;
+  let categoryId: string;
+  let customerId: string;
+  let providerUserId: string;
+  let providerId: string;
+  let requestId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -18,37 +24,72 @@ describe('PaymentController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
-    app.useGlobalFilters(new HttpExceptionFilter(app.get('WINSTON_MODULE_NEST_PROVIDER')));
+    app.useGlobalFilters(new HttpExceptionFilter(moduleFixture.get(WINSTON_MODULE_PROVIDER)));
     await app.init();
 
     pool = app.get('DATABASE_POOL');
 
-    // Create a test job_id (in a real scenario, this would be created by job-service)
+    // Create prerequisite records for the jobs FK constraints
+    const catResult = await pool.query(
+      `INSERT INTO service_categories (id, display_id, name) VALUES (gen_random_uuid(), $1, $2) RETURNING id`,
+      ['TESTCAT001', 'Test Category E2E'],
+    );
+    categoryId = catResult.rows[0].id;
+
+    const custResult = await pool.query(
+      `INSERT INTO users (id, display_id, email, password_hash, role) VALUES (gen_random_uuid(), $1, $2, $3, 'customer') RETURNING id`,
+      ['TESTCUST001', 'e2e-customer@test.com', 'hashedpassword'],
+    );
+    customerId = custResult.rows[0].id;
+
+    const provUserResult = await pool.query(
+      `INSERT INTO users (id, display_id, email, password_hash, role) VALUES (gen_random_uuid(), $1, $2, $3, 'provider') RETURNING id`,
+      ['TESTPROV001', 'e2e-provider@test.com', 'hashedpassword'],
+    );
+    providerUserId = provUserResult.rows[0].id;
+
+    const provResult = await pool.query(
+      `INSERT INTO providers (id, display_id, user_id, business_name) VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id`,
+      ['TESTPRVD001', providerUserId, 'Test Business E2E'],
+    );
+    providerId = provResult.rows[0].id;
+
+    const reqResult = await pool.query(
+      `INSERT INTO service_requests (id, display_id, user_id, category_id, description, budget) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5) RETURNING id`,
+      ['TESTREQ0001', customerId, categoryId, 'Test service request', 100],
+    );
+    requestId = reqResult.rows[0].id;
+
+    // Create a test job
     const jobResult = await pool.query(
-      'INSERT INTO jobs (id, request_id, proposal_id, status, created_at) VALUES (gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), $1, NOW()) RETURNING id',
-      ['active'],
+      `INSERT INTO jobs (id, display_id, request_id, provider_id, customer_id, status, created_at) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW()) RETURNING id`,
+      ['TESTJOB0001', requestId, providerId, customerId, 'in_progress'],
     );
     jobId = jobResult.rows[0].id;
 
     // Create a test coupon
     await pool.query(
-      'INSERT INTO coupons (id, code, discount_percent, expires_at) VALUES (gen_random_uuid(), $1, $2, NOW() + INTERVAL \'30 days\')',
+      `INSERT INTO coupons (id, code, discount_percent, expires_at) VALUES (gen_random_uuid(), $1, $2, NOW() + INTERVAL '30 days')`,
       ['TEST10', 10],
     );
   });
 
   afterAll(async () => {
     // Clean up test data
-    if (paymentId) {
+    if (paymentId && pool) {
       await pool.query('DELETE FROM refunds WHERE payment_id = $1', [paymentId]);
       await pool.query('DELETE FROM payments WHERE id = $1', [paymentId]);
     }
-    if (jobId) {
-      await pool.query('DELETE FROM jobs WHERE id = $1', [jobId]);
+    if (pool) {
+      await pool.query('DELETE FROM payment_webhooks');
+      await pool.query('DELETE FROM coupons WHERE code = $1', ['TEST10']);
+      if (jobId) await pool.query('DELETE FROM jobs WHERE id = $1', [jobId]);
+      if (requestId) await pool.query('DELETE FROM service_requests WHERE id = $1', [requestId]);
+      if (providerId) await pool.query('DELETE FROM providers WHERE id = $1', [providerId]);
+      if (providerUserId) await pool.query('DELETE FROM users WHERE id = $1', [providerUserId]);
+      if (customerId) await pool.query('DELETE FROM users WHERE id = $1', [customerId]);
+      if (categoryId) await pool.query('DELETE FROM service_categories WHERE id = $1', [categoryId]);
     }
-    await pool.query('DELETE FROM coupons WHERE code = $1', ['TEST10']);
-    await pool.query('DELETE FROM payment_webhooks');
-    await pool.end();
     await app.close();
   });
 
