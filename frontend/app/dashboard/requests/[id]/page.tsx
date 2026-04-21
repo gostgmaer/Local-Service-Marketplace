@@ -273,7 +273,7 @@ export default function RequestDetailPage() {
 
                     {/* GST breakdown visible only to customer (owner) — no platform fee shown, urgency baked into Service Amount */}
                     {isOwner && request.budget > 0 && (() => {
-                      const budget = request.budget;
+                      const budget = Number(request.budget) || 0;
                       const urgency = request.urgency ?? "medium";
                       const surchargePercent = URGENCY_SURCHARGE[urgency] ?? 0;
                       const surcharge = Math.round(((budget * surchargePercent) / 100) * 100) / 100;
@@ -401,8 +401,8 @@ export default function RequestDetailPage() {
                             </div>
                             {/* Provider sees platform fee breakdown — never GST */}
                             {proposal.price > 0 && (() => {
-                              const pFee = Math.floor((proposal.price * siteConfig.platformFeePercentage) / 100);
-                              const youReceive = proposal.price - pFee;
+                              const pFee = Math.floor((Number(proposal.price) * siteConfig.platformFeePercentage) / 100);
+                              const youReceive = Number(proposal.price) - pFee;
                               return (
                                 <div className="mt-2 space-y-1 text-xs text-gray-500">
                                   <div className="flex justify-between">

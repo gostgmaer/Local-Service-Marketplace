@@ -58,7 +58,7 @@ function CreateRequestContent() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = form;
 
   // Fetch categories from API
@@ -331,7 +331,7 @@ function CreateRequestContent() {
                   <Button
                     type="submit"
                     isLoading={createMutation.isPending}
-                    disabled={createMutation.isPending}
+                    disabled={createMutation.isPending || !isValid}
                   >
                     {"Create Request"}
                   </Button>

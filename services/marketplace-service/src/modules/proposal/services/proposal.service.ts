@@ -159,6 +159,20 @@ export class ProposalService {
           }
         }
       }
+
+      // Category restriction: provider must offer the requested service category
+      const requestCategoryId = await this.proposalRepository.getRequestCategoryId(dto.request_id);
+      if (requestCategoryId) {
+        const providerServices: any[] = providerForGate?.provider_services ?? [];
+        const offeredCategoryIds = providerServices.map(
+          (s: any) => s.category_id ?? s.service_category_id ?? s.id,
+        );
+        if (offeredCategoryIds.length > 0 && !offeredCategoryIds.includes(requestCategoryId)) {
+          throw new BadRequestException(
+            "Cannot submit proposal: you do not offer services in this category.",
+          );
+        }
+      }
     } else if (verificationRequired !== "false") {
       // Identity-service is unavailable — fail-closed to prevent onboarding bypass
       throw new BadRequestException(

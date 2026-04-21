@@ -80,17 +80,17 @@ export default function AvailabilityPage() {
       !!user?.id,
   });
 
-  // Redirect if not authenticated or missing permission (must be in useEffect, not render)
-  useEffect(() => {
-    if (!isAuthenticated || !can(Permission.PROVIDER_AVAILABILITY_MANAGE)) {
-      router.push(ROUTES.DASHBOARD);
-    }
-  }, [isAuthenticated, can, router]);
-
   // Load existing availability when provider data is fetched
+  // Strip any id/metadata fields — only send the required fields back to the API
   useEffect(() => {
     if (provider?.availability) {
-      setSlots(provider.availability);
+      setSlots(
+        provider.availability.map(({ day_of_week, start_time, end_time }: any) => ({
+          day_of_week,
+          start_time,
+          end_time,
+        })),
+      );
     }
   }, [provider]);
 

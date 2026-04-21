@@ -64,8 +64,10 @@ export class JobRepository {
   private mapRow(row: any): Job {
     return {
       ...row,
-      provider_rating:
-        row.provider_rating ? parseFloat(row.provider_rating) : null,
+      actual_amount:   row.actual_amount   != null ? parseFloat(row.actual_amount)   : null,
+      request_budget:  row.request_budget  != null ? parseFloat(row.request_budget)  : null,
+      proposal_price:  row.proposal_price  != null ? parseFloat(row.proposal_price)  : null,
+      provider_rating: row.provider_rating != null ? parseFloat(row.provider_rating) : null,
     };
   }
 

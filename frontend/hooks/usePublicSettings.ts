@@ -31,7 +31,7 @@ export function usePublicSettings(): {
   const { data, isLoading } = useQuery<SiteConfig>({
     queryKey: ["public-site-config"],
     queryFn: getSiteConfig,
-    staleTime: 60_000,          // re-fetch after 60 s (matches admin polling expectation)
+    staleTime: 10 * 60 * 1000,  // re-fetch only after 10 min (settings fetched on app landing)
     gcTime: 10 * 60 * 1000,     // keep in cache for 10 min
     initialData: getSiteConfigFromCache, // instant from localStorage on every render
     retry: 1,

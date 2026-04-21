@@ -110,7 +110,7 @@ export default function BrowseRequestsPage() {
 
   const { data: myProposals } = useQuery({
     queryKey: ["my-proposals"],
-    queryFn: () => proposalService.getMyProposals(),
+    queryFn: () => proposalService.getMyProposals().then((r) => r.data),
     enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
   });
 
@@ -131,6 +131,27 @@ export default function BrowseRequestsPage() {
   const emailNotVerified = isProviderUser && user?.emailVerified === false;
   const canSubmitProposal =
     isProviderUser && !providerNotVerified && !emailNotVerified;
+
+  // Provider's offered category IDs (from provider_services)
+  const providerCategoryIds: Set<string> = new Set(
+    (provider?.provider_services ?? []).map((s: any) => s.category_id ?? s.service_category_id ?? s.id),
+  );
+
+  const canSubmitForRequest = (request: any) => {
+    if (!canSubmitProposal) return false;
+    if (providerCategoryIds.size === 0) return false; // no services configured
+    return providerCategoryIds.has(request.category_id);
+  };
+
+  const proposalDisabledTitle = (request: any) => {
+    if (!canSubmitProposal) {
+      if (providerNotVerified) return "Your provider account is not verified yet";
+      if (emailNotVerified) return "Verify your email before submitting proposals";
+    }
+    if (providerCategoryIds.size === 0) return "Add your service categories in Provider Profile before submitting proposals";
+    if (!providerCategoryIds.has(request.category_id)) return "You don't offer this service category";
+    return undefined;
+  };
 
   return (
     <ProtectedRoute requiredPermissions={[Permission.REQUESTS_BROWSE]}>
@@ -369,16 +390,10 @@ export default function BrowseRequestsPage() {
                                 <Button
                                   size="sm"
                                   variant="primary"
-                                  disabled={!canSubmitProposal}
-                                  title={
-                                    !canSubmitProposal
-                                      ? providerNotVerified
-                                        ? "Your provider account is not verified yet"
-                                        : "Verify your email before submitting proposals"
-                                      : undefined
-                                  }
+                                  disabled={!canSubmitForRequest(request)}
+                                  title={proposalDisabledTitle(request)}
                                   onClick={() =>
-                                    canSubmitProposal &&
+                                    canSubmitForRequest(request) &&
                                     setProposalTargetId(request.id)
                                   }
                                   className="flex items-center gap-1"

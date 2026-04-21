@@ -57,6 +57,7 @@ const nextConfig = {
 			{ protocol: "https", hostname: "cloudflare-ipfs.com" },
 			{ protocol: "https", hostname: "avatars.githubusercontent.com" },
 			{ protocol: "https", hostname: "**.blob.core.windows.net" },
+			{ protocol: "https", hostname: "chart.googleapis.com" },
 			{ protocol: "http", hostname: "localhost" },
 		],
 		formats: ["image/avif", "image/webp"],

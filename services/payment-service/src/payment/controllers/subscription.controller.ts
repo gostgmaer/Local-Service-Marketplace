@@ -54,6 +54,7 @@ export class SubscriptionController {
       data.plan_id,
       req.user.userId,
       req.user.role,
+      req.user.permissions,
       req.user.providerId,
     );
 

@@ -23,7 +23,7 @@ export interface StandardResponse<T = any> {
   statusCode: number;
   message: string;
   data: T;
-  meta: PaginationMeta | null;
+  meta?: PaginationMeta;
 }
 
 @Injectable()
@@ -90,7 +90,7 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
                 ? partial.message
                 : this.generateMessage(method, statusCode, path),
             data: innerData,
-            meta: innerMeta,
+            ...(innerMeta !== null ? { meta: innerMeta } : {}),
           } as StandardResponse<T>;
         }
 
@@ -165,7 +165,7 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
           message:
             customMessage ?? this.generateMessage(method, statusCode, path),
           data: responseData ?? null,
-          meta,
+          ...(meta !== null ? { meta } : {}),
         } as StandardResponse<T>;
       }),
     );

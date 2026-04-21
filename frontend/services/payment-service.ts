@@ -253,6 +253,21 @@ class PaymentService {
     );
     return response.data;
   }
+
+  /**
+   * Returns the invoice download URL for a completed payment.
+   * Uses stored invoice_url if available, otherwise the backend generates one.
+   */
+  getInvoiceDownloadUrl(paymentId: string): string {
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3700";
+    return `${base}/api/v1/payments/${paymentId}/invoice/download`;
+  }
+
+  async getInvoiceData(paymentId: string): Promise<{ invoice_url?: string | null } & Record<string, any>> {
+    const response = await apiClient.get<any>(`/payments/${paymentId}/invoice`);
+    const envelope = response.data;
+    return envelope?.data ?? envelope;
+  }
 }
 
 export interface SavedPaymentMethod {

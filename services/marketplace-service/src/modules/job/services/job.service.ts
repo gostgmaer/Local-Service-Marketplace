@@ -277,7 +277,8 @@ export class JobService {
     }
 
     // Validate status transition
-    if (existingJob.status === "completed") {
+    // Allow completed → disputed (filing a dispute after job completion)
+    if (existingJob.status === "completed" && dto.status !== "disputed") {
       throw new BadRequestException("Cannot update status of completed job");
     }
 

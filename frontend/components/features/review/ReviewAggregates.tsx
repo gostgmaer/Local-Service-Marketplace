@@ -1,20 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Star, Award } from "lucide-react";
+import { Star, Award, AlertCircle } from "lucide-react";
 import reviewService, { type ReviewAggregate } from "@/services/review-service";
 
 export function ReviewAggregates({ providerId }: { providerId?: string }) {
   const [aggregate, setAggregate] = useState<ReviewAggregate | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   const loadAggregate = useCallback(async () => {
     if (!providerId) return;
+    setHasError(false);
     try {
       const data = await reviewService.getProviderReviewAggregates(providerId);
       setAggregate(data || null);
     } catch (error) {
       console.error("Failed to load review aggregates:", error);
+      setHasError(true);
     } finally {
       setLoading(false);
     }
@@ -60,12 +63,30 @@ export function ReviewAggregates({ providerId }: { providerId?: string }) {
     );
   }
 
+  if (hasError) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+        <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
+        <h3 className="text-xl font-semibold mb-2 dark:text-white">Error Loading Reviews</h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          We couldn't load review data. Please try again.
+        </p>
+        <button
+          onClick={loadAggregate}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (!aggregate || aggregate.total_reviews === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
         <Star className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-        <h3 className="text-xl font-semibold mb-2">No Reviews Yet</h3>
-        <p className="text-gray-600">
+        <h3 className="text-xl font-semibold mb-2 dark:text-white">No Reviews Yet</h3>
+        <p className="text-gray-600 dark:text-gray-400">
           This provider hasn't received any reviews yet.
         </p>
       </div>

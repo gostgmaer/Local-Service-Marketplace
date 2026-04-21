@@ -127,9 +127,41 @@ class JobService {
     return response.data;
   }
 
-  async getMyJobs(): Promise<Job[]> {
-    const response = await apiClient.get<any>(`/jobs/my`);
-    return apiClient.extractList<Job>(response.data);
+  async getMyJobs(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
+    search?: string;
+  }): Promise<{ data: Job[]; total: number; page: number; limit: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.append("page", String(params.page));
+    if (params?.limit) qs.append("limit", String(params.limit));
+    if (params?.status) qs.append("status", params.status);
+    if (params?.sort_by) qs.append("sort_by", params.sort_by);
+    if (params?.sort_order) qs.append("sort_order", params.sort_order);
+    const query = qs.toString();
+    const response = await apiClient.get<any>(`/jobs/my${query ? `?${query}` : ""}`);
+    const envelope = response.data;
+    // Handle standard paginated envelope { success, data: { data: [], total } }
+    const inner = envelope?.data ?? envelope;
+    if (inner && typeof inner === "object" && "data" in inner && "total" in inner) {
+      return {
+        data: Array.isArray(inner.data) ? inner.data : [],
+        total: inner.total ?? 0,
+        page: inner.page ?? (params?.page ?? 1),
+        limit: inner.limit ?? (params?.limit ?? 20),
+      };
+    }
+    // Fallback for non-paginated array response
+    const list = apiClient.extractList<Job>(envelope);
+    return { data: list, total: list.length, page: 1, limit: list.length };
+  }
+
+  async getMyJobsList(): Promise<Job[]> {
+    const result = await this.getMyJobs({ limit: 200 });
+    return result.data;
   }
 
   async getJobsByStatus(status: Job["status"]): Promise<Job[]> {

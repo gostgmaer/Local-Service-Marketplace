@@ -326,7 +326,10 @@ export class PaymentController {
     return {
       success: true,
       message: "Invoice retrieved successfully",
-      data: invoice,
+      data: {
+        ...invoice,
+        invoice_url: payment.invoice_url ?? null,
+      },
     };
   }
 
@@ -350,12 +353,27 @@ export class PaymentController {
         "You can only download invoices for payments you are involved in",
       );
     }
+
+    // If a stored invoice URL already exists, redirect to it
+    if (payment.invoice_url) {
+      return res.redirect(302, payment.invoice_url);
+    }
+
+    // Otherwise generate fresh, upload, store URL, and serve inline
+    const storedUrl = await this.invoiceService.generateAndUploadInvoice(
+      id,
+      req.user.userId,
+    );
+    if (storedUrl) {
+      return res.redirect(302, storedUrl);
+    }
+
+    // Fallback: serve HTML directly if file service is unavailable
     const invoice = await this.invoiceService.generateInvoice(
       id,
       req.user.userId,
     );
     const html = this.invoiceService.generateInvoiceHtml(invoice);
-
     res.setHeader("Content-Type", "text/html");
     res.setHeader(
       "Content-Disposition",

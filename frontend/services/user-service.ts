@@ -344,6 +344,26 @@ export const deleteProviderDocument = async (
   await apiClient.delete(`/provider-documents/${documentId}`);
 };
 
+/**
+ * Update an unverified provider document (replace file)
+ */
+export const updateProviderDocument = async (
+  documentId: string,
+  data: Partial<UploadDocumentData>,
+): Promise<ProviderDocument> => {
+  const formData = new FormData();
+  if (data.file) formData.append("files", data.file);
+  if (data.document_number) formData.append("document_number", data.document_number);
+  if (data.expiry_date) formData.append("expiry_date", data.expiry_date);
+
+  const response = await apiClient.patch<ProviderDocument>(
+    `/provider-documents/${documentId}`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return response.data;
+};
+
 // ------------------ Provider Portfolio ------------------
 
 export interface PortfolioItem {
@@ -477,6 +497,7 @@ const userService = {
   getProviderDocuments,
   getDocumentVerificationStatus,
   deleteProviderDocument,
+  updateProviderDocument,
   createPortfolioItem,
   getProviderPortfolio,
   updatePortfolioItem,

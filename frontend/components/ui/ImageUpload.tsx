@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
 import { X, Upload } from "lucide-react";
@@ -38,6 +38,16 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const { config } = usePublicSettings();
   const [previews, setPreviews] = useState<string[]>([]);
+
+  // When server-confirmed URLs arrive (currentImages grows), clear local previews
+  // to prevent showing both base64 previews and uploaded server URLs simultaneously.
+  const prevCurrentImagesLenRef = useRef(currentImages.length);
+  useEffect(() => {
+    if (currentImages.length > prevCurrentImagesLenRef.current) {
+      setPreviews([]);
+    }
+    prevCurrentImagesLenRef.current = currentImages.length;
+  }, [currentImages.length]);
 
   // Resolve defaults from system settings when props are omitted
   const resolvedMaxSize = maxSize ?? config.maxFileUploadSizeMb;

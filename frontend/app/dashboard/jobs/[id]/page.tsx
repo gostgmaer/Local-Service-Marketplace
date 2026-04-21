@@ -18,8 +18,9 @@ import { paymentService } from "@/services/payment-service";
 import { getJobReview } from "@/services/review-service";
 import { ROUTES } from "@/config/constants";
 import { formatCurrency, formatRelativeTime, formatDateTime, formatDate } from "@/utils/helpers";
-import { ArrowLeft, Briefcase, Calendar, User, IndianRupee, Clock, AlertTriangle, Play, CheckCircle, XCircle, CreditCard, Star, Tag, Phone, Mail, FileText, BadgeCheck, TrendingUp, Banknote, Info } from "lucide-react";
+import { ArrowLeft, Briefcase, Calendar, User, IndianRupee, Clock, AlertTriangle, Play, CheckCircle, XCircle, CreditCard, Star, Tag, Phone, Mail, FileText, BadgeCheck, TrendingUp, Banknote, Info, Download } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { SubmitReviewModal } from "@/components/features/review/SubmitReviewModal";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -134,6 +135,7 @@ export default function JobDetailPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [showCashPaymentDialog, setShowCashPaymentDialog] = useState(false);
   const [cashPaymentAmount, setCashPaymentAmount] = useState("");
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const completedPayment = jobPayments?.find((p) => p.status === "completed");
   const hasCompletedPayment = !!completedPayment;
@@ -145,9 +147,9 @@ export default function JobDetailPage() {
   const isCustomer = user?.id === job.customer_id;
   const displayProviderName = job.provider_name || job.provider_business_name || job.provider?.name || job.provider?.business_name || "Provider";
   const displayCustomerName = job.customer_name || job.customer?.name || "Customer";
-  const requestBudget = job.request_budget ?? 0;
-  const proposalPrice = job.proposal_price ?? job.actual_amount ?? 0;
-  const agreedAmount = job.actual_amount ?? proposalPrice;
+  const requestBudget = Number(job.request_budget) || 0;
+  const proposalPrice = Number(job.proposal_price ?? job.actual_amount) || 0;
+  const agreedAmount = Number(job.actual_amount ?? proposalPrice) || 0;
   const pb = job.price_breakdown;
 
   return (
@@ -202,7 +204,7 @@ export default function JobDetailPage() {
                 </Button>
               )}
               {isCustomer && job.status === "completed" && !existingReview && (
-                <Button onClick={() => router.push(`${ROUTES.DASHBOARD_REVIEW_SUBMIT}?jobId=${jobId}&providerId=${job.provider_id}`)} className="bg-amber-500 hover:bg-amber-600">
+                <Button onClick={() => setShowReviewModal(true)} className="bg-amber-500 hover:bg-amber-600">
                   <Star className="h-4 w-4 mr-2" />Leave Review
                 </Button>
               )}
@@ -320,6 +322,21 @@ export default function JobDetailPage() {
                       <button onClick={() => router.push(ROUTES.DASHBOARD_PAYMENT_RECEIPT(completedPayment.id))} className="text-xs text-primary-600 hover:underline mt-1 block">
                         View Receipt ?
                       </button>
+                    )}
+                    {hasCompletedPayment && completedPayment && (
+                      <a
+                        href={
+                          completedPayment.invoice_url
+                            ? completedPayment.invoice_url
+                            : paymentService.getInvoiceDownloadUrl(completedPayment.id)
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 hover:underline mt-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        Download Invoice
+                      </a>
                     )}
                   </div>
                 </CardContent>
@@ -573,6 +590,13 @@ export default function JobDetailPage() {
           </Button>
         </div>
       </Modal>
+
+      <SubmitReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        jobId={jobId}
+        providerId={job.provider_id}
+      />
     </ProtectedRoute>
   );
 }

@@ -56,7 +56,19 @@ export default function ProviderDocumentsPage() {
     enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
   });
 
-  const saveTaxMutation = useMutation({
+  const {
+    data: documents,
+  } = useQuery({
+    queryKey: ["provider-documents", provider?.id],
+    queryFn: async () => {
+      if (!provider?.id) return [];
+      const response = await apiClient.get(`/providers/${provider.id}/documents`);
+      return response.data?.data ?? [];
+    },
+    enabled: !!provider?.id,
+  });
+
+  const existingDocumentTypes = (documents ?? []).map((d: any) => d.document_type);
     mutationFn: async () => {
       await apiClient.patch(`/providers/${provider?.id}`, {
         gstin: gstin.toUpperCase() || undefined,
@@ -145,6 +157,7 @@ export default function ProviderDocumentsPage() {
               <div className="grid lg:grid-cols-2 gap-8">
                 <DocumentUpload
                   providerId={provider?.id}
+                  existingDocumentTypes={existingDocumentTypes}
                   onUploadSuccess={() => {
                     queryClient.invalidateQueries({
                       queryKey: ["provider-documents", provider?.id],

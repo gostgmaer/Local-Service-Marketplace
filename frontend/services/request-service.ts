@@ -177,9 +177,38 @@ class RequestService {
     return response.data;
   }
 
-  async getMyRequests(): Promise<ServiceRequest[]> {
-    const response = await apiClient.get<any>(`/requests/my`);
-    return apiClient.extractList<ServiceRequest>(response.data);
+  async getMyRequests(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
+  }): Promise<{ data: ServiceRequest[]; total: number; page: number; limit: number }> {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.append("page", String(params.page));
+    if (params?.limit) qs.append("limit", String(params.limit));
+    if (params?.status) qs.append("status", params.status);
+    if (params?.sort_by) qs.append("sort_by", params.sort_by);
+    if (params?.sort_order) qs.append("sort_order", params.sort_order);
+    const query = qs.toString();
+    const response = await apiClient.get<any>(`/requests/my${query ? `?${query}` : ""}`);
+    const envelope = response.data;
+    const inner = envelope?.data ?? envelope;
+    if (inner && typeof inner === "object" && "data" in inner && "total" in inner) {
+      return {
+        data: Array.isArray(inner.data) ? inner.data : [],
+        total: inner.total ?? 0,
+        page: inner.page ?? (params?.page ?? 1),
+        limit: inner.limit ?? (params?.limit ?? 20),
+      };
+    }
+    const list = apiClient.extractList<ServiceRequest>(envelope);
+    return { data: list, total: list.length, page: 1, limit: list.length };
+  }
+
+  async getMyRequestsList(): Promise<ServiceRequest[]> {
+    const result = await this.getMyRequests({ limit: 200 });
+    return result.data;
   }
 
   async getCategories(): Promise<ServiceCategory[]> {

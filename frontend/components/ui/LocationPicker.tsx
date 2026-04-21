@@ -154,10 +154,10 @@ export function LocationPicker({
     autocompleteRef.current = new google.maps.places.AutocompleteService();
     geocoderRef.current = new google.maps.Geocoder();
 
-    // Add click listener to map
+    // Add click listener to map — use ref to avoid stale closure
     mapInstance.addListener("click", (e: any) => {
-      if (e.latLng) {
-        handleMapClick(e.latLng);
+      if (e.latLng && handleMapClickRef.current) {
+        handleMapClickRef.current(e.latLng);
       }
     });
 
