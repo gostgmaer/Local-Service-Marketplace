@@ -8,13 +8,23 @@ export interface Dispute {
   reason: string;
   description?: string;
   evidence_images?: { id: string; url: string }[];
-  status: "open" | "investigating" | "resolved" | "closed";
+  status: "open" | "investigating" | "escalated" | "resolved" | "closed";
   resolution?: string;
   resolved_by?: string;
   resolved_at?: string;
   created_at: string;
   updated_at?: string;
   job?: { id: string; display_id?: string };
+}
+
+export interface DisputeMessage {
+  id: string;
+  dispute_id: string;
+  sender_id: string | null;
+  message: string;
+  images: { id: string; url: string }[];
+  is_admin: boolean;
+  created_at: string;
 }
 
 export interface CreateDisputeData {
@@ -52,6 +62,24 @@ class DisputeService {
 
   async getDisputeById(id: string): Promise<Dispute> {
     const response = await apiClient.get<Dispute>(`/disputes/${id}`);
+    return response.data;
+  }
+
+  async getDisputeMessages(disputeId: string): Promise<DisputeMessage[]> {
+    const response = await apiClient.get<any>(`/disputes/${disputeId}/messages`);
+    const raw = response.data;
+    return Array.isArray(raw) ? raw : (raw?.data ?? []);
+  }
+
+  async sendMessage(
+    disputeId: string,
+    message: string,
+    images?: { id: string; url: string }[],
+  ): Promise<DisputeMessage> {
+    const response = await apiClient.post<DisputeMessage>(
+      `/disputes/${disputeId}/messages`,
+      { message, images: images ?? [] },
+    );
     return response.data;
   }
 }

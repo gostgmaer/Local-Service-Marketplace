@@ -111,6 +111,7 @@ export class PaymentController {
   async getPaymentsByJob(
     @Param("jobId", FlexibleIdPipe) jobId: string,
     @Request() req: any,
+    @Query() queryDto: TransactionQueryDto,
   ) {
     const isAdmin = req.user.permissions?.includes("payments.manage");
     const canRead = req.user.permissions?.includes("payments.read");
@@ -124,14 +125,16 @@ export class PaymentController {
       );
     }
 
-    const payments = await this.paymentService.getPaymentsByJobId(jobId);
-
-    return {
-      data: payments,
-      total: payments.length,
-      page: 1,
-      limit: payments.length || 1,
-    };
+    const page = queryDto.page ?? 1;
+    const limit = queryDto.limit ?? 20;
+    return this.paymentService.getPaymentsByJobIdPaginated(
+      jobId,
+      limit,
+      page,
+      queryDto.status,
+      queryDto.sortBy,
+      queryDto.sortOrder,
+    );
   }
 
   @Get("provider/:providerId/summary")
@@ -183,6 +186,7 @@ export class PaymentController {
   async getProviderPayouts(
     @Param("providerId", FlexibleIdPipe) providerId: string,
     @Request() req: any,
+    @Query() queryDto: TransactionQueryDto,
   ) {
     if (
       !req.user.permissions?.includes("payments.manage") &&
@@ -190,13 +194,14 @@ export class PaymentController {
     ) {
       throw new ForbiddenException("You can only view your own payout history");
     }
-    const payouts = await this.paymentService.getProviderPayouts(providerId);
-    return {
-      data: payouts,
-      total: payouts.length,
-      page: 1,
-      limit: payouts.length || 1,
-    };
+    const page = queryDto.page ?? 1;
+    const limit = queryDto.limit ?? 20;
+    return this.paymentService.getProviderPayoutsPaginated(
+      providerId,
+      limit,
+      page,
+      queryDto.status,
+    );
   }
 
   @Get(":id")

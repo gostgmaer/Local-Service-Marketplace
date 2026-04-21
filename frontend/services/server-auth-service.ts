@@ -14,6 +14,7 @@ import {
   BackendAuthResponse,
   BackendRefreshResponse,
   isValidBackendAuthResponse,
+  isMfaRequiredResponse,
   isValidBackendRefreshResponse,
   AUTH_ENDPOINTS,
 } from "@/types/auth-alignment";
@@ -74,6 +75,10 @@ class ServerAuthService {
         { email, password },
       );
       const data = response.data;
+      // MFA-required case — return as-is so authorize() can handle it
+      if (isMfaRequiredResponse(data)) {
+        return data;
+      }
       if (!isValidBackendAuthResponse(data)) {
         console.error("Invalid backend auth response", data);
         return null;

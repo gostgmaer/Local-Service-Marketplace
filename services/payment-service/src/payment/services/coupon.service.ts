@@ -2,6 +2,7 @@ import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { CouponRepository } from "../repositories/coupon.repository";
 import { Coupon } from "../entities/coupon.entity";
+import { CouponUsage } from "../entities/coupon-usage.entity";
 import {
   NotFoundException,
   BadRequestException,
@@ -94,5 +95,36 @@ export class CouponService {
 
   async getCouponByCode(code: string): Promise<Coupon> {
     return this.validateCoupon(code);
+  }
+
+  async createCoupon(data: {
+    code: string;
+    discount_percent: number;
+    max_uses?: number;
+    max_uses_per_user?: number;
+    min_purchase_amount?: number;
+    active?: boolean;
+    expires_at: Date;
+    created_by?: string;
+  }): Promise<Coupon> {
+    this.logger.log(`Creating coupon ${data.code}`, "CouponService");
+    return this.couponRepository.createCoupon(data);
+  }
+
+  async getActiveCoupons(): Promise<Coupon[]> {
+    return this.couponRepository.getActiveCoupons();
+  }
+
+  async getCouponStats(couponId: string): Promise<any> {
+    return this.couponRepository.getCouponStats(couponId);
+  }
+
+  async deactivateCoupon(code: string): Promise<Coupon> {
+    const coupon = await this.getCouponByCode(code);
+    return this.couponRepository.deactivateCoupon(coupon.id);
+  }
+
+  async getCouponUsagesByUser(userId: string): Promise<CouponUsage[]> {
+    return this.couponRepository.getCouponUsagesByUser(userId);
   }
 }

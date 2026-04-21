@@ -8,8 +8,6 @@ import {
   Param,
   Query,
   Request,
-  ParseIntPipe,
-  DefaultValuePipe,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -17,7 +15,6 @@ import {
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { ReviewService } from "./services/review.service";
-import { ReviewRepository } from "./repositories/review.repository";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { UpdateReviewDto } from "./dto/update-review.dto";
 import { RespondReviewDto } from "./dto/respond-review.dto";
@@ -37,10 +34,7 @@ import {
 
 @Controller("reviews")
 export class ReviewController {
-  constructor(
-    private readonly reviewService: ReviewService,
-    private readonly reviewRepository: ReviewRepository,
-  ) {}
+  constructor(private readonly reviewService: ReviewService) {}
 
   @RequirePermissions("reviews.create")
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -64,10 +58,11 @@ export class ReviewController {
   @Get("my")
   async getMyReviews(
     @Request() req: any,
-    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query() queryDto: ReviewQueryDto,
   ) {
     const userId = req.user.userId;
+    const page = queryDto.page ?? 1;
+    const limit = queryDto.limit ?? 20;
     const offset = (page - 1) * limit;
     const result = await this.reviewService.getReviewsByUser(
       userId,
@@ -100,7 +95,7 @@ export class ReviewController {
     @Param("jobId", FlexibleIdPipe) jobId: string,
     @Request() req: any,
   ) {
-    const review = await this.reviewRepository.getReviewByJobId(jobId);
+    const review = await this.reviewService.getReviewByJobId(jobId);
 
     if (!review) {
       return null;
@@ -140,7 +135,7 @@ export class ReviewController {
     if (!providerId) {
       throw new ForbiddenException("Only providers can respond to reviews");
     }
-    const review = await this.reviewRepository.respondToReview(
+    const review = await this.reviewService.respondToReview(
       id,
       respondReviewDto.response,
       providerId,
@@ -160,7 +155,7 @@ export class ReviewController {
     @Param("id", StrictUuidPipe) id: string,
     @Request() req: any,
   ) {
-    const review = await this.reviewRepository.incrementHelpfulCount(
+    const review = await this.reviewService.markReviewHelpful(
       id,
       req.user.userId,
     );
@@ -258,6 +253,37 @@ export class ReviewController {
     return {
       success: true,
       message: "Review deleted successfully",
+    };
+  }
+
+  /**
+   * Admin: list all reviews with pagination/filtering
+   * GET /reviews
+   */
+  @RequirePermissions("reviews.manage")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getAllReviews(@Query() queryDto: ReviewQueryDto & { provider_id?: string; created_from?: string; created_to?: string }) {
+    const page = queryDto.page ?? 1;
+    const limit = queryDto.limit ?? 20;
+    const offset = (page - 1) * limit;
+    const result = await this.reviewService.getAllReviews(
+      limit,
+      offset,
+      queryDto.sortBy,
+      queryDto.sortOrder,
+      queryDto.provider_id,
+      queryDto.min_rating,
+      queryDto.max_rating,
+      queryDto.created_from,
+      queryDto.created_to,
+    );
+    return {
+      data: result.data,
+      total: result.total,
+      page,
+      limit,
     };
   }
 }

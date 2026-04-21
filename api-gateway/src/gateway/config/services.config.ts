@@ -117,6 +117,7 @@ export const publicRoutes = [
   // ============================================
   "/api/v1/user/auth/signup", // Create account
   "/api/v1/user/auth/login", // Email + password login
+  "/api/v1/user/auth/2fa/login", // Step 2 of 2FA login (MFA challenge)
   "/api/v1/user/auth/refresh", // Refresh JWT token
   "/api/v1/user/auth/password-reset/request", // Request password reset
   "/api/v1/user/auth/password-reset/confirm", // Confirm password reset

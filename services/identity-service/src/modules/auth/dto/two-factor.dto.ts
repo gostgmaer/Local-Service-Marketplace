@@ -18,3 +18,11 @@ export class VerifyBackupCodeDto {
   @IsString()
   backupCode: string;
 }
+
+export class TwoFactorLoginDto {
+  @IsString()
+  mfaToken: string;
+
+  @IsString()
+  code: string;
+}

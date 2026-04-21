@@ -122,4 +122,15 @@ export class RefundService {
     );
     return this.refundRepository.getRefundsByPaymentId(paymentId);
   }
+
+  async getPaymentById(paymentId: string) {
+    return this.paymentRepository.getPaymentById(paymentId);
+  }
+
+  async getAllRefunds(
+    limit: number,
+    offset: number,
+  ): Promise<{ refunds: Refund[]; total: number }> {
+    return this.refundRepository.getAllRefunds(limit, offset);
+  }
 }

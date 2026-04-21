@@ -46,6 +46,7 @@ export default function EarningsPage() {
   const [dateRange, setDateRange] = useState<string>("all");
   const [sortField, setSortField] = useState<TransactionSortField>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const { page, limit, setLimit, goToPage } = usePagination({
     initialLimit: 10,
   });
@@ -105,8 +106,8 @@ export default function EarningsPage() {
     error: transactionsError,
     refetch: refetchTransactions,
   } = useQuery({
-    queryKey: ["provider-transactions", providerId],
-    queryFn: () => paymentService.getProviderTransactions(providerId, 50),
+    queryKey: ["provider-transactions", providerId, statusFilter],
+    queryFn: () => paymentService.getProviderTransactions(providerId, 200, undefined, statusFilter || undefined),
     enabled: isAuthenticated && can(Permission.EARNINGS_VIEW) && !!providerId,
   });
 
@@ -362,7 +363,7 @@ export default function EarningsPage() {
               <Card className="mb-6">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Time Period:
                       </label>
@@ -376,6 +377,20 @@ export default function EarningsPage() {
                         <option value="last_month">Last Month</option>
                         <option value="this_year">This Year</option>
                         <option value="custom">Custom Range</option>
+                      </select>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Payment Status:
+                      </label>
+                      <select
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+                        value={statusFilter}
+                        onChange={(e) => { setStatusFilter(e.target.value); goToPage(1); }}
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                        <option value="refunded">Refunded</option>
                       </select>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleExport} disabled={!sortedTransactions.length}>

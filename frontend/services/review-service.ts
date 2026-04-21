@@ -46,14 +46,38 @@ export const createReview = async (data: CreateReviewData): Promise<Review> => {
  */
 export const getProviderReviews = async (
   providerId: string,
-): Promise<ReviewWithDetails[]> => {
-  const response = await apiClient.get<any>(`/reviews/provider/${providerId}`);
+  params?: {
+    page?: number;
+    limit?: number;
+    min_rating?: number;
+    max_rating?: number;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
+  },
+): Promise<{ data: ReviewWithDetails[]; total: number; page: number; limit: number }> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append("page", params.page.toString());
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  if (params?.min_rating !== undefined) queryParams.append("min_rating", params.min_rating.toString());
+  if (params?.max_rating !== undefined) queryParams.append("max_rating", params.max_rating.toString());
+  if (params?.sort_by) queryParams.append("sort_by", params.sort_by);
+  if (params?.sort_order) queryParams.append("sort_order", params.sort_order);
+  const qs = queryParams.toString();
+  const response = await apiClient.get<any>(`/reviews/provider/${providerId}${qs ? `?${qs}` : ""}`);
   // After apiClient unwraps the standard envelope, data is { reviews: [], averageRating: N }
   const payload = response.data;
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.reviews)) return payload.reviews;
-  if (Array.isArray(payload?.data?.reviews)) return payload.data.reviews;
-  return [];
+  let list: ReviewWithDetails[];
+  if (Array.isArray(payload)) list = payload;
+  else if (Array.isArray(payload?.reviews)) list = payload.reviews;
+  else if (Array.isArray(payload?.data?.reviews)) list = payload.data.reviews;
+  else if (Array.isArray(payload?.data)) list = payload.data;
+  else list = [];
+  return {
+    data: list,
+    total: payload?.total ?? list.length,
+    page: payload?.page ?? params?.page ?? 1,
+    limit: payload?.limit ?? params?.limit ?? 20,
+  };
 };
 
 /**
@@ -124,10 +148,18 @@ const reviewService = {
   getMyReviews: async (params?: {
     page?: number;
     limit?: number;
+    min_rating?: number;
+    max_rating?: number;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
   }): Promise<{ data: ReviewWithDetails[]; total: number }> => {
     const qs = new URLSearchParams();
     if (params?.page) qs.append("page", String(params.page));
     if (params?.limit) qs.append("limit", String(params.limit));
+    if (params?.min_rating !== undefined) qs.append("min_rating", String(params.min_rating));
+    if (params?.max_rating !== undefined) qs.append("max_rating", String(params.max_rating));
+    if (params?.sort_by) qs.append("sort_by", params.sort_by);
+    if (params?.sort_order) qs.append("sort_order", params.sort_order);
     const response = await apiClient.get<any>(`/reviews/my?${qs.toString()}`);
     const raw = response.data;
     if (Array.isArray(raw)) return { data: raw, total: raw.length };

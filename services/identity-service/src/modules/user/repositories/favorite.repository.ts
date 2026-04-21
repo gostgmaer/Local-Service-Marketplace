@@ -36,6 +36,33 @@ export class FavoriteRepository {
     return result.rows;
   }
 
+  async findByUserIdPaginated(
+    userId: string,
+    limit: number,
+    offset: number,
+    sortBy: string,
+    sortOrder: string,
+  ): Promise<{ rows: Favorite[]; total: number }> {
+    userId = await resolveId(this.pool, "users", userId);
+    const allowedSortBy = ["created_at", "business_name", "rating"];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : "created_at";
+    const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
+    const sortCol = safeSortBy === "created_at" ? "f.created_at" : `p.${safeSortBy}`;
+
+    const query = `
+      SELECT f.*, p.business_name, p.description, p.rating,
+             COUNT(*) OVER() AS total_count
+      FROM favorites f
+      INNER JOIN providers p ON f.provider_id = p.id
+      WHERE f.user_id = $1
+      ORDER BY ${sortCol} ${safeOrder}
+      LIMIT $2 OFFSET $3
+    `;
+    const result = await this.pool.query(query, [userId, limit, offset]);
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    return { rows: result.rows, total };
+  }
+
   async findOne(userId: string, providerId: string): Promise<Favorite | null> {
     [userId, providerId] = await Promise.all([
       resolveId(this.pool, "users", userId),

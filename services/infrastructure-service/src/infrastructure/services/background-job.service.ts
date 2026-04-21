@@ -114,13 +114,15 @@ export class BackgroundJobService {
 
   async getJobsByStatus(
     status: string,
+    limit: number = 100,
+    page: number = 1,
   ): Promise<{
     data: BackgroundJob[];
     total: number;
     page: number;
     limit: number;
   }> {
-    return this.getAllJobs({ status: status as any, page: 1, limit: 100 });
+    return this.getAllJobs({ status: status as any, page, limit });
   }
 
   async updateJobStatus(

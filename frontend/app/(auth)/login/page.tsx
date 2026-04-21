@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -401,7 +402,33 @@ function LoginContent() {
       if (loginMethod === "password") {
         // Password authentication
         if (type === "email") {
-          await login(normalizedIdentifier, data.password);
+          const result = await signIn("credentials", {
+            email: normalizedIdentifier,
+            password: data.password,
+            redirect: false,
+          });
+
+          // 2FA challenge required
+          if (result?.error?.startsWith("REQUIRES_MFA:")) {
+            const mfaToken = result.error.slice("REQUIRES_MFA:".length);
+            sessionStorage.setItem("mfaToken", mfaToken);
+            const callbackUrl = searchParams.get("callbackUrl");
+            router.push(
+              `/auth/2fa-challenge${callbackUrl ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`,
+            );
+            return;
+          }
+
+          if (result?.error) {
+            throw new Error(
+              result.error === "CredentialsSignin"
+                ? "Invalid email or password."
+                : result.error,
+            );
+          }
+          if (!result?.ok) {
+            throw new Error("Login failed. Please check your credentials.");
+          }
         } else {
           await loginWithPhone(normalizedIdentifier, data.password);
         }

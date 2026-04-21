@@ -56,16 +56,24 @@ export class AuditLogRepository {
   async getAuditLogsByEntity(
     entity: string,
     entityId: string,
-  ): Promise<AuditLog[]> {
-    const query = `
-      SELECT id, user_id, action, entity, entity_id, metadata, created_at
-      FROM audit_logs
-      WHERE entity = $1 AND entity_id = $2
-      ORDER BY created_at DESC
-    `;
-
-    const result = await this.pool.query(query, [entity, entityId]);
-    return result.rows;
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ data: AuditLog[]; total: number }> {
+    const [dataResult, countResult] = await Promise.all([
+      this.pool.query(
+        `SELECT id, user_id, action, entity, entity_id, metadata, created_at
+         FROM audit_logs
+         WHERE entity = $1 AND entity_id = $2
+         ORDER BY created_at DESC
+         LIMIT $3 OFFSET $4`,
+        [entity, entityId, limit, offset],
+      ),
+      this.pool.query(
+        `SELECT COUNT(*)::int AS total FROM audit_logs WHERE entity = $1 AND entity_id = $2`,
+        [entity, entityId],
+      ),
+    ]);
+    return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
   }
 
   async getAuditLogCount(): Promise<number> {

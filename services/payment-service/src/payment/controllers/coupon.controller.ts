@@ -13,7 +13,6 @@ import {
 } from "@nestjs/common";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { CouponService } from "../services/coupon.service";
-import { CouponRepository } from "../repositories/coupon.repository";
 import { CreateCouponDto } from "../dto/create-coupon.dto";
 import { ValidateCouponDto } from "../dto/validate-coupon.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
@@ -25,10 +24,7 @@ import {
 
 @Controller("coupons")
 export class CouponController {
-  constructor(
-    private readonly couponService: CouponService,
-    private readonly couponRepository: CouponRepository,
-  ) {}
+  constructor(private readonly couponService: CouponService) {}
 
   /**
    * Admin only - Create a new coupon
@@ -57,7 +53,7 @@ export class CouponController {
       created_by: req.user.userId,
     };
 
-    const coupon = await this.couponRepository.createCoupon(couponData);
+    const coupon = await this.couponService.createCoupon(couponData);
 
     return {
       success: true,
@@ -75,7 +71,7 @@ export class CouponController {
   @RequirePermissions("coupons.manage")
   @HttpCode(HttpStatus.OK)
   async getAllCoupons() {
-    const coupons = await this.couponRepository.getActiveCoupons();
+    const coupons = await this.couponService.getActiveCoupons();
 
     return {
       success: true,
@@ -131,7 +127,7 @@ export class CouponController {
   @RequirePermissions("coupons.manage")
   @HttpCode(HttpStatus.OK)
   async getCouponStats(@Param("couponId", StrictUuidPipe) couponId: string) {
-    const stats = await this.couponRepository.getCouponStats(couponId);
+    const stats = await this.couponService.getCouponStats(couponId);
 
     return {
       success: true,
@@ -148,8 +144,7 @@ export class CouponController {
   @RequirePermissions("coupons.manage")
   @HttpCode(HttpStatus.OK)
   async deleteCoupon(@Param("code") code: string) {
-    const coupon = await this.couponService.getCouponByCode(code);
-    await this.couponRepository.deactivateCoupon(coupon.id);
+    const coupon = await this.couponService.deactivateCoupon(code);
     return {
       success: true,
       message: `Coupon ${code} deactivated successfully`,
@@ -165,7 +160,7 @@ export class CouponController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getMyCouponUsage(@Request() req: any) {
-    const usages = await this.couponRepository.getCouponUsagesByUser(
+    const usages = await this.couponService.getCouponUsagesByUser(
       req.user.userId,
     );
 

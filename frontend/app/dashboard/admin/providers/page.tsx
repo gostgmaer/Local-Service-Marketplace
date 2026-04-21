@@ -414,14 +414,15 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
 export default function ProviderVerificationPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("pending");
+  const [searchQuery, setSearchQuery] = useState("");
   const limit = 10;
 
   useRealtimeList(["provider:created", "provider:updated"], ["admin-providers"]);
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["admin-providers", statusFilter, page],
+    queryKey: ["admin-providers", statusFilter, page, searchQuery],
     queryFn: () =>
-      adminService.getProviders({ page, limit, status: statusFilter }),
+      adminService.getProviders({ page, limit, status: statusFilter, search: searchQuery || undefined }),
     refetchOnWindowFocus: false,
   });
 
@@ -445,7 +446,8 @@ export default function ProviderVerificationPage() {
 
           <Card className="mb-6">
             <CardContent className="p-4">
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex gap-2">
                 {["pending", "verified", "rejected"].map((s) => (
                   <button
                     key={s}
@@ -462,6 +464,14 @@ export default function ProviderVerificationPage() {
                     {s}
                   </button>
                 ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by business name..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                  className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-64"
+                />
               </div>
             </CardContent>
           </Card>

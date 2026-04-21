@@ -69,21 +69,12 @@ export class JobController {
 
   @Get("my")
   @HttpCode(HttpStatus.OK)
-  async getMyJobs(@Request() req: any): Promise<{
-    data: JobResponseDto[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const userId = req.user.userId;
-    // Get jobs where user is either customer or provider
-    const customerJobs = await this.jobService.getJobsByCustomer(userId);
-    const providerJobs = await this.jobService.getJobsByProviderUser(userId);
-    const merged = [...customerJobs.data, ...providerJobs.data];
-    const data = Array.from(
-      new Map(merged.map((job) => [job.id, job])).values(),
-    );
-    return { data, total: data.length, page: 1, limit: data.length || 1 };
+  async getMyJobs(
+    @Request() req: any,
+    @Query() queryDto: JobQueryDto,
+  ): Promise<PaginatedJobResponseDto> {
+    // Delegates to getJobs() which applies RBAC filtering by customer_id/provider_id automatically
+    return this.jobService.getJobs(queryDto, req.user);
   }
 
   @Get()

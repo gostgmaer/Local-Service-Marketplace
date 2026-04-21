@@ -83,26 +83,40 @@ export class ContactMessageRepository {
     return parseInt(result.rows[0].count, 10);
   }
 
-  async getContactMessagesByEmail(email: string): Promise<ContactMessage[]> {
-    const query = `
-      SELECT * FROM contact_messages
-      WHERE email = $1
-      ORDER BY created_at DESC
-    `;
-
-    const result = await this.pool.query(query, [email]);
-    return result.rows;
+  async getContactMessagesByEmail(
+    email: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ data: ContactMessage[]; total: number }> {
+    const [dataResult, countResult] = await Promise.all([
+      this.pool.query(
+        `SELECT * FROM contact_messages WHERE email = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        [email, limit, offset],
+      ),
+      this.pool.query(
+        `SELECT COUNT(*)::int AS total FROM contact_messages WHERE email = $1`,
+        [email],
+      ),
+    ]);
+    return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
   }
 
-  async getContactMessagesByUserId(userId: string): Promise<ContactMessage[]> {
-    const query = `
-      SELECT * FROM contact_messages
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-    `;
-
-    const result = await this.pool.query(query, [userId]);
-    return result.rows;
+  async getContactMessagesByUserId(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ data: ContactMessage[]; total: number }> {
+    const [dataResult, countResult] = await Promise.all([
+      this.pool.query(
+        `SELECT * FROM contact_messages WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        [userId, limit, offset],
+      ),
+      this.pool.query(
+        `SELECT COUNT(*)::int AS total FROM contact_messages WHERE user_id = $1`,
+        [userId],
+      ),
+    ]);
+    return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
   }
 
   async updateContactMessage(

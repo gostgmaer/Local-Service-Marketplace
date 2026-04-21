@@ -80,9 +80,33 @@ class PaymentService {
     return response.data;
   }
 
-  async getMyPayments(): Promise<Payment[]> {
-    const response = await apiClient.get<Payment[]>(`/payments/my`);
-    return apiClient.extractList<Payment>(response.data);
+  async getMyPayments(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    created_from?: string;
+    created_to?: string;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
+  }): Promise<{ data: Payment[]; total: number; page: number; limit: number }> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.created_from) queryParams.append("created_from", params.created_from);
+    if (params?.created_to) queryParams.append("created_to", params.created_to);
+    if (params?.sort_by) queryParams.append("sort_by", params.sort_by);
+    if (params?.sort_order) queryParams.append("sort_order", params.sort_order);
+    const qs = queryParams.toString();
+    const response = await apiClient.get<any>(`/payments/my${qs ? `?${qs}` : ""}`);
+    const payload = response.data;
+    const list = apiClient.extractList<Payment>(payload);
+    return {
+      data: list,
+      total: payload?.total ?? list.length,
+      page: payload?.page ?? params?.page ?? 1,
+      limit: payload?.limit ?? params?.limit ?? 20,
+    };
   }
 
   /** Record a cash payment for a job. Marked as completed immediately on the backend. */

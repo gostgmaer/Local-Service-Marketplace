@@ -60,13 +60,19 @@ export class BackgroundJobController {
   }
 
   @Get("status/:status")
-  async getJobsByStatus(@Param("status") status: string) {
+  async getJobsByStatus(
+    @Param("status") status: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
     this.logger.log(
       `GET /background-jobs/status/${status} - Retrieve jobs by status`,
       "BackgroundJobController",
     );
 
-    return this.backgroundJobService.getJobsByStatus(status);
+    const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+    const parsedLimit = Math.min(200, Math.max(1, parseInt(limit ?? "100", 10) || 100));
+    return this.backgroundJobService.getJobsByStatus(status, parsedLimit, parsedPage);
   }
 
   @Get("stats")

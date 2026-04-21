@@ -328,6 +328,56 @@ export class PaymentRepository {
     );
   }
 
+  async getPaymentsByJobIdPaginated(
+    jobId: string,
+    limit: number,
+    page: number,
+    status?: string,
+    sortBy = "created_at",
+    sortOrder = "desc",
+  ): Promise<{ data: Payment[]; total: number; page: number; limit: number }> {
+    jobId = await resolveId(this.pool, "jobs", jobId);
+    const allowedSortBy = ["created_at", "paid_at", "amount"];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : "created_at";
+    const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
+    const offset = (page - 1) * limit;
+
+    const conditions: string[] = ["job_id = $1"];
+    const values: any[] = [jobId, limit, offset];
+    if (status) {
+      conditions.push(`status = $${values.length + 1}`);
+      values.push(status);
+    }
+
+    const query = `
+      SELECT *, COUNT(*) OVER() AS total_count
+      FROM payments
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY ${safeSortBy} ${safeOrder}
+      LIMIT $2 OFFSET $3
+    `;
+    const result = await this.pool.query(query, values);
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    const data = result.rows.map(
+      (row) =>
+        new Payment({
+          id: row.id,
+          display_id: row.display_id,
+          job_id: row.job_id,
+          user_id: row.user_id,
+          provider_id: row.provider_id,
+          amount: parseFloat(row.amount),
+          currency: row.currency,
+          status: row.status,
+          payment_method: row.payment_method,
+          gateway: row.gateway,
+          transaction_id: row.transaction_id,
+          created_at: row.created_at,
+        }),
+    );
+    return { data, total, page, limit };
+  }
+
   async getPaymentsByUser(userId: string): Promise<Payment[]> {
     // payments table already has user_id and provider_id — no cross-service JOIN needed
     const query = `
@@ -820,6 +870,64 @@ export class PaymentRepository {
       payout_date: row.payout_date,
       transaction_count: parseInt(row.transaction_count, 10) || 0,
     }));
+  }
+
+  async getProviderPayoutsPaginated(
+    providerId: string,
+    limit: number,
+    page: number,
+    status?: string,
+  ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+    const offset = (page - 1) * limit;
+    const statusFilter = status
+      ? `AND CASE WHEN p.status = 'pending' THEN 'pending' WHEN p.status = 'refunded' THEN 'adjusted' ELSE 'available' END = $2`
+      : "";
+    const params: any[] = status ? [providerId, status] : [providerId];
+
+    // Count CTE approach: wrap aggregation in outer query for pagination
+    const countQuery = `
+      SELECT COUNT(*) AS total FROM (
+        SELECT DATE(COALESCE(p.paid_at, p.created_at)) AS payout_date
+        FROM payments p
+        WHERE p.provider_id = $1
+          AND p.status IN ('pending', 'completed', 'refunded')
+        GROUP BY DATE(COALESCE(p.paid_at, p.created_at)), COALESCE(p.payment_method, 'card'),
+          CASE WHEN p.status = 'pending' THEN 'pending' WHEN p.status = 'refunded' THEN 'adjusted' ELSE 'available' END
+        HAVING COALESCE(SUM(CASE WHEN p.status = 'refunded' THEN -ABS(COALESCE(p.provider_amount,0)) ELSE COALESCE(p.provider_amount,0) END), 0) <> 0
+      ) sub
+    `;
+    const dataQuery = `
+      SELECT
+        MD5(p.provider_id || '|' || TO_CHAR(DATE(COALESCE(p.paid_at, p.created_at)), 'YYYY-MM-DD') || '|' || COALESCE(p.payment_method, 'card') || '|' || CASE WHEN p.status = 'pending' THEN 'pending' WHEN p.status = 'refunded' THEN 'adjusted' ELSE 'available' END) AS id,
+        COALESCE(SUM(CASE WHEN p.status = 'refunded' THEN -ABS(COALESCE(p.provider_amount, 0)) ELSE COALESCE(p.provider_amount, 0) END), 0)::numeric AS amount,
+        CASE WHEN p.status = 'pending' THEN 'pending' WHEN p.status = 'refunded' THEN 'adjusted' ELSE 'available' END AS status,
+        COALESCE(p.payment_method, 'card') AS payout_method,
+        DATE(COALESCE(p.paid_at, p.created_at)) AS payout_date,
+        COUNT(*)::int AS transaction_count
+      FROM payments p
+      WHERE p.provider_id = $1 AND p.status IN ('pending', 'completed', 'refunded')
+      GROUP BY p.provider_id, DATE(COALESCE(p.paid_at, p.created_at)), COALESCE(p.payment_method, 'card'),
+        CASE WHEN p.status = 'pending' THEN 'pending' WHEN p.status = 'refunded' THEN 'adjusted' ELSE 'available' END
+      HAVING COALESCE(SUM(CASE WHEN p.status = 'refunded' THEN -ABS(COALESCE(p.provider_amount,0)) ELSE COALESCE(p.provider_amount,0) END), 0) <> 0
+      ORDER BY payout_date DESC, payout_method ASC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const [dataResult, countResult] = await Promise.all([
+      this.pool.query(dataQuery, [providerId, limit, offset]),
+      this.pool.query(countQuery, [providerId]),
+    ]);
+
+    const total = parseInt(countResult.rows[0]?.total ?? "0", 10);
+    const data = dataResult.rows.map((row) => ({
+      id: row.id,
+      amount: parseFloat(row.amount) || 0,
+      status: row.status,
+      payout_method: row.payout_method,
+      payout_date: row.payout_date,
+      transaction_count: parseInt(row.transaction_count, 10) || 0,
+    }));
+    return { data, total, page, limit };
   }
 
   async getPaymentStats(): Promise<{

@@ -36,12 +36,14 @@ export default function MyReviewsPage() {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
   const limit = 10;
+  const [minRating, setMinRating] = useState<number | undefined>();
+  const [sortBy, setSortBy] = useState("created_at");
 
   useRealtimeList(["review:created", "review:updated", "review:deleted"], ["my-reviews"]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["my-reviews", page],
-    queryFn: () => reviewService.getMyReviews({ page, limit }),
+    queryKey: ["my-reviews", page, minRating, sortBy],
+    queryFn: () => reviewService.getMyReviews({ page, limit, min_rating: minRating, sort_by: sortBy }),
     enabled: !!user,
   });
 
@@ -60,6 +62,28 @@ export default function MyReviewsPage() {
             <p className="text-gray-600 dark:text-gray-400">
               Reviews you have submitted for completed jobs
             </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <select
+                value={minRating ?? ""}
+                onChange={(e) => { setMinRating(e.target.value ? Number(e.target.value) : undefined); setPage(1); }}
+                className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              >
+                <option value="">All Ratings</option>
+                <option value="1">1+ Stars</option>
+                <option value="2">2+ Stars</option>
+                <option value="3">3+ Stars</option>
+                <option value="4">4+ Stars</option>
+                <option value="5">5 Stars</option>
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+                className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              >
+                <option value="created_at">Sort by Date</option>
+                <option value="rating">Sort by Rating</option>
+              </select>
+            </div>
           </div>
 
           {error ? (

@@ -58,11 +58,22 @@ class MessageService {
     return apiClient.extractList<Message>(response.data);
   }
 
-  async getConversations(): Promise<Conversation[]> {
-    const response = await apiClient.get<Conversation[]>(
-      "/messages/conversations",
+  async getConversations(params?: { page?: number; limit?: number }): Promise<{ data: Conversation[]; total: number; page: number; limit: number }> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    const qs = queryParams.toString();
+    const response = await apiClient.get<any>(
+      `/messages/conversations${qs ? `?${qs}` : ""}`,
     );
-    return apiClient.extractList<Conversation>(response.data);
+    const payload = response.data;
+    const list = apiClient.extractList<Conversation>(payload);
+    return {
+      data: list,
+      total: payload?.total ?? list.length,
+      page: payload?.page ?? params?.page ?? 1,
+      limit: payload?.limit ?? params?.limit ?? 20,
+    };
   }
 
   async markAsRead(messageId: string): Promise<void> {

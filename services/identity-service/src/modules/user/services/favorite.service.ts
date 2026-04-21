@@ -4,6 +4,7 @@ import { Logger } from "winston";
 import { FavoriteRepository } from "../repositories/favorite.repository";
 import { ProviderRepository } from "../repositories/provider.repository";
 import { CreateFavoriteDto } from "../dto/create-favorite.dto";
+import { FavoriteQueryDto } from "../dto/favorite-query.dto";
 import {
   NotFoundException,
   ConflictException,
@@ -60,15 +61,30 @@ export class FavoriteService {
     };
   }
 
-  async getFavorites(userId: string): Promise<{ data: any[]; total: number }> {
+  async getFavorites(
+    userId: string,
+    query: FavoriteQueryDto,
+  ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
     this.logger.info("Fetching user favorites", {
       context: "FavoriteService",
       user_id: userId,
     });
 
-    const favorites = await this.favoriteRepo.findByUserId(userId);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const offset = (page - 1) * limit;
+    const sortBy = query.sortBy ?? "created_at";
+    const sortOrder = query.sortOrder ?? "desc";
 
-    const data = favorites.map((fav) => ({
+    const { rows, total } = await this.favoriteRepo.findByUserIdPaginated(
+      userId,
+      limit,
+      offset,
+      sortBy,
+      sortOrder,
+    );
+
+    const data = rows.map((fav) => ({
       id: fav.id,
       provider_id: fav.provider_id,
       provider_name: fav["business_name"],
@@ -77,7 +93,7 @@ export class FavoriteService {
       created_at: fav.created_at,
     }));
 
-    return { data, total: data.length };
+    return { data, total, page, limit };
   }
 
   async removeFavorite(userId: string, providerId: string): Promise<void> {

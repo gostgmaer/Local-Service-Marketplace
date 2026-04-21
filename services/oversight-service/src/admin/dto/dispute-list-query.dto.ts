@@ -4,6 +4,7 @@ import { AdminListQueryDto } from "./admin-list-query.dto";
 export enum DisputeStatusFilter {
   OPEN = "open",
   INVESTIGATING = "investigating",
+  ESCALATED = "escalated",
   RESOLVED = "resolved",
   CLOSED = "closed",
 }

@@ -79,21 +79,23 @@ export class AnalyticsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @RequirePermissions("analytics.view")
   async getAllActivity(
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query("limit", new DefaultValuePipe(100), ParseIntPipe) limit: number,
-    @Query("offset", new DefaultValuePipe(0), ParseIntPipe) offset: number,
   ) {
     this.logger.log(
       `GET /analytics/user-activity - Retrieve all activity logs`,
       "AnalyticsController",
     );
-
-    const result = await this.analyticsService.getAllActivity(limit, offset);
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(200, Math.max(1, limit));
+    const offset = (safePage - 1) * safeLimit;
+    const result = await this.analyticsService.getAllActivity(safeLimit, offset);
 
     return {
       data: result.data,
       total: result.total,
-      page: Math.floor(offset / limit) + 1,
-      limit,
+      page: safePage,
+      limit: safeLimit,
     };
   }
 
@@ -103,8 +105,8 @@ export class AnalyticsController {
     @Param("userId", ParseUUIDPipe) userId: string,
     @Headers("x-user-id") requestingUserId: string,
     @Headers("x-user-role") requestingUserRole: string,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query("limit", new DefaultValuePipe(100), ParseIntPipe) limit: number,
-    @Query("offset", new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Req() req: Request,
   ) {
     this.logger.log(
@@ -118,18 +120,20 @@ export class AnalyticsController {
     ) {
       throw new ForbiddenException("You can only view your own activity log");
     }
-
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(200, Math.max(1, limit));
+    const offset = (safePage - 1) * safeLimit;
     const result = await this.analyticsService.getUserActivity(
       userId,
-      limit,
+      safeLimit,
       offset,
     );
 
     return {
       data: result.data,
       total: result.total,
-      page: Math.floor(offset / limit) + 1,
-      limit,
+      page: safePage,
+      limit: safeLimit,
     };
   }
 
@@ -138,16 +142,19 @@ export class AnalyticsController {
   @RequirePermissions("analytics.view")
   async getActivityByAction(
     @Param("action") action: string,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query("limit", new DefaultValuePipe(100), ParseIntPipe) limit: number,
   ) {
     this.logger.log(
       `GET /analytics/user-activity/action/${action} - Retrieve activity by action`,
       "AnalyticsController",
     );
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(200, Math.max(1, limit));
+    const offset = (safePage - 1) * safeLimit;
+    const result = await this.analyticsService.getActivityByAction(action, safeLimit, offset);
 
-    const data = await this.analyticsService.getActivityByAction(action, limit);
-
-    return { data, total: data.length, page: 1, limit };
+    return { data: result.data, total: result.total, page: safePage, limit: safeLimit };
   }
 
   @Get("metrics")
@@ -156,20 +163,22 @@ export class AnalyticsController {
   async getDailyMetrics(
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
     @Query("limit", new DefaultValuePipe(30), ParseIntPipe) limit: number = 30,
   ) {
     this.logger.log(
       `GET /analytics/metrics - Retrieve daily metrics`,
       "AnalyticsController",
     );
-
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(365, Math.max(1, limit));
     const data = await this.analyticsService.getDailyMetrics(
       startDate,
       endDate,
-      limit,
+      safeLimit,
     );
 
-    return { data, total: data.length, page: 1, limit };
+    return { data, total: data.length, page: safePage, limit: safeLimit };
   }
 
   @Get("metrics/:date")

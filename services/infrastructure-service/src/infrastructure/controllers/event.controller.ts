@@ -57,6 +57,7 @@ export class EventController {
   @Get("type/:eventType")
   async getEventsByType(
     @Param("eventType") eventType: string,
+    @Query("page") page?: string,
     @Query("limit") limit?: string,
   ) {
     this.logger.log(
@@ -64,8 +65,9 @@ export class EventController {
       "EventController",
     );
 
-    const parsedLimit = limit ? parseInt(limit, 10) : 100;
-    return this.eventService.getEventsByType(eventType, parsedLimit);
+    const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+    const parsedLimit = Math.min(200, Math.max(1, parseInt(limit ?? "100", 10) || 100));
+    return this.eventService.getEventsByType(eventType, parsedLimit, parsedPage);
   }
 
   @Get(":id")

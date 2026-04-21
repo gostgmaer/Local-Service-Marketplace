@@ -384,4 +384,66 @@ export class ReviewRepository {
     ]);
     return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
   }
+
+  async getAllReviews(
+    limit: number = 20,
+    offset: number = 0,
+    sortBy = "created_at",
+    sortOrder = "desc",
+    providerId?: string,
+    minRating?: number,
+    maxRating?: number,
+    createdFrom?: string,
+    createdTo?: string,
+  ): Promise<{ data: Review[]; total: number }> {
+    const allowedSortBy = ["created_at", "rating", "helpful_count"];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : "created_at";
+    const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
+
+    const conditions: string[] = ["deleted_at IS NULL"];
+    const values: any[] = [];
+
+    if (providerId) {
+      conditions.push(`provider_id = $${values.length + 1}`);
+      values.push(providerId);
+    }
+    if (minRating !== undefined) {
+      conditions.push(`rating >= $${values.length + 1}`);
+      values.push(minRating);
+    }
+    if (maxRating !== undefined) {
+      conditions.push(`rating <= $${values.length + 1}`);
+      values.push(maxRating);
+    }
+    if (createdFrom) {
+      conditions.push(`created_at >= $${values.length + 1}`);
+      values.push(createdFrom);
+    }
+    if (createdTo) {
+      conditions.push(`created_at <= $${values.length + 1}`);
+      values.push(createdTo);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const limitIdx = values.length + 1;
+    const offsetIdx = values.length + 2;
+    values.push(limit, offset);
+
+    const [dataResult, countResult] = await Promise.all([
+      this.pool.query(
+        `SELECT id, display_id, job_id, user_id, provider_id, rating, comment,
+                response, response_at, helpful_count, verified_purchase, created_at
+         FROM reviews
+         ${where}
+         ORDER BY ${safeSortBy} ${safeOrder}
+         LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+        values,
+      ),
+      this.pool.query(
+        `SELECT COUNT(*)::int AS total FROM reviews ${where}`,
+        values.slice(0, -2),
+      ),
+    ]);
+    return { data: dataResult.rows, total: countResult.rows[0]?.total ?? 0 };
+  }
 }

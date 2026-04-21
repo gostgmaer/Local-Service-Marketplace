@@ -8,6 +8,7 @@ import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
 import { StatusBadge } from "@/components/ui/Badge";
@@ -316,7 +317,7 @@ export default function RequestDetailPage() {
                                 rel="noopener noreferrer"
                                 className="block rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-90 transition-opacity"
                               >
-                                <img
+                                <Image
                                   src={img.url}
                                   alt="Request attachment"
                                   className="w-full h-36 object-cover"

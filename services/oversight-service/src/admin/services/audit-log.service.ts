@@ -52,13 +52,16 @@ export class AuditLogService {
   async getAuditLogsByEntity(
     entity: string,
     entityId: string,
-  ): Promise<AuditLog[]> {
+    limit: number = 20,
+    page: number = 1,
+  ): Promise<{ data: AuditLog[]; total: number; page: number; limit: number }> {
     this.logger.log(
       `Fetching audit logs for entity ${entity}:${entityId}`,
       "AuditLogService",
     );
-
-    return this.auditLogRepository.getAuditLogsByEntity(entity, entityId);
+    const offset = (page - 1) * limit;
+    const { data, total } = await this.auditLogRepository.getAuditLogsByEntity(entity, entityId, limit, offset);
+    return { data, total, page, limit };
   }
 
   async createAuditLog(

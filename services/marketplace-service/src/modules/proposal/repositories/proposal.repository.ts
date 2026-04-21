@@ -99,21 +99,39 @@ export class ProposalRepository {
   async getProposalsForRequest(
     requestId: string,
     limit = 20,
-  ): Promise<Proposal[]> {
+    page = 1,
+    sortBy = "created_at",
+    sortOrder = "desc",
+    status?: string,
+  ): Promise<{ rows: Proposal[]; total: number }> {
     requestId = await resolveId(this.pool, "service_requests", requestId);
+    const allowedSortBy = ["created_at", "price", "start_date"];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? `p.${sortBy}` : "p.created_at";
+    const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
+    const offset = (page - 1) * limit;
+
+    const conditions: string[] = ["p.request_id = $1"];
+    const values: any[] = [requestId, limit, offset];
+    if (status) {
+      conditions.push(`p.status = $${values.length + 1}`);
+      values.push(status);
+    }
+
     const query = `
       SELECT p.id, p.display_id, p.request_id, p.provider_id, p.price, p.message, p.estimated_hours, p.start_date, p.completion_date, p.rejected_reason, p.status, p.created_at, p.updated_at,
-             u.name AS provider_name, pr.rating AS provider_rating
+             u.name AS provider_name, pr.rating AS provider_rating,
+             COUNT(*) OVER() AS total_count
       FROM proposals p
       LEFT JOIN providers pr ON p.provider_id = pr.id
       LEFT JOIN users u ON pr.user_id = u.id
-      WHERE p.request_id = $1
-      ORDER BY p.created_at DESC
-      LIMIT $2
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY ${safeSortBy} ${safeOrder}
+      LIMIT $2 OFFSET $3
     `;
 
-    const result = await this.pool.query(query, [requestId, limit + 1]);
-    return result.rows.map((r: any) => this.mapRow(r));
+    const result = await this.pool.query(query, values);
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    return { rows: result.rows.map((r: any) => this.mapRow(r)), total };
   }
 
   async getProposalById(id: string): Promise<Proposal | null> {

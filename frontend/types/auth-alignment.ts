@@ -12,9 +12,9 @@
  * Source: services/auth-service/src/modules/auth/dto/auth-response.dto.ts
  */
 export interface BackendAuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: {
+  accessToken?: string;
+  refreshToken?: string;
+  user?: {
     id: string;
     email: string;
     name?: string;
@@ -27,6 +27,9 @@ export interface BackendAuthResponse {
     last_login_at?: Date;
     provider_verification_status?: string;
   };
+  // Present when the account has 2FA enabled
+  requiresMfa?: boolean;
+  mfaToken?: string;
 }
 
 /**
@@ -149,6 +152,20 @@ export function isValidBackendAuthResponse(
     typeof data.user.phone_verified === "boolean" &&
     typeof data.user.timezone === "string" &&
     typeof data.user.language === "string"
+  );
+}
+
+/**
+ * Type guard for MFA-required response (no tokens, just the challenge token)
+ */
+export function isMfaRequiredResponse(
+  data: any,
+): data is { requiresMfa: true; mfaToken: string } {
+  return (
+    data &&
+    typeof data === "object" &&
+    data.requiresMfa === true &&
+    typeof data.mfaToken === "string"
   );
 }
 

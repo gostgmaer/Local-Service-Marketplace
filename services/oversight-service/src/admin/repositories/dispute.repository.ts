@@ -127,7 +127,7 @@ export class DisputeRepository {
     id = await resolveId(this.pool, "disputes", id);
     const query = `
       SELECT id, display_id, job_id, opened_by, reason, description, evidence_images, status,
-             resolution, resolved_by, resolved_at, created_at
+             resolution, resolved_by, resolved_at, created_at, updated_at
       FROM disputes
       WHERE id = $1
     `;
@@ -142,7 +142,7 @@ export class DisputeRepository {
   ): Promise<Dispute[]> {
     const query = `
       SELECT id, display_id, job_id, opened_by, reason, description, evidence_images, status,
-             resolution, resolved_by, resolved_at, created_at
+             resolution, resolved_by, resolved_at, created_at, updated_at
       FROM disputes
       ORDER BY created_at DESC
       LIMIT $1 OFFSET $2
@@ -154,8 +154,8 @@ export class DisputeRepository {
 
   async getDisputesByStatus(status: string): Promise<Dispute[]> {
     const query = `
-      SELECT id, display_id, job_id, opened_by, reason, status, 
-             resolution, resolved_by, resolved_at, created_at
+      SELECT id, display_id, job_id, opened_by, reason, description, evidence_images, status,
+             resolution, resolved_by, resolved_at, created_at, updated_at
       FROM disputes
       WHERE status = $1
       ORDER BY created_at DESC
@@ -174,10 +174,11 @@ export class DisputeRepository {
     const query = `
       UPDATE disputes
       SET status = $1, resolution = $2, resolved_by = $3,
-          resolved_at = CASE WHEN $1 IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END
+          resolved_at = CASE WHEN $1 IN ('resolved', 'closed') THEN CURRENT_TIMESTAMP ELSE resolved_at END,
+          updated_at = NOW()
       WHERE id = $4
-      RETURNING id, display_id, job_id, opened_by, reason, status, 
-                resolution, resolved_by, resolved_at, created_at
+      RETURNING id, display_id, job_id, opened_by, reason, description, evidence_images, status,
+                resolution, resolved_by, resolved_at, created_at, updated_at
     `;
 
     const values = [status, resolution, resolvedBy, id];
@@ -273,8 +274,8 @@ export class DisputeRepository {
       queryDto.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
     const query = `
-      SELECT id, display_id, job_id, opened_by, reason, status,
-             resolution, resolved_by, resolved_at, created_at
+      SELECT id, display_id, job_id, opened_by, reason, description, evidence_images, status,
+             resolution, resolved_by, resolved_at, created_at, updated_at
       FROM disputes
       ${whereClause}
       ORDER BY ${sortColumn} ${sortOrder}, id ${sortOrder}
@@ -357,4 +358,43 @@ export class DisputeRepository {
         return "created_at";
     }
   }
+
+  async getDisputeMessages(
+    disputeId: string,
+  ): Promise<DisputeMessage[]> {
+    const result = await this.pool.query(
+      `SELECT id, dispute_id, sender_id, message, images, is_admin, created_at
+       FROM dispute_messages
+       WHERE dispute_id = $1
+       ORDER BY created_at ASC`,
+      [disputeId],
+    );
+    return result.rows;
+  }
+
+  async createDisputeMessage(
+    disputeId: string,
+    senderId: string,
+    message: string,
+    images: { id: string; url: string }[],
+    isAdmin: boolean,
+  ): Promise<DisputeMessage> {
+    const result = await this.pool.query(
+      `INSERT INTO dispute_messages (dispute_id, sender_id, message, images, is_admin)
+       VALUES ($1, $2, $3, $4::jsonb, $5)
+       RETURNING id, dispute_id, sender_id, message, images, is_admin, created_at`,
+      [disputeId, senderId, message, JSON.stringify(images), isAdmin],
+    );
+    return result.rows[0];
+  }
+}
+
+export interface DisputeMessage {
+  id: string;
+  dispute_id: string;
+  sender_id: string | null;
+  message: string;
+  images: { id: string; url: string }[];
+  is_admin: boolean;
+  created_at: string;
 }

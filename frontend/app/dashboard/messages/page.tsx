@@ -54,19 +54,26 @@ export default function MessagesPage() {
     }
   }, [isAuthenticated, authLoading, router, can]);
 
+  const [convPage, setConvPage] = useState(1);
+  const convLimit = 20;
+
   useRealtimeList(["message:created"], ["conversations"]);
   useRealtimeList(["message:created"], ["messages", selectedJobId]);
 
   const {
-    data: conversations,
+    data: conversationsData,
     isLoading,
     error: conversationsError,
     refetch,
   } = useQuery({
-    queryKey: ["conversations"],
-    queryFn: () => messageService.getConversations(),
+    queryKey: ["conversations", convPage, convLimit],
+    queryFn: () => messageService.getConversations({ page: convPage, limit: convLimit }),
     enabled: messagingEnabled && isAuthenticated,
   });
+
+  const conversations = conversationsData?.data ?? [];
+  const convTotal = conversationsData?.total ?? 0;
+  const convTotalPages = Math.max(1, Math.ceil(convTotal / convLimit));
 
   const { data: messages } = useQuery({
     queryKey: ["messages", selectedJobId],
@@ -197,6 +204,13 @@ export default function MessagesPage() {
                   <p className="text-center text-gray-500 py-8">
                     No conversations
                   </p>
+                )}
+                {convTotalPages > 1 && (
+                  <div className="mt-3 flex items-center justify-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <Button variant="ghost" size="sm" disabled={convPage <= 1} onClick={() => setConvPage((p) => p - 1)}>Prev</Button>
+                    <span className="text-xs text-gray-500">{convPage}/{convTotalPages}</span>
+                    <Button variant="ghost" size="sm" disabled={convPage >= convTotalPages} onClick={() => setConvPage((p) => p + 1)}>Next</Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
