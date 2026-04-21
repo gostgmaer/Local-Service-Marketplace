@@ -69,6 +69,8 @@ export default function ProviderDocumentsPage() {
   });
 
   const existingDocumentTypes = (documents ?? []).map((d: any) => d.document_type);
+
+  const saveTaxMutation = useMutation({
     mutationFn: async () => {
       await apiClient.patch(`/providers/${provider?.id}`, {
         gstin: gstin.toUpperCase() || undefined,
