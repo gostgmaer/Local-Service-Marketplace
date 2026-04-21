@@ -165,7 +165,7 @@ function JobCheckout({ jobId }: { jobId: string }) {
     );
   }
 
-  const amount = job.actual_amount || 0;
+  const amount = Number(job.actual_amount) || 0;
   const pb = job.price_breakdown;
 
   // Use backend price_breakdown if available; otherwise fall back to local calculation

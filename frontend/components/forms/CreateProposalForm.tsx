@@ -41,7 +41,7 @@ export function CreateProposalForm({
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isValid },
   } = form;
 
   const messageValue = watch("message") ?? "";
@@ -131,12 +131,10 @@ export function CreateProposalForm({
       </div>
 
       <div className="flex gap-3">
-        <Button
+        <Button>
           type="submit"
           isLoading={createMutation.isPending}
-          disabled={createMutation.isPending}
-        >
-          Submit Proposal
+          disabled={createMutation.isPending || !isValid}
         </Button>
         {onCancel && (
           <Button
@@ -150,5 +148,5 @@ export function CreateProposalForm({
         )}
       </div>
     </form>
-  );
+  )
 }

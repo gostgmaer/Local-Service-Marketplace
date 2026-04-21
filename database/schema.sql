@@ -757,7 +757,7 @@ CREATE TABLE disputes (
   reason TEXT NOT NULL,
   description TEXT,
   evidence_images JSONB NOT NULL DEFAULT '[]'::jsonb,
-  status TEXT NOT NULL CHECK (status IN ('open', 'investigating', 'resolved', 'closed')),
+  status TEXT NOT NULL CHECK (status IN ('open', 'investigating', 'escalated', 'resolved', 'closed')),
   resolution TEXT,
   resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
   resolved_at TIMESTAMP,
@@ -771,6 +771,33 @@ COMMENT ON COLUMN disputes.evidence_images IS
 CREATE INDEX idx_disputes_job_id ON disputes(job_id);
 -- idx_disputes_status omitted: superseded by idx_disputes_status_created_at below
 CREATE INDEX idx_disputes_opened_by ON disputes(opened_by);
+
+-- =====================================================
+-- DISPUTE MESSAGES
+-- =====================================================
+
+CREATE TABLE dispute_messages (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  dispute_id UUID NOT NULL REFERENCES disputes(id) ON DELETE CASCADE,
+  sender_id  UUID REFERENCES users(id) ON DELETE SET NULL,
+  message    TEXT NOT NULL,
+  images     JSONB NOT NULL DEFAULT '[]'::jsonb,
+  is_admin   BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE dispute_messages IS
+  'Threaded messages for a dispute investigation. '
+  'Accessible by both job parties and admin.';
+
+COMMENT ON COLUMN dispute_messages.images IS
+  'Array of { id: uuid, url: string } — additional evidence images sent with the message.';
+
+COMMENT ON COLUMN dispute_messages.is_admin IS
+  'TRUE when the sender is an admin user — used to visually distinguish admin replies.';
+
+CREATE INDEX idx_dispute_messages_dispute_id ON dispute_messages(dispute_id, created_at ASC);
+CREATE INDEX idx_dispute_messages_sender_id ON dispute_messages(sender_id);
 
 -- =====================================================
 -- AUDIT LOGS
@@ -2473,6 +2500,7 @@ VALUES
   ('041', 'add_dispute_description', 'integrated_in_schema', 0),
   ('042', 'add_customer_job_update_status_permission', 'integrated_in_schema', 0),
   ('043', 'add_dispute_evidence_images', 'integrated_in_schema', 0),
-  ('044', 'feature_flag_settings', 'integrated_in_schema', 0)
+  ('044', 'feature_flag_settings', 'integrated_in_schema', 0),
+  ('045', 'dispute_escalated_and_messages', 'integrated_in_schema', 0)
 ON CONFLICT (version) DO NOTHING;
 

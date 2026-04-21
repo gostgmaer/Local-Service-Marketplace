@@ -112,28 +112,30 @@ export class ContactMessageService {
 
   async getContactMessagesByEmail(
     email: string,
-  ): Promise<{ data: ContactMessage[]; total: number }> {
+    limit: number = 20,
+    page: number = 1,
+  ): Promise<{ data: ContactMessage[]; total: number; page: number; limit: number }> {
     this.logger.log(
       `Fetching contact messages for email: ${email}`,
       "ContactMessageService",
     );
-
-    const data =
-      await this.contactMessageRepository.getContactMessagesByEmail(email);
-    return { data, total: data.length };
+    const offset = (page - 1) * limit;
+    const { data, total } = await this.contactMessageRepository.getContactMessagesByEmail(email, limit, offset);
+    return { data, total, page, limit };
   }
 
   async getContactMessagesByUserId(
     userId: string,
-  ): Promise<{ data: ContactMessage[]; total: number }> {
+    limit: number = 20,
+    page: number = 1,
+  ): Promise<{ data: ContactMessage[]; total: number; page: number; limit: number }> {
     this.logger.log(
       `Fetching contact messages for user: ${userId}`,
       "ContactMessageService",
     );
-
-    const data =
-      await this.contactMessageRepository.getContactMessagesByUserId(userId);
-    return { data, total: data.length };
+    const offset = (page - 1) * limit;
+    const { data, total } = await this.contactMessageRepository.getContactMessagesByUserId(userId, limit, offset);
+    return { data, total, page, limit };
   }
 
   async updateContactMessage(

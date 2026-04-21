@@ -56,6 +56,7 @@ import {
   VerifyTwoFactorDto,
   DisableTwoFactorDto,
   VerifyBackupCodeDto,
+  TwoFactorLoginDto,
 } from "../dto/two-factor.dto";
 import {
   ChangePasswordDto,
@@ -129,8 +130,10 @@ export class AuthController {
     });
     const result = await this.authService.login(loginDto, ipAddress);
 
-    // Set tokens as HTTP-only cookies
-    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    // Only set cookies when a full session is established (no pending MFA)
+    if (!result.requiresMfa) {
+      this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    }
 
     return { message: "Login successful", ...result };
   }
@@ -651,9 +654,12 @@ export class AuthController {
   async verify2FA(
     @Body() dto: VerifyTwoFactorDto,
     @Req() req: Request,
-  ): Promise<{ result: string }> {
-    await this.authService.verify2FA(req.user["sub"], dto.code);
-    return { result: "2FA enabled successfully" };
+  ): Promise<{ result: string; backupCodes: string[] }> {
+    const { backupCodes } = await this.authService.verify2FA(
+      req.user["sub"],
+      dto.code,
+    );
+    return { result: "2FA enabled successfully", backupCodes };
   }
 
   @Post("2fa/disable")
@@ -687,6 +693,27 @@ export class AuthController {
       dto.backupCode,
     );
     return { success: valid };
+  }
+
+  /**
+   * Step 2 of 2FA login: exchange the short-lived MFA token + TOTP code for full JWT.
+   * This endpoint is intentionally unauthenticated — the mfaToken IS the authentication.
+   */
+  @Post("2fa/login")
+  @HttpCode(HttpStatus.OK)
+  async completeMfaLogin(
+    @Body() dto: TwoFactorLoginDto,
+    @Ip() ipAddress: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    this.logger.info("POST /auth/2fa/login", { context: "AuthController" });
+    const result = await this.authService.completeMfaLogin(
+      dto.mfaToken,
+      dto.code,
+      ipAddress,
+    );
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return { message: "Login successful", ...result };
   }
 
   // SESSION & DEVICE MANAGEMENT

@@ -66,18 +66,23 @@ export class InvoiceService {
     }
 
     // Fetch customer and provider details
-    const [customer, provider] = await Promise.all([
-      this.userClient.getUserById(payment.user_id).catch(() => ({
-        id: payment.user_id,
-        name: "Customer",
-        email: "N/A",
-      })),
-      this.userClient.getUserById(payment.provider_id).catch(() => ({
-        id: payment.provider_id,
-        name: "Provider",
-        email: "N/A",
-      })),
+    // getUserById catches its own errors and returns null, so use ?? for fallback
+    const [customerResult, providerResult] = await Promise.all([
+      this.userClient.getUserById(payment.user_id),
+      this.userClient.getUserById(payment.provider_id),
     ]);
+    const customer = customerResult ?? {
+      id: payment.user_id,
+      name: "Customer",
+      email: "N/A",
+      role: "customer",
+    };
+    const provider = providerResult ?? {
+      id: payment.provider_id,
+      name: "Provider",
+      email: "N/A",
+      role: "provider",
+    };
 
     const createdAtStr =
       payment.created_at instanceof Date

@@ -169,7 +169,7 @@ export default function ProfilePage() {
                           {providerProfileRating.toFixed(1)}
                         </span>
                         <span className="ml-2 text-gray-600 dark:text-gray-400">
-                          ({reviews?.length ?? 0} reviews)
+                          ({reviews?.data?.length ?? 0} reviews)
                         </span>
                       </div>
                     ) : null}
@@ -276,7 +276,7 @@ export default function ProfilePage() {
                           Total Reviews
                         </span>
                         <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                          {reviews?.length ?? 0}
+                          {reviews?.data?.length ?? 0}
                         </span>
                       </div>
                       {providerProfile?.rating ? (
@@ -402,14 +402,14 @@ export default function ProfilePage() {
                 )}
 
               {/* Recent Reviews */}
-              {isProvider && reviews && reviews.length > 0 && (
+              {isProvider && reviews && (reviews.data?.length ?? 0) > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                     <MessageCircle className="w-5 h-5 mr-2" />
                     Recent Reviews
                   </h2>
                   <div className="space-y-4">
-                    {reviews.slice(0, 3).map((review: any) => (
+                    {reviews.data.slice(0, 3).map((review: any) => (
                       <div
                         key={review.id}
                         className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0"
@@ -438,12 +438,12 @@ export default function ProfilePage() {
                         )}
                       </div>
                     ))}
-                    {reviews.length > 3 && (
+                    {reviews.data.length > 3 && (
                       <Link
                         href={`${ROUTES.DASHBOARD}/provider/reviews`}
                         className="inline-block text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium"
                       >
-                        View all {reviews.length} reviews →
+                        View all {reviews.data.length} reviews →
                       </Link>
                     )}
                   </div>

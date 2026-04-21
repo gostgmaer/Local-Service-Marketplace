@@ -159,6 +159,20 @@ export class ProposalService {
           }
         }
       }
+
+      // Category restriction: provider must offer the requested service category
+      const requestCategoryId = await this.proposalRepository.getRequestCategoryId(dto.request_id);
+      if (requestCategoryId) {
+        const providerServices: any[] = providerForGate?.provider_services ?? [];
+        const offeredCategoryIds = providerServices.map(
+          (s: any) => s.category_id ?? s.service_category_id ?? s.id,
+        );
+        if (offeredCategoryIds.length > 0 && !offeredCategoryIds.includes(requestCategoryId)) {
+          throw new BadRequestException(
+            "Cannot submit proposal: you do not offer services in this category.",
+          );
+        }
+      }
     } else if (verificationRequired !== "false") {
       // Identity-service is unavailable — fail-closed to prevent onboarding bypass
       throw new BadRequestException(
@@ -256,12 +270,18 @@ export class ProposalService {
   async getProposalsForRequest(
     requestId: string,
     user?: any,
-    limit = 20,
+    queryDto?: import("../dto/proposal-query.dto").ProposalQueryDto,
   ): Promise<PaginatedProposalResponseDto> {
     this.logger.log(
       `Fetching proposals for request: ${requestId} for user ${user?.userId}`,
       ProposalService.name,
     );
+
+    const page = queryDto?.page ?? 1;
+    const limit = queryDto?.limit ?? 20;
+    const sortBy = queryDto?.sortBy ?? "created_at";
+    const sortOrder = queryDto?.sortOrder ?? "desc";
+    const status = queryDto?.status;
 
     // RBAC:
     // - proposals.manage (admin) → see all proposals
@@ -274,15 +294,19 @@ export class ProposalService {
         // Request owner (customer) — allowed to see all proposals, no filter needed
       } else if (user.permissions?.includes("proposals.read") && user.providerId) {
         // Provider — allowed to see only their own proposals for this request
-        const proposals = await this.proposalRepository.getProposalsForRequest(
+        const { rows } = await this.proposalRepository.getProposalsForRequest(
           requestId,
           limit,
+          page,
+          sortBy,
+          sortOrder,
+          status,
         );
-        const ownProposals = proposals.filter(
+        const ownProposals = rows.filter(
           (p: any) => p.provider_id === user.providerId,
         );
         const response = ownProposals.map(ProposalResponseDto.fromEntity);
-        return new PaginatedProposalResponseDto(response, undefined, false);
+        return new PaginatedProposalResponseDto(response, undefined, false, ownProposals.length, page, limit);
       } else {
         throw new ForbiddenException(
           "Only the request owner or an admin can see the proposals for this request",
@@ -290,18 +314,20 @@ export class ProposalService {
       }
     }
 
-    const proposals = await this.proposalRepository.getProposalsForRequest(
+    const { rows, total } = await this.proposalRepository.getProposalsForRequest(
       requestId,
       limit,
+      page,
+      sortBy,
+      sortOrder,
+      status,
     );
 
-    const hasMore = proposals.length > limit;
-    const data = proposals.slice(0, limit);
-    const nextCursor = hasMore ? data[data.length - 1].id : undefined;
+    const response = rows.map(ProposalResponseDto.fromEntity);
+    const hasMore = page * limit < total;
+    const nextCursor = hasMore ? rows[rows.length - 1]?.id : undefined;
 
-    const response = data.map(ProposalResponseDto.fromEntity);
-
-    return new PaginatedProposalResponseDto(response, nextCursor, hasMore);
+    return new PaginatedProposalResponseDto(response, nextCursor, hasMore, total, page, limit);
   }
 
   async getProposalById(id: string): Promise<ProposalResponseDto> {

@@ -34,6 +34,7 @@ export default function PaymentHistoryPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [sortField, setSortField] = useState<PaymentSortField>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const { page, limit, setLimit, goToPage } = usePagination({
     initialLimit: 10,
   });
@@ -52,52 +53,33 @@ export default function PaymentHistoryPage() {
   useRealtimeList(["payment:completed", "payment:created", "payment:updated", "payment:failed", "payment:refunded"], ["payment-history"]);
 
   const {
-    data: payments,
+    data,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ["payment-history"],
-    queryFn: () => paymentService.getMyPayments(),
+    queryKey: ["payment-history", page, limit, sortField, sortDirection, statusFilter],
+    queryFn: () => paymentService.getMyPayments({
+      page,
+      limit,
+      sort_by: sortField,
+      sort_order: sortDirection,
+      ...(statusFilter ? { status: statusFilter } : {}),
+    }),
     enabled: isAuthenticated,
   });
 
-  const sortedPayments = useMemo(() => {
-    const list = [...(payments || [])];
-    list.sort((a: any, b: any) => {
-      const direction = sortDirection === "asc" ? 1 : -1;
+  const payments = data?.data ?? [];
+  const serverTotal = data?.total ?? 0;
 
-      if (sortField === "created_at") {
-        return (
-          (new Date(a.created_at || 0).getTime() -
-            new Date(b.created_at || 0).getTime()) *
-          direction
-        );
-      }
-
-      if (sortField === "amount") {
-        return ((a.amount || 0) - (b.amount || 0)) * direction;
-      }
-
-      const left = String(a.status || "").toLowerCase();
-      const right = String(b.status || "").toLowerCase();
-      return left.localeCompare(right) * direction;
-    });
-    return list;
-  }, [payments, sortDirection, sortField]);
+  const sortedPayments = payments;
 
   const numberFormatter = useMemo(() => new Intl.NumberFormat("en-US"), []);
 
-  const totalPages = Math.max(1, Math.ceil(sortedPayments.length / limit));
-  const paginatedPayments = useMemo(() => {
-    const start = (page - 1) * limit;
-    return sortedPayments.slice(start, start + limit);
-  }, [sortedPayments, page, limit]);
-  const startRow = sortedPayments.length === 0 ? 0 : (page - 1) * limit + 1;
-  const endRow =
-    sortedPayments.length === 0
-      ? 0
-      : Math.min(page * limit, sortedPayments.length);
+  const totalPages = Math.max(1, Math.ceil(serverTotal / limit));
+  const paginatedPayments = sortedPayments;
+  const startRow = serverTotal === 0 ? 0 : (page - 1) * limit + 1;
+  const endRow = serverTotal === 0 ? 0 : Math.min(page * limit, serverTotal);
 
   useEffect(() => {
     goToPage(1);
@@ -157,6 +139,17 @@ export default function PaymentHistoryPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); goToPage(1); }}
+              className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:focus:ring-primary-900"
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="refunded">Refunded</option>
+            </select>
             <select
               value={sortField}
               onChange={(e) => handleSort(e.target.value as PaymentSortField)}
@@ -302,7 +295,7 @@ export default function PaymentHistoryPage() {
                   <div className="text-sm text-gray-600 dark:text-gray-300">
                     Showing {numberFormatter.format(startRow)}-
                     {numberFormatter.format(endRow)} of{" "}
-                    {numberFormatter.format(sortedPayments.length)} records
+                    {numberFormatter.format(serverTotal)} records
                   </div>
                   <select
                     value={limit}

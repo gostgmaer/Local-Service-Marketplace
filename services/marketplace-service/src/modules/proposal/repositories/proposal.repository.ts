@@ -14,6 +14,17 @@ import { BadRequestException } from "@/common/exceptions/http.exceptions";
 export class ProposalRepository {
   constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
 
+  /** Parse NUMERIC fields that node-postgres returns as strings. */
+  private mapRow(row: any): Proposal {
+    if (!row) return row;
+    return {
+      ...row,
+      price:            row.price            != null ? parseFloat(row.price)            : 0,
+      estimated_hours:  row.estimated_hours  != null ? parseFloat(row.estimated_hours)  : null,
+      provider_rating:  row.provider_rating  != null ? parseFloat(row.provider_rating)  : null,
+    };
+  }
+
   /** Reads a system setting from the shared system_settings table with a safe fallback. */
   async getSystemSetting(key: string, defaultValue: string): Promise<string> {
     try {
@@ -31,6 +42,12 @@ export class ProposalRepository {
     const query = `SELECT status FROM service_requests WHERE id = $1 AND deleted_at IS NULL`;
     const result = await this.pool.query(query, [requestId]);
     return result.rows[0]?.status ?? null;
+  }
+
+  async getRequestCategoryId(requestId: string): Promise<string | null> {
+    const query = `SELECT category_id FROM service_requests WHERE id = $1 AND deleted_at IS NULL`;
+    const result = await this.pool.query(query, [requestId]);
+    return result.rows[0]?.category_id ?? null;
   }
 
   /** Returns the total number of proposals ever submitted by a provider for a request (all statuses). */
@@ -76,27 +93,45 @@ export class ProposalRepository {
     ];
 
     const result = await this.pool.query(query, values);
-    return result.rows[0];
+    return this.mapRow(result.rows[0]);
   }
 
   async getProposalsForRequest(
     requestId: string,
     limit = 20,
-  ): Promise<Proposal[]> {
+    page = 1,
+    sortBy = "created_at",
+    sortOrder = "desc",
+    status?: string,
+  ): Promise<{ rows: Proposal[]; total: number }> {
     requestId = await resolveId(this.pool, "service_requests", requestId);
+    const allowedSortBy = ["created_at", "price", "start_date"];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? `p.${sortBy}` : "p.created_at";
+    const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
+    const offset = (page - 1) * limit;
+
+    const conditions: string[] = ["p.request_id = $1"];
+    const values: any[] = [requestId, limit, offset];
+    if (status) {
+      conditions.push(`p.status = $${values.length + 1}`);
+      values.push(status);
+    }
+
     const query = `
       SELECT p.id, p.display_id, p.request_id, p.provider_id, p.price, p.message, p.estimated_hours, p.start_date, p.completion_date, p.rejected_reason, p.status, p.created_at, p.updated_at,
-             u.name AS provider_name, pr.rating AS provider_rating
+             u.name AS provider_name, pr.rating AS provider_rating,
+             COUNT(*) OVER() AS total_count
       FROM proposals p
       LEFT JOIN providers pr ON p.provider_id = pr.id
       LEFT JOIN users u ON pr.user_id = u.id
-      WHERE p.request_id = $1
-      ORDER BY p.created_at DESC
-      LIMIT $2
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY ${safeSortBy} ${safeOrder}
+      LIMIT $2 OFFSET $3
     `;
 
-    const result = await this.pool.query(query, [requestId, limit + 1]);
-    return result.rows;
+    const result = await this.pool.query(query, values);
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    return { rows: result.rows.map((r: any) => this.mapRow(r)), total };
   }
 
   async getProposalById(id: string): Promise<Proposal | null> {
@@ -110,7 +145,7 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, [id]);
-    return result.rows[0] || null;
+    return this.mapRow(result.rows[0]) || null;
   }
 
   async acceptProposal(id: string): Promise<Proposal | null> {
@@ -127,7 +162,7 @@ export class ProposalRepository {
         "Proposal is no longer pending or does not exist",
       );
     }
-    return result.rows[0];
+    return this.mapRow(result.rows[0]);
   }
 
   /**
@@ -193,7 +228,7 @@ export class ProposalRepository {
           "Proposal is no longer pending or does not exist",
         );
       }
-      const proposal = acceptRes.rows[0] as Proposal;
+      const proposal = this.mapRow(acceptRes.rows[0] as Proposal);
 
       // 2. Reject all other pending proposals on the same request
       await client.query(
@@ -238,7 +273,7 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, [reason || null, id]);
-    return result.rows[0] || null;
+    return this.mapRow(result.rows[0]) || null;
   }
 
   async withdrawProposal(
@@ -253,7 +288,7 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, [id, providerId]);
-    return result.rows[0] || null;
+    return this.mapRow(result.rows[0]) || null;
   }
 
   async updateProposal(
@@ -289,7 +324,7 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, values);
-    return result.rows[0] || null;
+    return this.mapRow(result.rows[0]) || null;
   }
 
   async getProposalsByProvider(providerId: string): Promise<Proposal[]> {
@@ -303,7 +338,7 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, [providerId]);
-    return result.rows;
+    return result.rows.map((r: any) => this.mapRow(r));
   }
 
   async getProposalsPaginated(queryDto: ProposalQueryDto): Promise<Proposal[]> {
@@ -402,7 +437,7 @@ export class ProposalRepository {
     }
 
     const result = await this.pool.query(query, values);
-    return result.rows;
+    return result.rows.map((r: any) => this.mapRow(r));
   }
 
   async countProposals(queryDto: ProposalQueryDto): Promise<number> {
@@ -504,7 +539,7 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, [userId]);
-    return result.rows;
+    return result.rows.map((r: any) => this.mapRow(r));
   }
 
   async getProposalsByProviderUser(userId: string): Promise<Proposal[]> {
@@ -520,7 +555,7 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, [userId]);
-    return result.rows;
+    return result.rows.map((r: any) => this.mapRow(r));
   }
 
   // ✅ NEW: Advanced query methods
@@ -536,7 +571,7 @@ export class ProposalRepository {
       LIMIT $3
     `;
     const result = await this.pool.query(query, [startDate, endDate, limit]);
-    return result.rows;
+    return result.rows.map((r: any) => this.mapRow(r));
   }
 
   async getProposalsByEstimatedHours(
@@ -552,7 +587,7 @@ export class ProposalRepository {
       LIMIT $3
     `;
     const result = await this.pool.query(query, [minHours, maxHours, limit]);
-    return result.rows;
+    return result.rows.map((r: any) => this.mapRow(r));
   }
 
   async getRejectedProposalsWithReasons(
@@ -566,7 +601,7 @@ export class ProposalRepository {
       LIMIT $1
     `;
     const result = await this.pool.query(query, [limit]);
-    return result.rows;
+    return result.rows.map((r: any) => this.mapRow(r));
   }
 
   async getProposalResponseStats(): Promise<any> {

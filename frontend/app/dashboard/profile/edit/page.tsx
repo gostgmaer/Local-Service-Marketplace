@@ -50,7 +50,7 @@ export default function ProfileEditPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm({
     defaultValues: {
       email: profile?.email || "",
@@ -77,7 +77,7 @@ export default function ProfileEditPage() {
         label: "Profile Edit",
       });
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-      router.push(ROUTES.DASHBOARD);
+      router.push(ROUTES.DASHBOARD_PROFILE);
     },
     onError: (error: any) => {
       const errorMessage =
@@ -212,7 +212,7 @@ export default function ProfileEditPage() {
                   <Button
                     type="submit"
                     isLoading={updateMutation.isPending}
-                    disabled={updateMutation.isPending}
+                    disabled={updateMutation.isPending || !isValid}
                   >
                     <Save className="h-4 w-4 mr-2" />
                     Save Changes

@@ -2,7 +2,7 @@ import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
-import { DisputeRepository } from "../repositories/dispute.repository";
+import { DisputeRepository, DisputeMessage } from "../repositories/dispute.repository";
 import { AdminActionRepository } from "../repositories/admin-action.repository";
 import { AuditLogRepository } from "../repositories/audit-log.repository";
 import { Dispute } from "../entities/dispute.entity";
@@ -23,11 +23,10 @@ import { CacheInvalidationService } from "../../common/services/cache-invalidati
 import { BroadcastService } from "../../common/services/broadcast.service";
 
 // Valid status transitions: current → allowed next statuses
-// open disputes must be investigated before being resolved or closed
-// (prevents admins from skipping the investigation step)
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  open: ["investigating"],
-  investigating: ["resolved", "closed"],
+  open: ["investigating", "escalated"],
+  investigating: ["escalated", "resolved", "closed"],
+  escalated: ["investigating", "resolved", "closed"],
   resolved: ["closed"],
   closed: [],
 };
@@ -380,4 +379,66 @@ export class DisputeService {
 
     return updatedDispute;
   }
+
+  async getDisputeMessages(
+    disputeId: string,
+    requestingUserId: string,
+  ): Promise<DisputeMessage[]> {
+    const dispute = await this.disputeRepository.getDisputeById(disputeId);
+    if (!dispute) throw new NotFoundException("Dispute not found");
+    // Verify caller is a party to the dispute
+    const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id);
+    const isParty =
+      dispute.opened_by === requestingUserId ||
+      customerId === requestingUserId ||
+      providerUserId === requestingUserId;
+    if (!isParty) throw new ForbiddenException("You do not have access to this dispute");
+
+    return this.disputeRepository.getDisputeMessages(disputeId);
+  }
+
+  async addDisputeMessage(
+    disputeId: string,
+    senderId: string,
+    message: string,
+    images: { id: string; url: string }[],
+    isAdmin: boolean,
+  ): Promise<DisputeMessage> {
+    const dispute = await this.disputeRepository.getDisputeById(disputeId);
+    if (!dispute) throw new NotFoundException("Dispute not found");
+
+    if (!isAdmin) {
+      // Non-admin: must be a party to the dispute
+      const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id);
+      const isParty =
+        dispute.opened_by === senderId ||
+        customerId === senderId ||
+        providerUserId === senderId;
+      if (!isParty) throw new ForbiddenException("You do not have access to this dispute");
+    }
+
+    if (dispute.status === "resolved" || dispute.status === "closed") {
+      throw new BadRequestException("Cannot add messages to a resolved or closed dispute");
+    }
+
+    const msg = await this.disputeRepository.createDisputeMessage(
+      disputeId,
+      senderId,
+      message,
+      images,
+      isAdmin,
+    );
+
+    // Broadcast to all parties
+    const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id).catch(() => ({ customerId: null, providerUserId: null }));
+    const rooms: string[] = ["admin"];
+    if (dispute.opened_by) rooms.push(`user:${dispute.opened_by}`);
+    if (customerId && customerId !== dispute.opened_by) rooms.push(`user:${customerId}`);
+    if (providerUserId && providerUserId !== dispute.opened_by) rooms.push(`user:${providerUserId}`);
+    this.broadcastService.emit("dispute", disputeId, "message", rooms, { disputeId, messageId: msg.id }, senderId);
+
+    return msg;
+  }
 }
+
+export { DisputeMessage };

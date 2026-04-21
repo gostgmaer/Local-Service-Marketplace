@@ -141,7 +141,11 @@ export class MessageRepository {
     await this.pool.query(query, [id]);
   }
 
-  async getUserConversations(userId: string): Promise<any[]> {
+  async getUserConversations(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ rows: any[]; total: number }> {
     // Uses the conversations table (owned by comms-service) to avoid cross-service joins.
     // Unread counts are computed from the messages table using the conversation's job_id.
     const query = `
@@ -149,13 +153,20 @@ export class MessageRepository {
         SELECT c.*
         FROM conversations c
         WHERE c.customer_id = $1 OR c.provider_id = $1
+      ),
+      counted AS (
+        SELECT COUNT(*) AS total_count FROM user_convos
+      ),
+      paged AS (
+        SELECT c.*
+        FROM user_convos c
         ORDER BY c.last_message_at DESC NULLS LAST
-        LIMIT 50
+        LIMIT $2 OFFSET $3
       ),
       unread_counts AS (
         SELECT m.job_id, COUNT(*)::int AS unread_count
         FROM messages m
-        JOIN user_convos uc ON uc.job_id = m.job_id
+        JOIN paged ON paged.job_id = m.job_id
         WHERE m.read = false AND m.sender_id != $1
         GROUP BY m.job_id
       )
@@ -165,13 +176,15 @@ export class MessageRepository {
         uc.provider_id,
         uc.last_message,
         uc.last_message_at,
-        COALESCE(u.unread_count, 0) AS unread_count
-      FROM user_convos uc
+        COALESCE(u.unread_count, 0) AS unread_count,
+        (SELECT total_count FROM counted)::int AS total_count
+      FROM paged uc
       LEFT JOIN unread_counts u ON u.job_id = uc.job_id
       ORDER BY uc.last_message_at DESC NULLS LAST
     `;
-    const result = await this.pool.query(query, [userId]);
-    return result.rows;
+    const result = await this.pool.query(query, [userId, limit, offset]);
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    return { rows: result.rows, total };
   }
 
   // ✅ NEW: Advanced query methods for new fields

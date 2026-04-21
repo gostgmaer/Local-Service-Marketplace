@@ -28,18 +28,26 @@ export default function FavoritesPage() {
   const [pendingProviderId, setPendingProviderId] = useState<string | null>(
     null,
   );
+  const [page, setPage] = useState(1);
+  const limit = 12;
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder] = useState<"asc" | "desc">("desc");
 
   useRealtimeList(["favorite:created", "favorite:deleted"], ["favorites"]);
 
   const {
-    data: favorites,
+    data: favoritesData,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ["favorites", user?.id],
-    queryFn: () => favoriteService.getFavorites(),
+    queryKey: ["favorites", user?.id, page, limit, sortBy, sortOrder],
+    queryFn: () => favoriteService.getFavorites({ page, limit, sort_by: sortBy, sort_order: sortOrder }),
   });
+
+  const favorites = favoritesData?.data ?? [];
+  const totalFavorites = favoritesData?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalFavorites / limit));
 
   const removeFavoriteMutation = useMutation({
     mutationFn: async (providerId: string) => {
@@ -96,7 +104,7 @@ export default function FavoritesPage() {
     );
   }
 
-  const hasFavorites = favorites && favorites.length > 0;
+  const hasFavorites = totalFavorites > 0;
 
   return (
     <>
@@ -111,14 +119,26 @@ export default function FavoritesPage() {
                   Saved Providers
                 </h1>
               </div>
-              <p className="text-gray-600 dark:text-gray-400">
-                {hasFavorites
-                  ? `You have ${favorites.length} saved ${favorites.length === 1 ? "provider" : "providers"}`
-                  : "You haven't saved any providers yet"}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-gray-600 dark:text-gray-400">
+                  {hasFavorites
+                    ? `You have ${totalFavorites} saved ${totalFavorites === 1 ? "provider" : "providers"}`
+                    : "You haven't saved any providers yet"}
+                </p>
+                {hasFavorites && (
+                  <select
+                    value={sortBy}
+                    onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+                    className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                  >
+                    <option value="created_at">Sort by Date Added</option>
+                    <option value="business_name">Sort by Name</option>
+                    <option value="rating">Sort by Rating</option>
+                  </select>
+                )}
+              </div>
             </div>
 
-            {/* Favorites List */}
             {!hasFavorites ? (
               <Card>
                 <CardContent className="text-center py-12">
@@ -136,6 +156,7 @@ export default function FavoritesPage() {
                 </CardContent>
               </Card>
             ) : (
+               <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {favorites.map((favorite) => (
                   <Card
@@ -203,6 +224,14 @@ export default function FavoritesPage() {
                   </Card>
                 ))}
               </div>
+              {totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Page {page} of {totalPages}</span>
+                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+                </div>
+              )}
+              </>
             )}
           </div>
         </Layout>
@@ -221,5 +250,5 @@ export default function FavoritesPage() {
         isLoading={removeFavoriteMutation.isPending}
       />
     </>
-  );
+  )
 }

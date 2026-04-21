@@ -111,6 +111,7 @@ export class PaymentController {
   async getPaymentsByJob(
     @Param("jobId", FlexibleIdPipe) jobId: string,
     @Request() req: any,
+    @Query() queryDto: TransactionQueryDto,
   ) {
     const isAdmin = req.user.permissions?.includes("payments.manage");
     const canRead = req.user.permissions?.includes("payments.read");
@@ -124,14 +125,16 @@ export class PaymentController {
       );
     }
 
-    const payments = await this.paymentService.getPaymentsByJobId(jobId);
-
-    return {
-      data: payments,
-      total: payments.length,
-      page: 1,
-      limit: payments.length || 1,
-    };
+    const page = queryDto.page ?? 1;
+    const limit = queryDto.limit ?? 20;
+    return this.paymentService.getPaymentsByJobIdPaginated(
+      jobId,
+      limit,
+      page,
+      queryDto.status,
+      queryDto.sortBy,
+      queryDto.sortOrder,
+    );
   }
 
   @Get("provider/:providerId/summary")
@@ -183,6 +186,7 @@ export class PaymentController {
   async getProviderPayouts(
     @Param("providerId", FlexibleIdPipe) providerId: string,
     @Request() req: any,
+    @Query() queryDto: TransactionQueryDto,
   ) {
     if (
       !req.user.permissions?.includes("payments.manage") &&
@@ -190,13 +194,14 @@ export class PaymentController {
     ) {
       throw new ForbiddenException("You can only view your own payout history");
     }
-    const payouts = await this.paymentService.getProviderPayouts(providerId);
-    return {
-      data: payouts,
-      total: payouts.length,
-      page: 1,
-      limit: payouts.length || 1,
-    };
+    const page = queryDto.page ?? 1;
+    const limit = queryDto.limit ?? 20;
+    return this.paymentService.getProviderPayoutsPaginated(
+      providerId,
+      limit,
+      page,
+      queryDto.status,
+    );
   }
 
   @Get(":id")
@@ -326,7 +331,10 @@ export class PaymentController {
     return {
       success: true,
       message: "Invoice retrieved successfully",
-      data: invoice,
+      data: {
+        ...invoice,
+        invoice_url: payment.invoice_url ?? null,
+      },
     };
   }
 
@@ -350,12 +358,27 @@ export class PaymentController {
         "You can only download invoices for payments you are involved in",
       );
     }
+
+    // If a stored invoice URL already exists, redirect to it
+    if (payment.invoice_url) {
+      return res.redirect(302, payment.invoice_url);
+    }
+
+    // Otherwise generate fresh, upload, store URL, and serve inline
+    const storedUrl = await this.invoiceService.generateAndUploadInvoice(
+      id,
+      req.user.userId,
+    );
+    if (storedUrl) {
+      return res.redirect(302, storedUrl);
+    }
+
+    // Fallback: serve HTML directly if file service is unavailable
     const invoice = await this.invoiceService.generateInvoice(
       id,
       req.user.userId,
     );
     const html = this.invoiceService.generateInvoiceHtml(invoice);
-
     res.setHeader("Content-Type", "text/html");
     res.setHeader(
       "Content-Disposition",

@@ -13,6 +13,7 @@ import {
   ParseUUIDPipe,
 } from "@nestjs/common";
 import { CategoryService } from "../services/category.service";
+import { CategoryQueryDto } from "../dto/category-query.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import {
   PermissionsGuard as RolesGuard,
@@ -27,20 +28,21 @@ export class CategoryController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getAllCategories(
-    @Query("search") search?: string,
-    @Query("limit") limit?: string,
-  ): Promise<any> {
-    if (search) {
-      const limitNum = limit ? parseInt(limit, 10) : 10;
+  async getAllCategories(@Query() queryDto: CategoryQueryDto): Promise<any> {
+    const limit = queryDto.limit ?? 20;
+    const page = queryDto.page ?? 1;
+
+    if (queryDto.search) {
       const result = await this.categoryService.searchCategories(
-        search,
-        limitNum,
+        queryDto.search,
+        limit,
       );
-      return { ...result, page: 1, limit: limitNum };
+      return { ...result, page: 1, limit };
     }
     const result = await this.categoryService.getAllCategories();
-    return { ...result, page: 1, limit: result.data.length || 1 };
+    const offset = (page - 1) * limit;
+    const paged = (result.data ?? []).slice(offset, offset + limit);
+    return { data: paged, total: result.total ?? result.data?.length ?? 0, page, limit };
   }
 
   @Get(":id")

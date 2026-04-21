@@ -53,10 +53,12 @@ export default function ChangePasswordPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [twoFAFlow, setTwoFAFlow] = useState<null | "enabling" | "disabling">(
-    null,
-  );
+  const [twoFAFlow, setTwoFAFlow] = useState<
+    null | "enabling" | "disabling" | "showingCodes"
+  >(null);
   const [twoFACode, setTwoFACode] = useState("");
+  const [twoFAPassword, setTwoFAPassword] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -96,24 +98,37 @@ export default function ChangePasswordPage() {
 
   const enable2FAMutation = useMutation({
     mutationFn: (token: string) => authService.enable2FA(token),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Two-factor authentication enabled");
-      setTwoFAFlow(null);
       setTwoFACode("");
+      setBackupCodes(data?.backupCodes ?? []);
+      setTwoFAFlow("showingCodes");
       queryClient.invalidateQueries({ queryKey: ["2fa-status"] });
     },
     onError: () => toast.error("Invalid verification code. Please try again."),
   });
 
   const disable2FAMutation = useMutation({
-    mutationFn: (token: string) => authService.disable2FA(token),
+    mutationFn: ({ password, code }: { password: string; code?: string }) =>
+      authService.disable2FA(password, code),
     onSuccess: () => {
       toast.success("Two-factor authentication disabled");
       setTwoFAFlow(null);
       setTwoFACode("");
+      setTwoFAPassword("");
       queryClient.invalidateQueries({ queryKey: ["2fa-status"] });
     },
-    onError: () => toast.error("Invalid verification code. Please try again."),
+    onError: () =>
+      toast.error("Invalid password or verification code. Please try again."),
+  });
+
+  const generateBackupCodesMutation = useMutation({
+    mutationFn: () => authService.generateBackupCodes(),
+    onSuccess: (data) => {
+      setBackupCodes(data?.codes ?? []);
+      setTwoFAFlow("showingCodes");
+    },
+    onError: () => toast.error("Failed to regenerate backup codes"),
   });
 
   const revokeSessionMutation = useMutation({
@@ -348,31 +363,45 @@ export default function ChangePasswordPage() {
               authenticator app.
             </p>
             {twoFAFlow === null && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={twoFALoading || setup2FAMutation.isPending}
-                onClick={async () => {
-                  if (twoFAStatus?.enabled) {
-                    setTwoFAFlow("disabling");
-                  } else {
-                    try {
-                      await setup2FAMutation.mutateAsync();
-                      setTwoFAFlow("enabling");
-                    } catch {
-                      // handled by onError
+              <div className="flex gap-3 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={twoFALoading || setup2FAMutation.isPending}
+                  onClick={async () => {
+                    if (twoFAStatus?.enabled) {
+                      setTwoFAFlow("disabling");
+                    } else {
+                      try {
+                        await setup2FAMutation.mutateAsync();
+                        setTwoFAFlow("enabling");
+                      } catch {
+                        // handled by onError
+                      }
                     }
-                  }
-                }}
-              >
-                {twoFALoading
-                  ? "Loading..."
-                  : setup2FAMutation.isPending
-                    ? "Setting up..."
-                    : twoFAStatus?.enabled
-                      ? "Disable 2FA"
-                      : "Enable 2FA"}
-              </Button>
+                  }}
+                >
+                  {twoFALoading
+                    ? "Loading..."
+                    : setup2FAMutation.isPending
+                      ? "Setting up..."
+                      : twoFAStatus?.enabled
+                        ? "Disable 2FA"
+                        : "Enable 2FA"}
+                </Button>
+                {twoFAStatus?.enabled && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={generateBackupCodesMutation.isPending}
+                    onClick={() => generateBackupCodesMutation.mutate()}
+                  >
+                    {generateBackupCodesMutation.isPending
+                      ? "Generating..."
+                      : "Regenerate Backup Codes"}
+                  </Button>
+                )}
+              </div>
             )}
             {twoFAFlow === "enabling" && setup2FAMutation.data && (
               <div className="space-y-4 mt-2">
@@ -441,28 +470,51 @@ export default function ChangePasswordPage() {
             {twoFAFlow === "disabling" && (
               <div className="space-y-4 mt-2">
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Enter the 6-digit code from your authenticator app to disable
-                  2FA:
+                  To disable 2FA, enter your account password and the 6-digit
+                  code from your authenticator app:
                 </p>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={twoFACode}
-                  onChange={(e) =>
-                    setTwoFACode(e.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="000000"
-                  className="w-36 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center font-mono text-lg tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Account password
+                  </label>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    value={twoFAPassword}
+                    onChange={(e) => setTwoFAPassword(e.target.value)}
+                    placeholder="Your account password"
+                    className="w-72 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Authenticator code (optional — or use a backup code)
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={twoFACode}
+                    onChange={(e) =>
+                      setTwoFACode(e.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder="000000"
+                    className="w-36 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-center font-mono text-lg tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
                 <div className="flex gap-3">
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={
-                      twoFACode.length !== 6 || disable2FAMutation.isPending
+                      !twoFAPassword.trim() || disable2FAMutation.isPending
                     }
-                    onClick={() => disable2FAMutation.mutate(twoFACode)}
+                    onClick={() =>
+                      disable2FAMutation.mutate({
+                        password: twoFAPassword,
+                        code: twoFACode || undefined,
+                      })
+                    }
                   >
                     {disable2FAMutation.isPending
                       ? "Disabling..."
@@ -474,11 +526,45 @@ export default function ChangePasswordPage() {
                     onClick={() => {
                       setTwoFAFlow(null);
                       setTwoFACode("");
+                      setTwoFAPassword("");
                     }}
                   >
                     Cancel
                   </Button>
                 </div>
+              </div>
+            )}
+            {twoFAFlow === "showingCodes" && (
+              <div className="space-y-4 mt-2">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-1">
+                    Save your backup codes
+                  </p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400 mb-3">
+                    Store these in a safe place. Each code can be used once if
+                    you lose access to your authenticator app. These codes will
+                    not be shown again.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {backupCodes.map((code) => (
+                      <code
+                        key={code}
+                        className="block px-3 py-1.5 bg-white dark:bg-gray-800 border border-yellow-200 dark:border-yellow-700 rounded text-sm font-mono text-gray-800 dark:text-gray-200 text-center select-all"
+                      >
+                        {code}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setTwoFAFlow(null);
+                    setBackupCodes([]);
+                  }}
+                >
+                  I&apos;ve saved my backup codes
+                </Button>
               </div>
             )}
           </div>

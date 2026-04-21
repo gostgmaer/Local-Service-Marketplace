@@ -14,8 +14,6 @@ import {
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { RefundService } from "../services/refund.service";
-import { RefundRepository } from "../repositories/refund.repository";
-import { PaymentRepository } from "../repositories/payment.repository";
 import { RequestRefundDto } from "../dto/request-refund.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import {
@@ -30,11 +28,7 @@ import {
 
 @Controller("refunds")
 export class RefundController {
-  constructor(
-    private readonly refundService: RefundService,
-    private readonly refundRepository: RefundRepository,
-    private readonly paymentRepository: PaymentRepository,
-  ) {}
+  constructor(private readonly refundService: RefundService) {}
 
   /**
    * Create a refund for a payment
@@ -50,7 +44,7 @@ export class RefundController {
     @Request() req: any,
   ) {
     // Ownership validation - ensure user owns the payment
-    const payment = await this.paymentRepository.getPaymentById(paymentId);
+    const payment = await this.refundService.getPaymentById(paymentId);
 
     if (!payment) {
       throw new NotFoundException("Payment not found");
@@ -92,7 +86,7 @@ export class RefundController {
     const refund = await this.refundService.getRefundById(id);
 
     // Ownership validation - ensure user owns the payment
-    const payment = await this.paymentRepository.getPaymentById(
+    const payment = await this.refundService.getPaymentById(
       refund.payment_id,
     );
 
@@ -124,7 +118,7 @@ export class RefundController {
     @Request() req: any,
   ) {
     // Ownership validation - ensure user owns the payment
-    const payment = await this.paymentRepository.getPaymentById(paymentId);
+    const payment = await this.refundService.getPaymentById(paymentId);
 
     if (!payment) {
       throw new NotFoundException("Payment not found");
@@ -161,7 +155,7 @@ export class RefundController {
     @Query("limit") limit: string = "50",
     @Query("offset") offset: string = "0",
   ) {
-    const { refunds, total } = await this.refundRepository.getAllRefunds(
+    const { refunds, total } = await this.refundService.getAllRefunds(
       parseInt(limit, 10),
       parseInt(offset, 10),
     );

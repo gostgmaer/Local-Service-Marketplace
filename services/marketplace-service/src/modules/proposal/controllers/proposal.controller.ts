@@ -82,14 +82,11 @@ export class ProposalController {
 
   @Get("proposals/my")
   @HttpCode(HttpStatus.OK)
-  async getMyProposals(@Request() req: any): Promise<{
-    data: ProposalResponseDto[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const result = await this.proposalService.getMyProposals(req.user.userId);
-    return { ...result, page: 1, limit: result.data.length || 1 };
+  async getMyProposals(
+    @Request() req: any,
+    @Query() queryDto: ProposalQueryDto,
+  ): Promise<PaginatedProposalResponseDto> {
+    return this.proposalService.getProposals(queryDto, req.user);
   }
 
   @Get("requests/:requestId/proposals")
@@ -97,8 +94,9 @@ export class ProposalController {
   async getProposalsForRequest(
     @Param("requestId", FlexibleIdPipe) requestId: string,
     @Request() req: any,
+    @Query() queryDto: ProposalQueryDto,
   ): Promise<PaginatedProposalResponseDto> {
-    return this.proposalService.getProposalsForRequest(requestId, req.user);
+    return this.proposalService.getProposalsForRequest(requestId, req.user, queryDto);
   }
 
   @RequirePermissions("proposals.accept")

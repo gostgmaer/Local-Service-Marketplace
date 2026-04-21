@@ -65,7 +65,7 @@ function FileDisputeContent() {
   // Load user's eligible jobs for dispute (only in_progress or completed)
   const { data: jobs } = useQuery({
     queryKey: ["my-jobs"],
-    queryFn: () => jobService.getMyJobs(),
+    queryFn: () => jobService.getMyJobsList(),
     select: (all: any[]) =>
       all.filter(
         (j) => j.status === "in_progress" || j.status === "completed",

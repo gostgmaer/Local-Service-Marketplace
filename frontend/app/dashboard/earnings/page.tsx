@@ -46,6 +46,7 @@ export default function EarningsPage() {
   const [dateRange, setDateRange] = useState<string>("all");
   const [sortField, setSortField] = useState<TransactionSortField>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const { page, limit, setLimit, goToPage } = usePagination({
     initialLimit: 10,
   });
@@ -105,8 +106,8 @@ export default function EarningsPage() {
     error: transactionsError,
     refetch: refetchTransactions,
   } = useQuery({
-    queryKey: ["provider-transactions", providerId],
-    queryFn: () => paymentService.getProviderTransactions(providerId, 50),
+    queryKey: ["provider-transactions", providerId, statusFilter],
+    queryFn: () => paymentService.getProviderTransactions(providerId, 200, undefined, statusFilter || undefined),
     enabled: isAuthenticated && can(Permission.EARNINGS_VIEW) && !!providerId,
   });
 
@@ -207,6 +208,31 @@ export default function EarningsPage() {
     setSortDirection(field === "date" ? "desc" : "asc");
   };
 
+  const handleExport = () => {
+    const rows = sortedTransactions;
+    if (!rows.length) return;
+    const headers = ["Date", "ID", "Customer", "Total Amount", "Platform Fee", "Provider Amount", "Status"];
+    const csvRows = [
+      headers.join(","),
+      ...rows.map((t: any) => [
+        `"${t.created_at ? new Date(t.created_at).toLocaleDateString() : ""}"`,
+        `"${t.id ?? ""}"`,
+        `"${t.customer_name ?? t.customer?.name ?? ""}"`,
+        t.amount ?? t.total_amount ?? 0,
+        t.platform_fee ?? 0,
+        t.provider_amount ?? 0,
+        `"${t.status ?? ""}"`,
+      ].join(",")),
+    ];
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `earnings-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const sortIcon = (field: TransactionSortField) => {
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
@@ -272,12 +298,10 @@ export default function EarningsPage() {
                       <IndianRupee className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {earnings
-                        ? formatCurrency(earnings.summary.total_earnings)
-                        : formatCurrency(0)}
+                      {formatCurrency(earnings?.summary?.total_earnings ?? 0)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      From {earnings?.summary.completed_count || 0} completed
+                      From {earnings?.summary?.completed_count || 0} completed
                       jobs
                     </p>
                   </CardContent>
@@ -292,9 +316,7 @@ export default function EarningsPage() {
                       <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {earnings
-                        ? formatCurrency(earnings.summary.total_paid)
-                        : formatCurrency(0)}
+                      {formatCurrency(earnings?.summary?.total_paid ?? 0)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Payments received
@@ -311,9 +333,7 @@ export default function EarningsPage() {
                       <IndianRupee className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {earnings
-                        ? formatCurrency(earnings.average_per_job)
-                        : formatCurrency(0)}
+                      {formatCurrency(earnings?.average_per_job ?? 0)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Across all jobs
@@ -330,9 +350,7 @@ export default function EarningsPage() {
                       <Calendar className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {earnings
-                        ? formatCurrency(earnings.summary.pending_payout)
-                        : formatCurrency(0)}
+                      {formatCurrency(earnings?.summary?.pending_payout ?? 0)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Awaiting payout
@@ -345,7 +363,7 @@ export default function EarningsPage() {
               <Card className="mb-6">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Time Period:
                       </label>
@@ -360,8 +378,22 @@ export default function EarningsPage() {
                         <option value="this_year">This Year</option>
                         <option value="custom">Custom Range</option>
                       </select>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Payment Status:
+                      </label>
+                      <select
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+                        value={statusFilter}
+                        onChange={(e) => { setStatusFilter(e.target.value); goToPage(1); }}
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                        <option value="refunded">Refunded</option>
+                      </select>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={!sortedTransactions.length}>
                       <Download className="h-4 w-4 mr-2" />
                       Export Report
                     </Button>
@@ -394,7 +426,7 @@ export default function EarningsPage() {
                             )}
                           </p>
                           <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {formatCurrency(month.earnings)}
+                            {formatCurrency(month.earnings ?? 0)}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {month.job_count} jobs

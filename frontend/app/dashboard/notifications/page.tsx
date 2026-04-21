@@ -81,18 +81,28 @@ export default function NotificationsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
   useRealtimeList(["notification:created"], ["notifications"]);
 
   const {
-    data: notifications,
+    data: notificationsData,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: () => notificationService.getNotifications({ limit: 50 }),
+    queryKey: ["notifications", page, limit, typeFilter, unreadOnly],
+    queryFn: () => notificationService.getNotifications({
+      limit,
+      cursor: page > 1 ? String((page - 1) * limit) : undefined,
+      type: typeFilter !== "all" ? typeFilter : undefined,
+      read: unreadOnly ? false : undefined,
+    }),
     enabled: notificationsEnabled && isAuthenticated,
   });
+
+  const notifications = Array.isArray(notificationsData) ? notificationsData : [];
 
   const markAsReadMutation = useMutation({
     mutationFn: (id: string) => notificationService.markAsRead(id),
@@ -171,7 +181,7 @@ export default function NotificationsPage() {
                   {TYPE_FILTERS.map((t) => (
                     <button
                       key={t.value}
-                      onClick={() => setTypeFilter(t.value)}
+                      onClick={() => { setTypeFilter(t.value); setPage(1); }}
                       className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors min-h-[36px] ${
                         typeFilter === t.value
                           ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
@@ -185,7 +195,7 @@ export default function NotificationsPage() {
                 </div>
                 {/* Unread toggle */}
                 <button
-                  onClick={() => setUnreadOnly(!unreadOnly)}
+                  onClick={() => { setUnreadOnly(!unreadOnly); setPage(1); }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors min-h-[36px] ${
                     unreadOnly
                       ? "border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20"
@@ -212,15 +222,7 @@ export default function NotificationsPage() {
                 </Card>
               ) : notifications && notifications.length > 0 ? (
                 (() => {
-                  const displayed = notifications.filter((n) => {
-                    const typeMatch =
-                      typeFilter === "all" ||
-                      (typeFilter === "payment" && (n.type === "payment_completed" || n.type === "payment_failed")) ||
-                      (typeFilter === "message" && n.type === "message_received") ||
-                      (typeFilter === "system" && !["payment_completed", "payment_failed", "message_received"].includes(n.type));
-                    const unreadMatch = !unreadOnly || !n.read;
-                    return typeMatch && unreadMatch;
-                  });
+                  const displayed = notifications;
                   return displayed.length === 0 ? (
                     <EmptyState
                       title="No notifications here"
@@ -228,6 +230,7 @@ export default function NotificationsPage() {
                       icon="inbox"
                     />
                   ) : (
+                    <>
                 <Card>
                   <CardContent>
                     <div className="divide-y">
@@ -265,6 +268,14 @@ export default function NotificationsPage() {
                     </div>
                   </CardContent>
                 </Card>
+                  {notifications.length >= limit && (
+                    <div className="mt-4 flex justify-center gap-2">
+                      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+                      <span className="flex items-center text-sm text-gray-600 dark:text-gray-400">Page {page}</span>
+                      <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)}>Next</Button>
+                    </div>
+                  )}
+                    </>
                   );
                 })()
               ) : (

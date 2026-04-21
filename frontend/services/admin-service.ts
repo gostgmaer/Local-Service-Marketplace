@@ -322,11 +322,13 @@ class AdminService {
     page?: number;
     limit?: number;
     status?: string;
+    search?: string;
   }): Promise<{ data: any[]; total: number }> {
     const qs = new URLSearchParams();
     if (params?.page) qs.append("page", String(params.page));
     if (params?.limit) qs.append("limit", String(params.limit));
     qs.append("verification_status", params?.status || "pending");
+    if (params?.search) qs.append("search", params.search);
     const response = await apiClient.get<any>(`/providers?${qs.toString()}`);
     const raw = response.data;
     return { data: raw?.data ?? [], total: raw?.total ?? 0 };

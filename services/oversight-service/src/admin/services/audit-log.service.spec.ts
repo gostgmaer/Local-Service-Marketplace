@@ -8,7 +8,7 @@ describe("AuditLogService", () => {
       findAuditLogs: jest.fn().mockResolvedValue([]),
       countAuditLogs: jest.fn().mockResolvedValue(0),
       getAuditLogsByUserId: jest.fn().mockResolvedValue([]),
-      getAuditLogsByEntity: jest.fn().mockResolvedValue([]),
+      getAuditLogsByEntity: jest.fn().mockResolvedValue({ data: [], total: 0 }),
       createAuditLog: jest.fn().mockResolvedValue({
         id: "audit-1",
         user_id: "user-1",
@@ -74,6 +74,8 @@ describe("AuditLogService", () => {
       expect(auditLogRepository.getAuditLogsByEntity).toHaveBeenCalledWith(
         "request",
         "req-1",
+        20,
+        0,
       );
     });
   });

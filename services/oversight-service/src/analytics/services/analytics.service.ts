@@ -94,19 +94,21 @@ export class AnalyticsService {
   async getActivityByAction(
     action: string,
     limit: number = 100,
-  ): Promise<UserActivityLog[]> {
+    offset: number = 0,
+  ): Promise<{ data: UserActivityLog[]; total: number }> {
     try {
-      const data = await this.userActivityRepository.getActivityByAction(
+      const result = await this.userActivityRepository.getActivityByAction(
         action,
         limit,
+        offset,
       );
 
       this.logger.log(
-        `Retrieved ${data.length} activity logs for action ${action}`,
+        `Retrieved ${result.data.length} activity logs for action ${action}`,
         "AnalyticsService",
       );
 
-      return data;
+      return result;
     } catch (error: any) {
       this.logger.error(
         `Failed to get activity by action: ${error.message}`,

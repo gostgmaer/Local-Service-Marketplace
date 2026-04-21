@@ -224,12 +224,38 @@ class AuthService {
     return response.data;
   }
 
-  async enable2FA(token: string): Promise<void> {
-    await apiClient.post<void>("/user/auth/2fa/verify", { code: token });
+  async enable2FA(token: string): Promise<{ backupCodes: string[] }> {
+    const response = await apiClient.post<{ backupCodes: string[] }>(
+      "/user/auth/2fa/verify",
+      { code: token },
+    );
+    return response.data;
   }
 
-  async disable2FA(token: string): Promise<void> {
-    await apiClient.post<void>("/user/auth/2fa/disable", { token });
+  async disable2FA(password: string, code?: string): Promise<void> {
+    await apiClient.post<void>("/user/auth/2fa/disable", {
+      password,
+      ...(code ? { code } : {}),
+    });
+  }
+
+  async generateBackupCodes(): Promise<{ codes: string[] }> {
+    const response = await apiClient.post<{ codes: string[] }>(
+      "/user/auth/2fa/backup-codes/generate",
+      {},
+    );
+    return response.data;
+  }
+
+  async completeMfaLogin(
+    mfaToken: string,
+    code: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const response = await apiClient.post<{
+      accessToken: string;
+      refreshToken: string;
+    }>("/user/auth/2fa/login", { mfaToken, code });
+    return response.data;
   }
 
   async getSessions(): Promise<Session[]> {

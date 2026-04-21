@@ -62,17 +62,21 @@ export class UserActivityRepository {
   async getActivityByAction(
     action: string,
     limit: number = 100,
-  ): Promise<UserActivityLog[]> {
+    offset: number = 0,
+  ): Promise<{ data: UserActivityLog[]; total: number }> {
     const query = `
-      SELECT id, user_id, action, metadata, ip_address, created_at
+      SELECT id, user_id, action, metadata, ip_address, created_at,
+             COUNT(*) OVER() AS total_count
       FROM user_activity_logs
       WHERE action = $1
       ORDER BY created_at DESC
-      LIMIT $2
+      LIMIT $2 OFFSET $3
     `;
 
-    const result = await this.pool.query(query, [action, limit]);
-    return result.rows;
+    const result = await this.pool.query(query, [action, limit, offset]);
+    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
+    const data = result.rows.map(({ total_count, ...row }) => row as UserActivityLog);
+    return { data, total };
   }
 
   async getActivityCount(): Promise<number> {

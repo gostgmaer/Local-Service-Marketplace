@@ -349,6 +349,25 @@ export class PaymentService {
     return this.paymentRepository.getPaymentsByJobId(jobId);
   }
 
+  async getPaymentsByJobIdPaginated(
+    jobId: string,
+    limit: number,
+    page: number,
+    status?: string,
+    sortBy?: string,
+    sortOrder?: string,
+  ): Promise<{ data: Payment[]; total: number; page: number; limit: number }> {
+    this.logger.log(`Fetching paginated payments for job ${jobId}`, "PaymentService");
+    return this.paymentRepository.getPaymentsByJobIdPaginated(
+      jobId,
+      limit,
+      page,
+      status,
+      sortBy,
+      sortOrder,
+    );
+  }
+
   async updatePaymentStatus(
     id: string,
     status: "pending" | "completed" | "failed" | "refunded",
@@ -623,6 +642,19 @@ export class PaymentService {
       "PaymentService",
     );
     return this.paymentRepository.getProviderPayouts(providerId);
+  }
+
+  async getProviderPayoutsPaginated(
+    providerId: string,
+    limit: number,
+    page: number,
+    status?: string,
+  ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+    this.logger.log(
+      `Fetching paginated payouts for provider ${providerId}`,
+      "PaymentService",
+    );
+    return this.paymentRepository.getProviderPayoutsPaginated(providerId, limit, page, status);
   }
 
   async getPaymentStats(): Promise<{

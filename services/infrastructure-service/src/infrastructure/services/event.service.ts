@@ -81,7 +81,8 @@ export class EventService {
   async getEventsByType(
     eventType: string,
     limit: number = 100,
+    page: number = 1,
   ): Promise<{ data: Event[]; total: number; page: number; limit: number }> {
-    return this.getAllEvents({ eventType, limit, page: 1 });
+    return this.getAllEvents({ eventType, limit, page });
   }
 }

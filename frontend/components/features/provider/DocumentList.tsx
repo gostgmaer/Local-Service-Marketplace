@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   getProviderDocuments,
   getDocumentVerificationStatus,
   deleteProviderDocument,
+  updateProviderDocument,
   type ProviderDocument,
   type VerificationStatus,
 } from "@/services/user-service";
@@ -21,6 +22,7 @@ import {
   AlertTriangle,
   Calendar,
   Eye,
+  Pencil,
 } from "lucide-react";
 
 export function DocumentList({ providerId }: { providerId?: string }) {
@@ -31,6 +33,21 @@ export function DocumentList({ providerId }: { providerId?: string }) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [updateDoc, setUpdateDoc] = useState<ProviderDocument | null>(null);
+  const [updateFile, setUpdateFile] = useState<File | null>(null);
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      updateProviderDocument(id, { file }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["provider-documents", providerId] });
+      queryClient.invalidateQueries({ queryKey: ["provider-verification-status", providerId] });
+      setUpdateDoc(null);
+      setUpdateFile(null);
+      toast.success("Document updated successfully! It will be reviewed shortly.");
+    },
+    onError: () => toast.error("Failed to update document"),
+  });
 
   // Use the same query key as the page's invalidateQueries call so that
   // uploading a document triggers an automatic refetch here.
@@ -297,13 +314,22 @@ export function DocumentList({ providerId }: { providerId?: string }) {
                       </button>
 
                       {!doc.verified && (
-                        <button
-                          onClick={() => handleDeleteClick(doc.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Delete Document"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => { setUpdateDoc(doc); setUpdateFile(null); }}
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded transition-colors"
+                            title="Update Document"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(doc.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Delete Document"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -334,6 +360,41 @@ export function DocumentList({ providerId }: { providerId?: string }) {
         variant="danger"
         isLoading={deleting}
       />
+
+      {/* Update Document Modal */}
+      {updateDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Update Document
+              </h2>
+              <button onClick={() => setUpdateDoc(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Replace file for: <span className="font-medium text-gray-700 dark:text-gray-300">{updateDoc.document_type.replace(/_/g, " ")}</span>
+            </p>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => setUpdateFile(e.target.files?.[0] ?? null)}
+              className="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+            />
+            <div className="flex justify-end gap-3 mt-5">
+              <button onClick={() => setUpdateDoc(null)} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
+              <button
+                disabled={!updateFile || updateMutation.isPending}
+                onClick={() => updateFile && updateMutation.mutate({ id: updateDoc.id, file: updateFile })}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updateMutation.isPending ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

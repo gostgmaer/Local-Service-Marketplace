@@ -98,17 +98,18 @@ export class MessagingController {
       `GET /messages/conversations - Get user conversations (page ${safePage}, limit ${safeLimit})`,
       "MessagingController",
     );
-    const conversations = await this.messageService.getUserConversations(
+    const offset = (safePage - 1) * safeLimit;
+    const { rows, total } = await this.messageService.getUserConversations(
       req.user.userId,
+      safeLimit,
+      offset,
     );
-    const start = (safePage - 1) * safeLimit;
-    const paged = conversations.slice(start, start + safeLimit);
     return {
-      data: paged,
-      total: conversations.length,
+      data: rows,
+      total,
       page: safePage,
       limit: safeLimit,
-      hasMore: start + safeLimit < conversations.length,
+      hasMore: offset + rows.length < total,
     };
   }
 

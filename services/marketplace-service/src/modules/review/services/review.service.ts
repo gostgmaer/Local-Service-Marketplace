@@ -315,4 +315,50 @@ export class ReviewService {
     this.logger.log(`Fetching reviews by user ${userId}`, "ReviewService");
     return this.reviewRepository.getReviewsByUser(userId, limit, offset);
   }
+
+  async getReviewByJobId(jobId: string): Promise<Review | null> {
+    this.logger.log(`Fetching review for job ${jobId}`, "ReviewService");
+    return this.reviewRepository.getReviewByJobId(jobId);
+  }
+
+  async respondToReview(
+    reviewId: string,
+    response: string,
+    providerId: string,
+  ): Promise<Review> {
+    this.logger.log(`Provider ${providerId} responding to review ${reviewId}`, "ReviewService");
+    return this.reviewRepository.respondToReview(reviewId, response, providerId);
+  }
+
+  async markReviewHelpful(
+    reviewId: string,
+    userId: string,
+  ): Promise<Review | null> {
+    this.logger.log(`User ${userId} marking review ${reviewId} as helpful`, "ReviewService");
+    return this.reviewRepository.incrementHelpfulCount(reviewId, userId);
+  }
+
+  async getAllReviews(
+    limit: number,
+    offset: number,
+    sortBy?: string,
+    sortOrder?: string,
+    providerId?: string,
+    minRating?: number,
+    maxRating?: number,
+    createdFrom?: string,
+    createdTo?: string,
+  ): Promise<{ data: Review[]; total: number }> {
+    return this.reviewRepository.getAllReviews(
+      limit,
+      offset,
+      sortBy,
+      sortOrder,
+      providerId,
+      minRating,
+      maxRating,
+      createdFrom,
+      createdTo,
+    );
+  }
 }

@@ -84,6 +84,34 @@ export class AdminController {
     );
   }
 
+  @RequirePermissions("disputes.read")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get("disputes/:id/messages")
+  async getDisputeMessages(
+    @Param("id", FlexibleIdPipe) id: string,
+    @Headers("x-user-id") adminId: string,
+  ) {
+    return this.disputeService.getDisputeMessages(id, adminId);
+  }
+
+  @RequirePermissions("disputes.manage")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post("disputes/:id/messages")
+  @HttpCode(HttpStatus.CREATED)
+  async addAdminDisputeMessage(
+    @Param("id", FlexibleIdPipe) id: string,
+    @Headers("x-user-id") adminId: string,
+    @Body() body: { message: string; images?: { id: string; url: string }[] },
+  ) {
+    return this.disputeService.addDisputeMessage(
+      id,
+      adminId,
+      body.message,
+      body.images ?? [],
+      true, // admin message
+    );
+  }
+
   // Audit Log Endpoints
   @RequirePermissions("audit.view")
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -98,12 +126,17 @@ export class AdminController {
   async getAuditLogsByEntity(
     @Param("entity") entity: string,
     @Param("entityId", ParseUUIDPipe) entityId: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ) {
-    const logs = await this.auditLogService.getAuditLogsByEntity(
+    const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+    const parsedLimit = Math.min(100, Math.max(1, parseInt(limit ?? "20", 10) || 20));
+    return this.auditLogService.getAuditLogsByEntity(
       entity,
       entityId,
+      parsedLimit,
+      parsedPage,
     );
-    return { data: logs, total: logs.length, page: 1, limit: logs.length || 1 };
   }
 
   // System Settings Endpoints
@@ -174,8 +207,14 @@ export class AdminController {
   @RequirePermissions("admin.contact_view")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get("contact/email/:email")
-  async getContactMessagesByEmail(@Param("email") email: string) {
-    return this.contactMessageService.getContactMessagesByEmail(email);
+  async getContactMessagesByEmail(
+    @Param("email") email: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+    const parsedLimit = Math.min(100, Math.max(1, parseInt(limit ?? "20", 10) || 20));
+    return this.contactMessageService.getContactMessagesByEmail(email, parsedLimit, parsedPage);
   }
 
   @RequirePermissions("admin.contact_view")
@@ -183,8 +222,12 @@ export class AdminController {
   @Get("contact/user/:userId")
   async getContactMessagesByUserId(
     @Param("userId", FlexibleIdPipe) userId: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
   ) {
-    return this.contactMessageService.getContactMessagesByUserId(userId);
+    const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+    const parsedLimit = Math.min(100, Math.max(1, parseInt(limit ?? "20", 10) || 20));
+    return this.contactMessageService.getContactMessagesByUserId(userId, parsedLimit, parsedPage);
   }
 
   @RequirePermissions("admin.contact_view")

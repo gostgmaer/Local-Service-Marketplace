@@ -1,0 +1,109 @@
+in provider dashboard we are seeing all stats properly amount is showing NAN and all stats should show correctly 
+in provider dashboard why we are fetch all jobs we should only ftech active jobs right why there is no pagination for active  jobs and proposal List
+All stats value should show properly in provider dashboard
+
+in Customer dashboard make sure all same serversite pagination and all stats vaues properly so customer have a clear picture
+
+
+site seeting should only always fetch while we landed on the application currently i thing it's call every page where needed fetch it when landed on page and update on when update some seeting
+Jobs page make sure properly serversite paginat is there also we can sort search and add some stats in jobs page status wise 
+
+in dispute page we arre geting error for fetch dispute api some data is missing on databse some column
+make sure all Table default sorting will be based on created date
+
+when try to create a dispute we add 1 or some image after images are uploaded it's making double of them images
+when try too create a dispute for a complete job it's status is not updating getting Cannot update status of completed job
+
+dispute transaction is not too well make sure dispute have a proper invistigations properly have fields reply can add images and prpoperly status changes 
+
+in proposal page make sure all states pages and evrythigns will properly show also make sure we'll always show Accepted proposal last 
+
+
+in Earning Page export report is not working
+also make sure all stats is proerly add make sure everythig is working perfectly with properly stats and 
+how panding payment work how provider will pay out there money all of them should be properly implemented
+
+
+in Availability  page update is not working and page have multiple error message make sure it's one only
+
+when we save it from response it's going id which may not required
+in dashboard Provider page i am getting TypeError: provider.rating.toFixed is not a function fix it properly
+
+a provider can only send proposal when they have are actually provding a service just not randomly send proposal they are not set as service
+
+for example a provider add AC Service & Repair and Pest Control they will only can send propeosal for category AC Service & Repair and Pest Control for other request submit button will be desable with a relevent message 
+
+when we add a portfolio after success it's getting called a api with bad undefined http://localhost:3700/api/v1/provider-portfolio/provider/undefined
+
+when we are calling single provider why we are using this http://localhost:3700/api/v1/providers?user_id=3e8e31d2-9cfa-432a-ba49-17f742d8e594 it's result paginated result which is looks wrong right
+
+in Upload Document page if provider upload a document they can update this document if not verified and a already add documnt will ntot present on Documntes Type selection dropdown if all docmts is added document add from will be Hide and unverified documnet we can update or delete 
+if we deleee a document it'll again apair on document type 
+
+for aggregation review in review page we are gtting /review-aggregates/provider/3ef4de58-b3cf-41fd-bda1-c7cd65174498
+{
+    "success": true,
+    "statusCode": 200,
+    "message": "Resource retrieved successfully",
+    "data": {
+        "provider_id": "3ef4de58-b3cf-41fd-bda1-c7cd65174498",
+        "total_reviews": 3,
+        "average_rating": "5.00",
+        "rating_1_count": 0,
+        "rating_2_count": 0,
+        "rating_3_count": 0,
+        "rating_4_count": 0,
+        "rating_5_count": 3,
+        "last_review_at": "2026-04-20T16:10:10.860Z",
+        "updated_at": "2026-04-21T04:20:21.236Z",
+        "one_star_count": 0,
+        "two_star_count": 0,
+        "three_star_count": 0,
+        "four_star_count": 0,
+        "five_star_count": 3
+    },
+    "meta": null
+} but in UI review page we are getting error loading fi x the review page
+
+
+from backned when we are not fetching paginated data why we are getting meta:null it's not looks good fix it for all apis
+
+after i edit profile why it's taking me to dashboard it'll take profile page right 
+
+if notification_preferences_enabled is false why we are showing notifications Card in user seeting Page 
+
+also getting 
+Error: Invalid src prop (https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth://totp/LocalServiceMarketplace:3e8e31d2-9cfa-432a-ba49-17f742d8e594?secret=RTRREEFQDBRIB4UIUBKZEH2RZPJPNPLF&issuer=LocalServiceMarketplace) on `next/image`, hostname "chart.googleapis.com" is not configured under images in your `next.config.js`
+See more info: https://nextjs.org/docs/messages/next-image-unconfigured-host
+
+
+make sure we have properly add for 2fa senarios all should properly implemented i can test it properly
+
+all image should be used  nextjs Image for best and optimize Image and all uploaded image will be have review window byt default
+
+all form will have button desable until form validate properly also check all field will have properly with eror message no UI break
+
+provider 
+http://localhost:3700/api/v1/subscriptions
+{
+    "provider_id": "3ef4de58-b3cf-41fd-bda1-c7cd65174498",
+    "plan_id": "fc22337a-2860-4616-9a38-d00acc34470f"
+}
+
+{
+    "success": false,
+    "statusCode": 403,
+    "message": "You can only create subscriptions for your own provider account",
+    "error": {
+        "code": "FORBIDDEN",
+        "message": "You can only create subscriptions for your own provider account",
+        "details": []
+    }
+}
+make this fix why in checkout page make sure who ever doing payment always payment with GST what ever we did seeting 
+
+same for subscriptions 
+
+
+
+

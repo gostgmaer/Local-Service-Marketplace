@@ -16,6 +16,7 @@ import {
   type NotificationPreferences as NotificationPreferencesType,
 } from "@/services/notification-service";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 interface PreferenceSetting {
   key: keyof Omit<
@@ -104,6 +105,7 @@ const PREFERENCE_SETTINGS: PreferenceSetting[] = [
 ];
 
 export function NotificationPreferences() {
+  const { config } = usePublicSettings();
   const [preferences, setPreferences] =
     useState<NotificationPreferencesType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -207,6 +209,11 @@ export function NotificationPreferences() {
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  // Hide the entire card when notifications are disabled at the platform level
+  if (!config.notificationsEnabled) {
+    return null;
   }
 
   const channelSettings = PREFERENCE_SETTINGS.filter(

@@ -1,8 +1,9 @@
 export class AuthResponseDto {
   message?: string;
-  accessToken: string;
-  refreshToken: string;
-  user: {
+  // Present when login succeeds normally
+  accessToken?: string;
+  refreshToken?: string;
+  user?: {
     id: string;
     email: string;
     display_id?: string;
@@ -15,4 +16,7 @@ export class AuthResponseDto {
     language: string; // ✅ NEW
     last_login_at?: Date; // ✅ NEW
   };
+  // Present when the account has 2FA enabled — client must complete the challenge
+  requiresMfa?: boolean;
+  mfaToken?: string;
 }

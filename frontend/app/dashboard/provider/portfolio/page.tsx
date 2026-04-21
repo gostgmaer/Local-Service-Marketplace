@@ -100,15 +100,15 @@ export default function ProviderPortfolioPage() {
               message="We couldn't load your provider data. Please try again."
               retry={() => refetch()}
             />
-          ) : (
+          ) : provider?.id ? (
             <div className="space-y-8">
               <PortfolioUpload
-                providerId={provider?.id}
+                providerId={provider.id}
                 onUploadSuccess={() => window.location.reload()}
               />
-              <PortfolioGallery providerId={provider?.id} />
+              <PortfolioGallery providerId={provider.id} />
             </div>
-          )}
+          ) : null}
         </div>
       </Layout>
     </ProtectedRoute>

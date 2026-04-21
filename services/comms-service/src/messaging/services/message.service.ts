@@ -147,8 +147,10 @@ export class MessageService {
 
     // RBAC: Verify user is participant or has manage permission
     if (!user.permissions?.includes("messages.manage")) {
-      const conversations = await this.messageRepository.getUserConversations(
+      const { rows: conversations } = await this.messageRepository.getUserConversations(
         user.userId,
+        100,
+        0,
       );
       const isParticipant = conversations.some((c) => c.job_id === jobId);
 
@@ -162,12 +164,16 @@ export class MessageService {
     return this.messageRepository.getMessagesForJob(jobId, page, limit, sortOrder);
   }
 
-  async getUserConversations(userId: string): Promise<any[]> {
+  async getUserConversations(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{ rows: any[]; total: number }> {
     this.logger.log(
       `Fetching conversations for user ${userId}`,
       "MessageService",
     );
-    return this.messageRepository.getUserConversations(userId);
+    return this.messageRepository.getUserConversations(userId, limit, offset);
   }
 
   async markMessageAsRead(id: string, userId?: string): Promise<Message> {

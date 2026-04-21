@@ -8,14 +8,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(
-  amount: number,
+  amount: number | string | null | undefined,
   currency: string = "INR",
 ): string {
+  const parsed = typeof amount === "string" ? parseFloat(amount) : (amount ?? 0);
+  const safe = typeof parsed === "number" && Number.isFinite(parsed) ? parsed : 0;
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency,
     maximumFractionDigits: currency === "INR" ? 0 : 2,
-  }).format(amount);
+  }).format(safe);
 }
 
 export function parseRating(

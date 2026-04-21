@@ -12,9 +12,9 @@
  * Source: services/auth-service/src/modules/auth/dto/auth-response.dto.ts
  */
 export interface BackendAuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: {
+  accessToken?: string;
+  refreshToken?: string;
+  user?: {
     id: string;
     email: string;
     name?: string;
@@ -27,6 +27,9 @@ export interface BackendAuthResponse {
     last_login_at?: Date;
     provider_verification_status?: string;
   };
+  // Present when the account has 2FA enabled
+  requiresMfa?: boolean;
+  mfaToken?: string;
 }
 
 /**
@@ -153,6 +156,20 @@ export function isValidBackendAuthResponse(
 }
 
 /**
+ * Type guard for MFA-required response (no tokens, just the challenge token)
+ */
+export function isMfaRequiredResponse(
+  data: any,
+): data is { requiresMfa: true; mfaToken: string } {
+  return (
+    data &&
+    typeof data === "object" &&
+    data.requiresMfa === true &&
+    typeof data.mfaToken === "string"
+  );
+}
+
+/**
  * Type guard to verify backend refresh response
  */
 export function isValidBackendRefreshResponse(
@@ -167,7 +184,7 @@ export function isValidBackendRefreshResponse(
  * Transform backend user to frontend format
  */
 export function transformBackendUserToFrontend(
-  backendUser: BackendAuthResponse["user"],
+  backendUser: NonNullable<BackendAuthResponse["user"]>,
 ) {
   return {
     id: backendUser.id,
@@ -333,7 +350,7 @@ export function safeTransformUser(backendUser: unknown) {
     throw new Error("Invalid user data");
   }
 
-  const user = backendUser as BackendAuthResponse["user"];
+  const user = backendUser as NonNullable<BackendAuthResponse["user"]>;
 
   if (!user.id || !user.email || !user.role) {
     throw new Error("Missing required user fields");

@@ -36,6 +36,7 @@ type DisputeRow = {
 const DISPUTE_STATUS_OPTIONS = [
   "open",
   "investigating",
+  "escalated",
   "resolved",
   "closed",
 ] as const;
@@ -46,6 +47,7 @@ const DISPUTE_STATUS_LABELS: Record<
 > = {
   open: "Open",
   investigating: "Investigating",
+  escalated: "Escalated",
   resolved: "Resolved",
   closed: "Closed",
 };
@@ -76,6 +78,8 @@ export default function AdminDisputesPage() {
   const [cumulativeDisputes, setCumulativeDisputes] = useState<DisputeRow[]>(
     [],
   );
+  const [jobIdFilter, setJobIdFilter] = useState("");
+  const [openedByFilter, setOpenedByFilter] = useState("");
 
   const statusFilter = String(
     serverFilters.find((f) => f.id === "status")?.value || "",
@@ -96,6 +100,8 @@ export default function AdminDisputesPage() {
       serverPageIndex,
       serverPageSize,
       statusFilter,
+      jobIdFilter,
+      openedByFilter,
       activeSort?.id,
       activeSort?.desc,
     ],
@@ -104,6 +110,8 @@ export default function AdminDisputesPage() {
         page: serverPageIndex + 1,
         limit: serverPageSize,
         status: statusFilter || undefined,
+        jobId: jobIdFilter || undefined,
+        openedBy: openedByFilter || undefined,
         sortBy: mapDisputeSortBy(activeSort?.id),
         sortOrder: activeSort?.desc ? "desc" : "asc",
       }),
@@ -245,6 +253,7 @@ export default function AdminDisputesPage() {
                   enableSearch={false}
                   renderToolbarFields={(table: Table<DisputeRow>) => {
                     return (
+                      <div className="flex flex-wrap gap-2">
                       <select
                         value={
                           (table
@@ -269,6 +278,21 @@ export default function AdminDisputesPage() {
                           </option>
                         ))}
                       </select>
+                      <input
+                        type="text"
+                        placeholder="Filter by Job ID..."
+                        value={jobIdFilter}
+                        onChange={(e) => { setJobIdFilter(e.target.value); setServerPageIndex(0); }}
+                        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-44"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Filter by Opened By (user ID)..."
+                        value={openedByFilter}
+                        onChange={(e) => { setOpenedByFilter(e.target.value); setServerPageIndex(0); }}
+                        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-52"
+                      />
+                      </div>
                     );
                   }}
                   quickSorts={[

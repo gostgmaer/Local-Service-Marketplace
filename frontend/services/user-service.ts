@@ -35,6 +35,7 @@ export interface ProviderProfile {
   rating?: number | string | null;
   created_at: string;
   services?: Array<{ id: string; category_id: string }>;
+  provider_services?: Array<{ id: string; category_id: string; service_category_id?: string }>;
   availability?: Array<{
     id: string;
     day_of_week: number;
@@ -200,6 +201,11 @@ export const getProviders = async (params?: {
   category_id?: string;
   search?: string;
   location_id?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+  verification_status?: string;
+  min_rating?: number;
+  max_rating?: number;
 }): Promise<{
   data: ProviderProfile[];
   total?: number;
@@ -219,6 +225,11 @@ export const getProviders = async (params?: {
   if (params?.search) queryParams.append("search", params.search);
   if (params?.location_id)
     queryParams.append("location_id", params.location_id);
+  if (params?.sort_by) queryParams.append("sort_by", params.sort_by);
+  if (params?.sort_order) queryParams.append("sort_order", params.sort_order);
+  if (params?.verification_status) queryParams.append("verification_status", params.verification_status);
+  if (params?.min_rating !== undefined) queryParams.append("min_rating", params.min_rating.toString());
+  if (params?.max_rating !== undefined) queryParams.append("max_rating", params.max_rating.toString());
 
   const response = await apiClient.get<{
     data: ProviderProfile[];
@@ -342,6 +353,26 @@ export const deleteProviderDocument = async (
   documentId: string,
 ): Promise<void> => {
   await apiClient.delete(`/provider-documents/${documentId}`);
+};
+
+/**
+ * Update an unverified provider document (replace file)
+ */
+export const updateProviderDocument = async (
+  documentId: string,
+  data: Partial<UploadDocumentData>,
+): Promise<ProviderDocument> => {
+  const formData = new FormData();
+  if (data.file) formData.append("files", data.file);
+  if (data.document_number) formData.append("document_number", data.document_number);
+  if (data.expiry_date) formData.append("expiry_date", data.expiry_date);
+
+  const response = await apiClient.patch<ProviderDocument>(
+    `/provider-documents/${documentId}`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return response.data;
 };
 
 // ------------------ Provider Portfolio ------------------
@@ -477,6 +508,7 @@ const userService = {
   getProviderDocuments,
   getDocumentVerificationStatus,
   deleteProviderDocument,
+  updateProviderDocument,
   createPortfolioItem,
   getProviderPortfolio,
   updatePortfolioItem,

@@ -3,6 +3,7 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import { TOKEN_CONFIG } from "@/types/auth-alignment";
 import { serverAuthService } from "@/services/server-auth-service";
+import { isMfaRequiredResponse } from "@/types/auth-alignment";
 
 function decodeJwtPayload(token: string): any {
   try {
@@ -98,7 +99,14 @@ export const authOptions = {
             credentials.email as string,
             credentials.password as string,
           );
-          if (!auth?.user) return null;
+          if (!auth) return null;
+
+          // 2FA required — signal to the client to complete the MFA challenge
+          if (isMfaRequiredResponse(auth)) {
+            throw new Error(`REQUIRES_MFA:${auth.mfaToken}`);
+          }
+
+          if (!auth.user) return null;
 
           return {
             id: auth.user.id,
@@ -111,6 +119,13 @@ export const authOptions = {
             refreshToken: auth.refreshToken,
           };
         } catch (error) {
+          // Re-throw MFA signals as-is so they reach the client
+          if (
+            error instanceof Error &&
+            error.message.startsWith("REQUIRES_MFA:")
+          ) {
+            throw error;
+          }
           console.error("Authentication error:", error);
           return null;
         }
@@ -296,13 +311,13 @@ export const authOptions = {
           role: profile?.role ?? user.role,
           permissions,
           emailVerified:
-            profile !== null
+            profile != null
               ? Boolean(profile.email_verified)
               : typeof user.emailVerified === "boolean"
                 ? user.emailVerified
                 : false,
           phoneVerified:
-            profile !== null ? Boolean(profile.phone_verified) : false,
+            profile != null ? Boolean(profile.phone_verified) : false,
           providerVerificationStatus:
             profile?.provider_verification_status ?? null,
           timezone: profile?.timezone ?? null,

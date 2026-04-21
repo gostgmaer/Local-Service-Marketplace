@@ -21,9 +21,11 @@ import { UserDisputeQueryDto } from "./dto/user-dispute-query.dto";
  * Accessible by any authenticated user (customer or provider).
  *
  * Routes:
- *   POST   /disputes            — File a new dispute
- *   GET    /disputes/my         — Get current user's disputes
- *   GET    /disputes/:id        — Get a single dispute (parties or admin)
+ *   POST   /disputes                      — File a new dispute
+ *   GET    /disputes/my                   — Get current user's disputes
+ *   GET    /disputes/:id                  — Get a single dispute (parties or admin)
+ *   GET    /disputes/:id/messages         — Get messages for a dispute
+ *   POST   /disputes/:id/messages         — Add a message to a dispute thread
  */
 @UseGuards(JwtAuthGuard)
 @Controller("disputes")
@@ -55,6 +57,30 @@ export class DisputeController {
       page: query.page ?? 1,
       limit: query.limit ?? 20,
     });
+  }
+
+  @Get(":id/messages")
+  async getDisputeMessages(
+    @Param("id", FlexibleIdPipe) id: string,
+    @Headers("x-user-id") userId: string,
+  ) {
+    return this.disputeService.getDisputeMessages(id, userId);
+  }
+
+  @Post(":id/messages")
+  @HttpCode(HttpStatus.CREATED)
+  async addDisputeMessage(
+    @Param("id", FlexibleIdPipe) id: string,
+    @Headers("x-user-id") userId: string,
+    @Body() body: { message: string; images?: { id: string; url: string }[] },
+  ) {
+    return this.disputeService.addDisputeMessage(
+      id,
+      userId,
+      body.message,
+      body.images ?? [],
+      false, // user-side messages are never admin
+    );
   }
 
   @Get(":id")

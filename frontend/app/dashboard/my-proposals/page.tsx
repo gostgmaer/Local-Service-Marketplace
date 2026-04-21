@@ -26,6 +26,8 @@ import {
   XCircle,
   Clock,
   Pencil,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -37,6 +39,8 @@ export default function MyProposalsPage() {
   const { can } = usePermissions();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
   const [pendingProposalId, setPendingProposalId] = useState<string | null>(
     null,
@@ -50,15 +54,36 @@ export default function MyProposalsPage() {
   useRealtimeList(["proposal:created", "proposal:accepted", "proposal:rejected", "proposal:updated", "proposal:withdrawn", "proposal:deleted"], ["my-proposals"]);
 
   const {
-    data: proposals,
+    data: proposalsResult,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ["my-proposals"],
-    queryFn: () => proposalService.getMyProposals(),
+    queryKey: ["my-proposals", page, statusFilter],
+    queryFn: () => proposalService.getMyProposals({
+      page,
+      limit: PAGE_SIZE,
+      ...(statusFilter ? { status: statusFilter } : {}),
+      sort_by: "created_at",
+      sort_order: "desc",
+    }),
     enabled: isAuthenticated && can(Permission.PROPOSALS_CREATE),
   });
+
+  // Stats queries (one per status, limit:1 just for total count)
+  const { data: pendingStats } = useQuery({ queryKey: ["my-proposals-stats", "pending"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "pending" }), enabled: isAuthenticated });
+  const { data: acceptedStats } = useQuery({ queryKey: ["my-proposals-stats", "accepted"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "accepted" }), enabled: isAuthenticated });
+  const { data: rejectedStats } = useQuery({ queryKey: ["my-proposals-stats", "rejected"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "rejected" }), enabled: isAuthenticated });
+  const { data: withdrawnStats } = useQuery({ queryKey: ["my-proposals-stats", "withdrawn"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "withdrawn" }), enabled: isAuthenticated });
+
+  // Accepted proposals always last — sort client-side within page
+  const rawProposals = proposalsResult?.data ?? [];
+  const proposals = [
+    ...rawProposals.filter((p: any) => p.status !== "accepted"),
+    ...rawProposals.filter((p: any) => p.status === "accepted"),
+  ];
+  const total = proposalsResult?.total ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   // Withdraw proposal mutation
   const withdrawMutation = useMutation({
@@ -66,6 +91,7 @@ export default function MyProposalsPage() {
       proposalService.withdrawProposal(proposalId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-proposals"] });
+      queryClient.invalidateQueries({ queryKey: ["my-proposals-stats"] });
     },
   });
 
@@ -96,22 +122,17 @@ export default function MyProposalsPage() {
     editMutation.mutate({ id: editProposalId, price, message: editMessage.trim(), estimated_hours: editHours ? Number(editHours) : undefined });
   };
 
-  // Filter proposals by status
-  const filteredProposals =
-    proposals?.filter((proposal: any) => {
-      if (!statusFilter) return true;
-      return proposal.status === statusFilter;
-    }) || [];
-
-  // Group proposals by status
+  // Stats from server
   const proposalStats = {
-    pending: proposals?.filter((p: any) => p.status === "pending").length || 0,
-    accepted:
-      proposals?.filter((p: any) => p.status === "accepted").length || 0,
-    rejected:
-      proposals?.filter((p: any) => p.status === "rejected").length || 0,
-    withdrawn:
-      proposals?.filter((p: any) => p.status === "withdrawn").length || 0,
+    pending: pendingStats?.total ?? 0,
+    accepted: acceptedStats?.total ?? 0,
+    rejected: rejectedStats?.total ?? 0,
+    withdrawn: withdrawnStats?.total ?? 0,
+  };
+
+  const handleFilterChange = (status: string) => {
+    setStatusFilter(status);
+    setPage(1);
   };
 
   const handleWithdraw = (proposalId: string) => {
@@ -227,7 +248,7 @@ export default function MyProposalsPage() {
                       id="proposal-status-filter"
                       className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
+                      onChange={(e) => handleFilterChange(e.target.value)}
                     >
                       <option value="">All Statuses</option>
                       <option value="pending">Pending</option>
@@ -242,7 +263,7 @@ export default function MyProposalsPage() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => setStatusFilter("")}
+                          onClick={() => handleFilterChange("")}
                           className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
                         >
                           Clear
@@ -258,9 +279,10 @@ export default function MyProposalsPage() {
                 <div className="space-y-4">
                   {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
                 </div>
-              ) : filteredProposals.length > 0 ? (
+              ) : proposals.length > 0 ? (
+                <>
                 <div className="space-y-4">
-                  {filteredProposals.map((proposal: any) => (
+                  {proposals.map((proposal: any) => (
                     <Card key={proposal.id} hover>
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
@@ -409,6 +431,21 @@ export default function MyProposalsPage() {
                     </Card>
                   ))}
                 </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-sm text-gray-500">Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}</p>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-gray-600 dark:text-gray-400 px-2">{page} / {totalPages}</span>
+                      <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                </>
               ) : (
                 <Card>
                   <CardContent className="text-center py-12">
@@ -432,14 +469,6 @@ export default function MyProposalsPage() {
                 </Card>
               )}
 
-              {/* Results Summary */}
-              {!isLoading && filteredProposals.length > 0 && (
-                <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                  Showing {filteredProposals.length} of {proposals?.length || 0}{" "}
-                  proposal
-                  {proposals?.length !== 1 ? "s" : ""}
-                </div>
-              )}
             </>
           )}
         </div>

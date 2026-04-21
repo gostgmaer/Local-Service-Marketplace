@@ -8,6 +8,7 @@ import { useRealtimeDetail } from "@/hooks/useRealtimeDetail";
 import { Permission } from "@/utils/permissions";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
 import { StatusBadge } from "@/components/ui/Badge";
@@ -273,7 +274,7 @@ export default function RequestDetailPage() {
 
                     {/* GST breakdown visible only to customer (owner) — no platform fee shown, urgency baked into Service Amount */}
                     {isOwner && request.budget > 0 && (() => {
-                      const budget = request.budget;
+                      const budget = Number(request.budget) || 0;
                       const urgency = request.urgency ?? "medium";
                       const surchargePercent = URGENCY_SURCHARGE[urgency] ?? 0;
                       const surcharge = Math.round(((budget * surchargePercent) / 100) * 100) / 100;
@@ -316,7 +317,7 @@ export default function RequestDetailPage() {
                                 rel="noopener noreferrer"
                                 className="block rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:opacity-90 transition-opacity"
                               >
-                                <img
+                                <Image
                                   src={img.url}
                                   alt="Request attachment"
                                   className="w-full h-36 object-cover"
@@ -401,8 +402,8 @@ export default function RequestDetailPage() {
                             </div>
                             {/* Provider sees platform fee breakdown — never GST */}
                             {proposal.price > 0 && (() => {
-                              const pFee = Math.floor((proposal.price * siteConfig.platformFeePercentage) / 100);
-                              const youReceive = proposal.price - pFee;
+                              const pFee = Math.floor((Number(proposal.price) * siteConfig.platformFeePercentage) / 100);
+                              const youReceive = Number(proposal.price) - pFee;
                               return (
                                 <div className="mt-2 space-y-1 text-xs text-gray-500">
                                   <div className="flex justify-between">

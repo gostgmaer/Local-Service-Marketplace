@@ -61,9 +61,10 @@ export class JobClient {
     };
     const secret = process.env.GATEWAY_INTERNAL_SECRET;
     if (secret) {
+      const hmacPayload = `${userId}:${email}:${role}:none:${permissions}`;
       headers["x-gateway-hmac"] = crypto
         .createHmac("sha256", secret)
-        .update(`${userId}:${email}:${role}`)
+        .update(hmacPayload)
         .digest("hex");
     }
     return headers;

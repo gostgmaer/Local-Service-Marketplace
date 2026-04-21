@@ -491,6 +491,18 @@ export class AuthService {
     // ✅ NEW: Update last login timestamp
     await this.userRepo.updateLastLogin(user.id);
 
+    // Check if 2FA is enabled — if so, issue a short-lived MFA token and
+    // require the client to complete the TOTP challenge before getting a full JWT.
+    const twoFARecord = await this.twoFactorSecretRepo.findByUserId(user.id);
+    if (twoFARecord?.enabled) {
+      const mfaToken = this.jwtService.generateMfaToken(user.id, user.email);
+      this.logger.info("Login requires MFA", {
+        context: "AuthService",
+        userId: user.id,
+      });
+      return { requiresMfa: true, mfaToken };
+    }
+
     this.logger.info("Login successful", {
       context: "AuthService",
       userId: user.id,
@@ -513,6 +525,88 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
     await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        display_id: user.display_id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        email_verified: user.email_verified,
+        phone_verified: user.phone_verified || false,
+        profile_picture_url: user.profile_picture_url,
+        timezone: user.timezone || "UTC",
+        language: user.language || "en",
+        last_login_at: user.last_login_at,
+      },
+    };
+  }
+
+  /**
+   * Second step of 2FA login: validate the short-lived MFA token and TOTP code,
+   * then issue full access + refresh tokens.
+   */
+  async completeMfaLogin(
+    mfaToken: string,
+    code: string,
+    ipAddress?: string,
+  ): Promise<AuthResponseDto> {
+    let payload: { sub: string; email: string; scope: string };
+    try {
+      payload = this.jwtService.verifyMfaToken(mfaToken);
+    } catch {
+      throw new UnauthorizedException("MFA token is invalid or expired");
+    }
+
+    if (payload.scope !== "mfa") {
+      throw new UnauthorizedException("Invalid MFA token");
+    }
+
+    const userId = payload.sub;
+    const secretRecord = await this.twoFactorSecretRepo.findByUserId(userId);
+    if (!secretRecord?.enabled) {
+      throw new BadRequestException("2FA is not enabled for this account");
+    }
+
+    // Try TOTP first, then backup code
+    const totpValid = this.verifyTOTP(secretRecord.secret, code);
+    if (!totpValid) {
+      const backupValid = await this.twoFactorSecretRepo.consumeBackupCode(
+        userId,
+        code,
+      );
+      if (!backupValid) {
+        throw new UnauthorizedException("Invalid 2FA code");
+      }
+    }
+
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const loginProviderId = await this.resolveProviderId(user.id, user.role);
+    const accessToken = await this.jwtService.generateAccessToken(
+      user.id,
+      user.email,
+      user.role,
+      loginProviderId,
+      user.email_verified,
+      user.phone_verified ?? false,
+    );
+    const refreshToken = this.jwtService.generateRefreshToken();
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
+    await this.sessionRepo.create(user.id, refreshToken, expiresAt, ipAddress);
+
+    this.logger.info("MFA login completed", {
+      context: "AuthService",
+      userId: user.id,
+    });
 
     return {
       accessToken,
@@ -1649,7 +1743,10 @@ export class AuthService {
     return { secret, qrCodeUrl };
   }
 
-  async verify2FA(userId: string, code: string): Promise<void> {
+  async verify2FA(
+    userId: string,
+    code: string,
+  ): Promise<{ backupCodes: string[] }> {
     this.logger.info("2FA verification", { context: "AuthService", userId });
 
     const secretRecord = await this.twoFactorSecretRepo.findByUserId(userId);
@@ -1674,6 +1771,8 @@ export class AuthService {
       context: "AuthService",
       userId,
     });
+
+    return { backupCodes };
   }
 
   async disable2FA(

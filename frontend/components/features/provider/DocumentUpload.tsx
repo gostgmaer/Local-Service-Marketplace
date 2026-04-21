@@ -9,6 +9,7 @@ import { usePublicSettings } from "@/hooks/usePublicSettings";
 
 interface DocumentUploadProps {
   providerId?: string;
+  existingDocumentTypes?: string[];
   onUploadSuccess?: () => void;
 }
 
@@ -29,13 +30,19 @@ const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
 
 export function DocumentUpload({
   providerId,
+  existingDocumentTypes = [],
   onUploadSuccess,
 }: DocumentUploadProps) {
   const { config } = usePublicSettings();
   const maxSizeBytes = config.maxFileUploadSizeMb * 1024 * 1024;
 
-  const [selectedType, setSelectedType] =
-    useState<DocumentType>("government_id");
+  const availableTypes = DOCUMENT_TYPES.filter(
+    (t) => !existingDocumentTypes.includes(t.value),
+  );
+
+  const [selectedType, setSelectedType] = useState<DocumentType>(
+    () => (availableTypes[0]?.value ?? "government_id") as DocumentType,
+  );
   const [documentNumber, setDocumentNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -113,7 +120,11 @@ export function DocumentUpload({
       setFile(null);
       setDocumentNumber("");
       setExpiryDate("");
-      setSelectedType("government_id");
+      // Reset to next available type
+      const nextAvailable = DOCUMENT_TYPES.find(
+        (t) => !existingDocumentTypes.includes(t.value) && t.value !== selectedType,
+      );
+      setSelectedType((nextAvailable?.value ?? "government_id") as DocumentType);
 
       if (onUploadSuccess) {
         onUploadSuccess();
@@ -141,6 +152,14 @@ export function DocumentUpload({
         Upload Document
       </h2>
 
+      {availableTypes.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <AlertCircle className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+          <p className="font-medium">All document types have been uploaded.</p>
+          <p className="text-sm mt-1">You can update unverified documents from the document list below.</p>
+        </div>
+      ) : (
+        <>
       {/* Document Type Selection */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -151,7 +170,7 @@ export function DocumentUpload({
           onChange={(e) => setSelectedType(e.target.value as DocumentType)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          {DOCUMENT_TYPES.map((type) => (
+          {availableTypes.map((type) => (
             <option key={type.value} value={type.value}>
               {type.label}
             </option>
@@ -273,6 +292,8 @@ export function DocumentUpload({
           within 24-48 hours. You'll receive a notification once it's verified.
         </p>
       </div>
+      </>
+      )}
     </div>
   );
 }

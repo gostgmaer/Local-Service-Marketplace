@@ -76,4 +76,24 @@ export class JwtService {
       secret: this.configService.get<string>("JWT_SECRET"),
     });
   }
+
+  /**
+   * Issues a short-lived (5-minute) token used only during the 2FA login challenge.
+   * The token contains `scope: 'mfa'` so it cannot be used as a real access token.
+   */
+  generateMfaToken(userId: string, email: string): string {
+    return this.jwtService.sign(
+      { sub: userId, email, scope: "mfa" },
+      {
+        secret: this.configService.get<string>("JWT_SECRET"),
+        expiresIn: "5m",
+      },
+    );
+  }
+
+  verifyMfaToken(token: string): { sub: string; email: string; scope: string } {
+    return this.jwtService.verify(token, {
+      secret: this.configService.get<string>("JWT_SECRET"),
+    });
+  }
 }

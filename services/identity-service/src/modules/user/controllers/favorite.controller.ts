@@ -16,6 +16,7 @@ import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 import { FavoriteService } from "../services/favorite.service";
 import { CreateFavoriteDto } from "../dto/create-favorite.dto";
+import { FavoriteQueryDto } from "../dto/favorite-query.dto";
 import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import {
   PermissionsGuard as RolesGuard,
@@ -48,13 +49,16 @@ export class FavoriteController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getFavorites(@Request() req: any): Promise<any> {
+  async getFavorites(
+    @Request() req: any,
+    @Query() query: FavoriteQueryDto,
+  ): Promise<any> {
     const userId = req.user.userId;
     this.logger.info("GET /favorites", {
       context: "FavoriteController",
       user_id: userId,
     });
-    return this.favoriteService.getFavorites(userId);
+    return this.favoriteService.getFavorites(userId, query);
   }
 
   @Delete(":provider_id")
