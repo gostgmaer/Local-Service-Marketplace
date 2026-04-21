@@ -92,7 +92,10 @@ describe("MessagingController", () => {
   describe("getConversations", () => {
     it("should return conversations with total count", async () => {
       const convos = [{ job_id: "j-1", last_message: "Hi" }];
-      mockMessageService.getUserConversations.mockResolvedValue(convos);
+      mockMessageService.getUserConversations.mockResolvedValue({
+        rows: convos,
+        total: convos.length,
+      });
       const result = await controller.getConversations(
         { user: { userId: "user-uuid-1" } },
         { page: 1, limit: 20 },
