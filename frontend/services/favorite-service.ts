@@ -48,7 +48,7 @@ class FavoriteService {
   async isFavorite(providerId: string): Promise<boolean> {
     try {
       const favorites = await this.getFavorites();
-      return favorites.some((fav) => fav.provider_id === providerId);
+      return favorites.data.some((fav) => fav.provider_id === providerId);
     } catch (error) {
       return false;
     }

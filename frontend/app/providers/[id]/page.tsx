@@ -179,7 +179,7 @@ export default function ProviderDetailPage() {
           "@type": "AggregateRating",
           ratingValue: providerRating.toFixed(1),
           bestRating: "5",
-          ratingCount: String(reviews?.length || 1),
+          ratingCount: String(reviews?.data?.length || 1),
         }
       : undefined,
     hasOfferCatalog: provider.services?.length
@@ -357,9 +357,9 @@ export default function ProviderDetailPage() {
                 )}
 
                 {/* Individual Reviews */}
-                {reviews && reviews.length > 0 ? (
+                {reviews && (reviews.data?.length ?? 0) > 0 ? (
                   <div className="space-y-4">
-                    {reviews.map((review) => (
+                    {reviews.data.map((review) => (
                       <div
                         key={review.id}
                         className="border-t border-gray-100 dark:border-gray-700 pt-4 first:border-0 first:pt-0"

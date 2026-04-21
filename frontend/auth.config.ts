@@ -311,13 +311,13 @@ export const authOptions = {
           role: profile?.role ?? user.role,
           permissions,
           emailVerified:
-            profile !== null
+            profile != null
               ? Boolean(profile.email_verified)
               : typeof user.emailVerified === "boolean"
                 ? user.emailVerified
                 : false,
           phoneVerified:
-            profile !== null ? Boolean(profile.phone_verified) : false,
+            profile != null ? Boolean(profile.phone_verified) : false,
           providerVerificationStatus:
             profile?.provider_verification_status ?? null,
           timezone: profile?.timezone ?? null,

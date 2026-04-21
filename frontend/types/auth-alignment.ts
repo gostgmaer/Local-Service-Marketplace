@@ -184,7 +184,7 @@ export function isValidBackendRefreshResponse(
  * Transform backend user to frontend format
  */
 export function transformBackendUserToFrontend(
-  backendUser: BackendAuthResponse["user"],
+  backendUser: NonNullable<BackendAuthResponse["user"]>,
 ) {
   return {
     id: backendUser.id,
@@ -350,7 +350,7 @@ export function safeTransformUser(backendUser: unknown) {
     throw new Error("Invalid user data");
   }
 
-  const user = backendUser as BackendAuthResponse["user"];
+  const user = backendUser as NonNullable<BackendAuthResponse["user"]>;
 
   if (!user.id || !user.email || !user.role) {
     throw new Error("Missing required user fields");

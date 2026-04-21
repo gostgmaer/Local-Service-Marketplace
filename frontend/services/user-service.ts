@@ -35,6 +35,7 @@ export interface ProviderProfile {
   rating?: number | string | null;
   created_at: string;
   services?: Array<{ id: string; category_id: string }>;
+  provider_services?: Array<{ id: string; category_id: string; service_category_id?: string }>;
   availability?: Array<{
     id: string;
     day_of_week: number;
