@@ -43,8 +43,7 @@ export class JobQueryDto {
   request_id?: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  status?: string | string[];
 
   @IsOptional()
   @IsDateString()
