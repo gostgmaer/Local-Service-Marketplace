@@ -12,6 +12,7 @@ import { DocumentUpload } from "@/components/features/provider/DocumentUpload";
 import { DocumentList } from "@/components/features/provider/DocumentList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { apiClient } from "@/services/api-client";
+import { getProviderProfileByUserId } from "@/services/user-service";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -44,16 +45,13 @@ export default function ProviderDocumentsPage() {
   } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
     queryFn: async () => {
-      const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-      if (response.data?.data && response.data.data.length > 0) {
-        const p = response.data.data[0];
-        setGstin(p.gstin ?? "");
-        setPan(p.pan ?? "");
-        return p;
-      }
-      return null;
+      const providerProfile = await getProviderProfileByUserId(user!.id);
+      setGstin(providerProfile?.gstin ?? "");
+      setPan(providerProfile?.pan ?? "");
+      return providerProfile;
     },
-    enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
+    enabled:
+      isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW) && !!user?.id,
   });
 
   const {

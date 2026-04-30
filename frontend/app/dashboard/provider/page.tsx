@@ -8,7 +8,7 @@ import { Permission } from "@/utils/permissions";
 import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { apiClient } from "@/services/api-client";
+import { getProviderProfileByUserId } from "@/services/user-service";
 import { ErrorState } from "@/components/ui/ErrorState";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,14 +36,9 @@ export default function ProviderOverviewPage() {
     refetch,
   } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
-    queryFn: async () => {
-      const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-      if (response.data?.data && response.data.data.length > 0) {
-        return response.data.data[0];
-      }
-      return null;
-    },
-    enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
+    queryFn: () => getProviderProfileByUserId(user!.id),
+    enabled:
+      isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW) && !!user?.id,
   });
 
   useRealtimeDetail(["provider:updated"], ["my-provider-profile", user?.id], provider?.id);
@@ -148,8 +143,10 @@ export default function ProviderOverviewPage() {
                           Rating
                         </h3>
                         <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                          {provider?.rating
-                            ? `${provider.rating.toFixed(1)} ⭐`
+                          {provider?.rating !== null &&
+                          provider?.rating !== undefined &&
+                          Number.isFinite(Number(provider.rating))
+                            ? `${Number(provider.rating).toFixed(1)} ⭐`
                             : "No reviews yet"}
                         </p>
                       </CardContent>

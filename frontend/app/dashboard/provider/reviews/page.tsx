@@ -9,7 +9,7 @@ import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { ReviewAggregates } from "@/components/features/review/ReviewAggregates";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { apiClient } from "@/services/api-client";
+import { getProviderProfileByUserId } from "@/services/user-service";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, ImageIcon, Star, FileText } from "lucide-react";
@@ -28,14 +28,9 @@ export default function ProviderReviewsPage() {
     refetch,
   } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
-    queryFn: async () => {
-      const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-      if (response.data?.data && response.data.data.length > 0) {
-        return response.data.data[0];
-      }
-      return null;
-    },
-    enabled: isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW),
+    queryFn: () => getProviderProfileByUserId(user!.id),
+    enabled:
+      isAuthenticated && can(Permission.PROVIDER_PROFILE_VIEW) && !!user?.id,
   });
 
   const tabs = [

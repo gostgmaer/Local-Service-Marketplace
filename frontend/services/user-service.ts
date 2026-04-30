@@ -32,6 +32,8 @@ export interface ProviderProfile {
   user_id: string;
   business_name: string;
   description: string;
+  gstin?: string;
+  pan?: string;
   rating?: number | string | null;
   created_at: string;
   services?: Array<{ id: string; category_id: string }>;
@@ -43,6 +45,7 @@ export interface ProviderProfile {
     end_time: string;
   }>;
   verification_status?: "pending" | "verified" | "rejected";
+  aadhar_verified?: boolean;
   certifications?: any;
   years_of_experience?: number;
   service_area_radius?: number;
@@ -156,7 +159,37 @@ export const getProviderProfileByUserId = async (
 ): Promise<ProviderProfile | null> => {
   const response = await apiClient.get<any>(`/providers?user_id=${userId}`);
   const list = apiClient.extractList<ProviderProfile>(response.data);
-  return list[0] || null;
+  const provider = list[0] || null;
+  if (!provider) {
+    return null;
+  }
+
+  const hasVerificationStatus = Object.prototype.hasOwnProperty.call(
+    provider,
+    "verification_status",
+  );
+  const hasAadhaarVerified = Object.prototype.hasOwnProperty.call(
+    provider,
+    "aadhar_verified",
+  );
+
+  // Backward-compatible fallback for deployments where list payloads omit
+  // verification fields while detail payloads include them.
+  if (
+    provider.id &&
+    (!hasVerificationStatus || !hasAadhaarVerified)
+  ) {
+    try {
+      const detailResponse = await apiClient.get<ProviderProfile>(
+        `/providers/${provider.id}`,
+      );
+      return { ...provider, ...detailResponse.data };
+    } catch {
+      return provider;
+    }
+  }
+
+  return provider;
 };
 
 /**
@@ -225,8 +258,8 @@ export const getProviders = async (params?: {
   if (params?.search) queryParams.append("search", params.search);
   if (params?.location_id)
     queryParams.append("location_id", params.location_id);
-  if (params?.sort_by) queryParams.append("sort_by", params.sort_by);
-  if (params?.sort_order) queryParams.append("sort_order", params.sort_order);
+  if (params?.sort_by) queryParams.append("sortBy", params.sort_by);
+  if (params?.sort_order) queryParams.append("sortOrder", params.sort_order);
   if (params?.verification_status) queryParams.append("verification_status", params.verification_status);
   if (params?.min_rating !== undefined) queryParams.append("min_rating", params.min_rating.toString());
   if (params?.max_rating !== undefined) queryParams.append("max_rating", params.max_rating.toString());

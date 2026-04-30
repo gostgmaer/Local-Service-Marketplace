@@ -5,13 +5,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Permission } from "@/utils/permissions";
-import { useRouter } from "next/navigation";
-import { ROUTES } from "@/config/constants";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Loading } from "@/components/ui/Loading";
 import { Button } from "@/components/ui/Button";
 import { apiClient } from "@/services/api-client";
+import { getProviderProfileByUserId } from "@/services/user-service";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Calendar, Clock, Plus, Trash2, Save, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -46,7 +45,6 @@ const DAYS_OF_WEEK = [
  */
 
 export default function AvailabilityPage() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
   const { can } = usePermissions();
@@ -61,19 +59,7 @@ export default function AvailabilityPage() {
     refetch,
   } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
-    queryFn: async () => {
-      try {
-        // First, get the provider record for this user
-        const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-        if (response.data?.data && response.data.data.length > 0) {
-          return response.data.data[0];
-        }
-        return null;
-      } catch (error) {
-        console.error("Error fetching provider:", error);
-        return null;
-      }
-    },
+    queryFn: () => getProviderProfileByUserId(user!.id),
     enabled:
       isAuthenticated &&
       can(Permission.PROVIDER_AVAILABILITY_MANAGE) &&

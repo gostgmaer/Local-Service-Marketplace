@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { SkeletonStatCard, SkeletonListItem } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { apiClient } from "@/services/api-client";
+import { getProviderProfileByUserId } from "@/services/user-service";
 import { proposalService } from "@/services/proposal-service";
 import { jobService } from "@/services/job-service";
 import { paymentService } from "@/services/payment-service";
@@ -86,11 +86,7 @@ export default function ProviderDashboard() {
   // Fetch provider profile to get provider ID for earnings
   const { data: providerProfile } = useQuery({
     queryKey: ["my-provider-profile-id", user?.id],
-    queryFn: async () => {
-      const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-      const list = response.data?.data ?? [];
-      return Array.isArray(list) ? list[0] ?? null : null;
-    },
+    queryFn: () => getProviderProfileByUserId(user!.id),
     enabled: isAuthenticated && !!user?.id,
   });
 
