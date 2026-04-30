@@ -636,7 +636,7 @@ export class PaymentRepository {
         COALESCE(SUM(CASE WHEN status = 'completed' THEN provider_amount ELSE 0 END), 0) as total_paid,
         COALESCE(SUM(CASE WHEN status = 'pending' THEN provider_amount ELSE 0 END), 0) as pending_payout,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
-        COALESCE(MAX(currency), 'USD') as currency
+        COALESCE(MAX(currency), 'INR') as currency
       FROM payments
       WHERE provider_id = $1
         AND created_at >= COALESCE($2::TIMESTAMP, '2020-01-01'::TIMESTAMP)
@@ -653,7 +653,7 @@ export class PaymentRepository {
         total_paid: 0,
         pending_payout: 0,
         completed_count: 0,
-        currency: "USD",
+        currency: "INR",
       }
     );
   }

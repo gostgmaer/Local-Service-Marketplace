@@ -16,9 +16,9 @@ import {
   getProviderServices,
   addProviderCategory,
   removeProviderCategory,
+  getProviderProfileByUserId,
 } from "@/services/user-service";
 import { requestService } from "@/services/request-service";
-import { apiClient } from "@/services/api-client";
 import { Tag, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -34,12 +34,9 @@ export default function ProviderServicesPage() {
   // Get the provider record for this user
   const { data: providerData } = useQuery({
     queryKey: ["my-provider-profile", user?.id],
-    queryFn: async () => {
-      const response = await apiClient.get(`/providers?user_id=${user?.id}`);
-      const list = response.data?.data ?? response.data ?? [];
-      return (Array.isArray(list) ? list[0] : null) ?? null;
-    },
-    enabled: isAuthenticated && can(Permission.PROVIDER_SERVICES_MANAGE),
+    queryFn: () => getProviderProfileByUserId(user!.id),
+    enabled:
+      isAuthenticated && can(Permission.PROVIDER_SERVICES_MANAGE) && !!user?.id,
   });
 
   const providerId: string | undefined = providerData?.id;

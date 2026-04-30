@@ -189,7 +189,7 @@ export function transformBackendUserToFrontend(
   return {
     id: backendUser.id,
     email: backendUser.email,
-    name: backendUser.name || backendUser.email.split("@")[0],
+    name: backendUser.name || backendUser.email?.split("@")[0] || "User",
     image: backendUser.profile_picture_url || null,
     role: backendUser.role,
     emailVerified: backendUser.email_verified,

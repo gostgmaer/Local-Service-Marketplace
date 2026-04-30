@@ -181,12 +181,12 @@ export default function FavoritesPage() {
                         {favorite.provider_name}
                       </h3>
 
-                      {favorite.provider_rating && (
+                      {favorite.provider_rating != null && (
                         <div className="flex items-center gap-2 mb-3">
                           <div className="flex items-center gap-1">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span className="font-semibold text-gray-900 dark:text-white">
-                              {favorite.provider_rating.toFixed(1)}
+                              {Number(favorite.provider_rating).toFixed(1)}
                             </span>
                           </div>
                           <span className="text-sm text-gray-500">Rating</span>

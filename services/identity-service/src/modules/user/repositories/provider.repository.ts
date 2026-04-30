@@ -194,7 +194,7 @@ export class ProviderRepository {
       values.push(offset);
       query = `
         SELECT DISTINCT providers.id, providers.display_id, providers.user_id, providers.business_name,
-          providers.description, providers.verification_status, providers.profile_picture_url,
+          providers.description, providers.verification_status, providers.aadhar_verified, providers.profile_picture_url,
           providers.rating, providers.total_jobs_completed, providers.created_at
         FROM providers
         ${whereClause}
@@ -204,7 +204,7 @@ export class ProviderRepository {
     } else {
       query = `
       SELECT DISTINCT providers.id, providers.display_id, providers.user_id, providers.business_name,
-        providers.description, providers.verification_status, providers.profile_picture_url,
+        providers.description, providers.verification_status, providers.aadhar_verified, providers.profile_picture_url,
         providers.rating, providers.total_jobs_completed, providers.created_at
       FROM providers
       ${whereClause}
