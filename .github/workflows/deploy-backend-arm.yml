@@ -99,6 +99,7 @@ jobs:
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           port: ${{ secrets.OCI_PORT || 22 }}
           source: artifacts/release.tgz
+          strip_components: 1
           target: /home/${{ secrets.OCI_USER }}/
           overwrite: true
 
@@ -117,10 +118,20 @@ jobs:
             APP_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace"
             STAGE_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.stage-${{ github.run_id }}-${{ github.run_attempt }}"
             BACKUP_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.backup-${{ github.run_id }}-${{ github.run_attempt }}"
-            ARCHIVE="/home/${{ secrets.OCI_USER }}/release.tgz"
+            ARCHIVE_PRIMARY="/home/${{ secrets.OCI_USER }}/release.tgz"
+            ARCHIVE_FALLBACK="/home/${{ secrets.OCI_USER }}/artifacts/release.tgz"
             OWNER="${{ github.repository_owner }}"
 
-            [ -f "$ARCHIVE" ] || { echo "Release archive not found: $ARCHIVE"; exit 1; }
+            if [ -f "$ARCHIVE_PRIMARY" ]; then
+              ARCHIVE="$ARCHIVE_PRIMARY"
+            elif [ -f "$ARCHIVE_FALLBACK" ]; then
+              ARCHIVE="$ARCHIVE_FALLBACK"
+            else
+              echo "Release archive not found. Checked:"
+              echo " - $ARCHIVE_PRIMARY"
+              echo " - $ARCHIVE_FALLBACK"
+              exit 1
+            fi
 
             rm -rf "$STAGE_DIR"
             mkdir -p "$STAGE_DIR"
@@ -170,7 +181,7 @@ jobs:
             fi
 
             docker logout ghcr.io || true
-            rm -f "$ARCHIVE"
+            rm -f "$ARCHIVE_PRIMARY" "$ARCHIVE_FALLBACK"
 
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.level3.yml ps
             curl -fsS http://127.0.0.1:3700/health >/dev/null
