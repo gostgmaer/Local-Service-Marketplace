@@ -217,17 +217,25 @@ jobs:
               fi
 
               if command -v systemctl >/dev/null 2>&1; then
-                if $SUDO systemctl is-active --quiet nginx; then
+                # systemctl is-active returns 3 when inactive; capture it explicitly
+                # instead of letting errexit terminate the deploy script.
+                active_rc=0
+                $SUDO systemctl is-active --quiet nginx || active_rc=$?
+
+                if [ "$active_rc" -eq 0 ]; then
                   if ! $SUDO systemctl reload nginx; then
                     echo "Nginx reload failed. Attempting restart..."
                     if ! $SUDO systemctl restart nginx; then
-                      $SUDO systemctl --no-pager --full status nginx || true
-                      $SUDO journalctl -u nginx --no-pager -n 80 || true
-                      return 1
+                      echo "Nginx restart failed. Attempting start..."
+                      if ! $SUDO systemctl start nginx; then
+                        $SUDO systemctl --no-pager --full status nginx || true
+                        $SUDO journalctl -u nginx --no-pager -n 80 || true
+                        return 1
+                      fi
                     fi
                   fi
                 else
-                  echo "Nginx service is not active. Attempting start..."
+                  echo "Nginx service is not active (systemctl is-active rc=$active_rc). Attempting start..."
                   if ! $SUDO systemctl start nginx; then
                     $SUDO systemctl --no-pager --full status nginx || true
                     $SUDO journalctl -u nginx --no-pager -n 80 || true
@@ -235,8 +243,10 @@ jobs:
                   fi
                 fi
 
-                if ! $SUDO systemctl is-active --quiet nginx; then
-                  echo "Nginx is not active after reload/start."
+                verify_rc=0
+                $SUDO systemctl is-active --quiet nginx || verify_rc=$?
+                if [ "$verify_rc" -ne 0 ]; then
+                  echo "Nginx is not active after reload/start (rc=$verify_rc)."
                   $SUDO systemctl --no-pager --full status nginx || true
                   $SUDO journalctl -u nginx --no-pager -n 80 || true
                   return 1
