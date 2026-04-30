@@ -193,12 +193,24 @@ jobs:
                 $SUDO cp "$NGINX_TARGET_CONF" "$NGINX_BACKUP_CONF"
               fi
 
-              $SUDO cp "$NGINX_SOURCE_CONF" "$NGINX_TARGET_CONF"
+              # Install with explicit mode/ownership so nginx can read it.
+              $SUDO install -m 0644 "$NGINX_SOURCE_CONF" "$NGINX_TARGET_CONF"
+              $SUDO chown root:root "$NGINX_TARGET_CONF"
+
+              # On SELinux-enforcing hosts (Oracle Linux/CentOS/RHEL), copied files
+              # can inherit non-nginx-readable labels; normalize context before test.
+              if command -v restorecon >/dev/null 2>&1; then
+                $SUDO restorecon -v "$NGINX_TARGET_CONF" || true
+              fi
 
               if ! $SUDO nginx -t; then
                 echo "Nginx config test failed. Restoring previous config..."
                 if [ -f "$NGINX_BACKUP_CONF" ]; then
-                  $SUDO cp "$NGINX_BACKUP_CONF" "$NGINX_TARGET_CONF"
+                  $SUDO install -m 0644 "$NGINX_BACKUP_CONF" "$NGINX_TARGET_CONF"
+                  $SUDO chown root:root "$NGINX_TARGET_CONF"
+                  if command -v restorecon >/dev/null 2>&1; then
+                    $SUDO restorecon -v "$NGINX_TARGET_CONF" || true
+                  fi
                 fi
                 $SUDO nginx -t || true
                 return 1
