@@ -205,9 +205,37 @@ jobs:
               fi
 
               if command -v systemctl >/dev/null 2>&1; then
-                $SUDO systemctl reload nginx
+                if $SUDO systemctl is-active --quiet nginx; then
+                  if ! $SUDO systemctl reload nginx; then
+                    echo "Nginx reload failed. Attempting restart..."
+                    if ! $SUDO systemctl restart nginx; then
+                      $SUDO systemctl --no-pager --full status nginx || true
+                      $SUDO journalctl -u nginx --no-pager -n 80 || true
+                      return 1
+                    fi
+                  fi
+                else
+                  echo "Nginx service is not active. Attempting start..."
+                  if ! $SUDO systemctl start nginx; then
+                    $SUDO systemctl --no-pager --full status nginx || true
+                    $SUDO journalctl -u nginx --no-pager -n 80 || true
+                    return 1
+                  fi
+                fi
+
+                if ! $SUDO systemctl is-active --quiet nginx; then
+                  echo "Nginx is not active after reload/start."
+                  $SUDO systemctl --no-pager --full status nginx || true
+                  $SUDO journalctl -u nginx --no-pager -n 80 || true
+                  return 1
+                fi
               else
-                $SUDO nginx -s reload
+                if ! $SUDO nginx -s reload; then
+                  echo "Nginx reload signal failed. Attempting fresh start..."
+                  if ! $SUDO nginx; then
+                    return 1
+                  fi
+                fi
               fi
 
               echo "Nginx config deployed and reloaded successfully."
