@@ -2,7 +2,7 @@ name: Build And Deploy Backend To ARM
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
   workflow_dispatch:
 
 env:
