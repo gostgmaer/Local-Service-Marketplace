@@ -170,12 +170,60 @@ jobs:
               ./scripts/deploy-production-worker.sh --env-file .env --no-build
             }
 
+            deploy_nginx_config() {
+              NGINX_SOURCE_CONF="$APP_DIR/config/nginx/lsp-api.easydev.in.conf"
+              NGINX_TARGET_CONF="/etc/nginx/conf.d/lsp-api.easydev.in.conf"
+              NGINX_BACKUP_CONF="${NGINX_TARGET_CONF}.bak-${{ github.run_id }}-${{ github.run_attempt }}"
+
+              if [ ! -f "$NGINX_SOURCE_CONF" ]; then
+                echo "Nginx config file not found in repo, skipping nginx update: $NGINX_SOURCE_CONF"
+                return 0
+              fi
+
+              if [ "$(id -u)" -eq 0 ]; then
+                SUDO=""
+              elif command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+                SUDO="sudo"
+              else
+                echo "Cannot update nginx automatically: passwordless sudo required for user ${{ secrets.OCI_USER }}"
+                return 1
+              fi
+
+              if [ -f "$NGINX_TARGET_CONF" ]; then
+                $SUDO cp "$NGINX_TARGET_CONF" "$NGINX_BACKUP_CONF"
+              fi
+
+              $SUDO cp "$NGINX_SOURCE_CONF" "$NGINX_TARGET_CONF"
+
+              if ! $SUDO nginx -t; then
+                echo "Nginx config test failed. Restoring previous config..."
+                if [ -f "$NGINX_BACKUP_CONF" ]; then
+                  $SUDO cp "$NGINX_BACKUP_CONF" "$NGINX_TARGET_CONF"
+                fi
+                $SUDO nginx -t || true
+                return 1
+              fi
+
+              if command -v systemctl >/dev/null 2>&1; then
+                $SUDO systemctl reload nginx
+              else
+                $SUDO nginx -s reload
+              fi
+
+              echo "Nginx config deployed and reloaded successfully."
+            }
+
             if ! deploy_with_pulled_images; then
               if [ "$ROLLBACK" -eq 1 ] && [ -d "$BACKUP_DIR" ]; then
                 echo "Deployment failed. Rolling back application directory..."
                 rm -rf "$APP_DIR"
                 mv "$BACKUP_DIR" "$APP_DIR"
               fi
+              exit 1
+            fi
+
+            if ! deploy_nginx_config; then
+              echo "Backend deploy succeeded but nginx config update failed."
               exit 1
             fi
 
