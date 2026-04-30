@@ -19,7 +19,9 @@ concurrency:
 jobs:
   build-and-push-images:
     name: Build And Push (${{ matrix.service }})
-    runs-on: ubuntu-latest
+    # Native ARM64 runner — avoids QEMU SIGILL (Illegal instruction) crashes
+    # that occur when emulating ARM64 on x86 during `pnpm install`.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -41,9 +43,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
