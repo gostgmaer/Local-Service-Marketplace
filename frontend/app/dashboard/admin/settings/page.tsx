@@ -21,7 +21,7 @@ import {
   Database,
   Globe,
   Zap,
-  DollarSign,
+  IndianRupee,
   Users,
   MessageSquare,
 } from "lucide-react";
@@ -57,7 +57,7 @@ const GROUP_CONFIG: Record<
 > = {
   platform: {
     label: "Platform & Fees",
-    icon: DollarSign,
+    icon: IndianRupee,
     keys: [
       "platform_fee_percentage",
       "gst_rate",

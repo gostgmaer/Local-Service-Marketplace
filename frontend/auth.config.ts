@@ -111,7 +111,7 @@ export const authOptions = {
           return {
             id: auth.user.id,
             email: auth.user.email,
-            name: auth.user.name || auth.user.email.split("@")[0],
+            name: auth.user.name || auth.user.email?.split("@")[0] || "User",
             role: auth.user.role,
             emailVerified: auth.user.email_verified,
             image: auth.user.profile_picture_url || null,
@@ -223,7 +223,7 @@ export const authOptions = {
           return {
             id: auth.user.id,
             email: auth.user.email,
-            name: auth.user.name || auth.user.email.split("@")[0],
+            name: auth.user.name || auth.user.email?.split("@")[0] || "User",
             role: auth.user.role,
             emailVerified: auth.user.email_verified,
             image: auth.user.profile_picture_url || null,
@@ -258,7 +258,7 @@ export const authOptions = {
           return {
             id: user.id,
             email: user.email,
-            name: user.name || user.email.split("@")[0],
+            name: user.name || user.email?.split("@")[0] || "User",
             role: user.role,
             emailVerified: user.email_verified,
             image: user.profile_picture_url || null,
