@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors,
   BadRequestException,
   ForbiddenException,
@@ -18,7 +18,7 @@ import {
 } from "@nestjs/common";
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FilesInterceptor } from "@nestjs/platform-express";
 import * as multer from "multer";
 import { ProviderDocumentService } from "../services/provider-document.service";
 import { UploadDocumentDto } from "../dto/upload-document.dto";
@@ -42,16 +42,16 @@ export class ProviderDocumentController {
   @UseGuards(RolesGuard)
   @Post("upload/:providerId")
   @UseInterceptors(
-    FileInterceptor("files", { storage: multer.memoryStorage() }),
+    FilesInterceptor("files", 10, { storage: multer.memoryStorage() }),
   )
   @HttpCode(HttpStatus.CREATED)
   async uploadDocument(
     @Param("providerId", StrictUuidPipe) providerId: string,
     @Body() dto: UploadDocumentDto,
-    @UploadedFile() file: any,
+    @UploadedFiles() files: Express.Multer.File[],
     @Request() req: any,
   ) {
-    if (!file) {
+    if (!files || files.length === 0) {
       throw new BadRequestException("Document file is required");
     }
 
@@ -59,43 +59,53 @@ export class ProviderDocumentController {
     const userRole = req.user.role || "user";
     const tenantId = req.headers["x-tenant-id"] as string | undefined;
 
-    if (!dto.document_name && file) {
-      dto.document_name = file.originalname;
+    const documents = [];
+
+    for (const file of files) {
+      const documentDto: UploadDocumentDto = {
+        ...dto,
+        document_name: dto.document_name || file.originalname,
+      };
+
+      // Upload file to external file service
+      const uploadedFile = await this.fileServiceClient.uploadFile(
+        file,
+        {
+          category: "document",
+          description: `${dto.document_type} for provider ${providerId}`,
+          title: documentDto.document_name,
+          visibility: "private",
+          linkedEntityType: "provider_document",
+          linkedEntityId: providerId,
+          tags: [dto.document_type, "provider-verification"],
+        },
+        userId,
+        userRole,
+        tenantId,
+      );
+
+      // Create document record in database.
+      // SECURITY: Only store the file service ID, never the raw Azure Blob URL.
+      // The URL is resolved on-demand via an authenticated API call so that
+      // access control is enforced every time the document is viewed.
+      const document = await this.documentService.uploadDocument(
+        providerId,
+        userId,
+        documentDto,
+        null, // document_url intentionally null — use file_id for all access
+        uploadedFile.id,
+      );
+
+      documents.push(document);
     }
 
-    // Upload file to external file service
-    const uploadedFile = await this.fileServiceClient.uploadFile(
-      file,
-      {
-        category: "document",
-        description: `${dto.document_type} for provider ${providerId}`,
-        title: dto.document_name,
-        visibility: "private",
-        linkedEntityType: "provider_document",
-        linkedEntityId: providerId,
-        tags: [dto.document_type, "provider-verification"],
-      },
-      userId,
-      userRole,
-      tenantId,
-    );
-
-    // Create document record in database.
-    // SECURITY: Only store the file service ID, never the raw Azure Blob URL.
-    // The URL is resolved on-demand via an authenticated API call so that
-    // access control is enforced every time the document is viewed.
-    const document = await this.documentService.uploadDocument(
-      providerId,
-      userId,
-      dto,
-      null, // document_url intentionally null — use file_id for all access
-      uploadedFile.id,
-    );
-
+    const isSingleUpload = documents.length === 1;
     return {
       success: true,
-      data: document,
-      message: "Document uploaded successfully. Pending verification.",
+      data: isSingleUpload ? documents[0] : documents,
+      message: isSingleUpload
+        ? "Document uploaded successfully. Pending verification."
+        : `${documents.length} documents uploaded successfully. Pending verification.`,
     };
   }
 

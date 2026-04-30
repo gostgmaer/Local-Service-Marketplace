@@ -28,14 +28,17 @@ export class NotificationPreferencesController {
     private readonly featureFlags: FeatureFlagService,
   ) {}
 
-  @Get()
-  async getPreferences(@Request() req: any) {
-    // Feature flag check: Notification preferences
+  private assertPreferencesEnabled(): void {
     if (!this.featureFlags.notificationPreferencesEnabled) {
       throw new BadRequestException(
-        "Notification preferences are disabled. Set NOTIFICATION_PREFERENCES_ENABLED=true to enable this feature.",
+        "Notification preferences are currently unavailable. Please try again later.",
       );
     }
+  }
+
+  @Get()
+  async getPreferences(@Request() req: any) {
+    this.assertPreferencesEnabled();
 
     const preferences = await this.preferencesService.getPreferences(
       req.user.userId,
@@ -54,12 +57,7 @@ export class NotificationPreferencesController {
     @Body() dto: UpdateNotificationPreferencesDto,
     @Request() req: any,
   ) {
-    // Feature flag check: Notification preferences
-    if (!this.featureFlags.notificationPreferencesEnabled) {
-      throw new BadRequestException(
-        "Notification preferences are disabled. Set NOTIFICATION_PREFERENCES_ENABLED=true to enable this feature.",
-      );
-    }
+    this.assertPreferencesEnabled();
 
     const preferences = await this.preferencesService.updatePreferences(
       req.user.userId,
@@ -76,12 +74,7 @@ export class NotificationPreferencesController {
   @Put("disable-all")
   @HttpCode(HttpStatus.OK)
   async disableAll(@Request() req: any) {
-    // Feature flag check: Notification preferences
-    if (!this.featureFlags.notificationPreferencesEnabled) {
-      throw new BadRequestException(
-        "Notification preferences are disabled. Set NOTIFICATION_PREFERENCES_ENABLED=true to enable this feature.",
-      );
-    }
+    this.assertPreferencesEnabled();
 
     const preferences = await this.preferencesService.disableAllNotifications(
       req.user.userId,
@@ -97,12 +90,7 @@ export class NotificationPreferencesController {
   @Put("enable-all")
   @HttpCode(HttpStatus.OK)
   async enableAll(@Request() req: any) {
-    // Feature flag check: Notification preferences
-    if (!this.featureFlags.notificationPreferencesEnabled) {
-      throw new BadRequestException(
-        "Notification preferences are disabled. Set NOTIFICATION_PREFERENCES_ENABLED=true to enable this feature.",
-      );
-    }
+    this.assertPreferencesEnabled();
 
     const preferences = await this.preferencesService.enableAllNotifications(
       req.user.userId,

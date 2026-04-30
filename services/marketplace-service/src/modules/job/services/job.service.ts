@@ -12,7 +12,12 @@ import {
   PaginatedJobResponseDto,
   PriceBreakdown,
 } from "../dto/job-response.dto";
-import { JobQueryDto, JobSortBy, SortOrder } from "../dto/job-query.dto";
+import {
+  JobQueryDto,
+  JobSortBy,
+  SortOrder,
+  JobStatusQuery,
+} from "../dto/job-query.dto";
 import {
   NotFoundException,
   BadRequestException,
@@ -60,6 +65,33 @@ export class JobService {
     high: 10,
     urgent: 20,
   };
+
+  private normalizeJobStatuses(rawStatus: unknown): JobStatusQuery[] {
+    if (rawStatus === undefined || rawStatus === null) {
+      return [];
+    }
+
+    const parts = (Array.isArray(rawStatus) ? rawStatus : [rawStatus])
+      .flatMap((value) => String(value).split(","))
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    if (parts.length === 0) {
+      return [];
+    }
+
+    const uniqueParts = Array.from(new Set(parts));
+    const allowed = new Set<string>(Object.values(JobStatusQuery));
+    const invalid = uniqueParts.filter((value) => !allowed.has(value));
+
+    if (invalid.length > 0) {
+      throw new BadRequestException(
+        `status must be one or more of: ${Object.values(JobStatusQuery).join(", ")}`,
+      );
+    }
+
+    return uniqueParts as JobStatusQuery[];
+  }
 
   /**
    * Compute a full price breakdown (platform fee, urgency surcharge, GST, total)
@@ -693,6 +725,16 @@ export class JobService {
         queryDto.provider_id = user.providerId || user.userId;
       }
     }
+
+    queryDto.sortBy =
+      queryDto.sort_by ?? queryDto.sortBy ?? JobSortBy.STARTED_AT;
+    queryDto.sortOrder =
+      queryDto.sort_order ?? queryDto.sortOrder ?? SortOrder.DESC;
+
+    const normalizedStatuses = this.normalizeJobStatuses(queryDto.status);
+    queryDto.statuses = normalizedStatuses;
+    queryDto.status =
+      normalizedStatuses.length === 1 ? normalizedStatuses[0] : undefined;
 
     validateDateRange(
       queryDto.started_from,

@@ -186,6 +186,7 @@ export class JobRepository {
       customer_id,
       request_id,
       status,
+      statuses,
       started_from,
       started_to,
       completed_from,
@@ -196,6 +197,13 @@ export class JobRepository {
       sortBy = JobSortBy.STARTED_AT,
       sortOrder = SortOrder.DESC,
     } = queryDto;
+
+    const effectiveStatuses =
+      statuses && statuses.length > 0
+        ? statuses
+        : status
+          ? [status]
+          : [];
 
     [provider_id, customer_id, request_id] = await Promise.all([
       provider_id
@@ -241,9 +249,9 @@ export class JobRepository {
       values.push(request_id);
     }
 
-    if (status) {
-      query += ` AND j.status = $${paramIndex++}`;
-      values.push(status);
+    if (effectiveStatuses.length > 0) {
+      query += ` AND j.status = ANY($${paramIndex++}::text[])`;
+      values.push(effectiveStatuses);
     }
 
     if (started_from) {
@@ -338,11 +346,19 @@ export class JobRepository {
       customer_id,
       request_id,
       status,
+      statuses,
       started_from,
       started_to,
       completed_from,
       completed_to,
     } = queryDto;
+
+    const effectiveStatuses =
+      statuses && statuses.length > 0
+        ? statuses
+        : status
+          ? [status]
+          : [];
 
     [provider_id, customer_id, request_id] = await Promise.all([
       provider_id
@@ -375,9 +391,9 @@ export class JobRepository {
       values.push(request_id);
     }
 
-    if (status) {
-      query += ` AND status = $${paramIndex++}`;
-      values.push(status);
+    if (effectiveStatuses.length > 0) {
+      query += ` AND status = ANY($${paramIndex++}::text[])`;
+      values.push(effectiveStatuses);
     }
 
     if (started_from) {

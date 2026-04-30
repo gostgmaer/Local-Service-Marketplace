@@ -87,7 +87,9 @@ function OnboardingContent() {
 	const resumeChecked = useRef(false);
 
 	// Step: Documents
-	const [uploadedDocs, setUploadedDocs] = useState<Array<{ type: DocumentType; file: File; name: string }>>([]);
+	const [uploadedDocs, setUploadedDocs] = useState<
+		Array<{ id: string; type: DocumentType; file: File; name: string }>
+	>([]);
 	const [uploadingDoc, setUploadingDoc] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [selectedDocType, setSelectedDocType] = useState<DocumentType>("government_id");
@@ -388,8 +390,13 @@ function OnboardingContent() {
 			return;
 		}
 		setUploadedDocs((prev) => [
-			...prev.filter((d) => d.type !== selectedDocType),
-			{ type: selectedDocType, file, name: file.name },
+			...prev,
+			{
+				id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+				type: selectedDocType,
+				file,
+				name: file.name,
+			},
 		]);
 		if (fileInputRef.current) fileInputRef.current.value = "";
 	};
@@ -947,7 +954,7 @@ function OnboardingContent() {
 										<p className='text-sm font-medium text-gray-700 dark:text-gray-300'>Selected documents:</p>
 										{uploadedDocs.map((doc) => (
 											<div
-												key={doc.type}
+												key={doc.id}
 												className='flex items-center gap-3 px-3 py-2 rounded-lg border border-green-300 bg-green-50 dark:bg-green-900/20 text-sm'>
 												<CheckCircle className='h-4 w-4 text-green-600 flex-shrink-0' />
 												<div className='flex-1 min-w-0'>
@@ -957,7 +964,11 @@ function OnboardingContent() {
 													</p>
 												</div>
 												<button
-													onClick={() => setUploadedDocs((prev) => prev.filter((d) => d.type !== doc.type))}
+													onClick={() =>
+														setUploadedDocs((prev) =>
+															prev.filter((d) => d.id !== doc.id),
+														)
+													}
 													className='text-gray-400 hover:text-red-500'>
 													<X className='h-4 w-4' />
 												</button>

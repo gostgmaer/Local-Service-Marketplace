@@ -107,7 +107,13 @@ export default function EarningsPage() {
     refetch: refetchTransactions,
   } = useQuery({
     queryKey: ["provider-transactions", providerId, statusFilter],
-    queryFn: () => paymentService.getProviderTransactions(providerId, 200, undefined, statusFilter || undefined),
+    queryFn: () =>
+      paymentService.getProviderTransactions(
+        providerId,
+        100,
+        undefined,
+        statusFilter || undefined,
+      ),
     enabled: isAuthenticated && can(Permission.EARNINGS_VIEW) && !!providerId,
   });
 

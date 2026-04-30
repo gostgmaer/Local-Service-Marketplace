@@ -279,8 +279,8 @@ export class ProposalService {
 
     const page = queryDto?.page ?? 1;
     const limit = queryDto?.limit ?? 20;
-    const sortBy = queryDto?.sortBy ?? "created_at";
-    const sortOrder = queryDto?.sortOrder ?? "desc";
+    const sortBy = queryDto?.sort_by ?? queryDto?.sortBy ?? "created_at";
+    const sortOrder = queryDto?.sort_order ?? queryDto?.sortOrder ?? "desc";
     const status = queryDto?.status;
 
     // RBAC:
@@ -599,6 +599,11 @@ export class ProposalService {
         queryDto.provider_id = user.providerId || user.userId;
       }
     }
+
+    queryDto.sortBy =
+      queryDto.sort_by ?? queryDto.sortBy ?? ProposalSortBy.CREATED_AT;
+    queryDto.sortOrder =
+      queryDto.sort_order ?? queryDto.sortOrder ?? SortOrder.DESC;
 
     validateMinMaxRange(
       queryDto.min_price,

@@ -93,6 +93,8 @@ class ProposalService {
     page?: number;
     limit?: number;
     status?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
     sort_by?: string;
     sort_order?: "asc" | "desc";
   }): Promise<{ data: Proposal[]; total: number; page: number; limit: number }> {
@@ -100,8 +102,10 @@ class ProposalService {
     if (params?.page) qs.append("page", String(params.page));
     if (params?.limit) qs.append("limit", String(params.limit));
     if (params?.status) qs.append("status", params.status);
-    if (params?.sort_by) qs.append("sort_by", params.sort_by);
-    if (params?.sort_order) qs.append("sort_order", params.sort_order);
+    const sortBy = params?.sortBy ?? params?.sort_by;
+    const sortOrder = params?.sortOrder ?? params?.sort_order;
+    if (sortBy) qs.append("sortBy", sortBy);
+    if (sortOrder) qs.append("sortOrder", sortOrder);
     const query = qs.toString();
     const response = await apiClient.get<any>(`/proposals/my${query ? `?${query}` : ""}`);
     const envelope = response.data;
@@ -119,7 +123,7 @@ class ProposalService {
   }
 
   async getMyProposalsList(): Promise<Proposal[]> {
-    const result = await this.getMyProposals({ limit: 200 });
+    const result = await this.getMyProposals({ limit: 100 });
     return result.data;
   }
 }

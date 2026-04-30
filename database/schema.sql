@@ -103,7 +103,7 @@ CREATE INDEX idx_sessions_user_id_created ON sessions(user_id, created_at DESC);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 CREATE UNIQUE INDEX idx_sessions_refresh_token ON sessions(refresh_token) WHERE refresh_token IS NOT NULL;
 CREATE INDEX idx_sessions_active ON sessions(user_id, expires_at);
-CREATE INDEX idx_sessions_user_device_active ON sessions(user_id, device_type, expires_at DESC) WHERE expires_at > NOW();
+CREATE INDEX idx_sessions_user_device_active ON sessions(user_id, device_type, expires_at DESC) WHERE expires_at IS NOT NULL;
 
 CREATE TABLE email_verification_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
