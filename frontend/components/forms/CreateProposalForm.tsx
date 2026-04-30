@@ -131,10 +131,10 @@ export function CreateProposalForm({
       </div>
 
       <div className="flex gap-3">
-        <Button>
-          type="submit"
+        <Button   type="submit"
           isLoading={createMutation.isPending}
-          disabled={createMutation.isPending || !isValid}
+          disabled={createMutation.isPending || !isValid}>
+        Submit Proposal
         </Button>
         {onCancel && (
           <Button
