@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { CreateProposalForm } from "@/components/forms/CreateProposalForm";
-import { getProviderProfileByUserId } from "@/services/user-service";
+import { getProviderProfileByUserId, getProviderServices } from "@/services/user-service";
 
 export default function BrowseRequestsPage() {
   const router = useRouter();
@@ -58,6 +58,12 @@ export default function BrowseRequestsPage() {
     queryKey: ["my-provider-profile", user?.id],
     queryFn: () => getProviderProfileByUserId(user!.id),
     enabled: isAuthenticated && can(Permission.REQUESTS_BROWSE) && !!user?.id,
+  });
+
+  const { data: providerServices } = useQuery({
+    queryKey: ["my-provider-services", provider?.id],
+    queryFn: () => getProviderServices(provider!.id),
+    enabled: isAuthenticated && !!provider?.id,
   });
 
   const PAGE_SIZE = 20;
@@ -132,15 +138,22 @@ export default function BrowseRequestsPage() {
   const canSubmitProposal =
     isProviderUser && !providerNotVerified && !emailNotVerified;
 
-  // Provider's offered category IDs (from provider_services)
+  // Provider category IDs can arrive from multiple payload shapes.
   const providerCategoryIds: Set<string> = new Set(
-    (provider?.provider_services ?? []).map((s: any) => s.category_id ?? s.service_category_id ?? s.id),
+    [
+      ...(provider?.provider_services ?? []).map(
+        (s: any) => s.category_id ?? s.service_category_id ?? s.id,
+      ),
+      ...(provider?.services ?? []).map((s: any) => s.category_id ?? s.id),
+      ...(providerServices ?? []).map((s: any) => s.category_id ?? s.id),
+    ].filter(Boolean),
   );
 
   const canSubmitForRequest = (request: any) => {
     if (!canSubmitProposal) return false;
     if (providerCategoryIds.size === 0) return false; // no services configured
-    return providerCategoryIds.has(request.category_id);
+    const requestCategoryId = request.category_id ?? request.category?.id;
+    return !!requestCategoryId && providerCategoryIds.has(requestCategoryId);
   };
 
   const proposalDisabledTitle = (request: any) => {
@@ -149,7 +162,8 @@ export default function BrowseRequestsPage() {
       if (emailNotVerified) return "Verify your email before submitting proposals";
     }
     if (providerCategoryIds.size === 0) return "Add your service categories in Provider Profile before submitting proposals";
-    if (!providerCategoryIds.has(request.category_id)) return "You don't offer this service category";
+    const requestCategoryId = request.category_id ?? request.category?.id;
+    if (!requestCategoryId || !providerCategoryIds.has(requestCategoryId)) return "You don't offer this service category";
     return undefined;
   };
 
