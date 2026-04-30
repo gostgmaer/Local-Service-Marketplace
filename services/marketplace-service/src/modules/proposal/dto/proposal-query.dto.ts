@@ -83,8 +83,16 @@ export class ProposalQueryDto {
   sortBy?: ProposalSortBy = ProposalSortBy.CREATED_AT;
 
   @IsOptional()
+  @IsEnum(ProposalSortBy)
+  sort_by?: ProposalSortBy;
+
+  @IsOptional()
   @IsEnum(SortOrder)
   sortOrder?: SortOrder = SortOrder.DESC;
+
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sort_order?: SortOrder;
 
   @IsOptional()
   @IsString()

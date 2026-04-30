@@ -131,6 +131,8 @@ class JobService {
     page?: number;
     limit?: number;
     status?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
     sort_by?: string;
     sort_order?: "asc" | "desc";
     search?: string;
@@ -139,8 +141,10 @@ class JobService {
     if (params?.page) qs.append("page", String(params.page));
     if (params?.limit) qs.append("limit", String(params.limit));
     if (params?.status) qs.append("status", params.status);
-    if (params?.sort_by) qs.append("sort_by", params.sort_by);
-    if (params?.sort_order) qs.append("sort_order", params.sort_order);
+    const sortBy = params?.sortBy ?? params?.sort_by;
+    const sortOrder = params?.sortOrder ?? params?.sort_order;
+    if (sortBy) qs.append("sortBy", sortBy);
+    if (sortOrder) qs.append("sortOrder", sortOrder);
     const query = qs.toString();
     const response = await apiClient.get<any>(`/jobs/my${query ? `?${query}` : ""}`);
     const envelope = response.data;
@@ -160,7 +164,7 @@ class JobService {
   }
 
   async getMyJobsList(): Promise<Job[]> {
-    const result = await this.getMyJobs({ limit: 200 });
+    const result = await this.getMyJobs({ limit: 100 });
     return result.data;
   }
 

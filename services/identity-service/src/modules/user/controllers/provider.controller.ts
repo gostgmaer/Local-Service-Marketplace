@@ -24,6 +24,7 @@ import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
 import { ProviderService } from "../services/provider.service";
+import { ProviderDocumentService } from "../services/provider-document.service";
 import { CreateProviderDto } from "../dto/create-provider.dto";
 import { UpdateProviderDto } from "../dto/update-provider.dto";
 import { UpdateProviderServicesDto } from "../dto/update-provider-services.dto";
@@ -45,6 +46,7 @@ import "multer";
 export class ProviderController {
 	constructor(
 		private readonly providerService: ProviderService,
+		private readonly providerDocumentService: ProviderDocumentService,
 		private readonly fileServiceClient: FileServiceClient,
 		@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
 	) {}
@@ -77,6 +79,26 @@ export class ProviderController {
 		const lim = limit ? parseInt(limit, 10) : 20;
 		const off = offset ? parseInt(offset, 10) : 0;
 		return this.providerService.findNearbyProviders(latNum, lngNum, radiusKm, lim, off);
+	}
+
+	@RequirePermissions("provider_documents.manage")
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Get(":id/documents")
+	@HttpCode(HttpStatus.OK)
+	async getProviderDocuments(
+		@Param("id", StrictUuidPipe) id: string,
+		@Req() req: any,
+	): Promise<{ data: any[]; total: number }> {
+		if (!req.user.permissions?.includes("providers.manage") && req.user.providerId !== id) {
+			throw new ForbiddenException("You can only view your own documents");
+		}
+
+		this.logger.info("GET /providers/:id/documents", {
+			context: "ProviderController",
+			provider_id: id,
+		});
+
+		return this.providerDocumentService.getProviderDocuments(id);
 	}
 
 	@Get(":id")

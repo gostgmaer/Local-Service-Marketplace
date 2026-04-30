@@ -62,8 +62,13 @@ export default function ProviderDocumentsPage() {
     queryKey: ["provider-documents", provider?.id],
     queryFn: async () => {
       if (!provider?.id) return [];
-      const response = await apiClient.get(`/providers/${provider.id}/documents`);
-      return response.data?.data ?? [];
+      const response = await apiClient.get(
+        `/provider-documents/provider/${provider.id}`,
+      );
+      const payload: any = response.data;
+      if (Array.isArray(payload)) return payload;
+      if (payload?.data && Array.isArray(payload.data)) return payload.data;
+      return [];
     },
     enabled: !!provider?.id,
   });

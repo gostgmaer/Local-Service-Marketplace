@@ -241,7 +241,8 @@ class PaymentService {
       throw new Error("User not authenticated");
     }
 
-    const params: any = { limit };
+    const safeLimit = Math.max(1, Math.min(limit, 100));
+    const params: any = { limit: safeLimit };
     if (cursor) params.cursor = cursor;
     if (status) params.status = status;
 

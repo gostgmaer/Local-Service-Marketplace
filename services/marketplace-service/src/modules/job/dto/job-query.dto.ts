@@ -43,8 +43,8 @@ export class JobQueryDto {
   request_id?: string;
 
   @IsOptional()
-  @IsEnum(JobStatusQuery)
-  status?: JobStatusQuery;
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @IsDateString()
@@ -85,6 +85,17 @@ export class JobQueryDto {
   sortBy?: JobSortBy = JobSortBy.STARTED_AT;
 
   @IsOptional()
+  @IsEnum(JobSortBy)
+  sort_by?: JobSortBy;
+
+  @IsOptional()
   @IsEnum(SortOrder)
   sortOrder?: SortOrder = SortOrder.DESC;
+
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sort_order?: SortOrder;
+
+  // Internal normalized representation for one-or-many status filters.
+  statuses?: JobStatusQuery[];
 }
