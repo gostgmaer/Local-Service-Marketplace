@@ -16,7 +16,6 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { Response } from "express";
@@ -33,6 +32,7 @@ import {
 } from "@/common/rbac";
 import { ForbiddenException } from "@/common/exceptions/http.exceptions";
 import { FileServiceClient } from "../../common/file-service.client";
+import { paymentReceiptUploadOptions } from "../../common/config/upload.config";
 import "multer";
 
 @Controller("payments")
@@ -394,9 +394,7 @@ export class PaymentController {
   @Post(":id/receipt")
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FileInterceptor("files", { storage: multer.memoryStorage() }),
-  )
+  @UseInterceptors(FileInterceptor("files", paymentReceiptUploadOptions))
   async uploadReceipt(
     @Param("id", StrictUuidPipe) paymentId: string,
     @UploadedFile() file: Express.Multer.File,

@@ -22,7 +22,6 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
@@ -38,6 +37,7 @@ import {
   RequirePermissions,
 } from "@/common/rbac";
 import { FileServiceClient } from "../common/file-service.client";
+import { messageAttachmentUploadOptions } from "../common/config/upload.config";
 import "multer";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -115,37 +115,7 @@ export class MessagingController {
 
   @Post("attachments")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FileInterceptor("files", {
-      storage: multer.memoryStorage(),
-      limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max
-      fileFilter: (_req, file, cb) => {
-        const allowedMimeTypes = [
-          "image/jpeg",
-          "image/png",
-          "image/gif",
-          "image/webp",
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "application/vnd.ms-excel",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          "text/plain",
-          "video/mp4",
-          "video/quicktime",
-        ];
-        if (!allowedMimeTypes.includes(file.mimetype)) {
-          return cb(
-            new BadRequestException(
-              `File type '${file.mimetype}' is not allowed`,
-            ),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor("files", messageAttachmentUploadOptions))
   async createAttachment(
     @Body() createAttachmentDto: CreateAttachmentDto,
     @UploadedFile() file: Express.Multer.File,

@@ -19,7 +19,6 @@ import {
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import * as multer from "multer";
 import { ProviderDocumentService } from "../services/provider-document.service";
 import { UploadDocumentDto } from "../dto/upload-document.dto";
 import { VerifyDocumentDto } from "../dto/verify-document.dto";
@@ -29,6 +28,7 @@ import {
   RequirePermissions,
 } from "@/common/rbac";
 import { FileServiceClient } from "../../../common/file-service.client";
+import { providerDocumentUploadOptions } from "../../../common/config/upload.config";
 
 @UseGuards(JwtAuthGuard)
 @Controller("provider-documents")
@@ -41,9 +41,7 @@ export class ProviderDocumentController {
   @RequirePermissions("provider_documents.manage")
   @UseGuards(RolesGuard)
   @Post("upload/:providerId")
-  @UseInterceptors(
-    FilesInterceptor("files", 10, { storage: multer.memoryStorage() }),
-  )
+  @UseInterceptors(FilesInterceptor("files", 10, providerDocumentUploadOptions))
   @HttpCode(HttpStatus.CREATED)
   async uploadDocument(
     @Param("providerId", StrictUuidPipe) providerId: string,

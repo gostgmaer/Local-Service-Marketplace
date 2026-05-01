@@ -16,7 +16,6 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import * as multer from "multer";
 import { FlexibleIdPipe } from "@/common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "@/common/pipes/strict-uuid.pipe";
 import { JobService } from "../services/job.service";
@@ -36,6 +35,7 @@ import {
 } from "@/common/rbac";
 import { ForbiddenException } from "../../../common/exceptions/http.exceptions";
 import { FileServiceClient } from "../../../common/file-service.client";
+import { jobPhotoUploadOptions } from "../../../common/config/upload.config";
 import "multer";
 
 @UseGuards(JwtAuthGuard)
@@ -130,7 +130,7 @@ export class JobController {
   // Authenticated — provider or customer can upload completion photos for jobs
   @Post(":id/photos")
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FilesInterceptor("files", 10, { storage: multer.memoryStorage() }))
+  @UseInterceptors(FilesInterceptor("files", 10, jobPhotoUploadOptions))
   async uploadJobPhotos(
     @Param("id", StrictUuidPipe) jobId: string,
     @UploadedFiles() files: Express.Multer.File[],
