@@ -9,23 +9,24 @@ import { Clock, ChevronRight } from "lucide-react";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://localservicemarketplace.com";
 
+interface Props {
+  params: Promise<{ category: string }>;
+}
+
 export function generateStaticParams() {
   return BLOG_CATEGORIES.map((cat) => ({ category: categoryToSlug(cat) }));
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { category: string };
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { category: categorySlug } = await params;
   const category = BLOG_CATEGORIES.find(
-    (c) => categoryToSlug(c) === params.category,
+    (c) => categoryToSlug(c) === categorySlug,
   );
   if (!category) return {};
 
   const title = `${category} | Local Service Marketplace Blog`;
   const description = `Browse all ${category} articles — expert home service tips, guides and advice for Indian homeowners.`;
-  const url = `${SITE_URL}/blog/category/${params.category}`;
+  const url = `${SITE_URL}/blog/category/${categorySlug}`;
 
   return {
     title,
@@ -55,18 +56,15 @@ export async function generateMetadata({
   };
 }
 
-export default function BlogCategoryPage({
-  params,
-}: {
-  params: { category: string };
-}) {
+export default async function BlogCategoryPage({ params }: Props) {
+  const { category: categorySlug } = await params;
   const category = BLOG_CATEGORIES.find(
-    (c) => categoryToSlug(c) === params.category,
+    (c) => categoryToSlug(c) === categorySlug,
   );
   if (!category) notFound();
 
   const posts = BLOG_POSTS.filter(
-    (p) => categoryToSlug(p.category) === params.category,
+    (p) => categoryToSlug(p.category) === categorySlug,
   );
 
   const jsonLd = {
@@ -74,7 +72,7 @@ export default function BlogCategoryPage({
     "@type": "CollectionPage",
     name: `${category} — Local Service Marketplace Blog`,
     description: `All ${category} articles on home services in India`,
-    url: `${SITE_URL}/blog/category/${params.category}`,
+    url: `${SITE_URL}/blog/category/${categorySlug}`,
     breadcrumb: {
       "@type": "BreadcrumbList",
       itemListElement: [
@@ -89,7 +87,7 @@ export default function BlogCategoryPage({
           "@type": "ListItem",
           position: 3,
           name: category,
-          item: `${SITE_URL}/blog/category/${params.category}`,
+          item: `${SITE_URL}/blog/category/${categorySlug}`,
         },
       ],
     },
@@ -106,7 +104,7 @@ export default function BlogCategoryPage({
           <Breadcrumb
             items={[
               { label: "Blog", href: "/blog" },
-              { label: category, href: `/blog/category/${params.category}` },
+              { label: category, href: `/blog/category/${categorySlug}` },
             ]}
             className="mb-6"
           />

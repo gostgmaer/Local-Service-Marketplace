@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { useDebounce } from "@/hooks/useDebounce";
 import { getProviders } from "@/services/user-service";
 import { requestService } from "@/services/request-service";
-import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
+import { formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import { analytics } from "@/utils/analytics";
 import {
   Search,

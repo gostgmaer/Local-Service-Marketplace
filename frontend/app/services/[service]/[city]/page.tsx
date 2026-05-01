@@ -70,19 +70,20 @@ const DEFAULT_FAQS = [
 ];
 
 interface Props {
-  params: { service: string; city: string };
+  params: Promise<{ service: string; city: string }>;
 }
 
-export default function ServiceCityPage({ params }: Props) {
-  const cityData = INDIA_CITIES.find((c) => c.slug === params.city);
-  const serviceData = SERVICE_SLUGS.find((s) => s.slug === params.service);
-  const serviceMeta = SERVICE_META[params.service];
+export default async function ServiceCityPage({ params }: Props) {
+  const { service, city } = await params;
+  const cityData = INDIA_CITIES.find((c) => c.slug === city);
+  const serviceData = SERVICE_SLUGS.find((s) => s.slug === service);
+  const serviceMeta = SERVICE_META[service];
 
   if (!cityData || !serviceData) {
     notFound();
   }
 
-  const faqs = FAQS[params.service] || DEFAULT_FAQS;
+  const faqs = FAQS[service] || DEFAULT_FAQS;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -91,7 +92,7 @@ export default function ServiceCityPage({ params }: Props) {
     description: serviceMeta
       ? `${serviceMeta.description} in ${cityData.name}, ${cityData.state}.`
       : `Verified ${serviceData.name} professionals in ${cityData.name}.`,
-    url: `${SITE_URL}/services/${params.service}/${params.city}`,
+    url: `${SITE_URL}/services/${service}/${city}`,
     image: `${SITE_URL}/opengraph-image`,
     address: {
       "@type": "PostalAddress",
@@ -124,15 +125,15 @@ export default function ServiceCityPage({ params }: Props) {
     { label: cityData.name, href: `/services/home-cleaning/${cityData.slug}` },
     {
       label: serviceData.name,
-      href: `/services/${params.service}/${params.city}`,
+      href: `/services/${service}/${city}`,
     },
   ];
 
   const relatedCities = INDIA_CITIES.filter(
-    (c) => c.slug !== params.city,
+    (c) => c.slug !== city,
   ).slice(0, 8);
   const relatedServices = SERVICE_SLUGS.filter(
-    (s) => s.slug !== params.service,
+    (s) => s.slug !== service,
   ).slice(0, 6);
 
   return (
@@ -239,7 +240,7 @@ export default function ServiceCityPage({ params }: Props) {
               {relatedServices.map((s) => (
                 <Link
                   key={s.slug}
-                  href={`/services/${s.slug}/${params.city}`}
+                  href={`/services/${s.slug}/${city}`}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   {s.icon} {s.name}
@@ -257,7 +258,7 @@ export default function ServiceCityPage({ params }: Props) {
               {relatedCities.map((c) => (
                 <Link
                   key={c.slug}
-                  href={`/services/${params.service}/${c.slug}`}
+                  href={`/services/${service}/${c.slug}`}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   <MapPin className="h-3 w-3" />

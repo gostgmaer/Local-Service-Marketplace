@@ -1,7 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-
 export const alt = "Local Service Marketplace";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -64,6 +62,7 @@ export default async function Image() {
           </div>
           <div
             style={{
+              display: "flex",
               fontSize: 28,
               fontWeight: 700,
               color: "#1e1b4b",
@@ -115,15 +114,15 @@ export default async function Image() {
           }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ color: "#10b981" }}>✓</span> Verified Providers
+            <span style={{ color: "#10b981" }}>OK</span> Verified Providers
           </span>
-          <span style={{ color: "#cbd5e1" }}>·</span>
+          <span style={{ color: "#cbd5e1" }}>|</span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ color: "#f59e0b" }}>★</span> 4.9/5 Rating
+            <span style={{ color: "#f59e0b" }}>Top</span> 4.9/5 Rating
           </span>
-          <span style={{ color: "#cbd5e1" }}>·</span>
+          <span style={{ color: "#cbd5e1" }}>|</span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ color: "#6366f1" }}>🔒</span> Secure Payments
+            <span style={{ color: "#6366f1" }}>Safe</span> Secure Payments
           </span>
         </div>
       </div>

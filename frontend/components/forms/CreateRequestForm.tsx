@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +11,6 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
-import { ImageUpload } from "@/components/ui/ImageUpload";
 import { requestService } from "@/services/request-service";
 import { cn } from "@/utils/helpers";
 import {
@@ -26,6 +26,16 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { usePublicSettings } from "@/hooks/usePublicSettings";
+
+const ImageUpload = dynamic(
+  () => import("@/components/ui/ImageUpload").then((mod) => mod.ImageUpload),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-40 animate-pulse rounded-lg border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900" />
+    ),
+  },
+);
 
 const URGENCY_SURCHARGE: Record<string, number> = {
   low: 0,

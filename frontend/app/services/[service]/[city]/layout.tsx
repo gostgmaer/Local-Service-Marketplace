@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { INDIA_CITIES, SERVICE_SLUGS, SERVICE_META } from "@/config/seo-data";
 
 interface Props {
-  params: { service: string; city: string };
+  params: Promise<{ service: string; city: string }>;
 }
 
 export async function generateStaticParams() {
@@ -16,9 +16,10 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const cityData = INDIA_CITIES.find((c) => c.slug === params.city);
-  const serviceMeta = SERVICE_META[params.service];
-  const serviceData = SERVICE_SLUGS.find((s) => s.slug === params.service);
+  const { service, city } = await params;
+  const cityData = INDIA_CITIES.find((c) => c.slug === city);
+  const serviceMeta = SERVICE_META[service];
+  const serviceData = SERVICE_SLUGS.find((s) => s.slug === service);
 
   if (!cityData || !serviceData) {
     return { title: "Service | Local Service Marketplace" };
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `${serviceMeta.description} in ${cityData.name}, ${cityData.state}. Compare prices, read reviews and book instantly.`
     : `Find verified ${serviceData.name} professionals in ${cityData.name}. Book online with ratings, reviews and instant quotes.`;
 
-  const url = `/services/${params.service}/${params.city}`;
+  const url = `/services/${service}/${city}`;
 
   return {
     title,

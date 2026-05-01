@@ -191,12 +191,12 @@ export default function HelpPage() {
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                   A step-by-step guide to creating your first service request
                 </p>
-                <a
+                <Link
                   href="/requests/create"
                   className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium"
                 >
                   Read more →
-                </a>
+                </Link>
               </div>
 
               <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm">
@@ -206,12 +206,12 @@ export default function HelpPage() {
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                   Learn how payments work and stay secure
                 </p>
-                <a
+                <Link
                   href="/contact"
                   className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium"
                 >
                   Read more →
-                </a>
+                </Link>
               </div>
 
               <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm">

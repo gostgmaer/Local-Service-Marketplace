@@ -1,3 +1,4 @@
+const path = require('path');
 /** @type {import('next').NextConfig} */
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
 	enabled: process.env.ANALYZE === 'true',
@@ -39,6 +40,7 @@ const extraConnectSrc = [extraConnectSrcEnv, apiOrigin, wsOrigin].filter(Boolean
 const nextConfig = {
 	// Use standalone output only for Docker builds
 	...(process.env.DOCKER_BUILD === "true" ? { output: "standalone" } : {}),
+	outputFileTracingRoot: path.join(__dirname, '..'),
 	reactStrictMode: true,
 	compress: true,
 	poweredByHeader: false,
