@@ -1,7 +1,7 @@
 import { Controller, Get, Inject } from "@nestjs/common";
 import { Pool } from "pg";
 import axios from "axios";
-import net from "net";
+import { connect } from "net";
 
 type HealthStatus = "ok" | "down";
 
@@ -82,7 +82,7 @@ export class HealthController {
 
     const startedAt = Date.now();
     return new Promise((resolve) => {
-      const socket = net.connect({ host: redisHost, port: redisPort });
+      const socket = connect({ host: redisHost, port: redisPort });
 
       const finalize = (payload: any) => {
         socket.removeAllListeners();
@@ -160,13 +160,20 @@ export class HealthController {
       paymentService: process.env.PAYMENT_SERVICE_URL,
     };
 
-    for (const [name, url] of Object.entries(dependencyTargets)) {
-      if (!url || !url.trim()) {
-        continue;
-      }
+    const dependencyEntries = Object.entries(dependencyTargets).filter(
+      ([, url]) => Boolean(url && url.trim()),
+    ) as Array<[string, string]>;
 
-      health.checks.dependencies[name] = await this.checkDependency(url);
-      if (health.checks.dependencies[name].status === "down") {
+    const dependencyResults = await Promise.all(
+      dependencyEntries.map(async ([name, url]) => {
+        const result = await this.checkDependency(url);
+        return [name, result] as const;
+      }),
+    );
+
+    for (const [name, result] of dependencyResults) {
+      health.checks.dependencies[name] = result;
+      if (result.status === "down") {
         health.status = "down";
       }
     }
