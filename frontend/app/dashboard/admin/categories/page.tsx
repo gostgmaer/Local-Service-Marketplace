@@ -164,7 +164,7 @@ export default function AdminCategoriesPage() {
       toast.success("Category updated");
       refetch();
     },
-    onError: () => toast.error("Failed to update category"),
+    onError: () => toast.error("Couldn't update the category — please try again."),
   });
 
   const deleteMutation = useMutation({
@@ -174,7 +174,7 @@ export default function AdminCategoriesPage() {
       setDeletingId(null);
       refetch();
     },
-    onError: () => toast.error("Failed to delete category"),
+    onError: () => toast.error("Couldn't delete the category — it may be in use."),
   });
 
   return (

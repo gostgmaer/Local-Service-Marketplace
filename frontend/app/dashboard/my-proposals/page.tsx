@@ -70,11 +70,11 @@ export default function MyProposalsPage() {
     enabled: isAuthenticated && can(Permission.PROPOSALS_CREATE),
   });
 
-  // Stats queries (one per status, limit:1 just for total count)
-  const { data: pendingStats } = useQuery({ queryKey: ["my-proposals-stats", "pending"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "pending" }), enabled: isAuthenticated });
-  const { data: acceptedStats } = useQuery({ queryKey: ["my-proposals-stats", "accepted"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "accepted" }), enabled: isAuthenticated });
-  const { data: rejectedStats } = useQuery({ queryKey: ["my-proposals-stats", "rejected"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "rejected" }), enabled: isAuthenticated });
-  const { data: withdrawnStats } = useQuery({ queryKey: ["my-proposals-stats", "withdrawn"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "withdrawn" }), enabled: isAuthenticated });
+  // Stats queries (one per status, limit:1 just for total count) — cached 5 mins
+  const { data: pendingStats } = useQuery({ queryKey: ["my-proposals-stats", "pending"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "pending" }), enabled: isAuthenticated, staleTime: 5 * 60 * 1000 });
+  const { data: acceptedStats } = useQuery({ queryKey: ["my-proposals-stats", "accepted"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "accepted" }), enabled: isAuthenticated, staleTime: 5 * 60 * 1000 });
+  const { data: rejectedStats } = useQuery({ queryKey: ["my-proposals-stats", "rejected"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "rejected" }), enabled: isAuthenticated, staleTime: 5 * 60 * 1000 });
+  const { data: withdrawnStats } = useQuery({ queryKey: ["my-proposals-stats", "withdrawn"], queryFn: () => proposalService.getMyProposals({ page: 1, limit: 1, status: "withdrawn" }), enabled: isAuthenticated, staleTime: 5 * 60 * 1000 });
 
   // Accepted proposals always last — sort client-side within page
   const rawProposals = proposalsResult?.data ?? [];
@@ -104,7 +104,7 @@ export default function MyProposalsPage() {
       setEditProposalId(null);
       toast.success("Proposal updated successfully");
     },
-    onError: () => toast.error("Failed to update proposal"),
+    onError: () => toast.error("Couldn't update the proposal — please check your price and message."),
   });
 
   const handleOpenEdit = (proposal: any) => {

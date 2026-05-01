@@ -75,21 +75,24 @@ export default function JobsPage() {
     enabled: isAuthenticated,
   });
 
-  // Stats: one query per notable status
+  // Stats: one query per notable status — cached for 5 mins to avoid extra API calls
   const { data: activeStats } = useQuery({
     queryKey: ["my-jobs-stats", "active"],
     queryFn: () => jobService.getMyJobs({ page: 1, limit: 1, status: "in_progress,scheduled,pending" }),
     enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: completedStats } = useQuery({
     queryKey: ["my-jobs-stats", "completed"],
     queryFn: () => jobService.getMyJobs({ page: 1, limit: 1, status: "completed" }),
     enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: cancelledStats } = useQuery({
     queryKey: ["my-jobs-stats", "cancelled"],
     queryFn: () => jobService.getMyJobs({ page: 1, limit: 1, status: "cancelled" }),
     enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
   });
 
   if (authLoading) return <Loading />;

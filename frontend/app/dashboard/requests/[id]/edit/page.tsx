@@ -86,7 +86,7 @@ export default function EditRequestPage() {
       queryClient.invalidateQueries({ queryKey: ["request", requestId] });
       router.push(ROUTES.DASHBOARD_REQUEST_DETAIL(request!.id));
     },
-    onError: () => toast.error("Failed to update request"),
+    onError: () => toast.error("Couldn't update the request — please check your input and try again."),
   });
 
   if (authLoading || isLoading) {

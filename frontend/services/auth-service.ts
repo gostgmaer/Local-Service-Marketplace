@@ -37,6 +37,8 @@ export interface OAuthCodeExchangeResponse {
   message: string;
   accessToken: string;
   refreshToken: string;
+  isNewUser?: boolean;
+  needsEmail?: boolean;
 }
 
 export interface CheckIdentifierResult {
@@ -162,6 +164,24 @@ class AuthService {
     const response = await apiClient.post<OAuthCodeExchangeResponse>(
       "/user/auth/oauth/exchange",
       { code },
+    );
+    return response.data;
+  }
+
+  /**
+   * Set role for newly registered OAuth users (within 10 min of account creation).
+   * Requires a valid Bearer token (pass the access token from the exchange step).
+   * Returns new tokens with the updated role embedded in the JWT.
+   */
+  async setOAuthRole(
+    role: "customer" | "provider",
+    accessToken: string,
+    email?: string,
+  ): Promise<OAuthCodeExchangeResponse> {
+    const response = await apiClient.post<OAuthCodeExchangeResponse>(
+      "/user/auth/oauth/set-role",
+      { role, ...(email ? { email } : {}) },
+      { headers: { Authorization: `Bearer ${accessToken}` } },
     );
     return response.data;
   }

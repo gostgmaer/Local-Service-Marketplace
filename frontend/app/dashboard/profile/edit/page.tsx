@@ -172,6 +172,7 @@ export default function ProfileEditPage() {
                     type="email"
                     {...register("email", { required: "Email is required" })}
                     placeholder="your.email@example.com"
+                    required
                   />
                   {errors.email && (
                     <p className="mt-1 text-sm text-red-600">

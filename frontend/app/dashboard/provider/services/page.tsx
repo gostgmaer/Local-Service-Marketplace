@@ -68,7 +68,7 @@ export default function ProviderServicesPage() {
         queryKey: ["provider-services", providerId],
       });
     },
-    onError: () => toast.error("Failed to add service"),
+    onError: () => toast.error("Couldn't add the service — please try again."),
   });
 
   const removeMutation = useMutation({
@@ -80,7 +80,7 @@ export default function ProviderServicesPage() {
         queryKey: ["provider-services", providerId],
       });
     },
-    onError: () => toast.error("Failed to remove service"),
+    onError: () => toast.error("Couldn't remove the service — please try again."),
   });
 
   const getCategoryName = (categoryId: string) => {

@@ -113,22 +113,25 @@ export default function AdminCreateUserPage() {
               >
                 <div className="md:col-span-2">
                   <Input
-                    label="Full Name *"
+                    label="Full Name"
+                    required
                     value={form.name || ""}
                     onChange={(e) => updateField("name", e.target.value)}
                   />
                 </div>
 
                 <Input
-                  label="Email *"
+                  label="Email"
                   type="email"
+                  required
                   value={form.email}
                   onChange={(e) => updateField("email", e.target.value)}
                 />
 
                 <Input
-                  label="Password *"
+                  label="Password"
                   type="password"
+                  required
                   value={form.password}
                   onChange={(e) => updateField("password", e.target.value)}
                 />
@@ -141,7 +144,7 @@ export default function AdminCreateUserPage() {
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Role *
+                    Role <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={form.role}
