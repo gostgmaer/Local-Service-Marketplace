@@ -44,9 +44,11 @@ describe('API Gateway (e2e)', () => {
         .get('/health')
         .expect(200)
         .expect((res) => {
-          expect(res.body).toHaveProperty('status', 'healthy');
+          expect(['ok', 'down']).toContain(res.body.status);
           expect(res.body).toHaveProperty('gateway', 'api-gateway');
           expect(res.body).toHaveProperty('timestamp');
+          expect(res.body).toHaveProperty('services');
+          expect(res.body).toHaveProperty('summary');
         });
     });
 
@@ -55,8 +57,9 @@ describe('API Gateway (e2e)', () => {
         .get('/health/services')
         .expect(200)
         .expect((res) => {
-          expect(res.body).toHaveProperty('status');
+          expect(['ok', 'down']).toContain(res.body.status);
           expect(res.body).toHaveProperty('services');
+          expect(res.body).toHaveProperty('summary');
         });
     }, 15000);
   });

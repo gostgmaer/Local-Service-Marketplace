@@ -153,7 +153,10 @@ describe("GatewayService", () => {
       mockHttpService.get.mockReturnValue(
         of({
           status: 200,
-          data: { status: "healthy" },
+          data: {
+            status: "ok",
+            checks: { database: { status: "ok" } },
+          },
           headers: { "x-response-time": "45ms" },
         }),
       );
@@ -161,7 +164,7 @@ describe("GatewayService", () => {
       const result = await service.healthCheck();
 
       expect(result).toHaveProperty("identity-service");
-      expect(result["identity-service"].status).toBe("healthy");
+      expect(result["identity-service"].status).toBe("ok");
     });
 
     it("should mark service as unhealthy on error", async () => {
@@ -171,8 +174,8 @@ describe("GatewayService", () => {
 
       const result = await service.healthCheck();
 
-      expect(result["identity-service"].status).toBe("unhealthy");
-      expect(result["identity-service"].error).toBe("Connection failed");
+      expect(result["identity-service"].status).toBe("down");
+      expect(result["identity-service"].message).toBe("Connection failed");
     });
   });
 });
