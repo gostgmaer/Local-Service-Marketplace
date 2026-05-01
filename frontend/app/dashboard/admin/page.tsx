@@ -177,6 +177,20 @@ export default function AdminDashboardPage() {
         }
       : undefined;
 
+    const redisSource = service?.checks?.redis || service?.redis;
+    const redisCheck = redisSource
+      ? {
+          status: redisSource.status === "ok" ? "ok" : "down",
+          responseTime: redisSource.responseTime || "-",
+          message:
+            redisSource.message ||
+            (redisSource.status === "ok"
+              ? "Redis is reachable"
+              : "Redis check failed"),
+          enabled: redisSource.enabled,
+        }
+      : undefined;
+
     const dependencySource =
       service?.checks?.dependencies || service?.dependencies || {};
     const dependencyChecks = Object.entries(dependencySource).map(
@@ -207,8 +221,10 @@ export default function AdminDashboardPage() {
       message:
         service?.message ||
         service?.checks?.database?.message ||
+        service?.checks?.redis?.message ||
         (status === "ok" ? "All checks passed" : "Service is unavailable"),
       databaseCheck,
+      redisCheck,
       dependencyChecks,
       dependencySummary: {
         total: dependencyChecks.length,
@@ -234,6 +250,22 @@ export default function AdminDashboardPage() {
         ]
       : [];
 
+    const redisRow = service.redisCheck
+      ? [
+          {
+            id: `${service.key}:redis`,
+            serviceLabel: service.label,
+            serviceKey: service.key,
+            dependencyLabel:
+              service.redisCheck.enabled === false ? "Redis (Disabled)" : "Redis",
+            status: service.redisCheck.status,
+            responseTime: service.redisCheck.responseTime,
+            message: service.redisCheck.message,
+            type: "redis" as const,
+          },
+        ]
+      : [];
+
     const dependencyRows = service.dependencyChecks.map((dependency) => ({
       id: `${service.key}:${dependency.key}`,
       serviceLabel: service.label,
@@ -245,7 +277,7 @@ export default function AdminDashboardPage() {
       type: "dependency" as const,
     }));
 
-    return [...dbRow, ...dependencyRows];
+    return [...dbRow, ...redisRow, ...dependencyRows];
   });
 
   const allDependencySummary = {
@@ -403,6 +435,29 @@ export default function AdminDashboardPage() {
                               )}
                             </div>
 
+                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  Redis
+                                </p>
+                                {service.redisCheck ? (
+                                  <StatusBadge
+                                    status={service.redisCheck.status}
+                                    size="sm"
+                                  />
+                                ) : (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    Not configured
+                                  </span>
+                                )}
+                              </div>
+                              {service.redisCheck && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {service.redisCheck.responseTime} - {service.redisCheck.message}
+                                </p>
+                              )}
+                            </div>
+
                             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                               <div className="flex items-center justify-between">
                                 <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -481,6 +536,8 @@ export default function AdminDashboardPage() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                       {dependency.type === "database"
                                         ? "Database readiness check"
+                                        : dependency.type === "redis"
+                                          ? "Redis readiness check"
                                         : "External dependency check"}
                                     </p>
                                   </div>

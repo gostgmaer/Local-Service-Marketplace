@@ -136,9 +136,11 @@ export class HealthController {
       };
     }
 
-    const missing = ["FIREBASE_PROJECT_ID", "FIREBASE_CLIENT_EMAIL", "FIREBASE_PRIVATE_KEY"].filter(
-      (key) => !process.env[key],
-    );
+    const missing = [
+      "FIREBASE_PROJECT_ID",
+      "FIREBASE_CLIENT_EMAIL",
+      "FIREBASE_PRIVATE_KEY",
+    ].filter((key) => !process.env[key]);
 
     if (missing.length > 0) {
       return {
@@ -189,7 +191,8 @@ export class HealthController {
     }
 
     const dependencyTargets: Record<string, string | undefined> = {
-      userService: process.env.USER_SERVICE_URL,
+      userService:
+        process.env.USER_SERVICE_URL || process.env.IDENTITY_SERVICE_URL,
       notificationService: process.env.NOTIFICATION_SERVICE_URL,
       fileUploadService: process.env.FILE_UPLOAD_SERVICE_URL,
     };

@@ -163,7 +163,8 @@ export class HealthController {
     }
 
     const dependencyTargets: Record<string, string | undefined> = {
-      userService: process.env.USER_SERVICE_URL,
+      userService:
+        process.env.USER_SERVICE_URL || process.env.IDENTITY_SERVICE_URL,
       marketplaceService: process.env.MARKETPLACE_SERVICE_URL,
       notificationService: process.env.NOTIFICATION_SERVICE_URL,
       fileUploadService: process.env.FILE_UPLOAD_SERVICE_URL,
