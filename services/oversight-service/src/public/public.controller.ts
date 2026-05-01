@@ -1,5 +1,7 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Req, Res } from "@nestjs/common";
+import { Request, Response } from "express";
 import { SystemSettingService } from "../admin/services/system-setting.service";
+import { PublicSiteConfigService } from "./public-site-config.service";
 
 /**
  * Public (unauthenticated) endpoints exposed by the oversight-service.
@@ -7,7 +9,10 @@ import { SystemSettingService } from "../admin/services/system-setting.service";
  */
 @Controller("public")
 export class PublicController {
-  constructor(private readonly systemSettingService: SystemSettingService) {}
+  constructor(
+    private readonly systemSettingService: SystemSettingService,
+    private readonly publicSiteConfigService: PublicSiteConfigService,
+  ) {}
 
   /**
    * Returns the current maintenance mode status.
@@ -68,115 +73,29 @@ export class PublicController {
    * No authentication required.
    */
   @Get("site-config")
-  async getSiteConfig() {
-    const keys = [
-      // Contact & branding
-      "support_email",
-      "contact_phone",
-      "contact_address",
-      // Upload limits
-      "max_file_upload_size_mb",
-      "allowed_file_types",
-      // Pricing
-      "gst_rate",
-      "platform_fee_percentage",
-      "default_currency",
-      // Pagination
-      "default_page_limit",
-      // Maintenance
-      "maintenance_mode",
-      "maintenance_message",
-      // Registration & auth
-      "registration_enabled",
-      "provider_registration_enabled",
-      "guest_requests_enabled",
-      // Limits & policies
-      "max_active_requests_per_customer",
-      "max_proposal_count",
-      "max_services_per_provider",
-      "request_expiry_days",
-      "job_auto_complete_days",
-      "dispute_window_days",
-      "refund_window_days",
-      "review_submission_window_days",
-      "min_review_length",
-      // Legal
-      "terms_version",
-      "privacy_version",
-      // Realtime
-      "realtime_enabled",
-      // Timezone
-      "default_timezone",
-      // Feature flags
-      "notifications_enabled",
-      "in_app_notifications_enabled",
-      "push_notifications_enabled",
-      "email_notifications_enabled",
-      "sms_notifications_enabled",
-      "messaging_enabled",
-      "whatsapp_enabled",
-      "notification_preferences_enabled",
-      "device_tracking_enabled",
-    ];
+  async getSiteConfig(@Req() req: Request, @Res() res: Response) {
+    const { config, etag } = await this.publicSiteConfigService.getSiteConfig();
 
-    const results = await Promise.allSettled(
-      keys.map((k) => this.systemSettingService.getSettingByKey(k)),
-    );
+    res.setHeader("ETag", etag);
+    res.setHeader("Cache-Control", "private, no-cache");
 
-    const get = (i: number, fallback: string) =>
-      results[i].status === "fulfilled"
-        ? ((results[i] as PromiseFulfilledResult<any>).value?.value ?? fallback)
-        : fallback;
+    if (this.ifNoneMatchContains(req.headers["if-none-match"], etag)) {
+      return res.status(304).end();
+    }
 
-    let idx = 0;
-    return {
-      // Contact & branding
-      supportEmail: get(idx++, "support@marketplace.com"),
-      contactPhone: get(idx++, ""),
-      contactAddress: get(idx++, ""),
-      // Upload limits
-      maxFileUploadSizeMb: parseInt(get(idx++, "10"), 10) || 10,
-      allowedFileTypes: get(idx++, "image/jpeg,image/png,image/webp,application/pdf"),
-      // Pricing
-      gstRate: parseFloat(get(idx++, "18")) || 18,
-      platformFeePercentage: parseFloat(get(idx++, "15")) || 15,
-      currency: get(idx++, "INR"),
-      // Pagination
-      defaultPageLimit: parseInt(get(idx++, "20"), 10) || 20,
-      // Maintenance
-      maintenanceMode: get(idx++, "false") === "true",
-      maintenanceMessage: get(idx++, ""),
-      // Registration & auth
-      registrationEnabled: get(idx++, "true") === "true",
-      providerRegistrationEnabled: get(idx++, "true") === "true",
-      guestRequestsEnabled: get(idx++, "true") === "true",
-      // Limits & policies
-      maxActiveRequestsPerCustomer: parseInt(get(idx++, "10"), 10) || 10,
-      maxProposalCount: parseInt(get(idx++, "10"), 10) || 10,
-      maxServicesPerProvider: parseInt(get(idx++, "10"), 10) || 10,
-      requestExpiryDays: parseInt(get(idx++, "30"), 10) || 30,
-      jobAutoCompleteDays: parseInt(get(idx++, "7"), 10) || 7,
-      disputeWindowDays: parseInt(get(idx++, "30"), 10) || 30,
-      refundWindowDays: parseInt(get(idx++, "30"), 10) || 30,
-      reviewSubmissionWindowDays: parseInt(get(idx++, "90"), 10) || 90,
-      minReviewLength: parseInt(get(idx++, "10"), 10) || 10,
-      // Legal
-      termsVersion: get(idx++, "1.0"),
-      privacyVersion: get(idx++, "1.0"),
-      // Realtime
-      realtimeEnabled: get(idx++, "true") === "true",
-      // Timezone
-      defaultTimezone: get(idx++, "Asia/Kolkata"),
-      // ── Feature flags (also returned here so one call covers all settings) ─
-      notificationsEnabled:           get(idx++, "false") === "true",
-      inAppNotificationsEnabled:      get(idx++, "false") === "true",
-      pushNotificationsEnabled:       get(idx++, "false") === "true",
-      emailNotificationsEnabled:      get(idx++, "true")  === "true",
-      smsNotificationsEnabled:        get(idx++, "false") === "true",
-      messagingEnabled:               get(idx++, "false") === "true",
-      whatsappEnabled:                get(idx++, "false") === "true",
-      notificationPreferencesEnabled: get(idx++, "false") === "true",
-      deviceTrackingEnabled:          get(idx++, "false") === "true",
-    };
+    return res.status(200).json(config);
+  }
+
+  private ifNoneMatchContains(
+    headerValue: string | string[] | undefined,
+    etag: string,
+  ): boolean {
+    if (!headerValue) return false;
+
+    const values = Array.isArray(headerValue)
+      ? headerValue
+      : headerValue.split(",").map((v) => v.trim());
+
+    return values.includes(etag) || values.includes("*");
   }
 }
