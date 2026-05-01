@@ -355,12 +355,12 @@ export function DashboardSidebar() {
   return (
     <aside
       className={cn(
-        "flex-shrink-0 hidden lg:flex flex-col bg-white dark:bg-gray-950 border-r border-gray-100 dark:border-gray-800/80 h-screen sticky top-0 transition-all duration-300 ease-in-out",
+        "flex-shrink-0 hidden lg:flex flex-col bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800/80 shadow-[1px_0_0_0_rgb(0,0,0,0.04)] dark:shadow-none h-screen sticky top-0 transition-all duration-300 ease-in-out",
         isCollapsed ? "w-[72px]" : "w-64",
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800/80">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-800/80">
         {!isCollapsed && (
           <div className="flex items-center gap-2.5">
             <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary-600 to-violet-600 flex items-center justify-center">
@@ -392,7 +392,7 @@ export function DashboardSidebar() {
 
       {/* Role chip */}
       {!isCollapsed && (
-        <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800/80">
+        <div className="px-4 py-2.5 border-b border-gray-200 dark:border-gray-800/80">
           <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wide bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
             {role}
           </span>
@@ -411,7 +411,7 @@ export function DashboardSidebar() {
           ))}
         </nav>
 
-        <div className="mt-3 pt-3 border-t border-dashed border-gray-100 dark:border-gray-800/80">
+        <div className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-gray-800/80">
           {!isCollapsed && (
             <p className="px-3 mb-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest">
               Account

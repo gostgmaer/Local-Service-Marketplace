@@ -318,7 +318,7 @@ export function DashboardMobileHeader() {
   return (
     <>
       {/* Top bar — only visible below lg */}
-      <header className="lg:hidden flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-950 border-b border-gray-200/60 dark:border-gray-800/80 sticky top-0 z-40">
+      <header className="lg:hidden flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800/80 shadow-[0_1px_3px_0_rgb(0,0,0,0.08)] dark:shadow-none sticky top-0 z-40">
         {/* Logo */}
         <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2 group">
           <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary-600 to-violet-600 flex items-center justify-center shadow-sm">
@@ -367,7 +367,7 @@ export function DashboardMobileHeader() {
         aria-label="Navigation menu"
       >
         {/* Drawer header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800/80">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-800/80">
           <div className="flex items-center gap-2.5">
             <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary-600 to-violet-600 flex items-center justify-center">
               <span className="text-white font-bold text-xs">LS</span>
@@ -389,7 +389,7 @@ export function DashboardMobileHeader() {
         </div>
 
         {/* User info */}
-        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800/80">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800/80">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary-500 to-violet-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
               {initials}
