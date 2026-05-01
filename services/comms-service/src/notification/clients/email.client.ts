@@ -12,6 +12,8 @@ export class EmailClient {
   private readonly notificationApiKey: string;
   private readonly tenantId: string;
   private readonly emailEnabled: boolean;
+  private readonly defaultAppName: string;
+  private readonly defaultAppUrl: string;
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
@@ -32,6 +34,13 @@ export class EmailClient {
     );
     this.emailEnabled =
       this.configService.get<string>("EMAIL_ENABLED", "true") === "true";
+    this.defaultAppName = this.configService.get<string>(
+      "APPLICATION_NAME",
+      "LocalServiceMarketplace",
+    );
+    this.defaultAppUrl =
+      this.configService.get<string>("APP_URL") ||
+      this.configService.get<string>("FRONTEND_URL", "http://localhost:3000");
 
     this.httpClient = axios.create({
       baseURL: this.notificationServiceUrl,
@@ -47,6 +56,27 @@ export class EmailClient {
       `EmailClient initialized - URL: ${this.notificationServiceUrl}, Enabled: ${this.emailEnabled}`,
       "EmailClient",
     );
+  }
+
+  private buildEmailDispatchHeaders(
+    appContext?: AppContextDto,
+  ): Record<string, string> {
+    const idempotencyKey = uuidv4();
+    const appName =
+      (appContext?.applicationName || this.defaultAppName).trim() ||
+      "LocalServiceMarketplace";
+    const appUrl =
+      (appContext?.appUrl || this.defaultAppUrl).trim() ||
+      "http://localhost:3000";
+    const rawPath = (appContext?.ctaPath || "/").trim() || "/";
+    const ctaPath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+
+    return {
+      "x-app-name": appName,
+      "x-app-url": appUrl,
+      "x-path": ctaPath,
+      "x-idempotency-key": idempotencyKey,
+    };
   }
 
   async sendEmail(options: {
@@ -68,12 +98,9 @@ export class EmailClient {
 
     try {
       this.logger.log(`Sending email to ${options.to}`, "EmailClient");
-
-      const idempotencyKey = uuidv4();
-      const appName =
-        options.appContext?.applicationName || "LocalServiceMarketplace";
-      const appUrl = options.appContext?.appUrl || "";
-      const ctaPath = options.appContext?.ctaPath;
+      const dispatchHeaders = this.buildEmailDispatchHeaders(
+        options.appContext,
+      );
 
       const response = await this.httpClient.post(
         "/v1/email/send",
@@ -88,10 +115,7 @@ export class EmailClient {
         },
         {
           headers: {
-            "x-app-name": appName,
-            "x-app-url": appUrl,
-            ...(ctaPath ? { "x-path": ctaPath } : {}),
-            "x-idempotency-key": idempotencyKey,
+            ...dispatchHeaders,
           },
         },
       );
@@ -130,11 +154,7 @@ export class EmailClient {
         `Sending template email (${template}) to ${to}`,
         "EmailClient",
       );
-
-      const idempotencyKey = uuidv4();
-      const appName = appContext?.applicationName || "LocalServiceMarketplace";
-      const appUrl = appContext?.appUrl || "";
-      const ctaPath = appContext?.ctaPath;
+      const dispatchHeaders = this.buildEmailDispatchHeaders(appContext);
 
       const response = await this.httpClient.post(
         "/v1/email/send",
@@ -148,10 +168,7 @@ export class EmailClient {
         },
         {
           headers: {
-            "x-app-name": appName,
-            "x-app-url": appUrl,
-            ...(ctaPath ? { "x-path": ctaPath } : {}),
-            "x-idempotency-key": idempotencyKey,
+            ...dispatchHeaders,
           },
         },
       );

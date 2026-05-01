@@ -9,8 +9,8 @@
 #   docker compose -f docker-compose.yml up -d
 #
 # PgBouncer is available but OPT-IN via the 'pooling' profile:
-#   COMPOSE_PROFILES=workers,pooling   ← enables PgBouncer
-#   COMPOSE_PROFILES=workers           ← skips PgBouncer (default, saves ~30MB RAM)
+#   COMPOSE_PROFILES=workers,pooling   -> enables PgBouncer
+#   COMPOSE_PROFILES=workers           -> skips PgBouncer (default, saves ~30MB RAM)
 #
 # PgBouncer is only worth enabling for load testing or staging (50+ concurrent users).
 # For a single local dev user, connecting directly to postgres is faster and simpler.

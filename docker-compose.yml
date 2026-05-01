@@ -632,10 +632,10 @@
 
   # Frontend service skipped for local development
 
-  # â”€â”€â”€ Frontend (Next.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # -------------------- Frontend (Next.js) --------------------
   # Toggle in docker.env:
-  #   COMPOSE_PROFILES=workers,frontend   â† enable frontend
-  #   COMPOSE_PROFILES=workers            â† disable frontend
+  #   COMPOSE_PROFILES=workers,frontend   -> enable frontend
+  #   COMPOSE_PROFILES=workers            -> disable frontend
   frontend:
     build:
       context: ./frontend
