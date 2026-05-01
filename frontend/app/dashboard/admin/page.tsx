@@ -88,6 +88,19 @@ export default function AdminDashboardPage() {
     staleTime: 60_000,
   });
 
+  const {
+    data: infraHealth,
+    isLoading: infraHealthLoading,
+    error: infraHealthError,
+    refetch: refetchInfraHealth,
+  } = useQuery({
+    queryKey: ["admin-infra-health"],
+    queryFn: () => adminService.getInfrastructureHealth(),
+    enabled: can(Permission.ADMIN_ACCESS),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+
   // Real-time invalidation for admin dashboard queries
   useRealtimeList(["user:created", "user:updated", "user:deleted"], ["admin-users-recent"]);
   useRealtimeList(["user:created", "user:updated", "user:deleted"], ["admin-users-stats"]);
@@ -116,6 +129,52 @@ export default function AdminDashboardPage() {
       ? Math.round(((jobStats?.byStatus?.disputed ?? 0) / totalJobs) * 100)
       : 0;
 
+  const allInfraServiceMeta = [
+    { key: "identity", label: "Identity", serviceName: "identity-service" },
+    {
+      key: "marketplace",
+      label: "Marketplace",
+      serviceName: "marketplace-service",
+    },
+    { key: "payment", label: "Payment", serviceName: "payment-service" },
+    { key: "comms", label: "Comms", serviceName: "comms-service" },
+    { key: "oversight", label: "Oversight", serviceName: "oversight-service" },
+    {
+      key: "infrastructure",
+      label: "Infrastructure",
+      serviceName: "infrastructure-service",
+    },
+  ] as const;
+
+  const infraServices = infraHealth?.services ?? {};
+  const infraServiceMeta = allInfraServiceMeta.filter(
+    (meta) =>
+      meta.key !== "infrastructure" ||
+      Object.prototype.hasOwnProperty.call(infraServices, "infrastructure"),
+  );
+  const infraServiceRows = infraServiceMeta.map((meta) => {
+    const service = (infraServices as Record<string, any>)[meta.key];
+    const status = service?.status === "ok" ? "ok" : "down";
+    return {
+      ...meta,
+      status,
+      responseTime: service?.responseTime || "—",
+      message:
+        service?.message ||
+        service?.checks?.database?.message ||
+        (status === "ok" ? "All checks passed" : "Service is unavailable"),
+    };
+  });
+
+  const resolvedInfraSummary = infraHealth?.summary ?? {
+    total: infraServiceRows.length,
+    ok: infraServiceRows.filter((svc) => svc.status === "ok").length,
+    down: infraServiceRows.filter((svc) => svc.status !== "ok").length,
+    downServices: infraServiceRows
+      .filter((svc) => svc.status !== "ok")
+      .map((svc) => svc.key),
+  };
+
   const isStatsLoading = !userStats || !disputeStats || !jobStats || !requestStats || !paymentStats;
 
   return (
@@ -139,6 +198,106 @@ export default function AdminDashboardPage() {
                   Platform-wide overview and management
                 </p>
               </div>
+
+              {/* Infrastructure Health */}
+              <Card className="mb-10">
+                <CardHeader>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Infrastructure Health
+                      </h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Live status of all core services, database checks, and dependencies
+                      </p>
+                    </div>
+                    {infraHealth?.timestamp && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Updated {formatRelativeTime(infraHealth.timestamp)}
+                      </p>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {infraHealthLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {[...Array(6)].map((_, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+                        >
+                          <Skeleton className="h-4 w-24 mb-2" />
+                          <Skeleton className="h-3 w-32 mb-3" />
+                          <Skeleton className="h-3 w-20 mb-2" />
+                          <Skeleton className="h-3 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : infraHealthError ? (
+                    <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <p className="text-sm text-red-700 dark:text-red-300">
+                        Unable to load infrastructure health. Please retry.
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => refetchInfraHealth()}>
+                        Retry Health Check
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <StatusBadge status={infraHealth?.status || "down"} />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {resolvedInfraSummary.ok}/{resolvedInfraSummary.total} services healthy
+                        </span>
+                        {resolvedInfraSummary.down > 0 && (
+                          <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                            {resolvedInfraSummary.down} service(s) down
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {infraServiceRows.map((service) => (
+                          <div
+                            key={service.key}
+                            className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div>
+                                <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                  {service.label}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {service.serviceName}
+                                </p>
+                              </div>
+                              <StatusBadge status={service.status} />
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Response time:{" "}
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                  {service.responseTime}
+                                </span>
+                              </p>
+                              <p
+                                className={`text-xs ${
+                                  service.status === "ok"
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-red-600 dark:text-red-400"
+                                }`}
+                              >
+                                {service.message}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Top KPI Bar */}
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">

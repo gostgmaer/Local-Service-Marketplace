@@ -124,6 +124,12 @@ export function getStatusColor(
   status: string,
 ): "blue" | "green" | "yellow" | "red" | "gray" {
   const statusColors: Record<string, any> = {
+    ok: "green",
+    up: "green",
+    healthy: "green",
+    down: "red",
+    unhealthy: "red",
+    degraded: "yellow",
     open: "blue",
     pending: "yellow",
     in_progress: "blue",
