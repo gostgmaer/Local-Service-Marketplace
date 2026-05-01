@@ -2,8 +2,14 @@ const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 
+const bearerToken = process.env.TEST_UPLOAD_BEARER_TOKEN;
+
 async function testUpload() {
   try {
+    if (!bearerToken) {
+      throw new Error('Set TEST_UPLOAD_BEARER_TOKEN before running this script.');
+    }
+
     fs.writeFileSync('test.txt', 'hello world');
 
     const form = new FormData();
@@ -17,12 +23,12 @@ async function testUpload() {
       {
         headers: {
           ...form.getHeaders(),
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjM2U3YjdjYy03MmNhLTQ2MzgtOGI0OS1lMTRjNmM5MDg3MWQiLCJlbWFpbCI6Imtpc2hvcjgxMTYwQGdtYWlsLmNvbSIsInJvbGUiOiJwcm92aWRlciIsImlhdCI6MTc3NTc1ODc5MiwiZXhwIjoxNzc1NzU5NjkyfQ.3sw5R3Dr6L2KJrVub59FavPDfab3Oa8-Omd7rvqBlFU'
+          Authorization: `Bearer ${bearerToken}`
         }
       }
     );
     console.log('Success:', response.status, response.data);
-  } catch (error: any) {
+  } catch (error) {
     if (error.response) {
       console.error('Error:', error.response.status, error.response.data);
     } else {

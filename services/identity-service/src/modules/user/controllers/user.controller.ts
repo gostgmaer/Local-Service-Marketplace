@@ -17,7 +17,6 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import * as multer from "multer";
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
@@ -38,6 +37,7 @@ import {
   SuspendUserDto,
 } from "../dto/admin-user-actions.dto";
 import { FileServiceClient } from "../../../common/file-service.client";
+import { userProfileUploadOptions } from "../../../common/config/upload.config";
 import "multer";
 
 @Controller("users")
@@ -138,7 +138,7 @@ export class UserController {
    */
   @UseGuards(JwtAuthGuard)
   @Post("me/profile-picture")
-  @UseInterceptors(FileInterceptor("files", { storage: multer.memoryStorage() }))
+  @UseInterceptors(FileInterceptor("files", userProfileUploadOptions))
   @HttpCode(HttpStatus.OK)
   async uploadProfilePicture(
     @Request() req: any,

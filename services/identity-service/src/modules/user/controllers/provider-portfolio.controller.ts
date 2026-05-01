@@ -18,7 +18,6 @@ import {
 import { FlexibleIdPipe } from "../../../common/pipes/flexible-id.pipe";
 import { StrictUuidPipe } from "../../../common/pipes/strict-uuid.pipe";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import * as multer from "multer";
 import { ProviderPortfolioService } from "../services/provider-portfolio.service";
 import { CreatePortfolioDto } from "../dto/create-portfolio.dto";
 import { UpdatePortfolioItemDto } from "../dto/update-portfolio-item.dto";
@@ -29,6 +28,7 @@ import {
   RequirePermissions,
 } from "@/common/rbac";
 import { FileServiceClient } from "../../../common/file-service.client";
+import { providerPortfolioUploadOptions } from "../../../common/config/upload.config";
 
 @UseGuards(JwtAuthGuard)
 @Controller("provider-portfolio")
@@ -41,7 +41,7 @@ export class ProviderPortfolioController {
 	@RequirePermissions("provider_portfolio.manage")
 	@UseGuards(RolesGuard)
 	@Post(":providerId")
-	@UseInterceptors(FilesInterceptor("images", 10, { storage: multer.memoryStorage() })) // Max 10 images
+	@UseInterceptors(FilesInterceptor("images", 10, providerPortfolioUploadOptions))
 	@HttpCode(HttpStatus.CREATED)
 	async createPortfolioItem(
 		@Param("providerId", StrictUuidPipe) providerId: string,

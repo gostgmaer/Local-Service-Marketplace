@@ -78,9 +78,13 @@ export class FileServiceClient {
     private readonly configService: ConfigService,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {
-    this.fileServiceUrl =
-      this.configService.get<string>("FILE_UPLOAD_SERVICE_URL") ||
-      "https://your-file-service.vercel.app";
+    const fileServiceUrl = this.configService.get<string>(
+      "FILE_UPLOAD_SERVICE_URL",
+    );
+    if (!fileServiceUrl) {
+      throw new Error("FILE_UPLOAD_SERVICE_URL must be configured");
+    }
+    this.fileServiceUrl = fileServiceUrl;
     this.defaultTenantId =
       this.configService.get<string>("FILE_DEFAULT_TENANT_ID") ||
       this.configService.get<string>("DEFAULT_TENANT_ID") ||

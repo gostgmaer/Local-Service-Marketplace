@@ -596,9 +596,13 @@ export class AuthController {
     @Headers("x-gateway-secret") gatewaySecret: string,
   ): Promise<VerifyTokenResponseDto> {
     // Verify this request is from the API Gateway using timing-safe comparison
-    const expectedSecret =
-      process.env.GATEWAY_INTERNAL_SECRET ||
-      "gateway-internal-secret-change-in-production";
+    const expectedSecret = process.env.GATEWAY_INTERNAL_SECRET;
+    if (!expectedSecret) {
+      this.logger.error("GATEWAY_INTERNAL_SECRET is not configured", {
+        context: "AuthController",
+      });
+      throw new UnauthorizedException("Unauthorized");
+    }
 
     const secretBuf = Buffer.from(gatewaySecret ?? "", "utf8");
     const expectedBuf = Buffer.from(expectedSecret, "utf8");
