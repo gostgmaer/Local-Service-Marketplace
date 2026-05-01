@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsOptional,
   IsObject,
+  IsEmail,
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
@@ -19,6 +20,14 @@ export class SendNotificationDto {
   @IsString()
   @IsNotEmpty()
   recipient: string; // email address or phone number
+
+  @IsEmail()
+  @IsOptional()
+  fromEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  fromName?: string;
 
   @IsEnum(NotificationChannel)
   channel: NotificationChannel;

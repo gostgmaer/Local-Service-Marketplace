@@ -49,6 +49,8 @@ export class EmailClient {
   private readonly emailEnabled: boolean;
   private readonly defaultAppName: string;
   private readonly defaultAppUrl: string;
+  private readonly defaultFromEmail: string;
+  private readonly defaultFromName: string;
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
@@ -76,6 +78,14 @@ export class EmailClient {
     this.defaultAppUrl =
       this.configService.get<string>("APP_URL") ||
       this.configService.get<string>("FRONTEND_URL", "http://localhost:3000");
+    this.defaultFromEmail = this.configService.get<string>(
+      "NOTIFICATION_FROM_EMAIL",
+      "",
+    );
+    this.defaultFromName = this.configService.get<string>(
+      "NOTIFICATION_FROM_NAME",
+      "",
+    );
 
     this.httpClient = axios.create({
       baseURL: this.notificationServiceUrl,
@@ -146,6 +156,7 @@ export class EmailClient {
     appContext?: AppContextDto,
     template?: string,
     variables?: Record<string, any>,
+    sender?: { fromEmail?: string; fromName?: string },
   ): Record<string, string> {
     const idempotencyKey = uuidv4();
     const appName =
@@ -157,17 +168,31 @@ export class EmailClient {
     const ctaPath = this.normalizePath(
       appContext?.ctaPath || this.resolveTemplatePath(template, variables),
     );
+    const fromEmail =
+      (sender?.fromEmail || this.defaultFromEmail || "").trim();
+    const fromName = (sender?.fromName || this.defaultFromName || "").trim();
 
-    return {
+    const headers: Record<string, string> = {
       "x-app-name": appName,
       "x-app-url": appUrl,
       "x-path": ctaPath,
       "x-idempotency-key": idempotencyKey,
     };
+
+    if (fromEmail) {
+      headers["x-from-email"] = fromEmail;
+    }
+    if (fromName) {
+      headers["x-from-name"] = fromName;
+    }
+
+    return headers;
   }
 
   async sendEmail(options: {
     to: string;
+    fromEmail?: string;
+    fromName?: string;
     subject?: string;
     text?: string;
     html?: string;
@@ -189,6 +214,10 @@ export class EmailClient {
         options.appContext,
         options.template,
         options.variables,
+        {
+          fromEmail: options.fromEmail,
+          fromName: options.fromName,
+        },
       );
 
       const response = await this.httpClient.post(
@@ -229,6 +258,7 @@ export class EmailClient {
     template: string,
     variables: Record<string, any>,
     appContext?: AppContextDto,
+    sender?: { fromEmail?: string; fromName?: string },
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     if (!this.emailEnabled) {
       this.logger.warn(
@@ -247,6 +277,7 @@ export class EmailClient {
         appContext,
         template,
         variables,
+        sender,
       );
 
       const response = await this.httpClient.post(

@@ -233,6 +233,8 @@ export class NotificationController {
     @Headers("x-app") xApp?: string,
     @Headers("x-app-url") xAppUrl?: string,
     @Headers("x-path") xPath?: string,
+    @Headers("x-from-email") xFromEmail?: string,
+    @Headers("x-from-name") xFromName?: string,
   ) {
     // Inject app context from headers if not provided in body
     dto.appContext = {
@@ -246,6 +248,8 @@ export class NotificationController {
         this.configService.get("APP_URL"),
       ctaPath: dto.appContext?.ctaPath || xPath?.trim() || null,
     };
+    dto.fromEmail = dto.fromEmail || xFromEmail?.trim() || undefined;
+    dto.fromName = dto.fromName || xFromName?.trim() || undefined;
 
     this.logger.log(
       `POST /notifications/send - Sending ${dto.channel} notification to ${dto.recipient}`,
@@ -269,6 +273,8 @@ export class NotificationController {
     @Headers("x-app") xApp?: string,
     @Headers("x-app-url") xAppUrl?: string,
     @Headers("x-path") xPath?: string,
+    @Headers("x-from-email") xFromEmail?: string,
+    @Headers("x-from-name") xFromName?: string,
   ) {
     // Inject app context from headers if not provided in body
     dto.appContext = {
@@ -282,6 +288,8 @@ export class NotificationController {
         this.configService.get("APP_URL"),
       ctaPath: dto.appContext?.ctaPath || xPath?.trim() || null,
     };
+    dto.fromEmail = dto.fromEmail || xFromEmail?.trim() || undefined;
+    dto.fromName = dto.fromName || xFromName?.trim() || undefined;
 
     this.logger.log(
       `POST /notifications/email/send - Sending email to ${dto.to}`,
