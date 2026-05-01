@@ -11,7 +11,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { Permission } from "@/utils/permissions";
 import { adminService, AuditLog } from "@/services/admin-service";
-import { formatDate, formatRelativeTime } from "@/utils/helpers";
+import { formatRelativeTime } from "@/utils/helpers";
 import {
   Scroll,
   Search,

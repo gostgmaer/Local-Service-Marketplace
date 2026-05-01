@@ -52,7 +52,7 @@ export default function MessagesPage() {
     } else if (!authLoading && isAuthenticated && !messagingEnabled) {
       router.push(ROUTES.DASHBOARD);
     }
-  }, [isAuthenticated, authLoading, router, can]);
+  }, [isAuthenticated, authLoading, router, can, messagingEnabled]);
 
   const [convPage, setConvPage] = useState(1);
   const convLimit = 20;
@@ -71,7 +71,10 @@ export default function MessagesPage() {
     enabled: messagingEnabled && isAuthenticated,
   });
 
-  const conversations = conversationsData?.data ?? [];
+  const conversations = useMemo<Conversation[]>(
+    () => conversationsData?.data ?? [],
+    [conversationsData?.data],
+  );
   const convTotal = conversationsData?.total ?? 0;
   const convTotalPages = Math.max(1, Math.ceil(convTotal / convLimit));
 

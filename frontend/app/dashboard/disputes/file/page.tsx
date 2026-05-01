@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +12,6 @@ import { z } from "zod";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { ImageUpload } from "@/components/ui/ImageUpload";
 
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { disputeService } from "@/services/dispute-service";
@@ -20,6 +20,16 @@ import { uploadRequestImages } from "@/services/file-service";
 import { ArrowLeft, AlertTriangle, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+
+const ImageUpload = dynamic(
+  () => import("@/components/ui/ImageUpload").then((mod) => mod.ImageUpload),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-40 animate-pulse rounded-lg border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900" />
+    ),
+  },
+);
 
 const DISPUTE_REASONS = [
   "Work not completed as agreed",

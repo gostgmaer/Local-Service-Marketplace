@@ -59,6 +59,9 @@
     "newman-reporter-htmlextra": "~1.22.11"
   },
   "pnpm": {
+    "overrides": {
+      "multer": "2.1.1"
+    },
     "peerDependencyRules": {
       "allowedVersions": {
         "reflect-metadata": "0.2"

@@ -13,7 +13,7 @@ import { Loading } from "@/components/ui/Loading";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { disputeService } from "@/services/dispute-service";
-import { formatDate, formatRelativeTime, formatDateTime } from "@/utils/helpers";
+import { formatRelativeTime, formatDateTime } from "@/utils/helpers";
 import { AlertTriangle, Plus, ArrowRight } from "lucide-react";
 import Link from "next/link";
 

@@ -349,19 +349,20 @@ const ARTICLE_CONTENT: Record<string, React.ReactNode> = {
 };
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
-export default function BlogPostPage({ params }: Props) {
-  const post = BLOG_POSTS.find((p) => p.slug === params.slug);
+export default async function BlogPostPage({ params }: Props) {
+  const { slug } = await params;
+  const post = BLOG_POSTS.find((p) => p.slug === slug);
   if (!post) notFound();
 
-  const content = ARTICLE_CONTENT[params.slug];
+  const content = ARTICLE_CONTENT[slug];
   const sameCategoryPosts = BLOG_POSTS.filter(
-    (p) => p.slug !== params.slug && p.category === post.category,
+    (p) => p.slug !== slug && p.category === post.category,
   );
   const otherPosts = BLOG_POSTS.filter(
-    (p) => p.slug !== params.slug && p.category !== post.category,
+    (p) => p.slug !== slug && p.category !== post.category,
   );
   const relatedPosts = [...sameCategoryPosts, ...otherPosts].slice(0, 3);
 

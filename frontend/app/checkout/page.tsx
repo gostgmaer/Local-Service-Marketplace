@@ -11,7 +11,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loading } from "@/components/ui/Loading";
-import { paymentService, PricingPlan, SavedPaymentMethod } from "@/services/payment-service";
+import { paymentService, PricingPlan } from "@/services/payment-service";
 import { getProviderProfileByUserId } from "@/services/user-service";
 import { jobService } from "@/services/job-service";
 import { usePublicSettings } from "@/hooks/usePublicSettings";

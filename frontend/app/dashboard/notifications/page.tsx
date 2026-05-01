@@ -79,7 +79,7 @@ export default function NotificationsPage() {
     } else if (!authLoading && isAuthenticated && !notificationsEnabled) {
       router.push(ROUTES.DASHBOARD);
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, notificationsEnabled]);
 
   const [page, setPage] = useState(1);
   const limit = 20;

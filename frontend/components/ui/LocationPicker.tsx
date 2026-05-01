@@ -181,7 +181,7 @@ export function LocationPicker({
         },
       );
     }
-  }, [value, handleMapClick, addMarker]);
+  }, [value, addMarker]);
 
   const loadGoogleMaps = useCallback(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;

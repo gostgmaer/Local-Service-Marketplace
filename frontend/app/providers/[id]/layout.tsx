@@ -4,13 +4,14 @@ import { API_URL } from "@/config/constants";
 const INTERNAL_API =
   process.env.INTERNAL_API_URL || API_URL;
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
   try {
-    const res = await fetch(`${INTERNAL_API}/providers/${params.id}`, {
+    const res = await fetch(`${INTERNAL_API}/providers/${id}`, {
       next: { revalidate: 3600 },
     });
 
@@ -29,11 +30,11 @@ export async function generateMetadata({
     return {
       title: `${name} | Service Provider`,
       description,
-      alternates: { canonical: `/providers/${params.id}` },
+      alternates: { canonical: `/providers/${id}` },
       openGraph: {
         title: `${name} | Local Service Marketplace`,
         description,
-        url: `/providers/${params.id}`,
+        url: `/providers/${id}`,
         images: avatar
           ? [{ url: avatar, width: 400, height: 400, alt: name }]
           : [
@@ -57,7 +58,7 @@ export async function generateMetadata({
       title: "Service Provider",
       description:
         "View service provider profiles, reviews, and availability on Local Service Marketplace.",
-      alternates: { canonical: `/providers/${params.id}` },
+      alternates: { canonical: `/providers/${id}` },
     };
   }
 }

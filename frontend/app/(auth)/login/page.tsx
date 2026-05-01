@@ -95,7 +95,6 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
-    login,
     loginWithPhone,
     loginWithEmailOTP,
     loginWithOTP,

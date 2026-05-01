@@ -9,16 +9,17 @@ import { MapPin, ArrowRight, Star } from "lucide-react";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://localservicemarketplace.com";
 
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
 export function generateStaticParams() {
   return INDIA_CITIES.map((city) => ({ slug: city.slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}): Promise<Metadata> {
-  const city = INDIA_CITIES.find((c) => c.slug === params.slug);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const city = INDIA_CITIES.find((c) => c.slug === slug);
   if (!city) return {};
 
   const title = `Home Services in ${city.name} | Local Service Marketplace`;
@@ -48,8 +49,9 @@ export async function generateMetadata({
   };
 }
 
-export default function CityHubPage({ params }: { params: { slug: string } }) {
-  const city = INDIA_CITIES.find((c) => c.slug === params.slug);
+export default async function CityHubPage({ params }: Props) {
+  const { slug } = await params;
+  const city = INDIA_CITIES.find((c) => c.slug === slug);
   if (!city) notFound();
 
   const jsonLd = {

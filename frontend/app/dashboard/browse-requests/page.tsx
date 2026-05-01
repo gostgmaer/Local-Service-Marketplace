@@ -17,10 +17,9 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { requestService } from "@/services/request-service";
 import { proposalService } from "@/services/proposal-service";
-import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
+import { formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import {
   Search,
-  Filter,
   MapPin,
   Calendar,
   IndianRupee,

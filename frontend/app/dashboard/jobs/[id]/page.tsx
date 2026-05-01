@@ -134,7 +134,7 @@ export default function JobDetailPage() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showCashPaymentDialog, setShowCashPaymentDialog] = useState(false);
-  const [cashPaymentAmount, setCashPaymentAmount] = useState("");
+  const [_cashPaymentAmount, setCashPaymentAmount] = useState("");
   const [showReviewModal, setShowReviewModal] = useState(false);
 
   const completedPayment = jobPayments?.find((p) => p.status === "completed");

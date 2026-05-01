@@ -185,15 +185,6 @@ export default function EarningsPage() {
       ? 0
       : Math.min(page * limit, sortedTransactions.length);
 
-  const payoutStatusStyles: Record<string, string> = {
-    available:
-      "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
-    pending:
-      "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
-    adjusted:
-      "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
-  };
-
   useEffect(() => {
     goToPage(1);
   }, [dateRange, sortField, sortDirection, limit, goToPage]);

@@ -18,10 +18,10 @@ import { Pagination } from "@/components/ui/Pagination";
 import { RequestFilters } from "@/components/features/requests/RequestFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { requestService } from "@/services/request-service";
-import { formatDate, formatCurrency, formatRelativeTime } from "@/utils/helpers";
+import { formatCurrency, formatRelativeTime } from "@/utils/helpers";
 import { analytics } from "@/utils/analytics";
 import Link from "next/link";
-import { Plus, Tag, User } from "lucide-react";
+import { Plus, User } from "lucide-react";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { Skeleton } from "@/components/ui";
 
