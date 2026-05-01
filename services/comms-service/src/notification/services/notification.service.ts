@@ -143,7 +143,10 @@ export class NotificationService {
       `Fetching notifications for user ${userId}`,
       "NotificationService",
     );
-    return this.notificationRepository.getNotificationsByUserId(userId, options);
+    return this.notificationRepository.getNotificationsByUserId(
+      userId,
+      options,
+    );
   }
 
   async markAsRead(id: string, userId: string): Promise<Notification> {
@@ -230,6 +233,8 @@ export class NotificationService {
         // Send via email
         const emailResult = await this.emailClient.sendEmail({
           to: dto.recipient,
+          fromEmail: dto.fromEmail,
+          fromName: dto.fromName,
           subject:
             dto.subject ||
             (dto.template
@@ -321,6 +326,8 @@ export class NotificationService {
 
     const result = await this.emailClient.sendEmail({
       to: dto.to,
+      fromEmail: dto.fromEmail,
+      fromName: dto.fromName,
       subject:
         dto.subject ||
         (dto.template ? `Notification: ${dto.template}` : "New Notification"),

@@ -14,6 +14,14 @@ export class SendEmailDto {
   @IsNotEmpty()
   to: string;
 
+  @IsEmail()
+  @IsOptional()
+  fromEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  fromName?: string;
+
   @IsString()
   @IsOptional()
   subject?: string;
