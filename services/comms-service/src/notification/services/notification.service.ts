@@ -363,53 +363,6 @@ export class NotificationService {
   }
 
   /**
-   * Send OTP via SMS
-   */
-  async sendOtp(phone: string, purpose: string = "login") {
-    this.logger.log(
-      `Sending OTP to ${phone} (purpose: ${purpose})`,
-      "NotificationService",
-    );
-
-    // Feature flag check: SMS notifications
-    if (!this.featureFlags.smsEnabled) {
-      throw new BadRequestException(
-        "SMS notifications are disabled. Set SMS_ENABLED=true to enable this feature.",
-      );
-    }
-
-    // Send OTP — queue if workers enabled, else send directly
-    if (this.workersEnabled) {
-      await this.smsQueue.add("deliver-otp", { phone, purpose });
-      return { queued: true };
-    } else {
-      await this.smsClient.sendOtp(phone, purpose);
-      return { sent: true };
-    }
-  }
-
-  /**
-   * Verify OTP
-   */
-  async verifyOtp(phone: string, code: string, purpose: string = "login") {
-    this.logger.log(
-      `Verifying OTP for ${phone} (purpose: ${purpose})`,
-      "NotificationService",
-    );
-
-    // Feature flag check: SMS notifications
-    if (!this.featureFlags.smsEnabled) {
-      throw new BadRequestException(
-        "SMS notifications are disabled. Set SMS_ENABLED=true to enable this feature.",
-      );
-    }
-
-    const result = await this.smsClient.verifyOtp(phone, code, purpose);
-
-    return result;
-  }
-
-  /**
    * Enqueue WhatsApp OTP via the comms.whatsapp queue.
    * No-op when WhatsApp queue is unavailable (graceful degradation).
    */

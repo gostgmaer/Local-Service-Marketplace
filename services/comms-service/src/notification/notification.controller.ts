@@ -32,7 +32,7 @@ import { FeatureFlagService } from "./services/feature-flag.service";
 import { UnsubscribeRepository } from "./repositories/unsubscribe.repository";
 import { SendNotificationDto } from "./dto/send-notification.dto";
 import { SendEmailDto } from "./dto/send-email.dto";
-import { SendSmsDto, SendOtpDto, VerifyOtpDto } from "./dto/send-sms.dto";
+import { SendSmsDto } from "./dto/send-sms.dto";
 import { UnsubscribeDto, CheckUnsubscribeDto } from "./dto/unsubscribe.dto";
 import { JwtAuthGuard } from "@/common/guards/jwt-auth.guard";
 import { InternalServiceGuard } from "@/common/guards/internal-service.guard";
@@ -310,27 +310,6 @@ export class NotificationController {
   }
 
   /**
-   * Send OTP via SMS
-   * Rate limited to 5 OTP per hour per IP
-   */
-  @SkipAuth()
-  @UseGuards(InternalServiceGuard)
-  @Post("otp/send")
-  @Throttle({ sms: { limit: 5, ttl: 3600000 } })
-  @HttpCode(HttpStatus.OK)
-  async sendOtp(@Body() dto: SendOtpDto) {
-    this.logger.log(
-      `POST /notifications/otp/send - Sending OTP to ${dto.phone}`,
-      "NotificationController",
-    );
-    const result = await this.notificationService.sendOtp(
-      dto.phone,
-      dto.purpose,
-    );
-    return { message: "OTP sent successfully", data: result };
-  }
-
-  /**
    * Enqueue WhatsApp OTP via comms-service WhatsApp worker.
    * Called by identity-service when WHATSAPP_OTP_ENABLED=true.
    */
@@ -346,26 +325,6 @@ export class NotificationController {
     );
     await this.notificationService.enqueueWhatsAppOtp(dto.phone, dto.otp);
     return { message: "WhatsApp OTP enqueued" };
-  }
-
-  /**
-   * Verify OTP
-   */
-  @SkipAuth()
-  @UseGuards(InternalServiceGuard)
-  @Post("otp/verify")
-  @HttpCode(HttpStatus.OK)
-  async verifyOtp(@Body() dto: VerifyOtpDto) {
-    this.logger.log(
-      `POST /notifications/otp/verify - Verifying OTP for ${dto.phone}`,
-      "NotificationController",
-    );
-    const result = await this.notificationService.verifyOtp(
-      dto.phone,
-      dto.code,
-      dto.purpose,
-    );
-    return { message: "OTP verified successfully", data: result };
   }
 
   // ========== Worker endpoints (for background job scheduler) ==========
