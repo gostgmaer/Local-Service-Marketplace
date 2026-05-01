@@ -234,58 +234,6 @@ export default function AdminDashboardPage() {
     };
   });
 
-  const allDependencyRows = infraServiceRows.flatMap((service) => {
-    const dbRow = service.databaseCheck
-      ? [
-          {
-            id: `${service.key}:database`,
-            serviceLabel: service.label,
-            serviceKey: service.key,
-            dependencyLabel: "Database",
-            status: service.databaseCheck.status,
-            responseTime: service.databaseCheck.responseTime,
-            message: service.databaseCheck.message,
-            type: "database" as const,
-          },
-        ]
-      : [];
-
-    const redisRow = service.redisCheck
-      ? [
-          {
-            id: `${service.key}:redis`,
-            serviceLabel: service.label,
-            serviceKey: service.key,
-            dependencyLabel:
-              service.redisCheck.enabled === false ? "Redis (Disabled)" : "Redis",
-            status: service.redisCheck.status,
-            responseTime: service.redisCheck.responseTime,
-            message: service.redisCheck.message,
-            type: "redis" as const,
-          },
-        ]
-      : [];
-
-    const dependencyRows = service.dependencyChecks.map((dependency) => ({
-      id: `${service.key}:${dependency.key}`,
-      serviceLabel: service.label,
-      serviceKey: service.key,
-      dependencyLabel: dependency.label,
-      status: dependency.status,
-      responseTime: dependency.responseTime,
-      message: dependency.message,
-      type: "dependency" as const,
-    }));
-
-    return [...dbRow, ...redisRow, ...dependencyRows];
-  });
-
-  const allDependencySummary = {
-    total: allDependencyRows.length,
-    ok: allDependencyRows.filter((row) => row.status === "ok").length,
-    down: allDependencyRows.filter((row) => row.status === "down").length,
-  };
-
   const resolvedInfraSummary = infraHealth?.summary ?? {
     total: infraServiceRows.length,
     ok: infraServiceRows.filter((svc) => svc.status === "ok").length,
@@ -511,63 +459,6 @@ export default function AdminDashboardPage() {
                         ))}
                       </div>
 
-                      <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                            All Dependency Checks
-                          </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {allDependencySummary.ok}/{allDependencySummary.total} healthy
-                          </span>
-                        </div>
-
-                        {allDependencyRows.length > 0 ? (
-                          <div className="space-y-2">
-                            {allDependencyRows.map((dependency) => (
-                              <div
-                                key={dependency.id}
-                                className="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {dependency.serviceLabel} - {dependency.dependencyLabel}
-                                    </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                      {dependency.type === "database"
-                                        ? "Database readiness check"
-                                        : dependency.type === "redis"
-                                          ? "Redis readiness check"
-                                        : "External dependency check"}
-                                    </p>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {dependency.responseTime}
-                                    </span>
-                                    <StatusBadge status={dependency.status} size="sm" />
-                                  </div>
-                                </div>
-
-                                <p
-                                  className={`text-xs mt-2 ${
-                                    dependency.status === "ok"
-                                      ? "text-green-600 dark:text-green-400"
-                                      : "text-red-600 dark:text-red-400"
-                                  }`}
-                                >
-                                  {dependency.message}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            No dependency health checks available.
-                          </p>
-                        )}
-                      </div>
                     </>
                   )}
                 </CardContent>
