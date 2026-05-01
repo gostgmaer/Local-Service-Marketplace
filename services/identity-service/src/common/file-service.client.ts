@@ -86,7 +86,6 @@ export class FileServiceClient {
     }
     this.fileServiceUrl = fileServiceUrl;
     this.defaultTenantId =
-      this.configService.get<string>("FILE_DEFAULT_TENANT_ID") ||
       this.configService.get<string>("DEFAULT_TENANT_ID") ||
       "default";
     this.requestTimeout = this.configService.get<number>(

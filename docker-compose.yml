@@ -1,4 +1,4 @@
-services:
+﻿services:
   # Database
   postgres:
     image: postgres:17-alpine
@@ -115,7 +115,7 @@ services:
       retries: 5
 
   # One-shot container that creates all required Kafka topics before services start.
-  # Exits with code 0 once topics are created (idempotent — already-exists is not an error).
+  # Exits with code 0 once topics are created (idempotent â€” already-exists is not an error).
   kafka-init:
     image: confluentinc/cp-kafka:7.5.0
     container_name: marketplace-kafka-init
@@ -157,7 +157,7 @@ services:
       - full
     env_file:
       - docker.env
-    # ports deliberately omitted — only reachable via api-gateway on internal network
+    # ports deliberately omitted â€” only reachable via api-gateway on internal network
     expose:
       - "3001"
     environment:
@@ -196,7 +196,7 @@ services:
       - DB_POOL_MAX=${DB_POOL_MAX:-10}
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL:-http://localhost:4100}
-      - DEFAULT_TENANT_ID=${FILE_DEFAULT_TENANT_ID:-default}
+      - DEFAULT_TENANT_ID=${DEFAULT_TENANT_ID:-default}
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
     networks:
       - marketplace-network
@@ -247,7 +247,7 @@ services:
       - AUTH_SERVICE_URL=http://identity-service:3001
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL}
-      - FILE_DEFAULT_TENANT_ID=${FILE_DEFAULT_TENANT_ID:-default}
+      - DEFAULT_TENANT_ID=${DEFAULT_TENANT_ID:-default}
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
@@ -308,7 +308,7 @@ services:
       - USER_SERVICE_URL=http://identity-service:3001
       - NOTIFICATION_SERVICE_URL=http://comms-service:3007
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL}
-      - FILE_DEFAULT_TENANT_ID=${FILE_DEFAULT_TENANT_ID:-default}
+      - DEFAULT_TENANT_ID=${DEFAULT_TENANT_ID:-default}
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
@@ -404,7 +404,7 @@ services:
       - WORKERS_ENABLED=${WORKERS_ENABLED:-false}
       - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-5}
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL:-http://localhost:4100}
-      - DEFAULT_TENANT_ID=${FILE_DEFAULT_TENANT_ID:-default}
+      - DEFAULT_TENANT_ID=${DEFAULT_TENANT_ID:-default}
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - JWT_SECRET=${JWT_SECRET}
@@ -592,7 +592,7 @@ services:
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL}
       - RATE_LIMIT_WINDOW_MS=60000
       - RATE_LIMIT_MAX_REQUESTS=100
-      # Redis rate limiting (optional — only needed with multiple gateway replicas)
+      # Redis rate limiting (optional â€” only needed with multiple gateway replicas)
       - REDIS_RATE_LIMIT_ENABLED=${REDIS_RATE_LIMIT_ENABLED:-false}
       - REDIS_HOST=${REDIS_HOST:-}
       - REDIS_PORT=${REDIS_PORT:-6379}
@@ -632,10 +632,10 @@ services:
 
   # Frontend service skipped for local development
 
-  # ─── Frontend (Next.js) ────────────────────────────────────────────────────
+  # â”€â”€â”€ Frontend (Next.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # Toggle in docker.env:
-  #   COMPOSE_PROFILES=workers,frontend   ← enable frontend
-  #   COMPOSE_PROFILES=workers            ← disable frontend
+  #   COMPOSE_PROFILES=workers,frontend   â† enable frontend
+  #   COMPOSE_PROFILES=workers            â† disable frontend
   frontend:
     build:
       context: ./frontend
@@ -676,7 +676,7 @@ services:
           cpus: '0.05'
           memory: 128M
 
-  # ── Nginx SSL termination (HTTPS reverse proxy) ──────────────────────────
+  # â”€â”€ Nginx SSL termination (HTTPS reverse proxy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # Active only in the "full" profile.
   # Requires TLS certs at /etc/letsencrypt/live/${DOMAIN_NAME}/ (managed by
   # certbot) and DOMAIN_NAME set in docker.env / environment.
