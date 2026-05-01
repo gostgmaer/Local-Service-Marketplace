@@ -5,6 +5,41 @@ import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosInstance } from "axios";
 
+const TEMPLATE_PATH_DEFAULTS: Record<string, string> = {
+  AUTO_RENEWAL_REMINDER: "/billing/subscriptions",
+  BILLING_INFO_UPDATED: "/billing",
+  CONTACT_CONFIRMATION: "/contact",
+  EMAIL_VERIFIED: "/verify-email",
+  MAGIC_LINK: "/auth/magic-link",
+  MARKETPLACE_EMAIL_VERIFICATION: "/verify-email",
+  MARKETPLACE_JOB_ASSIGNED: "/dashboard/jobs",
+  MARKETPLACE_NEW_REQUEST: "/dashboard/requests",
+  MARKETPLACE_PASSWORD_RESET: "/reset-password",
+  MARKETPLACE_PAYMENT_RECEIVED: "/dashboard/payments",
+  MARKETPLACE_PROPOSAL_RECEIVED: "/dashboard/proposals",
+  MARKETPLACE_PROVIDER_APPROVED: "/dashboard/provider",
+  MARKETPLACE_PROVIDER_REJECTED: "/dashboard/provider",
+  MARKETPLACE_WELCOME: "/dashboard",
+  MESSAGE_RECEIVED: "/dashboard/messages",
+  NOTIFICATION_DIGEST: "/dashboard/notifications",
+  ORDER_CANCELLED: "/dashboard/orders",
+  ORDER_DELIVERED: "/dashboard/orders",
+  otpEmailTemplate: "/auth/otp",
+  PASSWORD_CHANGED: "/settings/security",
+  PAYMENT_FAILED: "/dashboard/payments",
+  PAYMENT_REFUNDED: "/dashboard/payments",
+  PAYMENT_SUCCESS: "/dashboard/payments",
+  REVIEW_REMINDER: "/dashboard/reviews",
+  SUBSCRIPTION_CANCELLED: "/billing/subscriptions",
+  SUBSCRIPTION_RENEWED: "/billing/subscriptions",
+  SUBSCRIPTION_STARTED: "/billing/subscriptions",
+  USER_BANNED: "/account/status",
+  USER_DELETED: "/account",
+  USER_REINSTATED: "/account/status",
+  USER_SUSPENDED: "/account/status",
+  USER_WELCOME: "/dashboard",
+};
+
 @Injectable()
 export class EmailClient {
   private readonly httpClient: AxiosInstance;
@@ -58,8 +93,59 @@ export class EmailClient {
     );
   }
 
+  private normalizePath(input?: string | null): string {
+    const value = (input || "").trim();
+
+    if (!value) {
+      return "/";
+    }
+
+    if (/^https?:\/\//i.test(value)) {
+      try {
+        const url = new URL(value);
+        const path = `${url.pathname || "/"}${url.search || ""}`;
+        return path.startsWith("/") ? path : `/${path}`;
+      } catch {
+        // Fall through to plain string normalization.
+      }
+    }
+
+    return value.startsWith("/") ? value : `/${value}`;
+  }
+
+  private resolveTemplatePath(
+    template?: string,
+    variables?: Record<string, any>,
+  ): string {
+    const linkKeys = [
+      "verificationLink",
+      "verifyLink",
+      "resetLink",
+      "magicLink",
+      "dashboardUrl",
+      "replyUrl",
+      "actionUrl",
+      "ctaUrl",
+    ];
+
+    for (const key of linkKeys) {
+      const link = variables?.[key];
+      if (typeof link === "string" && link.trim().length > 0) {
+        return this.normalizePath(link);
+      }
+    }
+
+    if (template && TEMPLATE_PATH_DEFAULTS[template]) {
+      return TEMPLATE_PATH_DEFAULTS[template];
+    }
+
+    return "/notifications";
+  }
+
   private buildEmailDispatchHeaders(
     appContext?: AppContextDto,
+    template?: string,
+    variables?: Record<string, any>,
   ): Record<string, string> {
     const idempotencyKey = uuidv4();
     const appName =
@@ -68,8 +154,9 @@ export class EmailClient {
     const appUrl =
       (appContext?.appUrl || this.defaultAppUrl).trim() ||
       "http://localhost:3000";
-    const rawPath = (appContext?.ctaPath || "/").trim() || "/";
-    const ctaPath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+    const ctaPath = this.normalizePath(
+      appContext?.ctaPath || this.resolveTemplatePath(template, variables),
+    );
 
     return {
       "x-app-name": appName,
@@ -100,6 +187,8 @@ export class EmailClient {
       this.logger.log(`Sending email to ${options.to}`, "EmailClient");
       const dispatchHeaders = this.buildEmailDispatchHeaders(
         options.appContext,
+        options.template,
+        options.variables,
       );
 
       const response = await this.httpClient.post(
@@ -154,7 +243,11 @@ export class EmailClient {
         `Sending template email (${template}) to ${to}`,
         "EmailClient",
       );
-      const dispatchHeaders = this.buildEmailDispatchHeaders(appContext);
+      const dispatchHeaders = this.buildEmailDispatchHeaders(
+        appContext,
+        template,
+        variables,
+      );
 
       const response = await this.httpClient.post(
         "/v1/email/send",
