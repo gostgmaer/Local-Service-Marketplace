@@ -13,11 +13,6 @@ export interface DeliverSmsJobData {
   purpose?: string;
 }
 
-export interface DeliverOtpJobData {
-  phone: string;
-  purpose: string;
-}
-
 /**
  * SmsWorker — consumes the "comms.sms" queue.
  *
@@ -43,8 +38,6 @@ export class SmsWorker extends WorkerHost {
     switch (job.name) {
       case "deliver-sms":
         return this.handleDeliverSms(job as Job<DeliverSmsJobData>);
-      case "deliver-otp":
-        return this.handleDeliverOtp(job as Job<DeliverOtpJobData>);
       default:
         this.logger.warn(
           `SmsWorker: unknown job name "${job.name}"`,
@@ -83,33 +76,6 @@ export class SmsWorker extends WorkerHost {
           "failed",
         );
       }
-
-      // Capture in DLQ if max retries reached
-      if (this.dlqService && job.attemptsMade >= 3) {
-        await this.dlqService.captureFailedJob("comms.sms", job, error);
-      }
-
-      throw error;
-    }
-  }
-
-  private async handleDeliverOtp(job: Job<DeliverOtpJobData>): Promise<void> {
-    const { phone, purpose } = job.data;
-
-    this.logger.log(
-      `SmsWorker: sending OTP to ${phone} (purpose: ${purpose}, attempt ${job.attemptsMade + 1})`,
-      "SmsWorker",
-    );
-
-    try {
-      await this.smsClient.sendOtp(phone, purpose);
-      this.logger.log(`SmsWorker: OTP sent to ${phone}`, "SmsWorker");
-    } catch (error: any) {
-      this.logger.error(
-        `SmsWorker: OTP to ${phone} failed — ${error.message}`,
-        error.stack,
-        "SmsWorker",
-      );
 
       // Capture in DLQ if max retries reached
       if (this.dlqService && job.attemptsMade >= 3) {
