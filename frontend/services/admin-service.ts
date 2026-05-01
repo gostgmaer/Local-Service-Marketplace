@@ -94,6 +94,8 @@ export interface InfrastructureServiceHealth {
     database?: InfrastructureDependencyHealth;
     dependencies?: Record<string, InfrastructureDependencyHealth>;
   };
+  database?: InfrastructureDependencyHealth;
+  dependencies?: Record<string, InfrastructureDependencyHealth>;
   [key: string]: any;
 }
 
@@ -133,6 +135,16 @@ class AdminService {
     return map[key] || key;
   }
 
+  private normalizeDependencyHealth(
+    payload: any,
+  ): InfrastructureDependencyHealth {
+    const source = payload && typeof payload === "object" ? payload : {};
+    return {
+      ...source,
+      status: this.normalizeHealthStatus(source.status),
+    };
+  }
+
   private normalizeInfrastructureHealth(payload: any): InfrastructureHealthResponse {
     const rawServices = payload?.services && typeof payload.services === "object"
       ? payload.services
@@ -142,9 +154,35 @@ class AdminService {
     for (const [rawKey, rawValue] of Object.entries(rawServices)) {
       const key = this.normalizeServiceKey(rawKey);
       const value = rawValue && typeof rawValue === "object" ? rawValue : {};
+
+      const databaseCheck =
+        (value as any)?.checks?.database ?? (value as any)?.database;
+      const dependenciesSource =
+        (value as any)?.checks?.dependencies ?? (value as any)?.dependencies;
+
+      const normalizedDependencies: Record<string, InfrastructureDependencyHealth> =
+        {};
+      if (dependenciesSource && typeof dependenciesSource === "object") {
+        for (const [depName, depValue] of Object.entries(dependenciesSource)) {
+          normalizedDependencies[depName] = this.normalizeDependencyHealth(
+            depValue,
+          );
+        }
+      }
+
       services[key] = {
         ...(value as any),
         status: this.normalizeHealthStatus((value as any)?.status),
+        checks: {
+          database: databaseCheck
+            ? this.normalizeDependencyHealth(databaseCheck)
+            : undefined,
+          dependencies: normalizedDependencies,
+        },
+        database: databaseCheck
+          ? this.normalizeDependencyHealth(databaseCheck)
+          : undefined,
+        dependencies: normalizedDependencies,
       };
     }
 

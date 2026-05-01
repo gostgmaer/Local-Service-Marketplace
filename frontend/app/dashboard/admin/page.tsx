@@ -129,6 +129,14 @@ export default function AdminDashboardPage() {
       ? Math.round(((jobStats?.byStatus?.disputed ?? 0) / totalJobs) * 100)
       : 0;
 
+  const formatDependencyLabel = (name: string): string =>
+    name
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
   const allInfraServiceMeta = [
     { key: "identity", label: "Identity", serviceName: "identity-service" },
     {
@@ -155,6 +163,43 @@ export default function AdminDashboardPage() {
   const infraServiceRows = infraServiceMeta.map((meta) => {
     const service = (infraServices as Record<string, any>)[meta.key];
     const status = service?.status === "ok" ? "ok" : "down";
+
+    const databaseSource = service?.checks?.database || service?.database;
+    const databaseCheck = databaseSource
+      ? {
+          status: databaseSource.status === "ok" ? "ok" : "down",
+          responseTime: databaseSource.responseTime || "-",
+          message:
+            databaseSource.message ||
+            (databaseSource.status === "ok"
+              ? "Database is reachable"
+              : "Database check failed"),
+        }
+      : undefined;
+
+    const dependencySource =
+      service?.checks?.dependencies || service?.dependencies || {};
+    const dependencyChecks = Object.entries(dependencySource).map(
+      ([depKey, depValue]: [string, any]) => {
+        const depStatus = depValue?.status === "ok" ? "ok" : "down";
+        return {
+          key: depKey,
+          label: formatDependencyLabel(depKey),
+          status: depStatus,
+          responseTime: depValue?.responseTime || "-",
+          message:
+            depValue?.message ||
+            (depStatus === "ok"
+              ? "Dependency is healthy"
+              : "Dependency check failed"),
+        };
+      },
+    );
+
+    const downDependencyCount = dependencyChecks.filter(
+      (dependency) => dependency.status === "down",
+    ).length;
+
     return {
       ...meta,
       status,
@@ -163,8 +208,51 @@ export default function AdminDashboardPage() {
         service?.message ||
         service?.checks?.database?.message ||
         (status === "ok" ? "All checks passed" : "Service is unavailable"),
+      databaseCheck,
+      dependencyChecks,
+      dependencySummary: {
+        total: dependencyChecks.length,
+        ok: dependencyChecks.length - downDependencyCount,
+        down: downDependencyCount,
+      },
     };
   });
+
+  const allDependencyRows = infraServiceRows.flatMap((service) => {
+    const dbRow = service.databaseCheck
+      ? [
+          {
+            id: `${service.key}:database`,
+            serviceLabel: service.label,
+            serviceKey: service.key,
+            dependencyLabel: "Database",
+            status: service.databaseCheck.status,
+            responseTime: service.databaseCheck.responseTime,
+            message: service.databaseCheck.message,
+            type: "database" as const,
+          },
+        ]
+      : [];
+
+    const dependencyRows = service.dependencyChecks.map((dependency) => ({
+      id: `${service.key}:${dependency.key}`,
+      serviceLabel: service.label,
+      serviceKey: service.key,
+      dependencyLabel: dependency.label,
+      status: dependency.status,
+      responseTime: dependency.responseTime,
+      message: dependency.message,
+      type: "dependency" as const,
+    }));
+
+    return [...dbRow, ...dependencyRows];
+  });
+
+  const allDependencySummary = {
+    total: allDependencyRows.length,
+    ok: allDependencyRows.filter((row) => row.status === "ok").length,
+    down: allDependencyRows.filter((row) => row.status === "down").length,
+  };
 
   const resolvedInfraSummary = infraHealth?.summary ?? {
     total: infraServiceRows.length,
@@ -291,8 +379,137 @@ export default function AdminDashboardPage() {
                                 {service.message}
                               </p>
                             </div>
+
+                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  Database
+                                </p>
+                                {service.databaseCheck ? (
+                                  <StatusBadge
+                                    status={service.databaseCheck.status}
+                                    size="sm"
+                                  />
+                                ) : (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    Not configured
+                                  </span>
+                                )}
+                              </div>
+                              {service.databaseCheck && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {service.databaseCheck.responseTime} - {service.databaseCheck.message}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  Dependencies
+                                </p>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {service.dependencySummary.ok}/{service.dependencySummary.total} healthy
+                                </span>
+                              </div>
+
+                              {service.dependencyChecks.length > 0 ? (
+                                <div className="mt-2 space-y-2">
+                                  {service.dependencyChecks.map((dependency) => (
+                                    <div
+                                      key={`${service.key}-${dependency.key}`}
+                                      className="rounded-lg border border-gray-100 dark:border-gray-700/70 p-2.5"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="text-xs font-medium text-gray-900 dark:text-white">
+                                          {dependency.label}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                            {dependency.responseTime}
+                                          </span>
+                                          <StatusBadge
+                                            status={dependency.status}
+                                            size="sm"
+                                          />
+                                        </div>
+                                      </div>
+                                      <p
+                                        className={`text-[11px] mt-1 ${
+                                          dependency.status === "ok"
+                                            ? "text-green-600 dark:text-green-400"
+                                            : "text-red-600 dark:text-red-400"
+                                        }`}
+                                      >
+                                        {dependency.message}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                  No external dependency configured
+                                </p>
+                              )}
+                            </div>
                           </div>
                         ))}
+                      </div>
+
+                      <div className="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                            All Dependency Checks
+                          </h3>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {allDependencySummary.ok}/{allDependencySummary.total} healthy
+                          </span>
+                        </div>
+
+                        {allDependencyRows.length > 0 ? (
+                          <div className="space-y-2">
+                            {allDependencyRows.map((dependency) => (
+                              <div
+                                key={dependency.id}
+                                className="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {dependency.serviceLabel} - {dependency.dependencyLabel}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                      {dependency.type === "database"
+                                        ? "Database readiness check"
+                                        : "External dependency check"}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {dependency.responseTime}
+                                    </span>
+                                    <StatusBadge status={dependency.status} size="sm" />
+                                  </div>
+                                </div>
+
+                                <p
+                                  className={`text-xs mt-2 ${
+                                    dependency.status === "ok"
+                                      ? "text-green-600 dark:text-green-400"
+                                      : "text-red-600 dark:text-red-400"
+                                  }`}
+                                >
+                                  {dependency.message}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            No dependency health checks available.
+                          </p>
+                        )}
                       </div>
                     </>
                   )}
