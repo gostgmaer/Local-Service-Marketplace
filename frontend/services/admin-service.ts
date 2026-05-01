@@ -77,7 +77,160 @@ export interface AuditLog {
   created_at: string;
 }
 
+export interface InfrastructureDependencyHealth {
+  status: "ok" | "down";
+  responseTime?: string;
+  message?: string;
+  [key: string]: any;
+}
+
+export interface InfrastructureServiceHealth {
+  status: "ok" | "down";
+  responseTime?: string;
+  httpStatus?: number;
+  url?: string;
+  message?: string;
+  checks?: {
+    database?: InfrastructureDependencyHealth;
+    dependencies?: Record<string, InfrastructureDependencyHealth>;
+  };
+  database?: InfrastructureDependencyHealth;
+  dependencies?: Record<string, InfrastructureDependencyHealth>;
+  [key: string]: any;
+}
+
+export interface InfrastructureHealthSummary {
+  total: number;
+  ok: number;
+  down: number;
+  downServices: string[];
+}
+
+export interface InfrastructureHealthResponse {
+  status: "ok" | "down";
+  timestamp?: string;
+  services: Record<string, InfrastructureServiceHealth>;
+  summary: InfrastructureHealthSummary;
+}
+
 class AdminService {
+  private normalizeHealthStatus(status: unknown): "ok" | "down" {
+    const normalized = String(status ?? "")
+      .toLowerCase()
+      .trim();
+    return normalized === "ok" || normalized === "healthy" || normalized === "up"
+      ? "ok"
+      : "down";
+  }
+
+  private normalizeServiceKey(key: string): string {
+    const map: Record<string, string> = {
+      "identity-service": "identity",
+      "marketplace-service": "marketplace",
+      "payment-service": "payment",
+      "comms-service": "comms",
+      "oversight-service": "oversight",
+      "infrastructure-service": "infrastructure",
+    };
+    return map[key] || key;
+  }
+
+  private normalizeDependencyHealth(
+    payload: any,
+  ): InfrastructureDependencyHealth {
+    const source = payload && typeof payload === "object" ? payload : {};
+    return {
+      ...source,
+      status: this.normalizeHealthStatus(source.status),
+    };
+  }
+
+  private normalizeInfrastructureHealth(payload: any): InfrastructureHealthResponse {
+    const rawServices = payload?.services && typeof payload.services === "object"
+      ? payload.services
+      : {};
+
+    const services: Record<string, InfrastructureServiceHealth> = {};
+    for (const [rawKey, rawValue] of Object.entries(rawServices)) {
+      const key = this.normalizeServiceKey(rawKey);
+      const value = rawValue && typeof rawValue === "object" ? rawValue : {};
+
+      const databaseCheck =
+        (value as any)?.checks?.database ?? (value as any)?.database;
+      const dependenciesSource =
+        (value as any)?.checks?.dependencies ?? (value as any)?.dependencies;
+
+      const normalizedDependencies: Record<string, InfrastructureDependencyHealth> =
+        {};
+      if (dependenciesSource && typeof dependenciesSource === "object") {
+        for (const [depName, depValue] of Object.entries(dependenciesSource)) {
+          normalizedDependencies[depName] = this.normalizeDependencyHealth(
+            depValue,
+          );
+        }
+      }
+
+      services[key] = {
+        ...(value as any),
+        status: this.normalizeHealthStatus((value as any)?.status),
+        checks: {
+          database: databaseCheck
+            ? this.normalizeDependencyHealth(databaseCheck)
+            : undefined,
+          dependencies: normalizedDependencies,
+        },
+        database: databaseCheck
+          ? this.normalizeDependencyHealth(databaseCheck)
+          : undefined,
+        dependencies: normalizedDependencies,
+      };
+    }
+
+    const summaryFromPayload = payload?.summary;
+    const downServices = Object.entries(services)
+      .filter(([, svc]) => svc.status === "down")
+      .map(([svcName]) => svcName);
+
+    const summary: InfrastructureHealthSummary = {
+      total:
+        Number(summaryFromPayload?.total) ||
+        Object.keys(services).length,
+      ok:
+        Number(summaryFromPayload?.ok) ||
+        Object.keys(services).length - downServices.length,
+      down: Number(summaryFromPayload?.down) || downServices.length,
+      downServices:
+        Array.isArray(summaryFromPayload?.downServices) &&
+        summaryFromPayload.downServices.length > 0
+          ? summaryFromPayload.downServices.map((name: string) =>
+              this.normalizeServiceKey(name),
+            )
+          : downServices,
+    };
+
+    return {
+      status:
+        this.normalizeHealthStatus(payload?.status) === "down" ||
+        summary.down > 0
+          ? "down"
+          : "ok",
+      timestamp: payload?.timestamp,
+      services,
+      summary,
+    };
+  }
+
+  async getInfrastructureHealth(): Promise<InfrastructureHealthResponse> {
+    try {
+      const response = await apiClient.get<any>("/health/services");
+      return this.normalizeInfrastructureHealth(response.data);
+    } catch {
+      // Fallback for older gateway route variants.
+      const fallback = await apiClient.get<any>("/health");
+      return this.normalizeInfrastructureHealth(fallback.data);
+    }
+  }
+
   async getUsers(params?: {
     cursor?: string;
     limit?: number;
