@@ -188,7 +188,7 @@ When a dispute is filed:
 | View conversations | `/dashboard/messages` | `GET /api/v1/messages/conversations` |
 | Send message | (inline in messages page) | `POST /api/v1/messages` |
 | View notifications | `/dashboard/notifications` | `GET /api/v1/notifications` |
-| Mark notification read | (click in notification list) | `POST /api/v1/notifications/:id/read` |
+| Mark notification read | (click in notification list) | `PATCH /api/v1/notifications/:id/read` |
 
 ### 3.10 Favourites
 

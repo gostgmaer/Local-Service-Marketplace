@@ -55,8 +55,8 @@ All routes go through the API Gateway at `http://localhost:3700`.
 |--------|------|-------------|
 | GET | `/api/v1/notifications` | List notifications for current user |
 | GET | `/api/v1/notifications/unread-count` | Count of unread notifications |
-| POST | `/api/v1/notifications/:id/read` | Mark as read |
-| POST | `/api/v1/notifications/read-all` | Mark all as read |
+| PATCH | `/api/v1/notifications/:id/read` | Mark as read |
+| PATCH | `/api/v1/notifications/read-all` | Mark all as read |
 | DELETE | `/api/v1/notifications/:id` | Delete notification |
 | GET | `/api/v1/notifications/preferences` | Get notification preferences |
 | PATCH | `/api/v1/notifications/preferences` | Update preferences |

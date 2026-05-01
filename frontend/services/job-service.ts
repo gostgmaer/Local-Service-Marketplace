@@ -163,13 +163,14 @@ class JobService {
     return { data: list, total: list.length, page: 1, limit: list.length };
   }
 
-  async getMyJobsList(): Promise<Job[]> {
-    const result = await this.getMyJobs({ limit: 100 });
+  /** @deprecated Use getMyJobs() with explicit params instead. */
+  async getMyJobsList(status?: string): Promise<Job[]> {
+    const result = await this.getMyJobs({ limit: 50, ...(status ? { status } : {}) });
     return result.data;
   }
 
   async getJobsByStatus(status: Job["status"]): Promise<Job[]> {
-    const response = await apiClient.get<any>(`/jobs?status=${status}`);
+    const response = await apiClient.get<any>(`/jobs/my?status=${status}&limit=50`);
     return apiClient.extractList<Job>(response.data);
   }
 }
