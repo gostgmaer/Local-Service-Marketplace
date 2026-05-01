@@ -11,6 +11,7 @@ import {
 import { CreateSystemSettingDto } from "../dto/create-system-setting.dto";
 import { CacheInvalidationService } from "../../common/services/cache-invalidation.service";
 import { BroadcastService } from "../../common/services/broadcast.service";
+import { PublicSiteConfigService } from "../../public/public-site-config.service";
 
 @Injectable()
 export class SystemSettingService {
@@ -21,6 +22,7 @@ export class SystemSettingService {
     private readonly logger: LoggerService,
     private readonly cacheInvalidation: CacheInvalidationService,
     private readonly broadcastService: BroadcastService,
+    private readonly publicSiteConfigService: PublicSiteConfigService,
   ) {}
 
   async getAllSettings(): Promise<SystemSetting[]> {
@@ -115,6 +117,8 @@ export class SystemSettingService {
     );
 
     await this.cacheInvalidation.invalidateEntity("settings");
+    await this.cacheInvalidation.invalidateEntity("public");
+    this.publicSiteConfigService.invalidateSiteConfigCache();
     this.broadcastService.emit("setting", key, "updated", ["admin"], { key, value }, adminId);
 
     // If cache was disabled, flush all service caches
@@ -165,6 +169,8 @@ export class SystemSettingService {
     );
 
     await this.cacheInvalidation.invalidateEntity("settings");
+    await this.cacheInvalidation.invalidateEntity("public");
+    this.publicSiteConfigService.invalidateSiteConfigCache();
     this.broadcastService.emit("setting", dto.key, "created", ["admin"], { key: dto.key, value: dto.value }, adminId);
 
     this.logger.log(

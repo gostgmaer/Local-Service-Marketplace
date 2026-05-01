@@ -14,8 +14,8 @@ import {
  * pagination defaults, notification flags, messaging flags, etc.).
  *
  * - On first render: returns instantly from localStorage (no flash, no spinner).
- * - Background: re-fetches from the API every 60 s and writes the result back
- *   to localStorage so the next page load is instant too.
+ * - Refresh: sends conditional requests with ETag and only updates local cache
+ *   when backend settings actually change.
  * - Falls back to sensible defaults when the backend is unreachable.
  * - No authentication required.
  *
@@ -31,8 +31,10 @@ export function usePublicSettings(): {
   const { data, isLoading } = useQuery<SiteConfig>({
     queryKey: ["public-site-config"],
     queryFn: getSiteConfig,
-    staleTime: 10 * 60 * 1000,  // re-fetch only after 10 min (settings fetched on app landing)
-    gcTime: 10 * 60 * 1000,     // keep in cache for 10 min
+    staleTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     initialData: getSiteConfigFromCache, // instant from localStorage on every render
     retry: 1,
   });

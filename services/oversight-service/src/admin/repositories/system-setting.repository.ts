@@ -33,6 +33,40 @@ export class SystemSettingRepository {
     return result.rows[0] || null;
   }
 
+  async getSettingsByKeys(keys: string[]): Promise<SystemSetting[]> {
+    if (!keys.length) return [];
+
+    const query = `
+      SELECT key, value, description, type, updated_at as "updatedAt"
+      FROM system_settings
+      WHERE key = ANY($1::text[])
+    `;
+
+    const result = await this.pool.query(query, [keys]);
+    return result.rows;
+  }
+
+  async getSettingsFingerprint(keys: string[]): Promise<string> {
+    if (!keys.length) return "empty";
+
+    const query = `
+      SELECT COALESCE(
+        md5(
+          string_agg(
+            key || ':' || value || ':' || COALESCE(updated_at::text, ''),
+            '|' ORDER BY key
+          )
+        ),
+        'empty'
+      ) AS fingerprint
+      FROM system_settings
+      WHERE key = ANY($1::text[])
+    `;
+
+    const result = await this.pool.query(query, [keys]);
+    return result.rows[0]?.fingerprint || "empty";
+  }
+
   async updateSetting(key: string, value: string): Promise<SystemSetting> {
     const query = `
       UPDATE system_settings

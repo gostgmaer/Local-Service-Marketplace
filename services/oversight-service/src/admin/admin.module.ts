@@ -14,6 +14,7 @@ import { ContactMessageRepository } from "./repositories/contact-message.reposit
 import { NotificationClient } from "../common/notification/notification.client";
 import { UserClient } from "../common/user/user.client";
 import { PublicController } from "../public/public.controller";
+import { PublicSiteConfigService } from "../public/public-site-config.service";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { PublicController } from "../public/public.controller";
     ContactMessageRepository,
     NotificationClient,
     UserClient,
+    PublicSiteConfigService,
   ],
   exports: [
     DisputeService,

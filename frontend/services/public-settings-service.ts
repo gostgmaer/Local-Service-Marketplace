@@ -7,8 +7,8 @@ import { API_URL } from "@/config/constants";
  *
  * Feature flags are included here so there is a single data source.
  * Use `usePublicSettings()` in client components — it loads instantly from
- * localStorage on first render, then re-fetches in the background every 60 s
- * and persists the result back to localStorage.
+ * localStorage on first render and then uses conditional ETag requests so
+ * data is only refreshed when backend settings actually change.
  */
 export interface SiteConfig {
   // Contact & branding
@@ -103,19 +103,83 @@ export const SITE_CONFIG_DEFAULTS: SiteConfig = {
 /** localStorage key used to persist the config between page loads. */
 const LS_KEY = "lsmp_site_config";
 
+interface SiteConfigCacheRecord {
+  config: SiteConfig;
+  etag?: string;
+  cachedAt: number;
+}
+
+let serverCache: SiteConfigCacheRecord | null = null;
+
+function normalizeConfig(raw: unknown): SiteConfig {
+  if (!raw || typeof raw !== "object") return SITE_CONFIG_DEFAULTS;
+  return { ...SITE_CONFIG_DEFAULTS, ...(raw as Partial<SiteConfig>) };
+}
+
+function readBrowserCacheRecord(): SiteConfigCacheRecord | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as unknown;
+
+    // Backward compatibility: previous versions stored only the config object.
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !("config" in (parsed as Record<string, unknown>))
+    ) {
+      return {
+        config: normalizeConfig(parsed),
+        cachedAt: Date.now(),
+      };
+    }
+
+    const record = parsed as {
+      config?: unknown;
+      etag?: unknown;
+      cachedAt?: unknown;
+    };
+
+    return {
+      config: normalizeConfig(record.config),
+      etag: typeof record.etag === "string" ? record.etag : undefined,
+      cachedAt:
+        typeof record.cachedAt === "number" ? record.cachedAt : Date.now(),
+    };
+  } catch {
+    // Corrupted localStorage — ignore and use defaults.
+    return null;
+  }
+}
+
+function getCachedRecord(): SiteConfigCacheRecord | null {
+  if (typeof window === "undefined") return serverCache;
+  return readBrowserCacheRecord();
+}
+
+function persistCacheRecord(record: SiteConfigCacheRecord): void {
+  if (typeof window === "undefined") {
+    serverCache = record;
+    return;
+  }
+
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(record));
+  } catch {
+    // Ignore quota/storage errors.
+  }
+}
+
 /**
  * Returns the site config stored in localStorage, or `SITE_CONFIG_DEFAULTS`
  * if nothing is cached yet (or in a server-side / non-browser environment).
  */
 export function getSiteConfigFromCache(): SiteConfig {
-  if (typeof window === "undefined") return SITE_CONFIG_DEFAULTS;
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) return { ...SITE_CONFIG_DEFAULTS, ...JSON.parse(raw) };
-  } catch {
-    // Corrupted localStorage — return defaults
-  }
-  return SITE_CONFIG_DEFAULTS;
+  const cached = getCachedRecord();
+  return cached ? normalizeConfig(cached.config) : SITE_CONFIG_DEFAULTS;
 }
 
 /**
@@ -124,18 +188,37 @@ export function getSiteConfigFromCache(): SiteConfig {
  * - In client components: use `usePublicSettings()` hook instead.
  */
 export async function getSiteConfig(): Promise<SiteConfig> {
+  const cached = getCachedRecord();
+
   try {
+    const headers: Record<string, string> = {};
+    if (cached?.etag) {
+      headers["If-None-Match"] = cached.etag;
+    }
+
     const res = await fetch(`${API_URL}/api/v1/public/site-config`, {
       cache: "no-store",
+      headers,
     });
-    if (!res.ok) return getSiteConfigFromCache();
-    const json = await res.json();
-    // API may wrap in standardized envelope { data: { ... } } or return flat
-    const config: SiteConfig = { ...SITE_CONFIG_DEFAULTS, ...(json?.data ?? json) };
-    // Persist so next page load is instant
-    if (typeof window !== "undefined") {
-      try { localStorage.setItem(LS_KEY, JSON.stringify(config)); } catch { /* quota exceeded */ }
+
+    if (res.status === 304 && cached) {
+      return normalizeConfig(cached.config);
     }
+
+    if (!res.ok) return getSiteConfigFromCache();
+
+    const json = await res.json();
+
+    // API may wrap in standardized envelope { data: { ... } } or return flat
+    const config = normalizeConfig(json?.data ?? json);
+    const etag = res.headers.get("etag") ?? cached?.etag;
+
+    persistCacheRecord({
+      config,
+      etag: etag ?? undefined,
+      cachedAt: Date.now(),
+    });
+
     return config;
   } catch {
     return getSiteConfigFromCache();
