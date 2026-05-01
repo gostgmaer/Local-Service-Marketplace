@@ -2,47 +2,57 @@
 
 ## Overview
 
-Your application now supports **5 different authentication methods** integrated with your existing backend:
+The platform supports **8 authentication methods** integrated with the identity-service backend:
 
 ---
 
-## 🔐 Authentication Methods
+## Authentication Methods
 
 ### 1. **Email + Password**
 - **Route**: `/login`
-- **Backend**: `POST /api/v1/auth/login`
+- **Backend**: `POST /api/v1/user/auth/login`
 - **Use Case**: Traditional email-based login
-- **Hook Method**: `login(email, password)`
 
-### 2. **Phone + Password**
+### 2. **Phone + OTP (SMS)**
 - **Route**: `/phone-login`
-- **Backend**: `POST /api/v1/auth/phone/login`
-- **Use Case**: Login with phone number and password
-- **Hook Method**: `loginWithPhone(phone, password)`
-
-### 3. **Phone + OTP**
-- **Route**: `/phone-login` (switch to OTP tab)
-- **Backend**: 
-  - Request: `POST /api/v1/auth/phone/otp/request`
-  - Verify: `POST /api/v1/auth/phone/otp/verify`
+- **Backend**:
+  - Request: `POST /api/v1/user/auth/phone/otp/request`
+  - Verify: `POST /api/v1/user/auth/phone/otp/verify`
 - **Use Case**: Passwordless login with SMS OTP
-- **Hook Methods**: 
-  - `requestOTP(phone)` - Send OTP
-  - `loginWithOTP(phone, otp)` - Verify and login
 
-### 4. **Google OAuth**
-- **Route**: Click "Google" button on `/login` or `/signup`
-- **Backend**: `GET /api/v1/auth/google` → `/api/v1/auth/google/callback`
-- **Callback**: `/auth/callback?token=xxx&refresh=xxx`
-- **Use Case**: Login with Google account
-- **Hook Method**: `loginWithGoogle()`
+### 3. **Email OTP**
+- **Route**: `/login` (OTP tab)
+- **Backend**:
+  - Request: `POST /api/v1/user/auth/email/otp/request`
+  - Verify: `POST /api/v1/user/auth/email/otp/verify`
+- **Use Case**: Passwordless login with email OTP code
 
-### 5. **Facebook OAuth**
-- **Route**: Click "Facebook" button on `/login` or `/signup`
-- **Backend**: `GET /api/v1/auth/facebook` → `/api/v1/auth/facebook/callback`
+### 4. **Magic Link**
+- **Route**: `/login` (magic link tab)
+- **Backend**:
+  - Request: `POST /api/v1/user/auth/magic-link/request`
+  - Verify: `GET /api/v1/user/auth/magic-link/verify?token=...`
+- **Use Case**: One-click sign-in via email link (no password)
+
+### 5. **TOTP 2FA (Two-Factor Authentication)**
+- **Route**: Login step 2 (shown when 2FA is enabled)
+- **Backend**: `POST /api/v1/user/auth/2fa/login`
+- **Use Case**: Authenticator app (Google Authenticator, Authy) TOTP code as 2nd factor
+- **Setup**: `GET /api/v1/user/auth/2fa/qr-code` + `POST /api/v1/user/auth/2fa/verify`
+
+### 6. **Google OAuth**
+- **Route**: Click “Google” button on `/login` or `/signup`
+- **Backend**: `GET /api/v1/user/auth/google` → `GET /api/v1/user/auth/google/callback`
 - **Callback**: `/auth/callback?token=xxx&refresh=xxx`
-- **Use Case**: Login with Facebook account
-- **Hook Method**: `loginWithFacebook()`
+
+### 7. **Facebook OAuth**
+- **Route**: Click “Facebook” button on `/login` or `/signup`
+- **Backend**: `GET /api/v1/user/auth/facebook` → `GET /api/v1/user/auth/facebook/callback`
+
+### 8. **Apple Sign In**
+- **Route**: Click “Apple” button on `/login` or `/signup`
+- **Backend**: `GET /api/v1/user/auth/apple` → `GET /api/v1/user/auth/apple/callback`
+- **Mobile**: `POST /api/v1/user/auth/apple/mobile` (iOS SDK token exchange)
 
 ---
 
@@ -116,9 +126,7 @@ User enters email + password
     ↓
 Frontend: signIn('credentials', { email, password })
     ↓
-Backend: POST /api/v1/auth/login
-    ↓
-Backend validates credentials
+Backend: POST /api/v1/user/auth/login
     ↓
 Backend returns { accessToken, refreshToken, user }
     ↓
@@ -133,7 +141,7 @@ User enters phone number
     ↓
 Frontend: requestOTP(phone)
     ↓
-Backend: POST /api/v1/auth/phone/otp/request
+Backend: POST /api/v1/user/auth/phone/otp/request
     ↓
 Backend sends SMS with 6-digit OTP
     ↓
@@ -141,7 +149,7 @@ User enters OTP
     ↓
 Frontend: loginWithOTP(phone, otp)
     ↓
-Backend: POST /api/v1/auth/phone/otp/verify
+Backend: POST /api/v1/user/auth/phone/otp/verify
     ↓
 Backend validates OTP and returns tokens
     ↓
@@ -191,7 +199,7 @@ export const authConfig: NextAuthConfig = {
       id: "credentials",
       name: "Email & Password",
       authorize: async (credentials) => {
-        // Calls: POST /api/v1/auth/login
+        // Calls: POST /api/v1/user/auth/login
       }
     }),
 
@@ -200,7 +208,7 @@ export const authConfig: NextAuthConfig = {
       id: "phone-password",
       name: "Phone & Password",
       authorize: async (credentials) => {
-        // Calls: POST /api/v1/auth/phone/login
+        // Calls: POST /api/v1/user/auth/phone/login
       }
     }),
 
@@ -209,7 +217,7 @@ export const authConfig: NextAuthConfig = {
       id: "phone-otp",
       name: "Phone & OTP",
       authorize: async (credentials) => {
-        // Calls: POST /api/v1/auth/phone/otp/verify
+        // Calls: POST /api/v1/user/auth/phone/otp/verify
       }
     })
   ],

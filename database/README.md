@@ -53,7 +53,7 @@ The seeder creates **at least 50 records** for most tables, including:
 ## Prerequisites
 
 - PostgreSQL database running (via Docker or locally)
-- Node.js and pnpm installed
+- Node.js and pnpm installed (Node.js 20 LTS minimum)
 - Database schema already applied (from `schema.sql`)
 
 ## Quick Start

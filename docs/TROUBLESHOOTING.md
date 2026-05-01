@@ -14,6 +14,113 @@ Common issues and solutions for the Local Service Marketplace platform.
 6. [Google Maps Issues](#google-maps-issues)
 7. [Notification Issues](#notification-issues)
 8. [Performance Issues](#performance-issues)
+9. [Known Migration Issues (Next.js 15 / React 19)](#known-migration-issues-nextjs-15--react-19)
+10. [pnpm Lockfile Issues](#pnpm-lockfile-issues)
+11. [Socket.IO / Real-time Issues](#socketio--real-time-issues)
+
+---
+
+## Known Migration Issues (Next.js 15 / React 19)
+
+### ❌ `params` or `searchParams` is not awaitable
+
+**Error:** `Type error: Property 'id' does not exist on type 'Promise<...>'`
+
+**Cause:** Next.js 15 App Router made `params` and `searchParams` async.
+
+**Solution:**
+```typescript
+// ❌ Old (Next.js 14)
+export default function Page({ params }: { params: { id: string } }) {
+  return <div>{params.id}</div>
+}
+
+// ✅ New (Next.js 15)
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <div>{id}</div>
+}
+```
+
+---
+
+### ❌ React 19 `act()` warnings in tests
+
+**Error:** `Warning: An update to Component inside a test was not wrapped in act(...)`
+
+**Solution:** Upgrade `@testing-library/react` to `^16.x` (already included in this project's `frontend/package.json`). Ensure `jest.setup.js` uses the correct import.
+
+---
+
+### ❌ `@hookform/resolvers` type errors after upgrade
+
+**Cause:** `zod@4.x` introduced breaking schema changes. Use `@hookform/resolvers@5.x` which supports both zod 3 and 4.
+
+**Solution:** Already resolved — `package.json` uses `@hookform/resolvers@5.2.2` and `zod@4.4.1`.
+
+---
+
+## pnpm Lockfile Issues
+
+### ❌ `pnpm install` overwrites all service lockfiles
+
+**Cause:** Running `pnpm install` from the workspace root regenerates a single workspace lockfile that collapses all service dependencies.
+
+**Solution:** Generate per-service lockfiles independently:
+```powershell
+# Run inside each service directory
+cd services/identity-service
+pnpm install --lockfile-only --ignore-workspace
+
+# Repeat for each service:
+# api-gateway, frontend, database, comms-service, marketplace-service,
+# oversight-service, payment-service, infrastructure-service
+```
+
+---
+
+### ❌ `ERR_PNPM_OUTDATED_LOCKFILE` on Docker build
+
+**Cause:** The lockfile was generated with a different pnpm version than the one in the Docker image.
+
+**Solution:**
+1. Check the pnpm version in `package.json` `engines` or `packageManager` field
+2. Run `pnpm install --lockfile-only --ignore-workspace` locally with the same pnpm version
+3. Commit the regenerated lockfile
+
+---
+
+## Socket.IO / Real-time Issues
+
+### ❌ Socket.IO connection refused / 404
+
+**Check:**
+1. `comms-service` is running: `docker ps | grep comms-service`
+2. The API gateway is forwarding WebSocket upgrade headers — check nginx/reverse proxy config
+3. `NEXT_PUBLIC_SOCKET_URL` in `frontend/.env` points to the right host
+
+**Fix for reverse proxy (nginx):**
+```nginx
+location /socket.io/ {
+    proxy_pass http://comms-service:3007;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+}
+```
+
+---
+
+### ❌ Socket.IO events not received after login
+
+**Cause:** JWT token passed to Socket.IO auth is expired.
+
+**Solution:** Reconnect the socket after token refresh:
+```typescript
+socket.auth = { token: newAccessToken };
+socket.disconnect().connect();
+```
 
 ---
 

@@ -74,13 +74,17 @@ function FileDisputeContent() {
 
   // Load user's eligible jobs for dispute (only in_progress or completed)
   const { data: jobs } = useQuery({
-    queryKey: ["my-jobs"],
-    queryFn: () => jobService.getMyJobsList(),
-    select: (all: any[]) =>
-      all.filter(
-        (j) => j.status === "in_progress" || j.status === "completed",
-      ),
+    queryKey: ["my-jobs-eligible"],
+    queryFn: () => jobService.getMyJobs({ page: 1, limit: 50, status: "in_progress,completed" }),
+    select: (result: any) => (result?.data ?? []) as any[],
     enabled: !!user && !prefillJobId,
+  });
+
+  // When a job is pre-filled from search params, fetch its detail for display context
+  const { data: prefillJob } = useQuery({
+    queryKey: ["job", prefillJobId],
+    queryFn: () => jobService.getJobById(prefillJobId!),
+    enabled: !!user && !!prefillJobId,
   });
 
   const handleImageUpload = async (files: File[]) => {
@@ -166,7 +170,7 @@ function FileDisputeContent() {
                     <option value="">Select a job...</option>
                     {(jobs ?? []).map((job: any) => (
                       <option key={job.id} value={job.id}>
-                        Job #{job.display_id || job.id.substring(0, 8)} â€”{" "}
+                        Job #{job.display_id || job.id.substring(0, 8)} —{" "}
                         {job.status}
                       </option>
                     ))}
@@ -176,6 +180,26 @@ function FileDisputeContent() {
                       {errors.job_id.message}
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* Pre-filled job context — shown when navigating from a specific job */}
+              {prefillJobId && prefillJob && (
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+                    Filing dispute for
+                  </p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    Job #{prefillJob.display_id || prefillJob.id.substring(0, 8)}
+                  </p>
+                  {prefillJob.request_description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                      {prefillJob.request_description}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 capitalize">
+                    Status: {prefillJob.status?.replace(/_/g, " ")}
+                  </p>
                 </div>
               )}
 

@@ -61,29 +61,37 @@ All routes go through the API Gateway at `http://localhost:3700`.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/proposals` | List proposals (filter by requestId, providerId) |
+| GET | `/api/v1/proposals/my` | My proposals (provider) |
+| GET | `/api/v1/proposals/request/:requestId` | Proposals on a request |
 | POST | `/api/v1/proposals` | Submit a proposal (provider) |
 | GET | `/api/v1/proposals/:id` | Get proposal details |
-| PATCH | `/api/v1/proposals/:id/accept` | Accept proposal → creates job (customer) |
-| PATCH | `/api/v1/proposals/:id/reject` | Reject proposal (customer) |
-| PATCH | `/api/v1/proposals/:id/withdraw` | Withdraw proposal (provider) |
+| PATCH | `/api/v1/proposals/:id` | Update proposal (owner) |
+| DELETE | `/api/v1/proposals/:id` | Delete proposal (owner) |
+| POST | `/api/v1/requests/:requestId/accept-proposal/:proposalId` | Accept proposal → creates job (customer) |
 
 #### Jobs
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/jobs` | List jobs (paginated) |
-| GET | `/api/v1/jobs/:id` | Get job details |
-| PATCH | `/api/v1/jobs/:id` | Update job status |
 | GET | `/api/v1/jobs/my` | My jobs (current user) |
+| GET | `/api/v1/jobs/:id` | Get job details |
+| PATCH | `/api/v1/jobs/:id/start` | Start job (provider) |
+| PATCH | `/api/v1/jobs/:id/complete` | Mark complete (provider) |
+| PATCH | `/api/v1/jobs/:id/confirm` | Confirm completion (customer) |
+| PATCH | `/api/v1/jobs/:id/cancel` | Cancel job |
 
 #### Reviews
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/reviews` | List reviews (filter by providerId, jobId) |
+| GET | `/api/v1/reviews/provider/:providerId` | Reviews for a provider |
+| GET | `/api/v1/reviews/provider/:providerId/rating` | Aggregate rating |
 | POST | `/api/v1/reviews` | Submit review (after job completion) |
 | GET | `/api/v1/reviews/:id` | Get review details |
+| POST | `/api/v1/reviews/:id/respond` | Provider response to review |
+| POST | `/api/v1/reviews/:id/helpful` | Mark review helpful |
+| PATCH | `/api/v1/reviews/:id` | Edit review (owner, 30-day window) |
+| DELETE | `/api/v1/reviews/:id` | Delete review (owner/admin) |
 
 #### Categories (Admin only)
 

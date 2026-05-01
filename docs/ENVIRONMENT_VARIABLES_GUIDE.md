@@ -754,9 +754,10 @@ REQUEST_TIMEOUT_MS=72000
 
 ```env
 # Public — baked into browser bundle at build time
-NEXT_PUBLIC_API_URL=http://localhost:3700        # Must be reachable from user`s browser
+NEXT_PUBLIC_API_URL=http://localhost:3700        # Must be reachable from user's browser
 NEXT_PUBLIC_APP_NAME=Local Service Marketplace
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SOCKET_URL=http://localhost:3007     # comms-service Socket.IO endpoint
 
 # Server-side only (Next.js SSR / API routes inside Docker)
 INTERNAL_API_URL=http://api-gateway:3000

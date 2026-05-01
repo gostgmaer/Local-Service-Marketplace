@@ -12,33 +12,64 @@ Single entry point for all client requests. Routes to 6 backend microservices wi
 |-------------|---------|------|
 | `/user/auth/*` | identity-service | 3001 |
 | `/users/*` | identity-service | 3001 |
+| `/identity/*` | identity-service | 3001 |
 | `/providers/*` | identity-service | 3001 |
+| `/provider-documents/*` | identity-service | 3001 |
+| `/provider-portfolio/*` | identity-service | 3001 |
+| `/favorites/*` | identity-service | 3001 |
+| `/roles/*` | identity-service | 3001 |
+| `/permissions/*` | identity-service | 3001 |
 | `/requests/*` | marketplace-service | 3003 |
 | `/proposals/*` | marketplace-service | 3003 |
 | `/jobs/*` | marketplace-service | 3003 |
 | `/reviews/*` | marketplace-service | 3003 |
+| `/review-aggregates/*` | marketplace-service | 3003 |
 | `/categories/*` | marketplace-service | 3003 |
 | `/payments/*` | payment-service | 3006 |
+| `/refunds/*` | payment-service | 3006 |
+| `/coupons/*` | payment-service | 3006 |
+| `/payment-methods/*` | payment-service | 3006 |
+| `/subscriptions/*` | payment-service | 3006 |
+| `/pricing-plans/*` | payment-service | 3006 |
+| `/webhooks/*` | payment-service | 3006 |
 | `/messages/*` | comms-service | 3007 |
 | `/notifications/*` | comms-service | 3007 |
 | `/admin/*` | oversight-service | 3010 |
 | `/analytics/*` | oversight-service | 3010 |
+| `/disputes/*` | oversight-service | 3010 |
 | `/events/*` | infrastructure-service | 3012 |
 | `/feature-flags/*` | infrastructure-service | 3012 |
+| `/background-jobs/*` | infrastructure-service | 3012 |
+| `/rate-limits/*` | infrastructure-service | 3012 |
 
 All routes are prefixed with `/api/v1`.
 
 ### Public Routes (No JWT Required)
 
-- `POST /api/v1/user/auth/signup`
+- `POST /api/v1/user/auth/register`
+- `POST /api/v1/user/auth/signup` (alias)
 - `POST /api/v1/user/auth/login`
 - `POST /api/v1/user/auth/refresh`
 - `POST /api/v1/user/auth/password-reset/request`
 - `POST /api/v1/user/auth/password-reset/confirm`
-- `GET /api/v1/user/auth/google` (+ callback)
-- `GET /api/v1/user/auth/facebook` (+ callback)
-
-All other routes require `Authorization: Bearer <token>`.
+- `POST /api/v1/user/auth/check-identifier`
+- `POST /api/v1/user/auth/phone/otp/request`
+- `POST /api/v1/user/auth/phone/otp/verify`
+- `POST /api/v1/user/auth/email/otp/request`
+- `POST /api/v1/user/auth/email/otp/verify`
+- `POST /api/v1/user/auth/magic-link/request`
+- `GET  /api/v1/user/auth/magic-link/verify`
+- `POST /api/v1/user/auth/2fa/login`
+- `GET  /api/v1/user/auth/google` (+ callback)
+- `GET  /api/v1/user/auth/facebook` (+ callback)
+- `GET  /api/v1/user/auth/apple` (+ callback)
+- `POST /api/v1/user/auth/apple/mobile`
+- `POST /api/v1/user/auth/oauth/exchange`
+- `GET  /api/v1/requests` (GET only)
+- `GET  /api/v1/providers` (GET only)
+- `GET  /api/v1/categories`
+- `POST /api/v1/webhooks/:gateway`
+- `GET  /health`
 
 ---
 

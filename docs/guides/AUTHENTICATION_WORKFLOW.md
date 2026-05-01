@@ -28,7 +28,7 @@ This document explains **how authentication, validation, and authorization** wor
                               ↓ Yes
 ┌────────────────────────────────────────────────────────────────┐
 │                   SEND TO API GATEWAY                          │
-│  POST http://localhost:3700/api/v1/user/auth/signup                │
+│  POST http://localhost:3700/api/v1/user/auth/register                │
 │  Headers:                                                      │
 │    Content-Type: application/json                             │
 │  Body:                                                         │
@@ -486,7 +486,7 @@ This document explains **how authentication, validation, and authorization** wor
 │    // Attempt token refresh                                   │
 │    const refreshToken = localStorage.getItem('refresh_token')│
 │                                                                │
-│    POST /api/v1/auth/refresh                                  │
+│    POST /api/v1/user/auth/refresh                                  │
 │    { "refreshToken": refreshToken }                           │
 │  }                                                             │
 └────────────────────────────────────────────────────────────────┘
@@ -620,7 +620,7 @@ catch (error) {
   },
   "statusCode": 409,
   "timestamp": "2026-03-13T10:00:00Z",
-  "path": "/api/v1/auth/signup"
+  "path": "/api/v1/user/auth/signup"
 }
 ```
 

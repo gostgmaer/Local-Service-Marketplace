@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of **which routes are public vs protected** in the Local Service Marketplace platform.
 
-**Last Updated:** April 11, 2026
+**Last Updated:** May 2026
 
 ---
 
@@ -139,38 +139,47 @@ All routes under `/dashboard` or `/checkout` require authentication. Non-authent
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/auth/signup` | Create new account |
-| POST | `/api/v1/auth/login` | Email + password login |
-| POST | `/api/v1/auth/refresh` | Refresh JWT token |
-| POST | `/api/v1/auth/password-reset/request` | Request password reset |
-| POST | `/api/v1/auth/password-reset/confirm` | Confirm password reset |
-| POST | `/api/v1/auth/email/verify` | Verify email address |
-| POST | `/api/v1/auth/check-identifier` | Check if email/phone exists |
+| POST | `/api/v1/user/auth/register` | Create new account |
+| POST | `/api/v1/user/auth/signup` | Alias for register |
+| POST | `/api/v1/user/auth/login` | Email + password login |
+| POST | `/api/v1/user/auth/refresh` | Refresh JWT token |
+| POST | `/api/v1/user/auth/password-reset/request` | Request password reset |
+| POST | `/api/v1/user/auth/password-reset/confirm` | Confirm password reset |
+| GET | `/api/v1/user/auth/email/verify` | Verify email via link |
+| POST | `/api/v1/user/auth/verify` | Submit email verification token |
+| POST | `/api/v1/user/auth/check-identifier` | Check if email/phone exists |
+| POST | `/api/v1/user/auth/2fa/login` | Complete login with TOTP code |
 
 #### OAuth Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/v1/auth/google` | Initiate Google OAuth |
-| GET | `/api/v1/auth/google/callback` | Google OAuth callback |
-| GET | `/api/v1/auth/facebook` | Initiate Facebook OAuth |
-| GET | `/api/v1/auth/facebook/callback` | Facebook OAuth callback |
+| GET | `/api/v1/user/auth/google` | Initiate Google OAuth |
+| GET | `/api/v1/user/auth/google/callback` | Google OAuth callback |
+| GET | `/api/v1/user/auth/facebook` | Initiate Facebook OAuth |
+| GET | `/api/v1/user/auth/facebook/callback` | Facebook OAuth callback |
+| GET | `/api/v1/user/auth/apple` | Initiate Apple Sign In |
+| GET | `/api/v1/user/auth/apple/callback` | Apple OAuth callback |
+| POST | `/api/v1/user/auth/apple/mobile` | Apple mobile token exchange |
+| POST | `/api/v1/user/auth/oauth/exchange` | Exchange one-time SSO code |
 
 #### Phone Authentication
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/auth/phone/login` | Phone + password login |
-| POST | `/api/v1/auth/phone/otp/request` | Request OTP via SMS |
-| POST | `/api/v1/auth/phone/otp/verify` | Verify OTP code |
-| POST | `/api/v1/auth/email/otp/request` | Request OTP via email |
-| POST | `/api/v1/auth/email/otp/verify` | Verify email OTP |
+| POST | `/api/v1/user/auth/phone/login` | Phone + password login |
+| POST | `/api/v1/user/auth/phone/otp/request` | Request OTP via SMS |
+| POST | `/api/v1/user/auth/phone/otp/verify` | Verify OTP code |
+| POST | `/api/v1/user/auth/email/otp/request` | Request OTP via email |
+| POST | `/api/v1/user/auth/email/otp/verify` | Verify email OTP |
+| POST | `/api/v1/user/auth/magic-link/request` | Request magic sign-in link |
+| GET | `/api/v1/user/auth/magic-link/verify` | Verify magic link → JWT |
 
 #### Payment Webhooks
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/payments/webhook` | Payment provider webhooks |
+| POST | `/api/v1/webhooks/:gateway` | Payment provider webhooks (Stripe, Razorpay, PayPal) |
 
 #### Public Information
 
@@ -227,7 +236,9 @@ All routes under `/dashboard` or `/checkout` require authentication. Non-authent
 
 | Method | Endpoint | Description | Auth Level |
 |--------|----------|-------------|------------|
-| POST | `/api/v1/auth/logout` | Logout (invalidate token) | User |
+| POST | `/api/v1/user/auth/logout` | Logout (invalidate token via Redis blacklist) | User |
+| POST | `/api/v1/user/auth/revoke-all-tokens` | Logout all devices | User |
+| POST | `/api/v1/user/auth/change-password` | Change password | User |
 
 #### Provider Management
 
@@ -309,8 +320,8 @@ All routes under `/dashboard` or `/checkout` require authentication. Non-authent
 | Frontend Route | Backend API Called | Auth Required | HTTP Method |
 |----------------|-------------------|---------------|-------------|
 | `/` | None (static) | ❌ No | - |
-| `/login` | `POST /api/v1/auth/login` | ❌ No | POST |
-| `/signup` | `POST /api/v1/auth/signup` | ❌ No | POST |
+| `/login` | `POST /api/v1/user/auth/login` | ❌ No | POST |
+| `/signup` | `POST /api/v1/user/auth/register` | ❌ No | POST |
 | `/requests` | `GET /api/v1/requests` | ❌ No | GET |
 | `/requests/[id]` | `GET /api/v1/requests/:id` | ❌ No | GET |
 | `/providers` | `GET /api/v1/providers` | ❌ No | GET |
@@ -347,7 +358,7 @@ curl http://localhost:3700/api/v1/jobs
 
 ```bash
 # Get JWT token first
-TOKEN=$(curl -X POST http://localhost:3700/api/v1/auth/login \
+TOKEN=$(curl -X POST http://localhost:3700/api/v1/user/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@test.com","password":"password123"}' \
   | jq -r '.accessToken')

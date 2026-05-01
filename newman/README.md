@@ -9,7 +9,7 @@ This directory contains configuration files for running automated API tests usin
 
 ## Prerequisites
 
-- Node.js 18+ and pnpm installed
+- Node.js 20+ and pnpm 10+ installed
 - Docker services running (`docker-compose up -d`)
 - Newman installed (automatically via root `pnpm install`)
 

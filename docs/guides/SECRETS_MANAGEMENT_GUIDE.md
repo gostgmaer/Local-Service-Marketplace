@@ -175,7 +175,7 @@ services:
    curl https://api.marketplace.com/health
    
    # Test authentication
-   curl -X POST https://api.marketplace.com/api/v1/auth/login \
+   curl -X POST https://api.marketplace.com/api/v1/user/auth/login \
      -H "Content-Type: application/json" \
      -d '{"email":"test@example.com","password":"test123"}'
    ```
