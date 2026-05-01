@@ -1,0 +1,17 @@
+# GitHub Actions workflow to trigger Copilot review on every PR
+# Place this file in .github/workflows/copilot-pr-review.yml
+
+name: Copilot PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  copilot-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Copilot Review
+        uses: github/copilot-request-review-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
