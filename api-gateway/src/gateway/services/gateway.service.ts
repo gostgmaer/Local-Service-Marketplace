@@ -89,6 +89,39 @@ export class GatewayService {
     return "ok";
   }
 
+  private unwrapHealthPayload(responseBody: any): any {
+    if (!responseBody || typeof responseBody !== "object") {
+      return responseBody;
+    }
+
+    // Standardized API responses use { success, data, ... }.
+    if ("success" in responseBody && "data" in responseBody) {
+      return (responseBody as any).data;
+    }
+
+    return responseBody;
+  }
+
+  private sanitizeHealthObject(payload: any): any {
+    if (Array.isArray(payload)) {
+      return payload.map((item) => this.sanitizeHealthObject(item));
+    }
+
+    if (!payload || typeof payload !== "object") {
+      return payload;
+    }
+
+    const sanitized: Record<string, any> = {};
+    for (const [key, value] of Object.entries(payload)) {
+      if (key === "url" || key === "healthUrl") {
+        continue;
+      }
+      sanitized[key] = this.sanitizeHealthObject(value);
+    }
+
+    return sanitized;
+  }
+
   private getHealthTargets(): Array<{ name: string; url: string }> {
     const targets = new Map<string, string>();
     const infrastructureEnabled =
@@ -427,7 +460,6 @@ export class GatewayService {
       if (!serviceUrl) {
         results[target.name] = {
           status: "down",
-          url: target.url,
           message: "Service URL is not configured",
         };
         continue;
@@ -444,31 +476,49 @@ export class GatewayService {
           }),
         );
 
-        const reachable = response.status < 500;
+        const payload = this.unwrapHealthPayload(response.data);
+        const standardizedFailure =
+          response.data &&
+          typeof response.data === "object" &&
+          "success" in response.data &&
+          (response.data as any).success === false;
+
+        const reachable = response.status < 500 && !standardizedFailure;
         const upstreamStatus = reachable
-          ? this.extractUpstreamStatus(response.data)
+          ? this.extractUpstreamStatus(payload)
           : "down";
         const status: GatewayHealthStatus =
           reachable && upstreamStatus === "ok" ? "ok" : "down";
 
+        const checks = this.sanitizeHealthObject(payload?.checks);
+        const database = this.sanitizeHealthObject(
+          payload?.checks?.database ?? payload?.database,
+        );
+        const dependencies = this.sanitizeHealthObject(
+          payload?.checks?.dependencies ?? payload?.dependencies,
+        );
+
         results[target.name] = {
           status,
-          url: serviceUrl,
-          healthUrl,
           httpStatus: response.status,
           responseTime: `${Date.now() - startedAt}ms`,
-          upstreamStatus: response.data?.status ?? "unknown",
-          checks: response.data?.checks,
+          upstreamStatus: payload?.status ?? "unknown",
+          checks,
+          database,
+          dependencies,
           message:
-            status === "down" && response.status >= 500
-              ? `Upstream responded with HTTP ${response.status}`
+            status === "down"
+              ? standardizedFailure
+                ? ((response.data as any)?.message ??
+                  "Dependency health response reported failure")
+                : response.status >= 500
+                  ? `Upstream responded with HTTP ${response.status}`
+                  : payload?.message
               : undefined,
         };
       } catch (error: any) {
         results[target.name] = {
           status: "down",
-          url: serviceUrl,
-          healthUrl,
           responseTime: `${Date.now() - startedAt}ms`,
           message: error.message,
         };

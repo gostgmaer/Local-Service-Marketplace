@@ -88,13 +88,14 @@ export interface InfrastructureServiceHealth {
   status: "ok" | "down";
   responseTime?: string;
   httpStatus?: number;
-  url?: string;
   message?: string;
   checks?: {
     database?: InfrastructureDependencyHealth;
+    redis?: InfrastructureDependencyHealth;
     dependencies?: Record<string, InfrastructureDependencyHealth>;
   };
   database?: InfrastructureDependencyHealth;
+  redis?: InfrastructureDependencyHealth;
   dependencies?: Record<string, InfrastructureDependencyHealth>;
   [key: string]: any;
 }
@@ -157,6 +158,8 @@ class AdminService {
 
       const databaseCheck =
         (value as any)?.checks?.database ?? (value as any)?.database;
+      const redisCheck =
+        (value as any)?.checks?.redis ?? (value as any)?.redis;
       const dependenciesSource =
         (value as any)?.checks?.dependencies ?? (value as any)?.dependencies;
 
@@ -177,10 +180,16 @@ class AdminService {
           database: databaseCheck
             ? this.normalizeDependencyHealth(databaseCheck)
             : undefined,
+          redis: redisCheck
+            ? this.normalizeDependencyHealth(redisCheck)
+            : undefined,
           dependencies: normalizedDependencies,
         },
         database: databaseCheck
           ? this.normalizeDependencyHealth(databaseCheck)
+          : undefined,
+        redis: redisCheck
+          ? this.normalizeDependencyHealth(redisCheck)
           : undefined,
         dependencies: normalizedDependencies,
       };

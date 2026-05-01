@@ -170,6 +170,8 @@ export const publicRoutes = [
   "/api/v1/health/services", // All services health status
   "/health", // Health (without /api/v1 prefix)
   "/health/services", // Services health (without /api/v1 prefix)
+  "/health/metrics", // Gateway metrics JSON
+  "/health/metrics/prometheus", // Gateway metrics in Prometheus format
 ];
 
 // ============================================
