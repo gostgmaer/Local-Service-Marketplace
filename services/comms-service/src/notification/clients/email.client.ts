@@ -2,12 +2,15 @@ import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppContextDto } from "../dto/app-context.dto";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
+import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosInstance } from "axios";
 
 @Injectable()
 export class EmailClient {
   private readonly httpClient: AxiosInstance;
-  private readonly emailServiceUrl: string;
+  private readonly notificationServiceUrl: string;
+  private readonly notificationApiKey: string;
+  private readonly tenantId: string;
   private readonly emailEnabled: boolean;
 
   constructor(
@@ -15,23 +18,33 @@ export class EmailClient {
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
   ) {
-    this.emailServiceUrl = this.configService.get<string>(
-      "EMAIL_SERVICE_URL",
-      "http://email-service:3500",
+    this.notificationServiceUrl = this.configService.get<string>(
+      "NOTIFICATION_SERVICE_URL",
+      "http://notification-service:4000",
+    );
+    this.notificationApiKey = this.configService.get<string>(
+      "NOTIFICATION_API_KEY",
+      "",
+    );
+    this.tenantId = this.configService.get<string>(
+      "DEFAULT_TENANT_ID",
+      "default",
     );
     this.emailEnabled =
       this.configService.get<string>("EMAIL_ENABLED", "true") === "true";
 
     this.httpClient = axios.create({
-      baseURL: this.emailServiceUrl,
+      baseURL: this.notificationServiceUrl,
       timeout: this.configService.get<number>("REQUEST_TIMEOUT_MS", 72000),
       headers: {
         "Content-Type": "application/json",
+        "x-api-key": this.notificationApiKey,
+        "x-tenant-id": this.tenantId,
       },
     });
 
     this.logger.log(
-      `EmailClient initialized - URL: ${this.emailServiceUrl}, Enabled: ${this.emailEnabled}`,
+      `EmailClient initialized - URL: ${this.notificationServiceUrl}, Enabled: ${this.emailEnabled}`,
       "EmailClient",
     );
   }
@@ -56,26 +69,29 @@ export class EmailClient {
     try {
       this.logger.log(`Sending email to ${options.to}`, "EmailClient");
 
+      const idempotencyKey = uuidv4();
+      const appName =
+        options.appContext?.applicationName || "LocalServiceMarketplace";
+      const appUrl = options.appContext?.appUrl || "";
+      const ctaPath = options.appContext?.ctaPath;
+
       const response = await this.httpClient.post(
-        "/send-email",
+        "/v1/email/send",
         {
           to: options.to,
-          templateId: options.template,
+          subject: options.subject,
+          template: options.template,
           data: {
             ...options.variables,
-            ...options.appContext, // Merge application context into template variables
-            subject: options.subject, // Include subject in data if needed by template
             timestamp: new Date().toISOString(),
           },
-          // Fallback for non-template emails
-          text: options.text,
-          html: options.html,
         },
         {
           headers: {
-            "x-app": options.appContext?.applicationName || "",
-            "x-app-url": options.appContext?.appUrl || "",
-            "x-path": options.appContext?.ctaPath || "",
+            "x-app-name": appName,
+            "x-app-url": appUrl,
+            ...(ctaPath ? { "x-path": ctaPath } : {}),
+            "x-idempotency-key": idempotencyKey,
           },
         },
       );
@@ -115,22 +131,27 @@ export class EmailClient {
         "EmailClient",
       );
 
+      const idempotencyKey = uuidv4();
+      const appName = appContext?.applicationName || "LocalServiceMarketplace";
+      const appUrl = appContext?.appUrl || "";
+      const ctaPath = appContext?.ctaPath;
+
       const response = await this.httpClient.post(
-        "/send-email",
+        "/v1/email/send",
         {
           to,
-          templateId: template,
+          template,
           data: {
             ...variables,
-            ...appContext,
             timestamp: new Date().toISOString(),
           },
         },
         {
           headers: {
-            "x-app": appContext?.applicationName || "",
-            "x-app-url": appContext?.appUrl || "",
-            "x-path": appContext?.ctaPath || "",
+            "x-app-name": appName,
+            "x-app-url": appUrl,
+            ...(ctaPath ? { "x-path": ctaPath } : {}),
+            "x-idempotency-key": idempotencyKey,
           },
         },
       );
@@ -151,7 +172,7 @@ export class EmailClient {
   }
 
   /**
-   * Check if email service is available
+   * Check if notification service is available (email channel)
    */
   async healthCheck(): Promise<boolean> {
     if (!this.emailEnabled) {
@@ -159,11 +180,11 @@ export class EmailClient {
     }
 
     try {
-      await this.httpClient.get("/health");
+      await this.httpClient.get("/v1/health");
       return true;
     } catch (error: any) {
       this.logger.error(
-        `Email service health check failed: ${error.message}`,
+        `Notification service health check failed: ${error.message}`,
         "EmailClient",
       );
       return false;

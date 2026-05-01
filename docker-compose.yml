@@ -395,9 +395,8 @@ services:
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - EMAIL_SERVICE_URL=${EMAIL_SERVICE_URL:-https://email-microservice-seven.vercel.app}
-      - SMS_SERVICE_URL=${SMS_SERVICE_URL:-https://sms-delivery-service.vercel.app}
-      - SMS_API_KEY=${SMS_API_KEY:-change-me-to-a-strong-random-secret}
+      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-https://notification-service.vercel.app}
+      - NOTIFICATION_API_KEY=${NOTIFICATION_API_KEY:-change-me-to-a-strong-random-secret}
       - GATEWAY_INTERNAL_SECRET=${GATEWAY_INTERNAL_SECRET}
       - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
       - EVENT_BUS_ENABLED=${EVENT_BUS_ENABLED:-false}
@@ -591,8 +590,6 @@ services:
       - ANALYTICS_SERVICE_URL=http://oversight-service:3010
       - INFRASTRUCTURE_SERVICE_URL=http://infrastructure-service:3012
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL}
-      - EMAIL_SERVICE_URL=${EMAIL_SERVICE_URL:-https://email-microservice-seven.vercel.app}
-      - SMS_SERVICE_URL=${SMS_SERVICE_URL:-https://sms-delivery-service.vercel.app}
       - RATE_LIMIT_WINDOW_MS=60000
       - RATE_LIMIT_MAX_REQUESTS=100
       # Redis rate limiting (optional — only needed with multiple gateway replicas)
