@@ -631,8 +631,8 @@ function SubscriptionCheckout({ planId }: { planId: string | null }) {
                   size="lg"
                 >
                   {subscribeMutation.isPending
-                    ? "Activating Subscriptionâ€¦"
-                    : `Subscribe Now â€” ${formatCurrency(selectedPlan.price)}`}
+                    ? "Activating Subscription..."
+                    : `Subscribe Now — ${formatCurrency(selectedPlan.price)}`}
                 </Button>
                 <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-3">
                   Manage your current plan and subscription history from{" "}

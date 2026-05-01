@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useState } from "react";
 import dynamic from "next/dynamic";
@@ -146,7 +146,7 @@ function FileDisputeContent() {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
-            Our team will review your dispute and respond within 24â€“48 hours.
+            Our team will review your dispute and respond within 24–48 hours.
             Please provide as much detail as possible.
           </p>
         </div>
@@ -252,7 +252,7 @@ function FileDisputeContent() {
                   <span className="text-gray-400 font-normal">(optional)</span>
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                  Upload photos showing the issue â€” up to 10 images. These will
+                  Upload photos showing the issue — up to 10 images. These will
                   be reviewed by our team.
                 </p>
                 <ImageUpload
@@ -263,7 +263,7 @@ function FileDisputeContent() {
                 />
                 {uploadingImages && (
                   <p className="text-xs text-primary-600 mt-2 animate-pulse">
-                    Uploading imagesâ€¦
+                    Uploading images...
                   </p>
                 )}
               </div>

@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
                   },
                   {
                     label: "Total Revenue",
-                    value: `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    value: `₹${totalRevenue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                     icon: <CreditCard className="h-5 w-5" />,
                     color: "text-green-600",
                     bg: "bg-green-50 dark:bg-green-900/20",

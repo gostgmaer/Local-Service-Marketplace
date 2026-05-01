@@ -87,7 +87,7 @@ export function Navbar() {
   return (
     <nav
       aria-label="Main navigation"
-      className="sticky top-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200/60 dark:border-gray-800/80 shadow-sm"
+      className="sticky top-0 z-50 bg-white dark:bg-gray-950/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800/80 shadow-[0_1px_3px_0_rgb(0,0,0,0.08)] dark:shadow-none"
     >
       <div className=" mx-auto px-4 sm:px-6 lg:px-6">
         <div className="flex justify-between h-16 items-center">

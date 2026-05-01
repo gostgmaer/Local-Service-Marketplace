@@ -1,51 +1,48 @@
-import { Injectable, Inject, LoggerService } from "@nestjs/common";
+﻿import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import axios, { AxiosInstance } from "axios";
 
-export interface OtpSendResponse {
-  success: boolean;
-  message: string;
-  expiresAt?: string;
-}
-
-export interface OtpVerifyResponse {
-  success: boolean;
-  valid: boolean;
-  message: string;
-}
-
 @Injectable()
 export class SmsClient {
   private readonly httpClient: AxiosInstance;
-  private readonly smsServiceUrl: string;
+  private readonly notificationServiceUrl: string;
+  private readonly notificationApiKey: string;
+  private readonly tenantId: string;
   private readonly smsEnabled: boolean;
-  private readonly smsApiKey: string;
 
   constructor(
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
   ) {
-    this.smsServiceUrl = this.configService.get<string>(
-      "SMS_SERVICE_URL",
-      "http://sms-service:3000",
+    this.notificationServiceUrl = this.configService.get<string>(
+      "NOTIFICATION_SERVICE_URL",
+      "http://notification-service:4000",
+    );
+    this.notificationApiKey = this.configService.get<string>(
+      "NOTIFICATION_API_KEY",
+      "",
+    );
+    this.tenantId = this.configService.get<string>(
+      "DEFAULT_TENANT_ID",
+      "default",
     );
     this.smsEnabled =
       this.configService.get<string>("SMS_ENABLED", "false") === "true";
-    this.smsApiKey = this.configService.get<string>("SMS_API_KEY", "");
 
     this.httpClient = axios.create({
-      baseURL: this.smsServiceUrl,
+      baseURL: this.notificationServiceUrl,
       timeout: this.configService.get<number>("REQUEST_TIMEOUT_MS", 72000),
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": this.smsApiKey,
+        "x-api-key": this.notificationApiKey,
+        "x-tenant-id": this.tenantId,
       },
     });
 
     this.logger.log(
-      `SmsClient initialized - URL: ${this.smsServiceUrl}, Enabled: ${this.smsEnabled}`,
+      `SmsClient initialized - URL: ${this.notificationServiceUrl}, Enabled: ${this.smsEnabled}`,
       "SmsClient",
     );
   }
@@ -65,13 +62,14 @@ export class SmsClient {
     try {
       this.logger.log(`Sending SMS to ${phone}`, "SmsClient");
 
-      const response = await this.httpClient.post("/sms/send", {
-        phone,
+      const response = await this.httpClient.post("/v1/sms/send", {
+        to: phone,
         message,
+        messageType: "TRANSACTIONAL",
       });
 
       this.logger.log(`SMS sent successfully to ${phone}`, "SmsClient");
-      return { success: true, messageId: response.data?.messageId };
+      return { success: true, messageId: response.data?.data?.messageId };
     } catch (error: any) {
       this.logger.error(
         `Failed to send SMS to ${phone}: ${error.message}`,
@@ -82,109 +80,17 @@ export class SmsClient {
     }
   }
 
-  async sendOtp(
-    phone: string,
-    purpose: string = "login",
-  ): Promise<OtpSendResponse> {
-    if (!this.smsEnabled) {
-      this.logger.warn(
-        "SMS service is disabled. Skipping OTP send.",
-        "SmsClient",
-      );
-      return {
-        success: false,
-        message: "SMS service is disabled. Cannot send OTP.",
-      };
-    }
-
-    try {
-      this.logger.log(
-        `Requesting OTP for phone ${phone} (purpose: ${purpose})`,
-        "SmsClient",
-      );
-
-      const response = await this.httpClient.post("/sms/send-otp", {
-        phone,
-        purpose,
-      });
-
-      this.logger.log(`OTP sent successfully to ${phone}`, "SmsClient");
-      return response.data;
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to send OTP to ${phone}: ${error.message}`,
-        error.stack,
-        "SmsClient",
-      );
-      return {
-        success: false,
-        message: error.response?.data?.message || "Failed to send OTP",
-      };
-    }
-  }
-
-  async verifyOtp(
-    phone: string,
-    code: string,
-    purpose: string = "login",
-  ): Promise<OtpVerifyResponse> {
-    if (!this.smsEnabled) {
-      this.logger.warn(
-        "SMS service is disabled. Skipping OTP verification.",
-        "SmsClient",
-      );
-      return {
-        success: false,
-        valid: false,
-        message: "SMS service is disabled. Cannot verify OTP.",
-      };
-    }
-
-    try {
-      this.logger.log(
-        `Verifying OTP for phone ${phone} (purpose: ${purpose})`,
-        "SmsClient",
-      );
-
-      const response = await this.httpClient.post("/sms/verify-otp", {
-        phone,
-        code,
-        purpose,
-      });
-
-      this.logger.log(
-        `OTP verification result for ${phone}: ${response.data.valid}`,
-        "SmsClient",
-      );
-      return response.data;
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to verify OTP for ${phone}: ${error.message}`,
-        error.stack,
-        "SmsClient",
-      );
-      return {
-        success: false,
-        valid: false,
-        message: error.response?.data?.message || "Failed to verify OTP",
-      };
-    }
-  }
-
-  /**
-   * Check if SMS service is available
-   */
   async healthCheck(): Promise<boolean> {
     if (!this.smsEnabled) {
       return false;
     }
 
     try {
-      await this.httpClient.get("/health");
+      await this.httpClient.get("/v1/health");
       return true;
     } catch (error: any) {
       this.logger.error(
-        `SMS service health check failed: ${error.message}`,
+        `Notification service health check failed: ${error.message}`,
         "SmsClient",
       );
       return false;
