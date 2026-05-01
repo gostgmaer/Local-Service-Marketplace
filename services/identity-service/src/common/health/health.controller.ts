@@ -1,9 +1,63 @@
 import { Controller, Get, Inject } from "@nestjs/common";
 import { Pool } from "pg";
+import axios from "axios";
+
+type HealthStatus = "ok" | "down";
 
 @Controller("health")
 export class HealthController {
   constructor(@Inject("DATABASE_POOL") private readonly pool: Pool) {}
+
+  private normalizeStatus(status: unknown): HealthStatus {
+    const value = String(status ?? "")
+      .toLowerCase()
+      .trim();
+    return value === "ok" || value === "healthy" || value === "up"
+      ? "ok"
+      : "down";
+  }
+
+  private async checkDependency(url: string): Promise<any> {
+    const baseUrl = url.trim().replace(/\/+$/, "");
+    const healthUrl = `${baseUrl}/health`;
+    const startedAt = Date.now();
+
+    try {
+      const response = await axios.get(healthUrl, {
+        timeout: 3000,
+        validateStatus: () => true,
+      });
+
+      const reachable = response.status < 500;
+      const upstreamStatus = response.data?.status
+        ? this.normalizeStatus(response.data.status)
+        : "ok";
+      const status: HealthStatus =
+        reachable && upstreamStatus === "ok" ? "ok" : "down";
+
+      return {
+        status,
+        url: baseUrl,
+        healthUrl,
+        httpStatus: response.status,
+        responseTime: `${Date.now() - startedAt}ms`,
+        message:
+          status === "down"
+            ? reachable
+              ? `Dependency reported status: ${response.data?.status ?? "unknown"}`
+              : `Dependency returned HTTP ${response.status}`
+            : undefined,
+      };
+    } catch (error: any) {
+      return {
+        status: "down",
+        url: baseUrl,
+        healthUrl,
+        responseTime: `${Date.now() - startedAt}ms`,
+        message: error?.message ?? "Dependency check failed",
+      };
+    }
+  }
 
   @Get()
   async check() {
@@ -12,19 +66,46 @@ export class HealthController {
       service: "identity-service",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      checks: {
+        database: { status: "down" as HealthStatus },
+        dependencies: {},
+      },
     };
 
     try {
       const start = Date.now();
       await this.pool.query("SELECT 1");
-      health.database = {
+      health.checks.database = {
         status: "ok",
         responseTime: `${Date.now() - start}ms`,
       };
     } catch (error: any) {
-      health.status = "degraded";
-      health.database = { status: "error", message: error.message };
+      health.status = "down";
+      health.checks.database = {
+        status: "down",
+        message: error?.message ?? "Database check failed",
+      };
     }
+
+    const dependencyTargets: Record<string, string | undefined> = {
+      notificationService: process.env.NOTIFICATION_SERVICE_URL,
+      fileUploadService: process.env.FILE_UPLOAD_SERVICE_URL,
+    };
+
+    for (const [name, url] of Object.entries(dependencyTargets)) {
+      if (!url || !url.trim()) {
+        continue;
+      }
+
+      health.checks.dependencies[name] = await this.checkDependency(url);
+      if (health.checks.dependencies[name].status === "down") {
+        health.status = "down";
+      }
+    }
+
+    // Backward-compatible aliases.
+    health.database = health.checks.database;
+    health.dependencies = health.checks.dependencies;
 
     return health;
   }

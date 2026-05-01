@@ -20,28 +20,10 @@ export class GatewayController {
     private readonly logger: LoggerService,
   ) {}
 
-  /**
-   * Gateway self health check – exposed under /api/v1/health so Newman tests
-   * can reach it without going through the proxy catch-all.
-   * Returns raw JSON (bypasses ResponseTransformInterceptor via @Res).
-   */
-  @Get("health")
-  async gatewayHealth(@Res() res: Response): Promise<void> {
-    (res as any).status(200).json({
-      status: "healthy",
-      gateway: "api-gateway",
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    });
-  }
+  private buildServicesPayload(rawHealth: Record<string, any>) {
+    const infrastructureEnabled =
+      (process.env.INFRASTRUCTURE_ENABLED || "false") === "true";
 
-  /**
-   * Aggregate health of all downstream microservices.
-   * Always returns HTTP 200; use the `status` field to detect degraded state.
-   */
-  @Get("health/services")
-  async servicesHealth(@Res() res: Response): Promise<void> {
-    const rawHealth = await this.gatewayService.healthCheck();
     const serviceMap: Record<string, string> = {
       "identity-service": "identity",
       "marketplace-service": "marketplace",
@@ -49,19 +31,70 @@ export class GatewayController {
       "comms-service": "comms",
       "oversight-service": "oversight",
     };
-    const services: Record<string, any> = {};
-    for (const [key, shortKey] of Object.entries(serviceMap)) {
-      if (rawHealth[key]) {
-        services[shortKey] = rawHealth[key];
-      }
+
+    if (infrastructureEnabled) {
+      serviceMap["infrastructure-service"] = "infrastructure";
     }
-    const allHealthy = Object.values(services).every(
-      (s: any) => s?.status === "healthy",
-    );
-    (res as any).status(200).json({
-      status: allHealthy ? "healthy" : "degraded",
-      timestamp: new Date().toISOString(),
+
+    const services: Record<string, any> = {};
+    for (const [fullName, shortName] of Object.entries(serviceMap)) {
+      services[shortName] =
+        rawHealth[fullName] ?? {
+          status: "down",
+          message: "Health data unavailable",
+        };
+    }
+
+    const downServices = Object.entries(services)
+      .filter(([, svc]) => svc?.status !== "ok")
+      .map(([name]) => name);
+
+    return {
+      status: downServices.length === 0 ? "ok" : "down",
       services,
+      summary: {
+        total: Object.keys(services).length,
+        ok: Object.keys(services).length - downServices.length,
+        down: downServices.length,
+        downServices,
+      },
+    };
+  }
+
+  /**
+   * Gateway self health check – exposed under /api/v1/health so Newman tests
+   * can reach it without going through the proxy catch-all.
+   * Includes downstream microservice health in `services`.
+   */
+  @Get("health")
+  async gatewayHealth(@Res() res: Response): Promise<void> {
+    const rawHealth = await this.gatewayService.healthCheck();
+    const aggregate = this.buildServicesPayload(rawHealth);
+
+    (res as any).status(200).json({
+      status: aggregate.status,
+      gateway: "api-gateway",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      services: aggregate.services,
+      summary: aggregate.summary,
+    });
+  }
+
+  /**
+   * Aggregate health of all downstream microservices.
+   * Always returns HTTP 200; use the `status` field (`ok` | `down`) to detect outages.
+   */
+  @Get("health/services")
+  async servicesHealth(@Res() res: Response): Promise<void> {
+    const rawHealth = await this.gatewayService.healthCheck();
+    const aggregate = this.buildServicesPayload(rawHealth);
+
+    (res as any).status(200).json({
+      status: aggregate.status,
+      timestamp: new Date().toISOString(),
+      services: aggregate.services,
+      summary: aggregate.summary,
     });
   }
 

@@ -16,6 +16,8 @@ import {
   ServiceUnavailableException,
 } from "../../common/exceptions/http.exceptions";
 
+type GatewayHealthStatus = "ok" | "down";
+
 // ── Simple per-service circuit breaker ─────────────────────────────────────
 type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 interface CircuitBreaker {
@@ -44,6 +46,65 @@ export class GatewayService {
       "",
     );
     this.tenantId = this.configService.get<string>("TENANT_ID", "default");
+  }
+
+  private normalizeStatus(status: unknown): GatewayHealthStatus {
+    const value = String(status ?? "")
+      .toLowerCase()
+      .trim();
+    return value === "ok" || value === "healthy" || value === "up"
+      ? "ok"
+      : "down";
+  }
+
+  private extractUpstreamStatus(payload: any): GatewayHealthStatus {
+    if (!payload || typeof payload !== "object") {
+      return "ok";
+    }
+
+    if (payload.status && this.normalizeStatus(payload.status) === "down") {
+      return "down";
+    }
+
+    const databaseStatus =
+      payload.checks?.database?.status ?? payload.database?.status;
+    if (databaseStatus && this.normalizeStatus(databaseStatus) === "down") {
+      return "down";
+    }
+
+    const dependencies = payload.checks?.dependencies ?? payload.dependencies;
+    if (dependencies && typeof dependencies === "object") {
+      for (const dep of Object.values(dependencies)) {
+        if (
+          dep &&
+          typeof dep === "object" &&
+          "status" in dep &&
+          this.normalizeStatus((dep as any).status) === "down"
+        ) {
+          return "down";
+        }
+      }
+    }
+
+    return "ok";
+  }
+
+  private getHealthTargets(): Array<{ name: string; url: string }> {
+    const targets = new Map<string, string>();
+    const infrastructureEnabled =
+      this.configService.get<string>("INFRASTRUCTURE_ENABLED", "false") ===
+      "true";
+
+    for (const config of Object.values(servicesConfig)) {
+      if (config.name === "infrastructure-service" && !infrastructureEnabled) {
+        continue;
+      }
+
+      if (!targets.has(config.name)) {
+        targets.set(config.name, config.url);
+      }
+    }
+    return Array.from(targets.entries()).map(([name, url]) => ({ name, url }));
   }
 
   // ── Circuit breaker helpers ───────────────────────────────────────────────
@@ -119,7 +180,9 @@ export class GatewayService {
     user?: any,
     isMultipart?: boolean,
   ): Promise<AxiosResponse> {
-    let serviceConfig: (typeof servicesConfig)[keyof typeof servicesConfig] | undefined;
+    let serviceConfig:
+      | (typeof servicesConfig)[keyof typeof servicesConfig]
+      | undefined;
     try {
       const serviceName = this.getServiceName(path);
       serviceConfig = servicesConfig[serviceName];
@@ -357,23 +420,57 @@ export class GatewayService {
    * Health check - ping all microservices
    */
   async healthCheck(): Promise<any> {
-    const results = {};
+    const results: Record<string, any> = {};
 
-    for (const [serviceName, config] of Object.entries(servicesConfig)) {
+    for (const target of this.getHealthTargets()) {
+      const serviceUrl = target.url?.trim();
+      if (!serviceUrl) {
+        results[target.name] = {
+          status: "down",
+          url: target.url,
+          message: "Service URL is not configured",
+        };
+        continue;
+      }
+
+      const healthUrl = `${serviceUrl.replace(/\/+$/, "")}/health`;
+      const startedAt = Date.now();
+
       try {
         const response = await firstValueFrom(
-          this.httpService.get(`${config.url}/health`, { timeout: 5000 }),
+          this.httpService.get(healthUrl, {
+            timeout: 5000,
+            validateStatus: () => true,
+          }),
         );
-        results[serviceName] = {
-          status: "healthy",
-          url: config.url,
-          responseTime: response.headers["x-response-time"] || "N/A",
+
+        const reachable = response.status < 500;
+        const upstreamStatus = reachable
+          ? this.extractUpstreamStatus(response.data)
+          : "down";
+        const status: GatewayHealthStatus =
+          reachable && upstreamStatus === "ok" ? "ok" : "down";
+
+        results[target.name] = {
+          status,
+          url: serviceUrl,
+          healthUrl,
+          httpStatus: response.status,
+          responseTime: `${Date.now() - startedAt}ms`,
+          upstreamStatus: response.data?.status ?? "unknown",
+          checks: response.data?.checks,
+          message:
+            status === "down" && response.status >= 500
+              ? `Upstream responded with HTTP ${response.status}`
+              : undefined,
         };
       } catch (error: any) {
-        results[serviceName] = {
-          status: "unhealthy",
-          url: config.url,
-          error: error.message,
+        results[target.name] = {
+          status: "down",
+          url: serviceUrl,
+          healthUrl,
+          responseTime: `${Date.now() - startedAt}ms`,
+          message: error.message,
         };
       }
     }

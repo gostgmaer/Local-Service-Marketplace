@@ -28,15 +28,20 @@ export class ServicesHealthController {
     );
 
     const servicesHealth = await this.gatewayService.healthCheck();
-
-    const allHealthy = Object.values(servicesHealth).every(
-      (service: any) => service.status === "healthy",
-    );
+    const downServices = Object.entries(servicesHealth)
+      .filter(([, service]) => (service as any).status !== "ok")
+      .map(([serviceName]) => serviceName);
 
     return {
-      status: allHealthy ? "healthy" : "degraded",
+      status: downServices.length === 0 ? "ok" : "down",
       timestamp: new Date().toISOString(),
       services: servicesHealth,
+      summary: {
+        total: Object.keys(servicesHealth).length,
+        ok: Object.keys(servicesHealth).length - downServices.length,
+        down: downServices.length,
+        downServices,
+      },
     };
   }
 }
