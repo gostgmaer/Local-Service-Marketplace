@@ -3,6 +3,7 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { Pool } from "pg";
 import axios from "axios";
+import net from "net";
 
 type HealthStatus = "ok" | "down";
 
@@ -44,8 +45,6 @@ export class HealthController {
 
       return {
         status,
-        url: baseUrl,
-        healthUrl,
         httpStatus: response.status,
         responseTime: `${Date.now() - startedAt}ms`,
         message:
@@ -58,12 +57,73 @@ export class HealthController {
     } catch (error: any) {
       return {
         status: "down",
-        url: baseUrl,
-        healthUrl,
         responseTime: `${Date.now() - startedAt}ms`,
         message: error?.message ?? "Dependency check failed",
       };
     }
+  }
+
+  private async checkRedis(): Promise<any> {
+    const redisEnabled =
+      process.env.CACHE_ENABLED === "true" ||
+      process.env.WORKERS_ENABLED === "true" ||
+      process.env.REDIS_RATE_LIMIT_ENABLED === "true";
+    const redisHost = (process.env.REDIS_HOST || "").trim();
+    const redisPort = Number.parseInt(process.env.REDIS_PORT || "6379", 10);
+
+    if (!redisEnabled && !redisHost) {
+      return {
+        status: "ok",
+        enabled: false,
+        message: "Redis is disabled",
+      };
+    }
+
+    if (!redisHost) {
+      return {
+        status: redisEnabled ? "down" : "ok",
+        enabled: redisEnabled,
+        message: "REDIS_HOST is not configured",
+      };
+    }
+
+    const startedAt = Date.now();
+    return new Promise((resolve) => {
+      const socket = net.connect({ host: redisHost, port: redisPort });
+
+      const finalize = (payload: any) => {
+        socket.removeAllListeners();
+        if (!socket.destroyed) {
+          socket.destroy();
+        }
+        resolve(payload);
+      };
+
+      socket.setTimeout(2000);
+      socket.once("connect", () => {
+        finalize({
+          status: "ok",
+          enabled: true,
+          responseTime: `${Date.now() - startedAt}ms`,
+        });
+      });
+      socket.once("timeout", () => {
+        finalize({
+          status: "down",
+          enabled: true,
+          responseTime: `${Date.now() - startedAt}ms`,
+          message: "Redis connection timed out",
+        });
+      });
+      socket.once("error", (error: Error) => {
+        finalize({
+          status: "down",
+          enabled: true,
+          responseTime: `${Date.now() - startedAt}ms`,
+          message: error.message,
+        });
+      });
+    });
   }
 
   private checkFcmReadiness(): any {
@@ -103,6 +163,7 @@ export class HealthController {
       uptime: process.uptime(),
       checks: {
         database: { status: "down" as HealthStatus },
+        redis: { status: "down" as HealthStatus },
         dependencies: {},
       },
     };
@@ -120,6 +181,11 @@ export class HealthController {
         status: "down",
         message: error instanceof Error ? error.message : String(error),
       };
+    }
+
+    health.checks.redis = await this.checkRedis();
+    if (health.checks.redis.status === "down") {
+      health.status = "down";
     }
 
     const dependencyTargets: Record<string, string | undefined> = {
@@ -146,6 +212,7 @@ export class HealthController {
 
     // Backward-compatible aliases.
     health.database = health.checks.database;
+    health.redis = health.checks.redis;
     health.dependencies = health.checks.dependencies;
 
     return health;

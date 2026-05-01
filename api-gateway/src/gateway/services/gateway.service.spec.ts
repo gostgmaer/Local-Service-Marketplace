@@ -167,6 +167,69 @@ describe("GatewayService", () => {
       expect(result["identity-service"].status).toBe("ok");
     });
 
+    it("should unwrap standardized health payload and preserve checks", async () => {
+      mockHttpService.get.mockReturnValue(
+        of({
+          status: 200,
+          data: {
+            success: true,
+            data: {
+              status: "ok",
+              checks: {
+                database: { status: "ok", responseTime: "4ms" },
+                dependencies: {
+                  notificationService: { status: "ok", responseTime: "8ms" },
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      const result = await service.healthCheck();
+
+      expect(result["identity-service"].status).toBe("ok");
+      expect(result["identity-service"].checks?.database?.status).toBe("ok");
+      expect(
+        result["identity-service"].checks?.dependencies?.notificationService
+          ?.status,
+      ).toBe("ok");
+    });
+
+    it("should not expose internal health urls in aggregated response", async () => {
+      mockHttpService.get.mockReturnValue(
+        of({
+          status: 200,
+          data: {
+            status: "ok",
+            checks: {
+              database: { status: "ok", responseTime: "5ms" },
+              dependencies: {
+                notificationService: {
+                  status: "ok",
+                  url: "http://notification-service",
+                  healthUrl: "http://notification-service/health",
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      const result = await service.healthCheck();
+
+      expect(result["identity-service"].url).toBeUndefined();
+      expect(result["identity-service"].healthUrl).toBeUndefined();
+      expect(
+        result["identity-service"].checks?.dependencies?.notificationService
+          ?.url,
+      ).toBeUndefined();
+      expect(
+        result["identity-service"].checks?.dependencies?.notificationService
+          ?.healthUrl,
+      ).toBeUndefined();
+    });
+
     it("should mark service as unhealthy on error", async () => {
       mockHttpService.get.mockReturnValue(
         throwError(() => new Error("Connection failed")),
