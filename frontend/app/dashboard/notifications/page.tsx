@@ -23,7 +23,7 @@ import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 export default function NotificationsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { setUnreadCount } = useNotificationStore();
+  const { setUnreadCount, decrementUnreadCount } = useNotificationStore();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const notificationsEnabled = useIsNotificationsEnabled();
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -106,17 +106,22 @@ export default function NotificationsPage() {
 
   const markAsReadMutation = useMutation({
     mutationFn: (id: string) => notificationService.markAsRead(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      const unread = notifications?.filter((n) => !n.read).length || 0;
-      setUnreadCount(Math.max(0, unread - 1));
+    onSuccess: (_, id) => {
+      queryClient.setQueryData(
+        ["notifications", page, limit, typeFilter, unreadOnly],
+        (old: any) => Array.isArray(old) ? old.map((n) => n.id === id ? { ...n, read: true } : n) : old,
+      );
+      decrementUnreadCount();
     },
   });
 
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationService.markAllAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.setQueryData(
+        ["notifications", page, limit, typeFilter, unreadOnly],
+        (old: any) => Array.isArray(old) ? old.map((n) => ({ ...n, read: true })) : old,
+      );
       setUnreadCount(0);
     },
   });

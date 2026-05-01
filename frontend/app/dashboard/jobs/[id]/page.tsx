@@ -94,29 +94,29 @@ export default function JobDetailPage() {
 
   const startJobMutation = useMutation({
     mutationFn: () => jobService.startJob(jobId),
-    onSuccess: () => { toast.success("Job started!"); queryClient.invalidateQueries({ queryKey: ["job", jobId] }); },
-    onError: () => toast.error("Failed to start job"),
+    onSuccess: () => { toast.success("Job started! The customer has been notified."); queryClient.invalidateQueries({ queryKey: ["job", jobId] }); },
+    onError: () => toast.error("Couldn't start the job — please try again."),
   });
 
   const completeJobMutation = useMutation({
     mutationFn: () => jobService.completeJob(jobId),
-    onSuccess: () => { toast.success("Job marked as completed!"); queryClient.invalidateQueries({ queryKey: ["job", jobId] }); },
-    onError: () => toast.error("Failed to complete job"),
+    onSuccess: () => { toast.success("Marked as complete — waiting for customer confirmation."); queryClient.invalidateQueries({ queryKey: ["job", jobId] }); },
+    onError: () => toast.error("Couldn't mark job as complete — please try again."),
   });
 
   const customerCompleteJobMutation = useMutation({
     mutationFn: () => jobService.completeJobByCustomer(jobId),
-    onSuccess: () => { toast.success("Job completed!"); queryClient.invalidateQueries({ queryKey: ["job", jobId] }); queryClient.invalidateQueries({ queryKey: ["job-payments", jobId] }); },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to complete job"),
+    onSuccess: () => { toast.success("Job confirmed complete! Payment will be released shortly."); queryClient.invalidateQueries({ queryKey: ["job", jobId] }); queryClient.invalidateQueries({ queryKey: ["job-payments", jobId] }); },
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Couldn't confirm job completion — please try again."),
   });
 
   const cancelJobMutation = useMutation({
     mutationFn: (reason: string) => jobService.cancelJob(jobId, reason),
     onSuccess: () => {
-      toast.success("Job cancelled"); setShowCancelDialog(false); setCancelReason("");
+      toast.success("Job cancelled successfully."); setShowCancelDialog(false); setCancelReason("");
       queryClient.invalidateQueries({ queryKey: ["job", jobId] });
     },
-    onError: () => toast.error("Failed to cancel job"),
+    onError: () => toast.error("Couldn't cancel the job — please try again."),
   });
 
   const cashPaymentMutation = useMutation({

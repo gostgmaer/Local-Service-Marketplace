@@ -72,7 +72,7 @@ export default function AdminUserDetailPage() {
       setShowSuspendForm(false);
       setSuspendReason("");
     },
-    onError: () => toast.error("Failed to suspend user"),
+    onError: () => toast.error("Couldn't suspend this user — please try again."),
   });
 
   const activateMutation = useMutation({
@@ -87,7 +87,7 @@ export default function AdminUserDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-user", userId] });
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
-    onError: () => toast.error("Failed to activate user"),
+    onError: () => toast.error("Couldn't activate this user — please try again."),
   });
 
   return (

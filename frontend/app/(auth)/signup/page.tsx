@@ -169,6 +169,7 @@ export default function SignupPage() {
                 aria-invalid={errors.name ? "true" : "false"}
                 aria-describedby={errors.name ? "name-error" : undefined}
                 disabled={isLoading}
+                required
                 className={
                   errors.name ? "border-red-500 focus:ring-red-500" : ""
                 }

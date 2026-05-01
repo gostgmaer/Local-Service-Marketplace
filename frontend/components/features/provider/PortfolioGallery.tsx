@@ -62,13 +62,13 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
 
   const nextImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === item.image_urls.length - 1 ? 0 : prev + 1,
+      prev === (item.image_urls?.length ?? 1) - 1 ? 0 : prev + 1,
     );
   };
 
   const prevImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === 0 ? item.image_urls.length - 1 : prev - 1,
+      prev === 0 ? (item.image_urls?.length ?? 1) - 1 : prev - 1,
     );
   };
 
@@ -81,7 +81,7 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
       {/* Image Carousel */}
       <div className="relative h-64 bg-gray-200 group">
         <Image
-          src={item.image_urls[currentImageIndex]}
+          src={(item.image_urls ?? [])[currentImageIndex] ?? "/placeholder-image.png"}
           alt={item.title}
           width={600}
           height={400}
@@ -89,7 +89,7 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
         />
 
         {/* Image Navigation */}
-        {item.image_urls.length > 1 && (
+        {(item.image_urls?.length ?? 0) > 1 && (
           <>
             <button
               onClick={prevImage}
@@ -106,7 +106,7 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
 
             {/* Image Indicators */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {item.image_urls.map((_, index) => (
+              {(item.image_urls ?? []).map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
@@ -123,7 +123,7 @@ function SortablePortfolioItem({ item, onEdit, onDelete }: SortableItemProps) {
 
         {/* Image Count Badge */}
         <div className="absolute top-4 right-4 px-3 py-1 bg-black bg-opacity-60 rounded-full text-white text-sm font-medium">
-          {currentImageIndex + 1} / {item.image_urls.length}
+            {currentImageIndex + 1} / {item.image_urls?.length ?? 1}
         </div>
       </div>
 

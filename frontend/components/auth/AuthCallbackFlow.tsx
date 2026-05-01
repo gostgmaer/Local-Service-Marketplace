@@ -8,7 +8,26 @@ import toast from "react-hot-toast";
 import { ROUTES } from "@/config/constants";
 import { authService } from "@/services/auth-service";
 
-type Status = "loading" | "success" | "error";
+type Status = "loading" | "role-selection" | "success" | "error";
+
+interface RoleOption {
+  value: "customer" | "provider";
+  label: string;
+  description: string;
+}
+
+const ROLE_OPTIONS: RoleOption[] = [
+  {
+    value: "customer",
+    label: "I need a service",
+    description: "Browse and hire skilled local service providers",
+  },
+  {
+    value: "provider",
+    label: "I provide services",
+    description: "Offer your skills and earn by completing service jobs",
+  },
+];
 
 function CallbackSkeleton() {
   return (
@@ -32,7 +51,12 @@ function AuthCallbackContent() {
     "Something went wrong. Please try again.",
   );
   const [countdown, setCountdown] = useState(3);
+  const [selectedRole, setSelectedRole] = useState<"customer" | "provider" | null>(null);
+  const [email, setEmail] = useState("");
+  const [isSubmittingRole, setIsSubmittingRole] = useState(false);
   const exchangeAttempted = useRef(false);
+  const pendingTokensRef = useRef<{ accessToken: string; refreshToken: string } | null>(null);
+  const needsEmailRef = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -67,21 +91,19 @@ function AuthCallbackContent() {
 
         const exchange = await authService.exchangeOAuthCode(code);
 
-        const result = await signIn("oauth-token", {
-          token: exchange.accessToken,
-          refreshToken: exchange.refreshToken,
-          redirect: false,
-        });
-
-        if (result?.error) {
-          setErrorMessage("We couldn't create your session. Please try again.");
-          setStatus("error");
+        // New user: show role selection before creating session
+        if (exchange.isNewUser) {
+          pendingTokensRef.current = {
+            accessToken: exchange.accessToken,
+            refreshToken: exchange.refreshToken,
+          };
+          needsEmailRef.current = exchange.needsEmail ?? false;
+          setStatus("role-selection");
           return;
         }
 
-        setStatus("success");
-        toast.success("You're signed in!");
-        setTimeout(() => router.push(ROUTES.DASHBOARD), 1200);
+        // Existing user: complete sign in immediately
+        await completeSignIn(exchange.accessToken, exchange.refreshToken);
       } catch (err: any) {
         console.error("OAuth callback error:", err);
         setErrorMessage(
@@ -93,6 +115,73 @@ function AuthCallbackContent() {
 
     handleCallback();
   }, [searchParams, router]);
+
+  const completeSignIn = async (
+    accessToken: string,
+    refreshToken: string,
+    redirectTo: string = ROUTES.DASHBOARD,
+  ) => {
+    const result = await signIn("oauth-token", {
+      token: accessToken,
+      refreshToken,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setErrorMessage("We couldn't create your session. Please try again.");
+      setStatus("error");
+      return;
+    }
+
+    setStatus("success");
+    toast.success("Welcome! You're now signed in.");
+    setTimeout(() => router.push(redirectTo), 1200);
+  };
+
+  const handleRoleSubmit = async () => {
+    if (!selectedRole) {
+      toast.error("Please select whether you need a service or provide services.");
+      return;
+    }
+    if (needsEmailRef.current && !email.trim()) {
+      toast.error("Please enter your email address to continue.");
+      return;
+    }
+    if (needsEmailRef.current && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    const tokens = pendingTokensRef.current;
+    if (!tokens) {
+      setErrorMessage("Session expired. Please try signing in again.");
+      setStatus("error");
+      return;
+    }
+
+    setIsSubmittingRole(true);
+    try {
+      const updated = await authService.setOAuthRole(
+        selectedRole,
+        tokens.accessToken,
+        needsEmailRef.current ? email : undefined,
+      );
+      toast.success(
+        selectedRole === "provider"
+          ? "Account created as Service Provider! Let's set up your profile."
+          : "Account created! Welcome aboard.",
+      );
+      await completeSignIn(
+        updated.accessToken,
+        updated.refreshToken,
+        selectedRole === "provider" ? ROUTES.ONBOARDING : ROUTES.DASHBOARD,
+      );
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to save your selection. Please try again.");
+    } finally {
+      setIsSubmittingRole(false);
+    }
+  };
 
   useEffect(() => {
     if (status !== "error") return;
@@ -121,6 +210,77 @@ function AuthCallbackContent() {
             <p className="text-sm text-gray-500">
               Please wait while we securely complete your login.
             </p>
+          </>
+        )}
+
+        {status === "role-selection" && (
+          <>
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+                <svg className="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900 mb-1">
+              Welcome! How will you use this platform?
+            </h1>
+            <p className="text-sm text-gray-500 mb-6">
+              Choose your account type to get started.
+              <span className="text-red-500 ml-0.5">*</span>
+            </p>
+
+            <div className="space-y-3 mb-5 text-left">
+              {ROLE_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    selectedRole === option.value
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={option.value}
+                    checked={selectedRole === option.value}
+                    onChange={() => setSelectedRole(option.value)}
+                    className="mt-1 accent-blue-600"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">{option.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {needsEmailRef.current && (
+              <div className="mb-5 text-left">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Required since your sign-in provider did not share an email.
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={handleRoleSubmit}
+              disabled={isSubmittingRole || !selectedRole}
+              className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmittingRole ? "Saving..." : "Continue"}
+            </button>
           </>
         )}
 

@@ -80,6 +80,7 @@ export function CreateProposalForm({
           min="0"
           step="0.01"
           placeholder="Enter your price"
+          required
         />
         {errors.price && (
           <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>
@@ -110,6 +111,7 @@ export function CreateProposalForm({
           label="Your Proposal Message"
           {...register("message")}
           rows={6}
+          required
           placeholder="Describe your approach, experience, and why you're the best fit for this job (minimum 20 characters)..."
         />
         <div className="mt-1 flex items-center justify-between">

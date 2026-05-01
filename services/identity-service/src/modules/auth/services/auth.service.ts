@@ -932,14 +932,14 @@ export class AuthService {
   async handleOAuthLogin(
     oauthUser: OAuthUserDto,
     ipAddress?: string,
-  ): Promise<AuthResponseDto> {
+  ): Promise<AuthResponseDto & { isNewUser: boolean; needsEmail: boolean }> {
     const { provider, providerId, email, name, accessToken, refreshToken } =
       oauthUser;
 
     this.logger.info("OAuth login attempt", {
       context: "AuthService",
       provider,
-      email,
+      email: email || "(no email)",
     });
 
     // Check if social account already exists
@@ -948,6 +948,8 @@ export class AuthService {
       providerId,
     );
     let user;
+    let isNewUser = false;
+    const needsEmail = !email;
 
     if (socialAccount) {
       // Social account exists, get the user
@@ -975,7 +977,7 @@ export class AuthService {
       });
     } else {
       // Social account doesn't exist, check if user exists with this email
-      user = await this.userRepo.findByEmail(email);
+      user = email ? await this.userRepo.findByEmail(email) : null;
 
       if (user) {
         // User exists, link social account
@@ -996,21 +998,25 @@ export class AuthService {
           },
         );
       } else {
-        // Create new user with OAuth
+        // Create new user with OAuth — default to "customer"; role can be
+        // upgraded via the oauth/set-role endpoint immediately after registration.
         // password_hash is NOT NULL in DB; store a sentinel that can never match
         // a real bcrypt hash (bcrypt hashes start with "$2b$", never "!oauth!").
         const oauthSentinel = `!oauth!${crypto.randomBytes(32).toString("hex")}`;
         user = await this.userRepo.create(
-          email,
+          email || null, // email may be absent for some OAuth providers (e.g. Apple)
           oauthSentinel,
-          "customer", // Default role
+          "customer", // Default role — new user selects their role on the frontend
           null, // No phone initially
           name || null, // Name from OAuth provider profile
         );
+        isNewUser = true;
 
         // Mark email as verified since OAuth provides verified email
-        await this.userRepo.verifyEmail(user.id);
-        user.email_verified = true;
+        if (email) {
+          await this.userRepo.verifyEmail(user.id);
+          user.email_verified = true;
+        }
 
         // Create social account link
         socialAccount = await this.socialAccountRepo.create(
@@ -1025,6 +1031,7 @@ export class AuthService {
           context: "AuthService",
           userId: user.id,
           provider,
+          isNewUser: true,
         });
       }
     }
@@ -1055,11 +1062,14 @@ export class AuthService {
       context: "AuthService",
       userId: user.id,
       provider,
+      isNewUser,
     });
 
     return {
       accessToken: jwtAccessToken,
       refreshToken: jwtRefreshToken,
+      isNewUser,
+      needsEmail,
       user: {
         id: user.id,
         display_id: user.display_id,
@@ -1072,6 +1082,105 @@ export class AuthService {
         timezone: user.timezone || "UTC",
         language: user.language || "en",
         last_login_at: user.last_login_at,
+      },
+    };
+  }
+
+  /**
+   * Set role for a newly registered OAuth user.
+   * Only permitted within 10 minutes of account creation.
+   * If role is "provider", also creates the provider profile.
+   */
+  async setOAuthRegistrationRole(
+    userId: string,
+    role: "customer" | "provider",
+    email?: string,
+    ipAddress?: string,
+  ): Promise<AuthResponseDto> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    // Only allow within 10 minutes of account creation to prevent misuse
+    const createdAt = new Date(user.created_at);
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    if (createdAt < tenMinutesAgo) {
+      throw new BadRequestException(
+        "Role can only be set within 10 minutes of account creation",
+      );
+    }
+
+    // Update email if provided (for OAuth providers that didn't supply one)
+    if (email && !user.email) {
+      const existing = await this.userRepo.findByEmail(email);
+      if (existing && existing.id !== userId) {
+        throw new ConflictException(
+          "This email address is already registered",
+        );
+      }
+      await this.userRepo.update(userId, undefined, email);
+      await this.userRepo.verifyEmail(userId);
+    }
+
+    // Update role in DB
+    const updatedUser = await this.userRepo.updateRole(userId, role);
+
+    // Auto-create a minimal provider profile if switching to provider
+    if (role === "provider") {
+      const existingProvider = await this.providerRepo
+        .findByUserId(userId)
+        .catch(() => null);
+      if (!existingProvider) {
+        await this.providerRepo
+          .create(userId, updatedUser.name || (updatedUser.email || "").split("@")[0])
+          .catch((err: any) => {
+            this.logger.error("Failed to create provider profile during role set", {
+              context: "AuthService",
+              error: err.message,
+              userId,
+            });
+          });
+      }
+    }
+
+    // Invalidate old session and issue new tokens with updated role
+    await this.sessionRepo.deleteByUserId(userId);
+    const newProviderId = await this.resolveProviderId(userId, role);
+    const accessToken = await this.jwtService.generateAccessToken(
+      updatedUser.id,
+      updatedUser.email,
+      role,
+      newProviderId,
+      updatedUser.email_verified,
+      updatedUser.phone_verified ?? false,
+    );
+    const refreshToken = this.jwtService.generateRefreshToken();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + (await this.getSessionTtlDays()));
+    await this.sessionRepo.create(userId, refreshToken, expiresAt, ipAddress);
+
+    this.logger.info("OAuth registration role set", {
+      context: "AuthService",
+      userId,
+      role,
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: updatedUser.id,
+        display_id: updatedUser.display_id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role,
+        email_verified: updatedUser.email_verified,
+        phone_verified: updatedUser.phone_verified || false,
+        profile_picture_url: updatedUser.profile_picture_url,
+        timezone: updatedUser.timezone || "UTC",
+        language: updatedUser.language || "en",
+        last_login_at: updatedUser.last_login_at,
       },
     };
   }

@@ -613,6 +613,7 @@ function LoginContent() {
                     autoFocus
                     aria-invalid={errors.identifier ? "true" : "false"}
                     disabled={isLoading}
+                    required
                     readOnly={step === "authenticate" || step === "method"}
                     className={
                       errors.identifier
@@ -802,6 +803,7 @@ function LoginContent() {
                     {...register("password")}
                     autoComplete="current-password"
                     disabled={isLoading}
+                    required
                   />
                   {errors.password && (
                     <p
@@ -817,7 +819,7 @@ function LoginContent() {
               {step === "authenticate" && loginMethod === "otp" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Enter 6-Digit OTP
+                    Enter 6-Digit OTP <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-2 justify-between">
                     {[0, 1, 2, 3, 4, 5].map((index) => (

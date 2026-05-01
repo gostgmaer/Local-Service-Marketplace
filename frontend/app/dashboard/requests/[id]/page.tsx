@@ -81,12 +81,12 @@ export default function RequestDetailPage() {
     mutationFn: (proposalId: string) =>
       proposalService.acceptProposal(proposalId),
     onSuccess: () => {
-      toast.success("Proposal accepted!");
+      toast.success("Proposal accepted! A job has been created automatically.");
       queryClient.invalidateQueries({ queryKey: ["proposals", requestId] });
       queryClient.invalidateQueries({ queryKey: ["request", requestId] });
     },
     onError: () => {
-      toast.error("Failed to accept proposal");
+      toast.error("Couldn't accept the proposal — please try again.");
     },
   });
 
@@ -94,22 +94,22 @@ export default function RequestDetailPage() {
     mutationFn: (proposalId: string) =>
       proposalService.rejectProposal(proposalId),
     onSuccess: () => {
-      toast.success("Proposal rejected");
+      toast.success("Proposal declined.");
       queryClient.invalidateQueries({ queryKey: ["proposals", requestId] });
     },
     onError: () => {
-      toast.error("Failed to reject proposal");
+      toast.error("Couldn't decline the proposal — please try again.");
     },
   });
 
   const cancelRequestMutation = useMutation({
     mutationFn: () => requestService.cancelRequest(requestId),
     onSuccess: () => {
-      toast.success("Request cancelled");
+      toast.success("Request cancelled successfully.");
       queryClient.invalidateQueries({ queryKey: ["request", requestId] });
     },
     onError: () => {
-      toast.error("Failed to cancel request");
+      toast.error("Couldn't cancel the request — please try again.");
     },
   });
 

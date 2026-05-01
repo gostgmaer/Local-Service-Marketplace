@@ -234,6 +234,7 @@ function CreateRequestContent() {
                     label="Description"
                     {...register("description")}
                     rows={6}
+                    required
                     placeholder="Describe your service needs in detail (minimum 10 characters)..."
                   />
                   {errors.description && (
@@ -251,6 +252,7 @@ function CreateRequestContent() {
                     min="0"
                     step="0.01"
                     placeholder="Enter your estimated budget"
+                    required
                     helperText="This helps providers understand your budget range"
                   />
                   {errors.budget && (

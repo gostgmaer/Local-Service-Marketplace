@@ -171,7 +171,7 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
       toast.success(`${provider.business_name} verified`);
       invalidateProviders();
     },
-    onError: () => toast.error("Failed to verify provider"),
+    onError: () => toast.error("Couldn't verify this provider — please try again."),
   });
 
   const verifyDocMutation = useMutation({
@@ -181,7 +181,7 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
       setSelectedDoc(null);
       queryClient.invalidateQueries({ queryKey: ["provider-docs", provider.id] });
     },
-    onError: () => toast.error("Failed to approve document"),
+    onError: () => toast.error("Couldn't approve the document — please try again."),
   });
 
   const rejectDocMutation = useMutation({
@@ -192,7 +192,7 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
       setSelectedDoc(null);
       queryClient.invalidateQueries({ queryKey: ["provider-docs", provider.id] });
     },
-    onError: () => toast.error("Failed to reject document"),
+    onError: () => toast.error("Couldn't reject the document — please try again."),
   });
 
   const aadhaarMutation = useMutation({
@@ -202,7 +202,7 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
       toast.success(`Aadhaar ${verified ? "verified" : "unverified"}`);
       invalidateProviders();
     },
-    onError: () => toast.error("Failed to update Aadhaar status"),
+    onError: () => toast.error("Couldn't update Aadhaar status — please try again."),
   });
 
   const rejectMutation = useMutation({
@@ -212,7 +212,7 @@ function ProviderVerificationCard({ provider }: { provider: any }) {
       setShowRejectInput(false);
       invalidateProviders();
     },
-    onError: () => toast.error("Failed to reject provider"),
+    onError: () => toast.error("Couldn't reject this provider — please try again."),
   });
 
   return (

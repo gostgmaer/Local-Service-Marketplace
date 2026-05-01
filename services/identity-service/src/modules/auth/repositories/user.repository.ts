@@ -221,6 +221,17 @@ export class UserRepository {
     await this.pool.query(query, [userId]);
   }
 
+  async updateRole(userId: string, role: string): Promise<User> {
+    const query = `
+      UPDATE users 
+      SET role = $1, role_id = (SELECT id FROM roles WHERE name = $1), updated_at = NOW()
+      WHERE id = $2 AND deleted_at IS NULL
+      RETURNING *
+    `;
+    const result = await this.pool.query(query, [role, userId]);
+    return result.rows[0];
+  }
+
   // ✅ NEW: Advanced query methods
   async getUsersByLanguage(
     language: string,

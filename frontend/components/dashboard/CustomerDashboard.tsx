@@ -56,6 +56,7 @@ export default function CustomerDashboard() {
     queryKey: ["my-requests-stats"],
     queryFn: () => requestService.getMyRequests({ page: 1, limit: 1, status: "open" }),
     enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
   });
 
   const {

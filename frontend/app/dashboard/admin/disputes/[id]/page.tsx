@@ -130,7 +130,7 @@ export default function AdminDisputeDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-disputes"] });
       router.push("/dashboard/admin/disputes");
     },
-    onError: () => toast.error("Failed to update dispute"),
+    onError: () => toast.error("Couldn't update the dispute — please try again."),
   });
 
   return (

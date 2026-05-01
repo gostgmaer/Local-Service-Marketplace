@@ -339,6 +339,8 @@ export class AuthController {
     const oauthCode = this.issueOAuthCode(
       authResponse.accessToken,
       authResponse.refreshToken,
+      authResponse.isNewUser,
+      authResponse.needsEmail,
     );
     const redirectUrl = `${frontendUrl}/auth/callback?code=${encodeURIComponent(oauthCode)}`;
 
@@ -377,6 +379,8 @@ export class AuthController {
     const oauthCode = this.issueOAuthCode(
       authResponse.accessToken,
       authResponse.refreshToken,
+      authResponse.isNewUser,
+      authResponse.needsEmail,
     );
     const redirectUrl = `${frontendUrl}/auth/callback?code=${encodeURIComponent(oauthCode)}`;
 
@@ -388,7 +392,7 @@ export class AuthController {
   async exchangeOAuthCode(
     @Body() body: OAuthExchangeDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ message: string; accessToken: string; refreshToken: string }> {
+  ): Promise<{ message: string; accessToken: string; refreshToken: string; isNewUser: boolean; needsEmail: boolean }> {
     if (!body?.code) {
       throw new BadRequestException("OAuth code is required");
     }
@@ -404,7 +408,37 @@ export class AuthController {
       message: "OAuth code exchanged successfully",
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      isNewUser: tokens.isNewUser ?? false,
+      needsEmail: tokens.needsEmail ?? false,
     };
+  }
+
+  /**
+   * Set role for a newly registered OAuth user (within 10 min of creation).
+   * Returns new tokens with the updated role in the JWT.
+   * POST /auth/oauth/set-role
+   */
+  @Post("oauth/set-role")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async setOAuthRole(
+    @Req() req: Request,
+    @Body() body: { role: "customer" | "provider"; email?: string },
+    @Ip() ipAddress: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    if (!body?.role || !["customer", "provider"].includes(body.role)) {
+      throw new BadRequestException("role must be 'customer' or 'provider'");
+    }
+    const userId = req.user?.["sub"];
+    const result = await this.authService.setOAuthRegistrationRole(
+      userId,
+      body.role,
+      body.email,
+      ipAddress,
+    );
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return { message: "Role set successfully", ...result };
   }
 
   // ==========================================
@@ -936,6 +970,8 @@ export class AuthController {
     const oauthCode = this.issueOAuthCode(
       authResponse.accessToken,
       authResponse.refreshToken,
+      authResponse.isNewUser,
+      authResponse.needsEmail,
     );
     const redirectUrl = `${frontendUrl}/auth/callback?code=${encodeURIComponent(oauthCode)}`;
 
@@ -1016,7 +1052,12 @@ export class AuthController {
     }
   }
 
-  private issueOAuthCode(accessToken: string, refreshToken: string): string {
+  private issueOAuthCode(
+    accessToken: string,
+    refreshToken: string,
+    isNewUser: boolean = false,
+    needsEmail: boolean = false,
+  ): string {
     const code = randomUUID();
     const key = `oauth:code:${code}`;
     // Fire-and-forget; if Redis is unavailable the exchange will simply fail.
@@ -1024,7 +1065,7 @@ export class AuthController {
       .setex(
         key,
         this.oauthExchangeTtlSec,
-        JSON.stringify({ accessToken, refreshToken }),
+        JSON.stringify({ accessToken, refreshToken, isNewUser, needsEmail }),
       )
       .catch((err: any) =>
         this.logger.warn(`Failed to store OAuth code in Redis: ${err.message}`, {
@@ -1036,14 +1077,14 @@ export class AuthController {
 
   private async consumeOAuthCode(
     code: string,
-  ): Promise<{ accessToken: string; refreshToken: string } | null> {
+  ): Promise<{ accessToken: string; refreshToken: string; isNewUser: boolean; needsEmail: boolean } | null> {
     const key = `oauth:code:${code}`;
     // Atomically GET and DEL to prevent replay attacks.
     const [raw] = await this.redis.multi().get(key).del(key).exec() as [any, any];
     const value = raw?.[1] as string | null;
     if (!value) return null;
     try {
-      return JSON.parse(value) as { accessToken: string; refreshToken: string };
+      return JSON.parse(value) as { accessToken: string; refreshToken: string; isNewUser: boolean; needsEmail: boolean };
     } catch {
       return null;
     }
