@@ -53,7 +53,7 @@ docker-compose up -d --scale api-gateway=3
 | identity-service | 3001 | http://localhost:3001 |
 | marketplace-service | 3003 | http://localhost:3003 |
 | payment-service | 3006 | http://localhost:3006 |
-| comms-service | 3007 | http://localhost:3007 |
+| comms-service | 3007 | http://localhost:3007 (REST + Socket.IO) |
 | oversight-service | 3010 | http://localhost:3010 |
 | infrastructure-service | 3012 | http://localhost:3012 |
 | PostgreSQL | 5432 | localhost:5432 |

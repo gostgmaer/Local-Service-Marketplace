@@ -3,7 +3,7 @@
 Manages platform infrastructure concerns: event storage, background job scheduling, rate limiting, and feature flags.
 
 **Port:** 3012  
-**Base path (via gateway):** `/api/v1/events/*`, `/api/v1/feature-flags/*`, `/api/v1/jobs/*`
+**Base path (via gateway):** `/api/v1/events/*`, `/api/v1/feature-flags/*`, `/api/v1/background-jobs/*`, `/api/v1/rate-limits/*`
 
 ---
 
@@ -66,9 +66,11 @@ All routes go through the API Gateway at `http://localhost:3700`.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/jobs` | List scheduled jobs and their status |
-| POST | `/api/v1/jobs/:name/trigger` | Manually trigger a job (admin) |
-| GET | `/api/v1/jobs/:id/history` | View job execution history |
+| GET | `/api/v1/background-jobs` | List scheduled jobs and their status |
+| POST | `/api/v1/background-jobs/:name/trigger` | Manually trigger a job (admin) |
+| GET | `/api/v1/background-jobs/:id/history` | View job execution history |
+| GET | `/api/v1/background-jobs/dlq` | View dead-letter queue jobs (admin) |
+| POST | `/api/v1/background-jobs/dlq/:id/retry` | Retry a DLQ job (admin) |
 
 ### Health & Diagnostics
 

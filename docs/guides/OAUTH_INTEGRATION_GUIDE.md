@@ -369,12 +369,12 @@ class AuthService {
   // ... existing methods ...
 
   initiateGoogleLogin(): void {
-    const authUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google`;
+    const authUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/auth/google`;
     window.location.href = authUrl;
   }
 
   initiateFacebookLogin(): void {
-    const authUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/facebook`;
+    const authUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/auth/facebook`;
     window.location.href = authUrl;
   }
 

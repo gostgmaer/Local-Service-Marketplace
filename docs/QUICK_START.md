@@ -8,7 +8,7 @@ Get the platform running in 5 steps. For a full guide covering all environments 
 
 - Docker Desktop 20.x+ with Docker Compose 2.x+
 - 4 GB RAM minimum (8 GB recommended)
-- Node.js 18+ and pnpm (for local dev only)
+- Node.js 20+ and pnpm 10+ (for local dev only)
 
 ---
 

@@ -13,10 +13,11 @@ Handles all communications: in-app notifications, push notifications (FCM), emai
 - Push notification delivery via Firebase Cloud Messaging (FCM)
 - Email sending (via email-service or direct SMTP)
 - SMS sending (via sms-service or Twilio)
-- Real-time notification streaming (SSE / WebSocket)
-- Message threading between users
+- **Real-time chat and notifications via Socket.IO** (embedded server)
+- Message threading between users (15-min edit window)
 - File attachment support in messages
 - Notification preference management
+- Device token (push) registration
 
 ---
 
@@ -53,24 +54,42 @@ All routes go through the API Gateway at `http://localhost:3700`.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/notifications` | List notifications for current user |
-| GET | `/api/v1/notifications/:id` | Get notification details |
-| PATCH | `/api/v1/notifications/:id/read` | Mark as read |
-| PATCH | `/api/v1/notifications/read-all` | Mark all as read |
+| GET | `/api/v1/notifications/unread-count` | Count of unread notifications |
+| POST | `/api/v1/notifications/:id/read` | Mark as read |
+| POST | `/api/v1/notifications/read-all` | Mark all as read |
 | DELETE | `/api/v1/notifications/:id` | Delete notification |
-| GET | `/api/v1/notifications/stream` | SSE stream for real-time notifications |
 | GET | `/api/v1/notifications/preferences` | Get notification preferences |
-| PUT | `/api/v1/notifications/preferences` | Update preferences |
+| PATCH | `/api/v1/notifications/preferences` | Update preferences |
+| POST | `/api/v1/notifications/devices` | Register push device token |
+| DELETE | `/api/v1/notifications/devices/:id` | Remove device token |
 
 ### Messages
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/messages` | List conversations (paginated) |
-| GET | `/api/v1/messages/:conversationId` | Get messages in a conversation |
+| GET | `/api/v1/messages/conversations` | List conversations (paginated) |
+| GET | `/api/v1/messages/conversation/:userId` | Messages with a user (paginated) |
 | POST | `/api/v1/messages` | Send a message |
-| POST | `/api/v1/messages/:conversationId/attachments` | Upload attachment |
-| PATCH | `/api/v1/messages/:id/read` | Mark message as read |
-| DELETE | `/api/v1/messages/:id` | Delete message (soft) |
+| PATCH | `/api/v1/messages/:id` | Edit message (15-min window) |
+| DELETE | `/api/v1/messages/:id` | Delete message |
+
+### Socket.IO Real-time Events
+
+Connect to comms-service Socket.IO server with `auth: { token: '<access_token>' }`.
+
+| Event (client → server) | Description |
+|--------------------------|-------------|
+| `message:send` | Send a message |
+| `typing:start` / `typing:stop` | Typing indicators |
+
+| Event (server → client) | Description |
+|--------------------------|-------------|
+| `message:received` | New incoming message |
+| `message:edited` | Message edited |
+| `message:deleted` | Message deleted |
+| `notification:new` | In-app notification pushed |
+| `job:status-update` | Job lifecycle change |
+| `user:online` / `user:offline` | Presence |
 
 ### Internal (called by other services via HTTP)
 

@@ -1,7 +1,7 @@
 # Production Readiness Report
 
 **Local Service Marketplace Platform**
-**Generated:** April 11, 2026 (last updated: Session 5 — BullMQ scalability + token revocation + API completeness)
+**Generated:** April 11, 2026 (last updated: May 2026 — Next.js 15 / React 19 upgrade, Socket.IO integration, standalone lockfiles, PR automation)
 **Status: ✅ READY FOR PRODUCTION (with noted exceptions)**
 
 ---
@@ -25,7 +25,7 @@ All blocking issues have been resolved. The platform is ready for production dep
 | infrastructure-service | 3012 | ✅ Fixed     | ✅ Clean   | Ready                        |
 | email-service          | 4000 | ✅ Fixed     | N/A (JS)   | Ready (graceful degradation) |
 | sms-service            | 5000 | ✅ Fixed     | N/A (JS)   | Ready                        |
-| frontend (Next.js)     | 3000 | ✅ Fixed     | ✅ Clean   | Ready                        |
+| frontend (Next.js 15)  | 3000 | ✅ Fixed     | ✅ Clean   | Ready                        |
 
 ---
 
@@ -61,13 +61,18 @@ All 10 Dockerfiles build successfully.
 - ✅ `sendEmail()` returns `503 ServiceUnavailable` with a clear message when SMTP is not configured instead of crashing
 - ✅ Startup no longer crashes on SMTP verification failure — logs a warning and continues
 
-### Frontend (Next.js)
+### Frontend (Next.js 15 / React 19)
 
 - ✅ Zero `TODO` / `FIXME` markers
-- ✅ `NEXT_PUBLIC_API_URL` corrected to `http://localhost:3700` (was wrongly set to `3700`)
+- ✅ `NEXT_PUBLIC_API_URL` corrected to `http://localhost:3700`
 - ✅ Production security headers configured (CSP, HSTS, X-Frame-Options, etc.)
 - ✅ Standalone output mode enabled for Docker builds
 - ✅ Performance budgets set in webpack config
+- ✅ **Upgraded to Next.js 15.5.15** (from 14.2.35) — App Router async params/searchParams migration complete
+- ✅ **Upgraded to React 19.2.5** (from 18.3.1) — peer dependency resolution applied
+- ✅ **Socket.IO client 4.8.3 added** — real-time chat and notifications connected to comms-service
+- ✅ `@testing-library/react@16.3.2` aligned for React 19 compatibility
+- ✅ `@hookform/resolvers@5.2.2`, `zod@4.4.1`, `react-hook-form@7.74.0` — form library stack current
 
 ---
 
@@ -92,6 +97,23 @@ Workers are opt-in via `WORKERS_ENABLED=true`. All services start and function c
 - ✅ All repeatable jobs registered via BullMQ `addBulk()` on worker startup
 - ✅ Worker modules guard-loaded only when `WORKERS_ENABLED=true`
 - ✅ `WorkerConcurrency` configurable via `WORKER_CONCURRENCY` env var
+
+---
+
+## 3c. CI / CD — PR Review Automation
+
+- ✅ `.github/workflows/copilot-pr-review.yml` added — automatically requests Copilot code review on every pull request
+- ✅ Uses `actions/github-script@v7` with `github.rest.pulls.requestReviewers()` API (graceful fallback if reviewer slug is unavailable)
+- ✅ Requires `pull-requests: write` permission only (no `contents: write` needed)
+
+---
+
+## 3d. Dependency Management — Standalone Lockfiles
+
+- ✅ Every service (`api-gateway`, all 6 microservices, `frontend`, `database`) has its own standalone `pnpm-lock.yaml`
+- ✅ Generated with `pnpm install --lockfile-only --ignore-workspace` — fully independent of root workspace
+- ✅ Docker builds are reproducible per service
+- ✅ No shared workspace lockfile conflicts
 
 ---
 
@@ -167,9 +189,9 @@ Workers are opt-in via `WORKERS_ENABLED=true`. All services start and function c
 
 ### 6.6 Real-time Chat
 
-- **Status:** Chat works via React Query polling
-- **Impact:** Messages appear after a polling interval (~5s), not instantly
-- **Fix (future):** Implement Socket.IO in comms-service and update frontend connection
+- **Status:** ✅ Socket.IO fully integrated — comms-service runs a Socket.IO server; frontend uses `socket.io-client@4.8.3`
+- **Real-time events:** message delivery, typing indicators, online presence, job status updates, in-app notifications
+- **Note:** Ensure `NEXT_PUBLIC_SOCKET_URL` points to the comms-service address (default: `http://localhost:3007`)
 
 ---
 
@@ -188,6 +210,8 @@ Before production go-live, complete the following:
 - [ ] Enable HTTPS on load balancer / reverse proxy
 - [ ] Run `docker-compose up -d --build` with final production env file
 - [ ] Run `pnpm test:api` (Newman suite) against production endpoints to verify
+- [ ] Set `NEXT_PUBLIC_SOCKET_URL` to production comms-service WebSocket URL
+- [ ] Verify Socket.IO connections work through production reverse proxy (WebSocket upgrade headers)
 
 ---
 
@@ -203,7 +227,10 @@ Before production go-live, complete the following:
 | Structured logging with request_id  | ✅ Compliant |
 | UUID primary keys                   | ✅ Compliant |
 | JWT auth via gateway only           | ✅ Compliant |
+| Next.js 15 App Router async API     | ✅ Compliant |
+| Socket.IO real-time integration     | ✅ Compliant |
+| Standalone per-service lockfiles    | ✅ Compliant |
 
 ---
 
-_This report covers all code-level fixes applied during the production hardening session. Infrastructure-level concerns (DNS, SSL, CDN, monitoring) are outside scope._
+_This report covers all code-level fixes applied through May 2026. Infrastructure-level concerns (DNS, SSL, CDN, monitoring) are outside scope._

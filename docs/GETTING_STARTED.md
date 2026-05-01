@@ -25,8 +25,8 @@ This guide covers every way to run the platform: local development, Docker (reco
 |---|---|---|
 | Docker Desktop | 20.x+ | Latest |
 | Docker Compose | 2.x+ | Latest |
-| Node.js | 18.0+ | 20 LTS |
-| pnpm | 8.0+ | Latest |
+| Node.js | 20.0+ | 20 LTS |
+| pnpm | 10.0+ | 10.x |
 | RAM | 4 GB | 8 GB |
 | Disk | 5 GB free | 10 GB |
 
@@ -46,7 +46,7 @@ Local-Service-Marketplace/
 │   ├── comms-service/         # Notifications — Email + SMS + Push (port 3007)
 │   ├── oversight-service/     # Admin + Analytics (port 3010)
 │   └── infrastructure-service/# Events + Background Jobs + Feature Flags (port 3012)
-├── frontend/                  # Next.js application (port 3000)
+├── frontend/                  # Next.js 15 application (port 3000) — React 19, Socket.IO client
 ├── database/                  # Schema + migrations + seed
 ├── docker-compose.yml         # Core services
 ├── docker-compose.prod.yml    # Production overrides

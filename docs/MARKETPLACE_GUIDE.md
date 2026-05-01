@@ -115,9 +115,9 @@ open → in_progress → completed
 
 | Action | Frontend Page | Endpoint |
 |---|---|---|
-| View proposals for a request | `/dashboard/requests/:id` | `GET /api/v1/proposals?requestId=:id` |
-| Accept proposal | (button in request detail) | `POST /api/v1/proposals/:id/accept` |
-| Reject proposal | (button in request detail) | `POST /api/v1/proposals/:id/reject` |
+| View proposals for a request | `/dashboard/requests/:id` | `GET /api/v1/proposals/request/:requestId` |
+| Accept proposal | (button in request detail) | `POST /api/v1/requests/:id/accept-proposal/:proposalId` |
+| Decline (ignore other proposals) | (automatic when one is accepted) | — |
 
 When a proposal is accepted:
 1. All other proposals on the request are automatically rejected
@@ -133,7 +133,7 @@ A **job** is the active work contract created when a proposal is accepted.
 |---|---|---|
 | View my jobs | `/dashboard/jobs` | `GET /api/v1/jobs/my` |
 | View job detail | `/dashboard/jobs/:id` | `GET /api/v1/jobs/:id` |
-| Confirm job complete | (button in job detail, status=`completed`) | `POST /api/v1/jobs/:id/complete` |
+| Confirm job complete | (button in job detail, status=`completed`) | `PATCH /api/v1/jobs/:id/confirm` |
 | Pay for completed job | `/checkout?jobId=:id` | `POST /api/v1/payments` |
 | File a dispute | `/dashboard/disputes/file?jobId=:id` | `POST /api/v1/disputes` |
 
@@ -188,7 +188,7 @@ When a dispute is filed:
 | View conversations | `/dashboard/messages` | `GET /api/v1/messages/conversations` |
 | Send message | (inline in messages page) | `POST /api/v1/messages` |
 | View notifications | `/dashboard/notifications` | `GET /api/v1/notifications` |
-| Mark notification read | (click in notification list) | `PATCH /api/v1/notifications/:id/read` |
+| Mark notification read | (click in notification list) | `POST /api/v1/notifications/:id/read` |
 
 ### 3.10 Favourites
 
@@ -256,8 +256,8 @@ pending → accepted → (job created)
 |---|---|---|
 | View my jobs | `/dashboard/jobs` | `GET /api/v1/jobs/my` |
 | View job detail | `/dashboard/jobs/:id` | `GET /api/v1/jobs/:id` |
-| Start job (scheduled → in_progress) | (button in job detail) | `POST /api/v1/jobs/:id/start` |
-| Mark job complete | (button in job detail) | `POST /api/v1/jobs/:id/complete` |
+| Start job (scheduled → in_progress) | (button in job detail) | `PATCH /api/v1/jobs/:id/start` |
+| Mark job complete | (button in job detail) | `PATCH /api/v1/jobs/:id/complete` |
 
 ### 4.6 Earnings & Payments
 

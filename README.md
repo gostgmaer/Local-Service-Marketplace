@@ -4,7 +4,7 @@ A **production-ready, microservices-based platform** that connects customers who
 
 [![NestJS](https://img.shields.io/badge/Backend-NestJS%2010-E0234E?logo=nestjs)](https://nestjs.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015-000000?logo=nextdotjs)](https://nextjs.org)
-[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2017-4169E1?logo=postgresql)](https://postgresql.org)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2016-4169E1?logo=postgresql)](https://postgresql.org)
 [![Redis](https://img.shields.io/badge/Cache-Redis%207-DC382D?logo=redis)](https://redis.io)
 [![Docker](https://img.shields.io/badge/Containers-Docker-2496ED?logo=docker)](https://docker.com)
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript%205-3178C6?logo=typescript)](https://typescriptlang.org)
@@ -56,14 +56,16 @@ Core capabilities:
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Frontend | Next.js + React | 15.x |
+| Frontend | Next.js + React | 15.5.x / 19.x |
 | Backend | NestJS + Express | 10.x |
 | Language | TypeScript | 5.x |
-| Database | PostgreSQL | 17 |
+| Database | PostgreSQL | 16 |
 | Connection Pooler | PgBouncer | 1.22 |
 | Cache & Queues | Redis | 7.x |
 | Background Jobs | BullMQ | 5.x |
 | Event Streaming | Apache Kafka | 3.x |
+| Real-time | Socket.IO | 4.8.x |
+| Package Manager | pnpm | 10.x |
 | Containers | Docker + Compose | 20.x / 2.x |
 | Auth | JWT + Passport | HS256, RS256 |
 | Validation | class-validator | 0.14 |
@@ -245,7 +247,7 @@ docker run -d --name mkt-postgres `
   -e POSTGRES_USER=postgres `
   -e POSTGRES_PASSWORD=postgres `
   -e POSTGRES_DB=marketplace `
-  -p 5432:5432 postgres:17-alpine
+  -p 5432:5432 postgres:16-alpine
 
 docker run -d --name mkt-redis -p 6379:6379 redis:7-alpine
 ```
@@ -354,15 +356,26 @@ All routes are prefixed with `/api/v1`. The API Gateway (port 3700) is the only 
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/user/auth/signup` | Register a new account |
+| POST | `/api/v1/user/auth/register` | Register a new account |
+| POST | `/api/v1/user/auth/signup` | Alias for register |
 | POST | `/api/v1/user/auth/login` | Login and receive JWT tokens |
 | POST | `/api/v1/user/auth/refresh` | Refresh access token |
 | POST | `/api/v1/user/auth/password-reset/request` | Request password reset email |
 | POST | `/api/v1/user/auth/password-reset/confirm` | Confirm password reset |
+| POST | `/api/v1/user/auth/phone/otp/request` | Send SMS OTP |
+| POST | `/api/v1/user/auth/phone/otp/verify` | Verify OTP → JWT |
+| POST | `/api/v1/user/auth/email/otp/request` | Send email OTP |
+| POST | `/api/v1/user/auth/email/otp/verify` | Verify email OTP → JWT |
+| POST | `/api/v1/user/auth/magic-link/request` | Request magic sign-in link |
+| GET | `/api/v1/user/auth/magic-link/verify` | Verify magic link → JWT |
+| POST | `/api/v1/user/auth/2fa/login` | Complete 2FA step (TOTP code) |
 | GET | `/api/v1/user/auth/google` | Google OAuth redirect |
 | GET | `/api/v1/user/auth/google/callback` | Google OAuth callback |
 | GET | `/api/v1/user/auth/facebook` | Facebook OAuth redirect |
 | GET | `/api/v1/user/auth/facebook/callback` | Facebook OAuth callback |
+| GET | `/api/v1/user/auth/apple` | Apple OAuth redirect |
+| GET | `/api/v1/user/auth/apple/callback` | Apple OAuth callback |
+| POST | `/api/v1/user/auth/apple/mobile` | Apple mobile token exchange |
 | GET | `/api/v1/categories` | List service categories |
 | GET | `/health` | Gateway health check |
 
@@ -398,7 +411,7 @@ All routes are prefixed with `/api/v1`. The API Gateway (port 3700) is the only 
 | GET | `/api/v1/proposals` | List proposals |
 | POST | `/api/v1/proposals` | Submit proposal |
 | GET | `/api/v1/proposals/:id` | Get proposal details |
-| PATCH | `/api/v1/proposals/:id/accept` | Accept a proposal (creates job) |
+| PATCH | `/api/v1/requests/:id/accept-proposal/:proposalId` | Accept a proposal (creates job) |
 | PATCH | `/api/v1/proposals/:id/reject` | Reject a proposal |
 | GET | `/api/v1/jobs` | List jobs |
 | GET | `/api/v1/jobs/:id` | Get job details |
@@ -424,8 +437,8 @@ All routes are prefixed with `/api/v1`. The API Gateway (port 3700) is the only 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/notifications` | List user notifications |
-| PATCH | `/api/v1/notifications/:id/read` | Mark notification as read |
-| PATCH | `/api/v1/notifications/read-all` | Mark all as read |
+| POST | `/api/v1/notifications/:id/read` | Mark notification as read |
+| POST | `/api/v1/notifications/read-all` | Mark all as read |
 | GET | `/api/v1/messages` | List messages |
 | POST | `/api/v1/messages` | Send message |
 | GET | `/api/v1/messages/:jobId` | Get job conversation |
@@ -511,6 +524,19 @@ Client  ──[Bearer accessToken]──────► API Gateway
                                                     (reads headers, no JWT needed)
 ```
 
+### Authentication Methods
+
+| Method | Flow |
+|--------|------|
+| Email + Password | `POST /user/auth/login` |
+| Phone SMS OTP | `POST /user/auth/phone/otp/request` + `/verify` |
+| Email OTP | `POST /user/auth/email/otp/request` + `/verify` |
+| Magic link | `POST /user/auth/magic-link/request` → `GET /verify` |
+| Google OAuth | `GET /user/auth/google` (web) |
+| Facebook OAuth | `GET /user/auth/facebook` (web) |
+| Apple Sign In | `GET /user/auth/apple` (web) + `POST /apple/mobile` (iOS) |
+| TOTP 2FA | Step-2 after login: `POST /user/auth/2fa/login` |
+
 ### Headers injected by gateway (forwarded to every service)
 
 | Header | Value |
@@ -586,7 +612,8 @@ Customer accepts proposal
 Any service ──► comms-service:3007 ──► email-service (SMTP)
                                    ──► sms-service   (OTP / SMS)
                                    ──► Firebase FCM  (push, optional)
-                                   ──► DB            (in-app notifications)
+                                   ──► Socket.IO     (real-time in-app chat + notifications)
+                                   ──► DB            (in-app notification records)
 ```
 
 ---
@@ -796,7 +823,7 @@ docs(readme): update scaling levels table
 ### Development Workflow
 
 1. Create a feature branch from `main`
-2. Install dependencies: `pnpm install` from repo root
+2. Install dependencies: `pnpm install` from repo root — requires **Node.js 20 LTS** and **pnpm 10+**
 3. Copy env files: `.\scripts\setup-env-files.ps1`
 4. Start services: `docker-compose up -d`
 5. Make changes following NestJS module architecture
