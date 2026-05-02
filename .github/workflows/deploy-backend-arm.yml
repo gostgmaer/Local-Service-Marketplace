@@ -170,6 +170,22 @@ jobs:
               ./scripts/deploy-production-worker.sh --env-file .env --no-build
             }
 
+            apply_runtime_limits() {
+              echo "Applying fixed production CPU/RAM limits to running containers..."
+
+              docker update --cpus 0.20 --memory 512m --memory-swap 512m api-gateway
+              docker update --cpus 0.30 --memory 768m --memory-swap 768m marketplace-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m payment-service
+              docker update --cpus 0.25 --memory 768m --memory-swap 768m identity-service
+              docker update --cpus 0.15 --memory 768m --memory-swap 768m comms-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m oversight-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m marketplace-redis
+              docker update --cpus 0.40 --memory 1536m --memory-swap 1536m marketplace-postgres
+
+              echo "Runtime limits applied."
+              docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format 'name={{.Name}}|nano_cpus={{.HostConfig.NanoCpus}}|mem_limit_bytes={{.HostConfig.Memory}}|memswap_limit_bytes={{.HostConfig.MemorySwap}}' {}
+            }
+
             deploy_nginx_config() {
               NGINX_SOURCE_CONF="$APP_DIR/config/nginx/lsp-api.easydev.in.conf"
               NGINX_TARGET_CONF="/etc/nginx/conf.d/lsp-api.easydev.in.conf"
@@ -303,6 +319,8 @@ jobs:
               fi
               exit 1
             fi
+
+            apply_runtime_limits
 
             if ! deploy_nginx_config; then
               echo "Backend deploy succeeded but nginx config update failed."
