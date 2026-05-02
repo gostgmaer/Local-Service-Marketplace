@@ -72,10 +72,18 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
               const page = parseInt(query.page as string) || 1;
               const limit = parseInt(query.limit as string) || 20;
               const total = innerData.total as number;
-              innerMeta = { page: innerData.page ?? page, limit: innerData.limit ?? limit, total, totalPages: Math.ceil(total / (innerData.limit ?? limit)) };
+              innerMeta = {
+                page: innerData.page ?? page,
+                limit: innerData.limit ?? limit,
+                total,
+                totalPages: Math.ceil(total / (innerData.limit ?? limit)),
+              };
               innerData = innerData.data;
             } else if ("data" in innerData && "nextCursor" in innerData) {
-              innerMeta = { nextCursor: innerData.nextCursor ?? null, hasMore: innerData.hasMore ?? false };
+              innerMeta = {
+                nextCursor: innerData.nextCursor ?? null,
+                hasMore: innerData.hasMore ?? false,
+              };
               innerData = innerData.data;
             }
           }

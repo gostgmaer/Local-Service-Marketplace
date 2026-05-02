@@ -183,7 +183,8 @@ export class MessageRepository {
       ORDER BY uc.last_message_at DESC NULLS LAST
     `;
     const result = await this.pool.query(query, [userId, limit, offset]);
-    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    const total =
+      result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
     return { rows: result.rows, total };
   }
 

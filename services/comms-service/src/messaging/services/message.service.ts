@@ -41,14 +41,16 @@ export class MessageService {
 
     // Strip HTML tags to prevent stored XSS — messages are plain text only
     const sanitizedMessage = message
-      .replace(/<[^>]*>/g, '')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
+      .replace(/<[^>]*>/g, "")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
       .trim();
 
     if (!sanitizedMessage) {
-      throw new BadRequestException('Message content cannot be empty after sanitization');
+      throw new BadRequestException(
+        "Message content cannot be empty after sanitization",
+      );
     }
 
     const newMessage = await this.messageRepository.createMessage(
@@ -147,11 +149,8 @@ export class MessageService {
 
     // RBAC: Verify user is participant or has manage permission
     if (!user.permissions?.includes("messages.manage")) {
-      const { rows: conversations } = await this.messageRepository.getUserConversations(
-        user.userId,
-        100,
-        0,
-      );
+      const { rows: conversations } =
+        await this.messageRepository.getUserConversations(user.userId, 100, 0);
       const isParticipant = conversations.some((c) => c.job_id === jobId);
 
       if (!isParticipant) {
@@ -161,7 +160,12 @@ export class MessageService {
       }
     }
 
-    return this.messageRepository.getMessagesForJob(jobId, page, limit, sortOrder);
+    return this.messageRepository.getMessagesForJob(
+      jobId,
+      page,
+      limit,
+      sortOrder,
+    );
   }
 
   async getUserConversations(

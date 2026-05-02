@@ -70,9 +70,7 @@ export class BackgroundJobService {
     }
   }
 
-  async getAllJobs(
-    queryDto: BackgroundJobQueryDto,
-  ): Promise<{
+  async getAllJobs(queryDto: BackgroundJobQueryDto): Promise<{
     data: BackgroundJob[];
     total: number;
     page: number;

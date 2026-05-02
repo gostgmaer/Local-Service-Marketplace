@@ -107,7 +107,7 @@ export class PushNotificationService {
 
     try {
       // Fetch device tokens from database if not explicitly provided
-      let resolvedToken = deviceToken;
+      const resolvedToken = deviceToken;
       if (!resolvedToken) {
         const devices = await this.deviceRepository.getUserDevices(userId);
         if (devices.length === 0) {

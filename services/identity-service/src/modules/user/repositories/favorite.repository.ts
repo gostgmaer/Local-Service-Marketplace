@@ -47,7 +47,8 @@ export class FavoriteRepository {
     const allowedSortBy = ["created_at", "business_name", "rating"];
     const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : "created_at";
     const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
-    const sortCol = safeSortBy === "created_at" ? "f.created_at" : `p.${safeSortBy}`;
+    const sortCol =
+      safeSortBy === "created_at" ? "f.created_at" : `p.${safeSortBy}`;
 
     const query = `
       SELECT f.*, p.business_name, p.description, p.rating,
@@ -59,7 +60,8 @@ export class FavoriteRepository {
       LIMIT $2 OFFSET $3
     `;
     const result = await this.pool.query(query, [userId, limit, offset]);
-    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    const total =
+      result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
     return { rows: result.rows, total };
   }
 

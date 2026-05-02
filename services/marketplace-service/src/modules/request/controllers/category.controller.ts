@@ -42,7 +42,12 @@ export class CategoryController {
     const result = await this.categoryService.getAllCategories();
     const offset = (page - 1) * limit;
     const paged = (result.data ?? []).slice(offset, offset + limit);
-    return { data: paged, total: result.total ?? result.data?.length ?? 0, page, limit };
+    return {
+      data: paged,
+      total: result.total ?? result.data?.length ?? 0,
+      page,
+      limit,
+    };
   }
 
   @Get(":id")

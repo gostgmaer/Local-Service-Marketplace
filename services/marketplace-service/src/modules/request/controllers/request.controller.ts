@@ -113,9 +113,7 @@ export class RequestController {
   @UseGuards(JwtAuthGuard)
   @Get("search")
   @HttpCode(HttpStatus.OK)
-  async searchRequests(
-    @Query() query: SearchRequestDto,
-  ) {
+  async searchRequests(@Query() query: SearchRequestDto) {
     return this.requestService.searchRequests(query);
   }
 

@@ -60,7 +60,12 @@ export class AuditLogService {
       "AuditLogService",
     );
     const offset = (page - 1) * limit;
-    const { data, total } = await this.auditLogRepository.getAuditLogsByEntity(entity, entityId, limit, offset);
+    const { data, total } = await this.auditLogRepository.getAuditLogsByEntity(
+      entity,
+      entityId,
+      limit,
+      offset,
+    );
     return { data, total, page, limit };
   }
 

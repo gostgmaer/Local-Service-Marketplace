@@ -89,7 +89,10 @@ export class AnalyticsController {
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(200, Math.max(1, limit));
     const offset = (safePage - 1) * safeLimit;
-    const result = await this.analyticsService.getAllActivity(safeLimit, offset);
+    const result = await this.analyticsService.getAllActivity(
+      safeLimit,
+      offset,
+    );
 
     return {
       data: result.data,
@@ -152,9 +155,18 @@ export class AnalyticsController {
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(200, Math.max(1, limit));
     const offset = (safePage - 1) * safeLimit;
-    const result = await this.analyticsService.getActivityByAction(action, safeLimit, offset);
+    const result = await this.analyticsService.getActivityByAction(
+      action,
+      safeLimit,
+      offset,
+    );
 
-    return { data: result.data, total: result.total, page: safePage, limit: safeLimit };
+    return {
+      data: result.data,
+      total: result.total,
+      page: safePage,
+      limit: safeLimit,
+    };
   }
 
   @Get("metrics")

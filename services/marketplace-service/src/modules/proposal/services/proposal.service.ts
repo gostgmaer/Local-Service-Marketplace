@@ -161,13 +161,18 @@ export class ProposalService {
       }
 
       // Category restriction: provider must offer the requested service category
-      const requestCategoryId = await this.proposalRepository.getRequestCategoryId(dto.request_id);
+      const requestCategoryId =
+        await this.proposalRepository.getRequestCategoryId(dto.request_id);
       if (requestCategoryId) {
-        const providerServices: any[] = providerForGate?.provider_services ?? [];
+        const providerServices: any[] =
+          providerForGate?.provider_services ?? [];
         const offeredCategoryIds = providerServices.map(
           (s: any) => s.category_id ?? s.service_category_id ?? s.id,
         );
-        if (offeredCategoryIds.length > 0 && !offeredCategoryIds.includes(requestCategoryId)) {
+        if (
+          offeredCategoryIds.length > 0 &&
+          !offeredCategoryIds.includes(requestCategoryId)
+        ) {
           throw new BadRequestException(
             "Cannot submit proposal: you do not offer services in this category.",
           );
@@ -262,8 +267,17 @@ export class ProposalService {
     });
     await this.cacheInvalidation.invalidateEntity("proposals");
     // Broadcast to provider, request owner (customer), and admin so all parties update in realtime
-    const createdCustomerRoom = fullProposal?.customer_id ? [`user:${fullProposal.customer_id}`] : [];
-    this.broadcastService.emit("proposal", proposal.id, "created", [`user:${proposal.provider_id}`, ...createdCustomerRoom, "admin"], { proposalId: proposal.id, requestId: proposal.request_id }, proposal.provider_id);
+    const createdCustomerRoom = fullProposal?.customer_id
+      ? [`user:${fullProposal.customer_id}`]
+      : [];
+    this.broadcastService.emit(
+      "proposal",
+      proposal.id,
+      "created",
+      [`user:${proposal.provider_id}`, ...createdCustomerRoom, "admin"],
+      { proposalId: proposal.id, requestId: proposal.request_id },
+      proposal.provider_id,
+    );
     return ProposalResponseDto.fromEntity(proposal);
   }
 
@@ -292,7 +306,10 @@ export class ProposalService {
         await this.proposalRepository.getRequestOwner(requestId);
       if (requestOwner === user.userId) {
         // Request owner (customer) — allowed to see all proposals, no filter needed
-      } else if (user.permissions?.includes("proposals.read") && user.providerId) {
+      } else if (
+        user.permissions?.includes("proposals.read") &&
+        user.providerId
+      ) {
         // Provider — allowed to see only their own proposals for this request
         const { rows } = await this.proposalRepository.getProposalsForRequest(
           requestId,
@@ -306,7 +323,14 @@ export class ProposalService {
           (p: any) => p.provider_id === user.providerId,
         );
         const response = ownProposals.map(ProposalResponseDto.fromEntity);
-        return new PaginatedProposalResponseDto(response, undefined, false, ownProposals.length, page, limit);
+        return new PaginatedProposalResponseDto(
+          response,
+          undefined,
+          false,
+          ownProposals.length,
+          page,
+          limit,
+        );
       } else {
         throw new ForbiddenException(
           "Only the request owner or an admin can see the proposals for this request",
@@ -314,20 +338,28 @@ export class ProposalService {
       }
     }
 
-    const { rows, total } = await this.proposalRepository.getProposalsForRequest(
-      requestId,
-      limit,
-      page,
-      sortBy,
-      sortOrder,
-      status,
-    );
+    const { rows, total } =
+      await this.proposalRepository.getProposalsForRequest(
+        requestId,
+        limit,
+        page,
+        sortBy,
+        sortOrder,
+        status,
+      );
 
     const response = rows.map(ProposalResponseDto.fromEntity);
     const hasMore = page * limit < total;
     const nextCursor = hasMore ? rows[rows.length - 1]?.id : undefined;
 
-    return new PaginatedProposalResponseDto(response, nextCursor, hasMore, total, page, limit);
+    return new PaginatedProposalResponseDto(
+      response,
+      nextCursor,
+      hasMore,
+      total,
+      page,
+      limit,
+    );
   }
 
   async getProposalById(id: string): Promise<ProposalResponseDto> {
@@ -473,13 +505,40 @@ export class ProposalService {
     await this.cacheInvalidation.invalidateEntity("proposals");
     await this.cacheInvalidation.invalidateEntity("requests");
     // Include customer so their request/proposals page refreshes automatically
-    const acceptedCustomerRoom = existingProposal.customer_id ? [`user:${existingProposal.customer_id}`] : [];
-    this.broadcastService.emit("proposal", proposal.id, "accepted", [`user:${proposal.provider_id}`, ...acceptedCustomerRoom, "admin"], { proposalId: proposal.id, requestId: proposal.request_id }, proposal.provider_id);
+    const acceptedCustomerRoom = existingProposal.customer_id
+      ? [`user:${existingProposal.customer_id}`]
+      : [];
+    this.broadcastService.emit(
+      "proposal",
+      proposal.id,
+      "accepted",
+      [`user:${proposal.provider_id}`, ...acceptedCustomerRoom, "admin"],
+      { proposalId: proposal.id, requestId: proposal.request_id },
+      proposal.provider_id,
+    );
     // Broadcast request:updated so watchers see status change to "assigned" (hides Edit/Cancel buttons).
     // Include "providers" so browse-requests page on provider side removes the now-assigned request.
-    this.broadcastService.emit("request", existingProposal.request_id, "updated", [...acceptedCustomerRoom, "providers", "admin"], { requestId: existingProposal.request_id }, existingProposal.customer_id ?? undefined);
+    this.broadcastService.emit(
+      "request",
+      existingProposal.request_id,
+      "updated",
+      [...acceptedCustomerRoom, "providers", "admin"],
+      { requestId: existingProposal.request_id },
+      existingProposal.customer_id ?? undefined,
+    );
     // Broadcast job:created so jobs list auto-updates (job is created inside DB transaction, bypassing job.service)
-    this.broadcastService.emit("job", job.id, "created", [`user:${existingProposal.customer_id}`, `provider:${existingProposal.provider_id}`, "admin"], { jobId: job.id, requestId: existingProposal.request_id }, existingProposal.customer_id ?? undefined);
+    this.broadcastService.emit(
+      "job",
+      job.id,
+      "created",
+      [
+        `user:${existingProposal.customer_id}`,
+        `provider:${existingProposal.provider_id}`,
+        "admin",
+      ],
+      { jobId: job.id, requestId: existingProposal.request_id },
+      existingProposal.customer_id ?? undefined,
+    );
 
     return ProposalResponseDto.fromEntity(proposal);
   }
@@ -576,8 +635,17 @@ export class ProposalService {
 
     await this.cacheInvalidation.invalidateEntity("proposals");
     // Include customer so their other open tabs/windows see the updated proposal status
-    const rejectedCustomerRoom = existingProposal.customer_id ? [`user:${existingProposal.customer_id}`] : [];
-    this.broadcastService.emit("proposal", proposal.id, "rejected", [`user:${proposal.provider_id}`, ...rejectedCustomerRoom, "admin"], { proposalId: proposal.id, requestId: proposal.request_id }, proposal.provider_id);
+    const rejectedCustomerRoom = existingProposal.customer_id
+      ? [`user:${existingProposal.customer_id}`]
+      : [];
+    this.broadcastService.emit(
+      "proposal",
+      proposal.id,
+      "rejected",
+      [`user:${proposal.provider_id}`, ...rejectedCustomerRoom, "admin"],
+      { proposalId: proposal.id, requestId: proposal.request_id },
+      proposal.provider_id,
+    );
 
     return ProposalResponseDto.fromEntity(proposal);
   }
@@ -800,8 +868,17 @@ export class ProposalService {
 
     await this.cacheInvalidation.invalidateEntity("proposals");
     // Notify customer so their request detail page removes the withdrawn proposal
-    const withdrawnCustomerRoom = existingProposal.customer_id ? [`user:${existingProposal.customer_id}`] : [];
-    this.broadcastService.emit("proposal", proposal.id, "withdrawn", [`user:${proposal.provider_id}`, ...withdrawnCustomerRoom, "admin"], { proposalId: proposal.id, requestId: proposal.request_id }, proposal.provider_id);
+    const withdrawnCustomerRoom = existingProposal.customer_id
+      ? [`user:${existingProposal.customer_id}`]
+      : [];
+    this.broadcastService.emit(
+      "proposal",
+      proposal.id,
+      "withdrawn",
+      [`user:${proposal.provider_id}`, ...withdrawnCustomerRoom, "admin"],
+      { proposalId: proposal.id, requestId: proposal.request_id },
+      proposal.provider_id,
+    );
 
     return ProposalResponseDto.fromEntity(proposal);
   }
@@ -892,8 +969,17 @@ export class ProposalService {
 
     await this.cacheInvalidation.invalidateEntity("proposals");
     // Notify customer so their request detail page reflects updated proposal terms
-    const updatedCustomerRoom = existingProposal.customer_id ? [`user:${existingProposal.customer_id}`] : [];
-    this.broadcastService.emit("proposal", proposal.id, "updated", [`user:${proposal.provider_id}`, ...updatedCustomerRoom, "admin"], { proposalId: proposal.id, requestId: proposal.request_id }, proposal.provider_id);
+    const updatedCustomerRoom = existingProposal.customer_id
+      ? [`user:${existingProposal.customer_id}`]
+      : [];
+    this.broadcastService.emit(
+      "proposal",
+      proposal.id,
+      "updated",
+      [`user:${proposal.provider_id}`, ...updatedCustomerRoom, "admin"],
+      { proposalId: proposal.id, requestId: proposal.request_id },
+      proposal.provider_id,
+    );
 
     return ProposalResponseDto.fromEntity(proposal);
   }
@@ -936,8 +1022,20 @@ export class ProposalService {
 
     await this.cacheInvalidation.invalidateEntity("proposals");
     // Notify both provider and customer so their proposal lists update
-    const deletedCustomerRoom = existingProposal.customer_id ? [`user:${existingProposal.customer_id}`] : [];
-    this.broadcastService.emit("proposal", existingProposal.id, "deleted", [`user:${existingProposal.provider_id}`, ...deletedCustomerRoom, "admin"], { proposalId: existingProposal.id, requestId: existingProposal.request_id }, existingProposal.provider_id);
+    const deletedCustomerRoom = existingProposal.customer_id
+      ? [`user:${existingProposal.customer_id}`]
+      : [];
+    this.broadcastService.emit(
+      "proposal",
+      existingProposal.id,
+      "deleted",
+      [`user:${existingProposal.provider_id}`, ...deletedCustomerRoom, "admin"],
+      {
+        proposalId: existingProposal.id,
+        requestId: existingProposal.request_id,
+      },
+      existingProposal.provider_id,
+    );
 
     this.logger.log(
       `Proposal deleted successfully: ${id}`,

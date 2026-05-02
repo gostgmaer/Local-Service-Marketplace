@@ -359,9 +359,7 @@ export class DisputeRepository {
     }
   }
 
-  async getDisputeMessages(
-    disputeId: string,
-  ): Promise<DisputeMessage[]> {
+  async getDisputeMessages(disputeId: string): Promise<DisputeMessage[]> {
     const result = await this.pool.query(
       `SELECT id, dispute_id, sender_id, message, images, is_admin, created_at
        FROM dispute_messages

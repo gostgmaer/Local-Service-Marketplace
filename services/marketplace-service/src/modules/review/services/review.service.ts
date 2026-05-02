@@ -178,7 +178,22 @@ export class ReviewService {
       .catch(() => null);
 
     await this.cacheInvalidation.invalidateEntity("reviews");
-    this.broadcastService.emit("review", review.id, "created", [`user:${createReviewDto.user_id}`, `provider:${createReviewDto.provider_id}`, "admin"], { reviewId: review.id, jobId: review.job_id, providerId: createReviewDto.provider_id }, createReviewDto.user_id);
+    this.broadcastService.emit(
+      "review",
+      review.id,
+      "created",
+      [
+        `user:${createReviewDto.user_id}`,
+        `provider:${createReviewDto.provider_id}`,
+        "admin",
+      ],
+      {
+        reviewId: review.id,
+        jobId: review.job_id,
+        providerId: createReviewDto.provider_id,
+      },
+      createReviewDto.user_id,
+    );
 
     return review;
   }
@@ -281,7 +296,14 @@ export class ReviewService {
     }
 
     await this.cacheInvalidation.invalidateEntity("reviews");
-    this.broadcastService.emit("review", review.id, "updated", [`user:${review.user_id}`, `provider:${review.provider_id}`, "admin"], { reviewId: review.id, providerId: review.provider_id }, review.user_id);
+    this.broadcastService.emit(
+      "review",
+      review.id,
+      "updated",
+      [`user:${review.user_id}`, `provider:${review.provider_id}`, "admin"],
+      { reviewId: review.id, providerId: review.provider_id },
+      review.user_id,
+    );
 
     return review;
   }
@@ -302,7 +324,13 @@ export class ReviewService {
       .catch(() => null);
 
     await this.cacheInvalidation.invalidateEntity("reviews");
-    this.broadcastService.emit("review", review.id, "deleted", [`user:${review.user_id}`, `provider:${review.provider_id}`, "admin"], { reviewId: review.id, providerId: review.provider_id });
+    this.broadcastService.emit(
+      "review",
+      review.id,
+      "deleted",
+      [`user:${review.user_id}`, `provider:${review.provider_id}`, "admin"],
+      { reviewId: review.id, providerId: review.provider_id },
+    );
 
     this.logger.log(`Review ${id} deleted successfully`, "ReviewService");
   }
@@ -326,15 +354,25 @@ export class ReviewService {
     response: string,
     providerId: string,
   ): Promise<Review> {
-    this.logger.log(`Provider ${providerId} responding to review ${reviewId}`, "ReviewService");
-    return this.reviewRepository.respondToReview(reviewId, response, providerId);
+    this.logger.log(
+      `Provider ${providerId} responding to review ${reviewId}`,
+      "ReviewService",
+    );
+    return this.reviewRepository.respondToReview(
+      reviewId,
+      response,
+      providerId,
+    );
   }
 
   async markReviewHelpful(
     reviewId: string,
     userId: string,
   ): Promise<Review | null> {
-    this.logger.log(`User ${userId} marking review ${reviewId} as helpful`, "ReviewService");
+    this.logger.log(
+      `User ${userId} marking review ${reviewId} as helpful`,
+      "ReviewService",
+    );
     return this.reviewRepository.incrementHelpfulCount(reviewId, userId);
   }
 

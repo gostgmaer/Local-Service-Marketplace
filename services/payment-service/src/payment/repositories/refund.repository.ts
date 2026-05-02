@@ -21,10 +21,7 @@ export class RefundRepository {
    * Throws a `BadRequestException`-compatible Error if the refund would
    * over-reimburse the payment.
    */
-  async createRefundAtomic(
-    paymentId: string,
-    amount: number,
-  ): Promise<Refund> {
+  async createRefundAtomic(paymentId: string, amount: number): Promise<Refund> {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");

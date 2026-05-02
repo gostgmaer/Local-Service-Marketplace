@@ -64,14 +64,18 @@ describe("RequestService.createRequest", () => {
     user_id: "user-1",
   } as any;
 
-  function makeService(overrides: {
-    requestRepository?: any;
-    categoryRepository?: any;
-    locationRepository?: any;
-    userClient?: any;
-  } = {}) {
+  function makeService(
+    overrides: {
+      requestRepository?: any;
+      categoryRepository?: any;
+      locationRepository?: any;
+      userClient?: any;
+    } = {},
+  ) {
     const requestRepository = overrides.requestRepository ?? {
-      createRequest: jest.fn().mockResolvedValue({ id: "req-1", ...baseDto, status: "open" }),
+      createRequest: jest
+        .fn()
+        .mockResolvedValue({ id: "req-1", ...baseDto, status: "open" }),
       getSystemSetting: jest.fn().mockResolvedValue("10"),
       countActiveRequestsByUser: jest.fn().mockResolvedValue(0),
     };
@@ -106,7 +110,9 @@ describe("RequestService.createRequest", () => {
 
   it("throws NotFoundException when category does not exist", async () => {
     const { service } = makeService({
-      categoryRepository: { categoryExists: jest.fn().mockResolvedValue(false) },
+      categoryRepository: {
+        categoryExists: jest.fn().mockResolvedValue(false),
+      },
     });
     await expect(service.createRequest({ ...baseDto })).rejects.toThrow(
       NotFoundException,
@@ -115,16 +121,16 @@ describe("RequestService.createRequest", () => {
 
   it("throws BadRequestException when budget is zero", async () => {
     const { service } = makeService();
-    await expect(service.createRequest({ ...baseDto, budget: 0 })).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      service.createRequest({ ...baseDto, budget: 0 }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it("throws BadRequestException when budget is negative", async () => {
     const { service } = makeService();
-    await expect(service.createRequest({ ...baseDto, budget: -100 })).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      service.createRequest({ ...baseDto, budget: -100 }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it("throws BadRequestException when anonymous user has no guest_info", async () => {
@@ -144,7 +150,11 @@ describe("RequestService.createRequest", () => {
       categoryRepository: { categoryExists: jest.fn().mockResolvedValue(true) },
     });
     await expect(
-      service.createRequest({ ...baseDto, user_id: undefined, guest_info: { email: "guest@example.com" } }),
+      service.createRequest({
+        ...baseDto,
+        user_id: undefined,
+        guest_info: { email: "guest@example.com" },
+      }),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -236,10 +246,14 @@ describe("RequestService.updateRequest", () => {
     budget: 500,
   };
 
-  function makeService(overrides: { requestRepository?: any; categoryRepository?: any } = {}) {
+  function makeService(
+    overrides: { requestRepository?: any; categoryRepository?: any } = {},
+  ) {
     const requestRepository = overrides.requestRepository ?? {
       getRequestById: jest.fn().mockResolvedValue(existingRequest),
-      updateRequest: jest.fn().mockResolvedValue({ ...existingRequest, budget: 800 }),
+      updateRequest: jest
+        .fn()
+        .mockResolvedValue({ ...existingRequest, budget: 800 }),
     };
     const categoryRepository = overrides.categoryRepository ?? {
       categoryExists: jest.fn().mockResolvedValue(true),
@@ -266,9 +280,9 @@ describe("RequestService.updateRequest", () => {
         updateRequest: jest.fn(),
       },
     });
-    await expect(service.updateRequest("missing", {}, "user-1")).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(
+      service.updateRequest("missing", {}, "user-1"),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it("throws ForbiddenException when non-owner tries to update", async () => {
@@ -287,10 +301,16 @@ describe("RequestService.updateRequest", () => {
 
   it("throws NotFoundException when new category does not exist", async () => {
     const service = makeService({
-      categoryRepository: { categoryExists: jest.fn().mockResolvedValue(false) },
+      categoryRepository: {
+        categoryExists: jest.fn().mockResolvedValue(false),
+      },
     });
     await expect(
-      service.updateRequest("req-1", { category_id: "bad-cat" } as any, "user-1"),
+      service.updateRequest(
+        "req-1",
+        { category_id: "bad-cat" } as any,
+        "user-1",
+      ),
     ).rejects.toThrow(NotFoundException);
   });
 

@@ -124,7 +124,14 @@ export class UserService {
     });
 
     await this.cacheInvalidation.invalidateEntity("users");
-    this.broadcastService.emit("user", updated.id, "updated", [`user:${updated.id}`, "admin"], { userId: updated.id }, updated.id);
+    this.broadcastService.emit(
+      "user",
+      updated.id,
+      "updated",
+      [`user:${updated.id}`, "admin"],
+      { userId: updated.id },
+      updated.id,
+    );
 
     return this.mapToDto(updated);
   }
@@ -148,7 +155,14 @@ export class UserService {
     });
 
     await this.cacheInvalidation.invalidateEntity("users");
-    this.broadcastService.emit("user", updated.id, "updated", [`user:${updated.id}`, "admin"], { userId: updated.id }, updated.id);
+    this.broadcastService.emit(
+      "user",
+      updated.id,
+      "updated",
+      [`user:${updated.id}`, "admin"],
+      { userId: updated.id },
+      updated.id,
+    );
 
     return this.mapToDto(updated);
   }
@@ -180,7 +194,14 @@ export class UserService {
     });
 
     await this.cacheInvalidation.invalidateEntity("users");
-    this.broadcastService.emit("user", updated.id, "updated", [`user:${updated.id}`, "admin"], { userId: updated.id }, updated.id);
+    this.broadcastService.emit(
+      "user",
+      updated.id,
+      "updated",
+      [`user:${updated.id}`, "admin"],
+      { userId: updated.id },
+      updated.id,
+    );
 
     return this.mapToDto(updated);
   }
@@ -232,7 +253,9 @@ export class UserService {
     });
 
     await this.cacheInvalidation.invalidateEntity("users");
-    this.broadcastService.emit("user", deleted.id, "deleted", ["admin"], { userId: deleted.id });
+    this.broadcastService.emit("user", deleted.id, "deleted", ["admin"], {
+      userId: deleted.id,
+    });
 
     return this.mapToDto(deleted);
   }
@@ -244,7 +267,13 @@ export class UserService {
     }
 
     await this.cacheInvalidation.invalidateEntity("users");
-    this.broadcastService.emit("user", restored.id, "updated", [`user:${restored.id}`, "admin"], { userId: restored.id });
+    this.broadcastService.emit(
+      "user",
+      restored.id,
+      "updated",
+      [`user:${restored.id}`, "admin"],
+      { userId: restored.id },
+    );
 
     return this.mapToDto(restored);
   }
@@ -298,7 +327,14 @@ export class UserService {
     );
 
     await this.cacheInvalidation.invalidateEntity("users");
-    this.broadcastService.emit("user", updatedUser.id, "updated", [`user:${updatedUser.id}`], { userId: updatedUser.id }, updatedUser.id);
+    this.broadcastService.emit(
+      "user",
+      updatedUser.id,
+      "updated",
+      [`user:${updatedUser.id}`],
+      { userId: updatedUser.id },
+      updatedUser.id,
+    );
 
     return this.mapToDto(updatedUser);
   }

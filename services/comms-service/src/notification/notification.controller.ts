@@ -92,7 +92,10 @@ export class NotificationController {
         read,
       });
     const unreadCount = await this.notificationService.getUnreadCount(userId);
-    const total = await this.notificationService.getTotalCount(userId, { type, read });
+    const total = await this.notificationService.getTotalCount(userId, {
+      type,
+      read,
+    });
     return {
       data: { notifications, unreadCount },
       total,

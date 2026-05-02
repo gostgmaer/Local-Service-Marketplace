@@ -251,7 +251,11 @@ export class RequestRepository {
 
       // Add category if exists
       if (row.cat_id) {
-        request.category = { id: row.cat_id, name: row.cat_name, icon: row.cat_icon };
+        request.category = {
+          id: row.cat_id,
+          name: row.cat_name,
+          icon: row.cat_icon,
+        };
       }
 
       return request;
@@ -434,7 +438,11 @@ export class RequestRepository {
 
     // Add category if exists
     if (row.cat_id) {
-      request.category = { id: row.cat_id, name: row.cat_name, icon: row.cat_icon };
+      request.category = {
+        id: row.cat_id,
+        name: row.cat_name,
+        icon: row.cat_icon,
+      };
     }
 
     return request;
@@ -574,7 +582,11 @@ export class RequestRepository {
 
       // Add category if exists
       if (row.cat_id) {
-        request.category = { id: row.cat_id, name: row.cat_name, icon: row.cat_icon };
+        request.category = {
+          id: row.cat_id,
+          name: row.cat_name,
+          icon: row.cat_icon,
+        };
       }
 
       return request;
@@ -705,12 +717,19 @@ export class RequestRepository {
 
   async fullTextSearch(
     q: string,
-    options: { category?: string; location?: string; page?: number; limit?: number } = {},
+    options: {
+      category?: string;
+      location?: string;
+      page?: number;
+      limit?: number;
+    } = {},
   ): Promise<{ data: any[]; total: number }> {
     const { category, location, page = 1, limit = 20 } = options;
     const offset = (page - 1) * limit;
 
-    const conditions: string[] = ["s.search_vector @@ plainto_tsquery('english', $1)"];
+    const conditions: string[] = [
+      "s.search_vector @@ plainto_tsquery('english', $1)",
+    ];
     const params: any[] = [q];
     let paramIndex = 2;
 

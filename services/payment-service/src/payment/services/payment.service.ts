@@ -130,7 +130,10 @@ export class PaymentService {
       // Generate a unique, traceable transaction ID for cash receipts
       const cashTxnId = `CASH-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
       // Calculate GST-inclusive total so the stored amount matches what was agreed
-      const fees = await this.paymentRepository.calculateFees(finalAmount, jobUrgency);
+      const fees = await this.paymentRepository.calculateFees(
+        finalAmount,
+        jobUrgency,
+      );
       const payment = await this.paymentRepository.createPayment(
         jobId,
         userId,
@@ -168,16 +171,28 @@ export class PaymentService {
           .catch(() => {});
       }
       // Auto-generate and upload invoice (non-blocking)
-      this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+      this.invoiceService
+        .generateAndUploadInvoice(payment.id, userId)
+        .catch(() => null);
       await this.cacheInvalidation.invalidateEntity("payments");
-      this.broadcastService.emit("payment", payment.id, "completed", [`user:${userId}`, `provider:${providerId}`, "admin"], { paymentId: payment.id, jobId }, userId);
+      this.broadcastService.emit(
+        "payment",
+        payment.id,
+        "completed",
+        [`user:${userId}`, `provider:${providerId}`, "admin"],
+        { paymentId: payment.id, jobId },
+        userId,
+      );
       return { ...payment, status: "completed", transaction_id: cashTxnId };
     }
     // ─────────────────────────────────────────────────────────────────────────
 
     // Calculate GST-inclusive total BEFORE calling the gateway so the customer
     // is charged the correct amount (base service price + GST on platform fee).
-    const fees = await this.paymentRepository.calculateFees(finalAmount, jobUrgency);
+    const fees = await this.paymentRepository.calculateFees(
+      finalAmount,
+      jobUrgency,
+    );
 
     // Charge via payment gateway — per-request override via X-Payment-Gateway header
     const chargeParams = {
@@ -326,11 +341,20 @@ export class PaymentService {
 
     // Auto-generate and upload invoice when payment is immediately completed (non-blocking)
     if (paymentStatus === "completed") {
-      this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+      this.invoiceService
+        .generateAndUploadInvoice(payment.id, userId)
+        .catch(() => null);
     }
 
     await this.cacheInvalidation.invalidateEntity("payments");
-    this.broadcastService.emit("payment", payment.id, paymentStatus === "completed" ? "completed" : "created", [`user:${userId}`, `provider:${providerId}`, "admin"], { paymentId: payment.id, jobId }, userId);
+    this.broadcastService.emit(
+      "payment",
+      payment.id,
+      paymentStatus === "completed" ? "completed" : "created",
+      [`user:${userId}`, `provider:${providerId}`, "admin"],
+      { paymentId: payment.id, jobId },
+      userId,
+    );
 
     return payment;
   }
@@ -357,7 +381,10 @@ export class PaymentService {
     sortBy?: string,
     sortOrder?: string,
   ): Promise<{ data: Payment[]; total: number; page: number; limit: number }> {
-    this.logger.log(`Fetching paginated payments for job ${jobId}`, "PaymentService");
+    this.logger.log(
+      `Fetching paginated payments for job ${jobId}`,
+      "PaymentService",
+    );
     return this.paymentRepository.getPaymentsByJobIdPaginated(
       jobId,
       limit,
@@ -404,7 +431,18 @@ export class PaymentService {
     );
 
     await this.cacheInvalidation.invalidateEntity("payments");
-    this.broadcastService.emit("payment", payment.id, status === "failed" ? "failed" : status === "refunded" ? "refunded" : "updated", [`user:${payment.user_id}`, "admin"], { paymentId: payment.id, jobId: payment.job_id }, payment.user_id);
+    this.broadcastService.emit(
+      "payment",
+      payment.id,
+      status === "failed"
+        ? "failed"
+        : status === "refunded"
+          ? "refunded"
+          : "updated",
+      [`user:${payment.user_id}`, "admin"],
+      { paymentId: payment.id, jobId: payment.job_id },
+      payment.user_id,
+    );
 
     return result;
   }
@@ -433,12 +471,17 @@ export class PaymentService {
       description: `Job ${payment.job_id} payment (retry)`,
       customerEmail: user?.email,
       customerName: user?.name,
-      metadata: { job_id: payment.job_id, user_id: userId, provider_id: payment.provider_id },
+      metadata: {
+        job_id: payment.job_id,
+        user_id: userId,
+        provider_id: payment.provider_id,
+      },
     };
 
     const chargeResult = await this.paymentGateway.charge(chargeParams);
 
-    const newStatus = chargeResult.status === "succeeded" ? "completed" : "pending";
+    const newStatus =
+      chargeResult.status === "succeeded" ? "completed" : "pending";
 
     // Allow transition from failed → completed/pending for retries
     await this.paymentRepository.updatePaymentStatus(
@@ -447,7 +490,10 @@ export class PaymentService {
       chargeResult.transactionId,
     );
 
-    this.logger.log(`Payment retry ${payment.id} → ${newStatus}`, "PaymentService");
+    this.logger.log(
+      `Payment retry ${payment.id} → ${newStatus}`,
+      "PaymentService",
+    );
 
     if (newStatus === "completed") {
       await this.kafkaService.publishEvent("payment-events", {
@@ -466,13 +512,26 @@ export class PaymentService {
         },
       });
 
-      this.invoiceService.generateAndUploadInvoice(payment.id, userId).catch(() => null);
+      this.invoiceService
+        .generateAndUploadInvoice(payment.id, userId)
+        .catch(() => null);
     }
 
     await this.cacheInvalidation.invalidateEntity("payments");
-    this.broadcastService.emit("payment", payment.id, newStatus === "completed" ? "completed" : "updated", [`user:${userId}`, "admin"], { paymentId: payment.id, jobId: payment.job_id }, userId);
+    this.broadcastService.emit(
+      "payment",
+      payment.id,
+      newStatus === "completed" ? "completed" : "updated",
+      [`user:${userId}`, "admin"],
+      { paymentId: payment.id, jobId: payment.job_id },
+      userId,
+    );
 
-    return { ...payment, status: newStatus as any, transaction_id: chargeResult.transactionId };
+    return {
+      ...payment,
+      status: newStatus as any,
+      transaction_id: chargeResult.transactionId,
+    };
   }
 
   async getPaymentsByUser(userId: string): Promise<Payment[]> {
@@ -654,7 +713,12 @@ export class PaymentService {
       `Fetching paginated payouts for provider ${providerId}`,
       "PaymentService",
     );
-    return this.paymentRepository.getProviderPayoutsPaginated(providerId, limit, page, status);
+    return this.paymentRepository.getProviderPayoutsPaginated(
+      providerId,
+      limit,
+      page,
+      status,
+    );
   }
 
   async getPaymentStats(): Promise<{

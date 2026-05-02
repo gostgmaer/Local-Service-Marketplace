@@ -168,8 +168,7 @@ export class EmailClient {
     const ctaPath = this.normalizePath(
       appContext?.ctaPath || this.resolveTemplatePath(template, variables),
     );
-    const fromEmail =
-      (sender?.fromEmail || this.defaultFromEmail || "").trim();
+    const fromEmail = (sender?.fromEmail || this.defaultFromEmail || "").trim();
     const fromName = (sender?.fromName || this.defaultFromName || "").trim();
 
     const headers: Record<string, string> = {

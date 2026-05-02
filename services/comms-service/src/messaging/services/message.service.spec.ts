@@ -73,7 +73,10 @@ describe("MessageService", () => {
         { provide: MessageRepository, useValue: mockMessageRepo },
         { provide: EmailClient, useValue: mockEmailClient },
         { provide: UserClient, useValue: mockUserClient },
-        { provide: NotificationPreferencesService, useValue: mockNotificationPreferencesService },
+        {
+          provide: NotificationPreferencesService,
+          useValue: mockNotificationPreferencesService,
+        },
         { provide: NotificationService, useValue: mockNotificationService },
         { provide: UpdatesService, useValue: { broadcast: jest.fn() } },
       ],

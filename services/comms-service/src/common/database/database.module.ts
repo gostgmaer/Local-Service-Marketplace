@@ -9,7 +9,9 @@ import { Pool, types } from "pg";
 
 // TIMESTAMP WITHOUT TIME ZONE columns are stored as UTC in PostgreSQL.
 // Force UTC interpretation by appending 'Z' before parsing.
-types.setTypeParser(1114, (val: string | null) => (val ? new Date(val + "Z") : null));
+types.setTypeParser(1114, (val: string | null) =>
+  val ? new Date(val + "Z") : null,
+);
 
 const logger = new Logger("DatabaseModule");
 

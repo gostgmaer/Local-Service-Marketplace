@@ -2,7 +2,10 @@ import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
-import { DisputeRepository, DisputeMessage } from "../repositories/dispute.repository";
+import {
+  DisputeRepository,
+  DisputeMessage,
+} from "../repositories/dispute.repository";
 import { AdminActionRepository } from "../repositories/admin-action.repository";
 import { AuditLogRepository } from "../repositories/audit-log.repository";
 import { Dispute } from "../entities/dispute.entity";
@@ -152,7 +155,14 @@ export class DisputeService {
     await this.cacheInvalidation.invalidateEntity("disputes");
     // Notify both the opener and the other job party (provider or customer) so both see the new dispute
     const otherDisputePartyRoom = otherPartyId ? [`user:${otherPartyId}`] : [];
-    this.broadcastService.emit("dispute", dispute.id, "created", [`user:${openedBy}`, ...otherDisputePartyRoom, "admin"], { disputeId: dispute.id, jobId }, openedBy);
+    this.broadcastService.emit(
+      "dispute",
+      dispute.id,
+      "created",
+      [`user:${openedBy}`, ...otherDisputePartyRoom, "admin"],
+      { disputeId: dispute.id, jobId },
+      openedBy,
+    );
 
     return dispute;
   }
@@ -172,7 +182,8 @@ export class DisputeService {
     // Allow access to the user who opened the dispute
     if (dispute.opened_by === userId) return dispute;
     // Also allow the other job party (provider or customer)
-    const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id);
+    const { customerId, providerUserId } =
+      await this.disputeRepository.getJobParties(dispute.job_id);
     if (userId !== customerId && userId !== providerUserId) {
       throw new ForbiddenException("You do not have access to this dispute");
     }
@@ -365,15 +376,37 @@ export class DisputeService {
 
     await this.cacheInvalidation.invalidateEntity("disputes");
     // Get both job parties so both the opener and the respondent see the resolution
-    const disputeJobParties = await this.disputeRepository.getJobParties(existingDispute.job_id).catch(() => ({ customerId: null, providerUserId: null }));
-    const disputeUpdateRooms: string[] = [`user:${existingDispute.opened_by}`, "admin"];
-    if (disputeJobParties.customerId && disputeJobParties.customerId !== existingDispute.opened_by) {
+    const disputeJobParties = await this.disputeRepository
+      .getJobParties(existingDispute.job_id)
+      .catch(() => ({ customerId: null, providerUserId: null }));
+    const disputeUpdateRooms: string[] = [
+      `user:${existingDispute.opened_by}`,
+      "admin",
+    ];
+    if (
+      disputeJobParties.customerId &&
+      disputeJobParties.customerId !== existingDispute.opened_by
+    ) {
       disputeUpdateRooms.splice(1, 0, `user:${disputeJobParties.customerId}`);
     }
-    if (disputeJobParties.providerUserId && disputeJobParties.providerUserId !== existingDispute.opened_by) {
-      disputeUpdateRooms.splice(1, 0, `user:${disputeJobParties.providerUserId}`);
+    if (
+      disputeJobParties.providerUserId &&
+      disputeJobParties.providerUserId !== existingDispute.opened_by
+    ) {
+      disputeUpdateRooms.splice(
+        1,
+        0,
+        `user:${disputeJobParties.providerUserId}`,
+      );
     }
-    this.broadcastService.emit("dispute", id, "updated", disputeUpdateRooms, { disputeId: id, status: normalizedStatus }, adminId);
+    this.broadcastService.emit(
+      "dispute",
+      id,
+      "updated",
+      disputeUpdateRooms,
+      { disputeId: id, status: normalizedStatus },
+      adminId,
+    );
 
     this.logger.log(`Dispute ${id} updated successfully`, "DisputeService");
 
@@ -387,12 +420,14 @@ export class DisputeService {
     const dispute = await this.disputeRepository.getDisputeById(disputeId);
     if (!dispute) throw new NotFoundException("Dispute not found");
     // Verify caller is a party to the dispute
-    const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id);
+    const { customerId, providerUserId } =
+      await this.disputeRepository.getJobParties(dispute.job_id);
     const isParty =
       dispute.opened_by === requestingUserId ||
       customerId === requestingUserId ||
       providerUserId === requestingUserId;
-    if (!isParty) throw new ForbiddenException("You do not have access to this dispute");
+    if (!isParty)
+      throw new ForbiddenException("You do not have access to this dispute");
 
     return this.disputeRepository.getDisputeMessages(disputeId);
   }
@@ -409,16 +444,20 @@ export class DisputeService {
 
     if (!isAdmin) {
       // Non-admin: must be a party to the dispute
-      const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id);
+      const { customerId, providerUserId } =
+        await this.disputeRepository.getJobParties(dispute.job_id);
       const isParty =
         dispute.opened_by === senderId ||
         customerId === senderId ||
         providerUserId === senderId;
-      if (!isParty) throw new ForbiddenException("You do not have access to this dispute");
+      if (!isParty)
+        throw new ForbiddenException("You do not have access to this dispute");
     }
 
     if (dispute.status === "resolved" || dispute.status === "closed") {
-      throw new BadRequestException("Cannot add messages to a resolved or closed dispute");
+      throw new BadRequestException(
+        "Cannot add messages to a resolved or closed dispute",
+      );
     }
 
     const msg = await this.disputeRepository.createDisputeMessage(
@@ -430,12 +469,23 @@ export class DisputeService {
     );
 
     // Broadcast to all parties
-    const { customerId, providerUserId } = await this.disputeRepository.getJobParties(dispute.job_id).catch(() => ({ customerId: null, providerUserId: null }));
+    const { customerId, providerUserId } = await this.disputeRepository
+      .getJobParties(dispute.job_id)
+      .catch(() => ({ customerId: null, providerUserId: null }));
     const rooms: string[] = ["admin"];
     if (dispute.opened_by) rooms.push(`user:${dispute.opened_by}`);
-    if (customerId && customerId !== dispute.opened_by) rooms.push(`user:${customerId}`);
-    if (providerUserId && providerUserId !== dispute.opened_by) rooms.push(`user:${providerUserId}`);
-    this.broadcastService.emit("dispute", disputeId, "message", rooms, { disputeId, messageId: msg.id }, senderId);
+    if (customerId && customerId !== dispute.opened_by)
+      rooms.push(`user:${customerId}`);
+    if (providerUserId && providerUserId !== dispute.opened_by)
+      rooms.push(`user:${providerUserId}`);
+    this.broadcastService.emit(
+      "dispute",
+      disputeId,
+      "message",
+      rooms,
+      { disputeId, messageId: msg.id },
+      senderId,
+    );
 
     return msg;
   }

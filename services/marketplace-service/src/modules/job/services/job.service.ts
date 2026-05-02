@@ -230,7 +230,14 @@ export class JobService {
     });
 
     await this.cacheInvalidation.invalidateEntity("jobs");
-    this.broadcastService.emit("job", job.id, "created", [`user:${dto.customer_id}`, `provider:${dto.provider_id}`, "admin"], { jobId: job.id }, dto.customer_id);
+    this.broadcastService.emit(
+      "job",
+      job.id,
+      "created",
+      [`user:${dto.customer_id}`, `provider:${dto.provider_id}`, "admin"],
+      { jobId: job.id },
+      dto.customer_id,
+    );
 
     return JobResponseDto.fromEntity(job);
   }
@@ -480,7 +487,14 @@ export class JobService {
     });
 
     await this.cacheInvalidation.invalidateEntity("jobs");
-    this.broadcastService.emit("job", job.id, "updated", [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"], { jobId: job.id }, userId);
+    this.broadcastService.emit(
+      "job",
+      job.id,
+      "updated",
+      [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"],
+      { jobId: job.id },
+      userId,
+    );
 
     return JobResponseDto.fromEntity(job);
   }
@@ -629,7 +643,14 @@ export class JobService {
     });
 
     await this.cacheInvalidation.invalidateEntity("jobs");
-    this.broadcastService.emit("job", job.id, "completed", [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"], { jobId: job.id }, userId);
+    this.broadcastService.emit(
+      "job",
+      job.id,
+      "completed",
+      [`user:${job.customer_id}`, `provider:${job.provider_id}`, "admin"],
+      { jobId: job.id },
+      userId,
+    );
 
     return JobResponseDto.fromEntity(job);
   }
@@ -955,6 +976,17 @@ export class JobService {
     });
 
     await this.cacheInvalidation.invalidateEntity("jobs");
-    this.broadcastService.emit("job", existingJob.id, "deleted", [`user:${existingJob.customer_id}`, `provider:${existingJob.provider_id}`, "admin"], { jobId: existingJob.id }, userId);
+    this.broadcastService.emit(
+      "job",
+      existingJob.id,
+      "deleted",
+      [
+        `user:${existingJob.customer_id}`,
+        `provider:${existingJob.provider_id}`,
+        "admin",
+      ],
+      { jobId: existingJob.id },
+      userId,
+    );
   }
 }

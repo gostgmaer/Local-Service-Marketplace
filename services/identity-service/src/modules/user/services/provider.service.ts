@@ -161,7 +161,14 @@ export class ProviderService {
     }
 
     await this.cacheInvalidation.invalidateEntity("providers");
-    this.broadcastService.emit("provider", provider.id, "created", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+    this.broadcastService.emit(
+      "provider",
+      provider.id,
+      "created",
+      [`user:${provider.user_id}`, "admin"],
+      { providerId: provider.id },
+      provider.user_id,
+    );
 
     return this.getProvider(provider.id);
   }
@@ -239,7 +246,14 @@ export class ProviderService {
     }
 
     await this.cacheInvalidation.invalidateEntity("providers");
-    this.broadcastService.emit("provider", provider.id, "updated", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+    this.broadcastService.emit(
+      "provider",
+      provider.id,
+      "updated",
+      [`user:${provider.user_id}`, "admin"],
+      { providerId: provider.id },
+      provider.user_id,
+    );
 
     return this.getProvider(provider.id);
   }
@@ -294,7 +308,12 @@ export class ProviderService {
       service_area_radius: provider.service_area_radius,
       response_time_avg: provider.response_time_avg,
       certifications: provider.certifications,
-      services: services.map((s) => ({ id: s.id, category_id: s.category_id, category_name: (s as any).category_name, category_icon: (s as any).category_icon })),
+      services: services.map((s) => ({
+        id: s.id,
+        category_id: s.category_id,
+        category_name: (s as any).category_name,
+        category_icon: (s as any).category_icon,
+      })),
       availability: availability.map((a) => ({
         id: a.id,
         day_of_week: a.day_of_week,
@@ -488,7 +507,14 @@ export class ProviderService {
     }
 
     await this.cacheInvalidation.invalidateEntity("providers");
-    this.broadcastService.emit("provider", provider.id, "updated", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+    this.broadcastService.emit(
+      "provider",
+      provider.id,
+      "updated",
+      [`user:${provider.user_id}`, "admin"],
+      { providerId: provider.id },
+      provider.user_id,
+    );
 
     return {
       id: newService.id,
@@ -508,7 +534,14 @@ export class ProviderService {
     }
 
     await this.cacheInvalidation.invalidateEntity("providers");
-    this.broadcastService.emit("provider", providerId, "updated", ["admin"], { providerId }, "system");
+    this.broadcastService.emit(
+      "provider",
+      providerId,
+      "updated",
+      ["admin"],
+      { providerId },
+      "system",
+    );
   }
 
   async getProviderAvailability(providerId: string): Promise<any[]> {
@@ -553,7 +586,14 @@ export class ProviderService {
     await this.providerRepo.delete(provider.id);
 
     await this.cacheInvalidation.invalidateEntity("providers");
-    this.broadcastService.emit("provider", provider.id, "deleted", [`user:${provider.user_id}`, "admin"], { providerId: provider.id }, provider.user_id);
+    this.broadcastService.emit(
+      "provider",
+      provider.id,
+      "deleted",
+      [`user:${provider.user_id}`, "admin"],
+      { providerId: provider.id },
+      provider.user_id,
+    );
 
     this.logger.info("Provider deleted successfully", {
       context: "ProviderService",
@@ -621,7 +661,13 @@ export class ProviderService {
     }
 
     await this.cacheInvalidation.invalidateEntity("providers");
-    this.broadcastService.emit("provider", providerId, "updated", [`provider:${providerId}`, "admin"], { providerId });
+    this.broadcastService.emit(
+      "provider",
+      providerId,
+      "updated",
+      [`provider:${providerId}`, "admin"],
+      { providerId },
+    );
 
     return this.getProvider(providerId);
   }

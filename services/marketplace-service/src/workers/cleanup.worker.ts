@@ -67,7 +67,10 @@ export class MarketplaceCleanupWorker
   private async handleExpireStaleRequests(): Promise<void> {
     this.logger.log("Expiring stale open requests", "MarketplaceCleanupWorker");
     const expiryDays = parseInt(
-      await this.requestRepository.getSystemSetting("request_expiry_days", "30"),
+      await this.requestRepository.getSystemSetting(
+        "request_expiry_days",
+        "30",
+      ),
       10,
     );
     const cutoff = new Date(Date.now() - expiryDays * 24 * 60 * 60 * 1000);

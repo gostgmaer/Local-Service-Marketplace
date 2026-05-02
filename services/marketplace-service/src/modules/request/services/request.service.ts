@@ -261,7 +261,14 @@ export class RequestService {
     });
 
     await this.cacheInvalidation.invalidateEntity("requests");
-    this.broadcastService.emit("request", request.id, "created", [`user:${request.user_id}`, "admin", "providers"], { requestId: request.id }, request.user_id);
+    this.broadcastService.emit(
+      "request",
+      request.id,
+      "created",
+      [`user:${request.user_id}`, "admin", "providers"],
+      { requestId: request.id },
+      request.user_id,
+    );
 
     return RequestResponseDto.fromEntity(request);
   }
@@ -512,7 +519,14 @@ export class RequestService {
     });
 
     await this.cacheInvalidation.invalidateEntity("requests");
-    this.broadcastService.emit("request", updatedRequest.id, "updated", [`user:${updatedRequest.user_id}`, "admin"], { requestId: updatedRequest.id }, updatedRequest.user_id);
+    this.broadcastService.emit(
+      "request",
+      updatedRequest.id,
+      "updated",
+      [`user:${updatedRequest.user_id}`, "admin"],
+      { requestId: updatedRequest.id },
+      updatedRequest.user_id,
+    );
 
     return RequestResponseDto.fromEntity(updatedRequest);
   }
@@ -592,7 +606,14 @@ export class RequestService {
     });
 
     await this.cacheInvalidation.invalidateEntity("requests");
-    this.broadcastService.emit("request", request.id, "updated", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
+    this.broadcastService.emit(
+      "request",
+      request.id,
+      "updated",
+      [`user:${request.user_id}`, "admin"],
+      { requestId: request.id },
+      request.user_id,
+    );
   }
 
   async deleteRequest(id: string): Promise<void> {
@@ -606,7 +627,14 @@ export class RequestService {
     await this.requestRepository.deleteRequest(request.id);
 
     await this.cacheInvalidation.invalidateEntity("requests");
-    this.broadcastService.emit("request", request.id, "deleted", [`user:${request.user_id}`, "admin"], { requestId: request.id }, request.user_id);
+    this.broadcastService.emit(
+      "request",
+      request.id,
+      "deleted",
+      [`user:${request.user_id}`, "admin"],
+      { requestId: request.id },
+      request.user_id,
+    );
 
     this.logger.log(`Request deleted successfully: ${id}`, RequestService.name);
   }

@@ -392,7 +392,13 @@ export class AuthController {
   async exchangeOAuthCode(
     @Body() body: OAuthExchangeDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ message: string; accessToken: string; refreshToken: string; isNewUser: boolean; needsEmail: boolean }> {
+  ): Promise<{
+    message: string;
+    accessToken: string;
+    refreshToken: string;
+    isNewUser: boolean;
+    needsEmail: boolean;
+  }> {
     if (!body?.code) {
       throw new BadRequestException("OAuth code is required");
     }
@@ -1068,23 +1074,37 @@ export class AuthController {
         JSON.stringify({ accessToken, refreshToken, isNewUser, needsEmail }),
       )
       .catch((err: any) =>
-        this.logger.warn(`Failed to store OAuth code in Redis: ${err.message}`, {
-          context: "AuthController",
-        }),
+        this.logger.warn(
+          `Failed to store OAuth code in Redis: ${err.message}`,
+          {
+            context: "AuthController",
+          },
+        ),
       );
     return code;
   }
 
-  private async consumeOAuthCode(
-    code: string,
-  ): Promise<{ accessToken: string; refreshToken: string; isNewUser: boolean; needsEmail: boolean } | null> {
+  private async consumeOAuthCode(code: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    isNewUser: boolean;
+    needsEmail: boolean;
+  } | null> {
     const key = `oauth:code:${code}`;
     // Atomically GET and DEL to prevent replay attacks.
-    const [raw] = await this.redis.multi().get(key).del(key).exec() as [any, any];
+    const [raw] = (await this.redis.multi().get(key).del(key).exec()) as [
+      any,
+      any,
+    ];
     const value = raw?.[1] as string | null;
     if (!value) return null;
     try {
-      return JSON.parse(value) as { accessToken: string; refreshToken: string; isNewUser: boolean; needsEmail: boolean };
+      return JSON.parse(value) as {
+        accessToken: string;
+        refreshToken: string;
+        isNewUser: boolean;
+        needsEmail: boolean;
+      };
     } catch {
       return null;
     }

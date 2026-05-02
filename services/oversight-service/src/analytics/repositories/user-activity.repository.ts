@@ -74,8 +74,11 @@ export class UserActivityRepository {
     `;
 
     const result = await this.pool.query(query, [action, limit, offset]);
-    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
-    const data = result.rows.map(({ total_count, ...row }) => row as UserActivityLog);
+    const total =
+      result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
+    const data = result.rows.map(
+      ({ total_count, ...row }) => row as UserActivityLog,
+    );
     return { data, total };
   }
 

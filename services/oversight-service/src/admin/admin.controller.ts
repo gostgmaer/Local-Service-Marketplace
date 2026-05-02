@@ -130,7 +130,10 @@ export class AdminController {
     @Query("limit") limit?: string,
   ) {
     const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
-    const parsedLimit = Math.min(100, Math.max(1, parseInt(limit ?? "20", 10) || 20));
+    const parsedLimit = Math.min(
+      100,
+      Math.max(1, parseInt(limit ?? "20", 10) || 20),
+    );
     return this.auditLogService.getAuditLogsByEntity(
       entity,
       entityId,
@@ -213,8 +216,15 @@ export class AdminController {
     @Query("limit") limit?: string,
   ) {
     const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
-    const parsedLimit = Math.min(100, Math.max(1, parseInt(limit ?? "20", 10) || 20));
-    return this.contactMessageService.getContactMessagesByEmail(email, parsedLimit, parsedPage);
+    const parsedLimit = Math.min(
+      100,
+      Math.max(1, parseInt(limit ?? "20", 10) || 20),
+    );
+    return this.contactMessageService.getContactMessagesByEmail(
+      email,
+      parsedLimit,
+      parsedPage,
+    );
   }
 
   @RequirePermissions("admin.contact_view")
@@ -226,8 +236,15 @@ export class AdminController {
     @Query("limit") limit?: string,
   ) {
     const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
-    const parsedLimit = Math.min(100, Math.max(1, parseInt(limit ?? "20", 10) || 20));
-    return this.contactMessageService.getContactMessagesByUserId(userId, parsedLimit, parsedPage);
+    const parsedLimit = Math.min(
+      100,
+      Math.max(1, parseInt(limit ?? "20", 10) || 20),
+    );
+    return this.contactMessageService.getContactMessagesByUserId(
+      userId,
+      parsedLimit,
+      parsedPage,
+    );
   }
 
   @RequirePermissions("admin.contact_view")

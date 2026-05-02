@@ -9,11 +9,13 @@ import {
 
 const makeLogger = () =>
   ({ log: jest.fn(), warn: jest.fn(), error: jest.fn() }) as any;
-const makeQueue = () => ({ add: jest.fn().mockResolvedValue(undefined) }) as any;
-const makeKafka = () => ({
-  isKafkaEnabled: jest.fn().mockReturnValue(false),
-  publishEvent: jest.fn().mockResolvedValue(undefined),
-}) as any;
+const makeQueue = () =>
+  ({ add: jest.fn().mockResolvedValue(undefined) }) as any;
+const makeKafka = () =>
+  ({
+    isKafkaEnabled: jest.fn().mockReturnValue(false),
+    publishEvent: jest.fn().mockResolvedValue(undefined),
+  }) as any;
 
 const completedJob = {
   id: "job-1",
@@ -33,30 +35,47 @@ const baseReview = {
   created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
 };
 
-function createService(repoOverrides: Partial<{
-  getJobForReview: jest.Mock;
-  getSystemSetting: jest.Mock;
-  createReview: jest.Mock;
-  getReviewById: jest.Mock;
-  updateReview: jest.Mock;
-  deleteReview: jest.Mock;
-  getProviderReviews: jest.Mock;
-  getProviderRating: jest.Mock;
-  getReviewsByUser: jest.Mock;
-}> = {}) {
+function createService(
+  repoOverrides: Partial<{
+    getJobForReview: jest.Mock;
+    getSystemSetting: jest.Mock;
+    createReview: jest.Mock;
+    getReviewById: jest.Mock;
+    updateReview: jest.Mock;
+    deleteReview: jest.Mock;
+    getProviderReviews: jest.Mock;
+    getProviderRating: jest.Mock;
+    getReviewsByUser: jest.Mock;
+  }> = {},
+) {
   const reviewRepository = {
-    getJobForReview: repoOverrides.getJobForReview ?? jest.fn().mockResolvedValue(completedJob),
-    getSystemSetting: repoOverrides.getSystemSetting ?? jest.fn().mockImplementation((key: string) => {
-      if (key === "review_submission_window_days") return Promise.resolve("90");
-      return Promise.resolve("10"); // default for min_review_length etc.
-    }),
-    createReview: repoOverrides.createReview ?? jest.fn().mockResolvedValue(baseReview),
-    getReviewById: repoOverrides.getReviewById ?? jest.fn().mockResolvedValue(baseReview),
-    updateReview: repoOverrides.updateReview ?? jest.fn().mockResolvedValue(baseReview),
-    deleteReview: repoOverrides.deleteReview ?? jest.fn().mockResolvedValue(undefined),
-    getProviderReviews: repoOverrides.getProviderReviews ?? jest.fn().mockResolvedValue([baseReview]),
-    getProviderRating: repoOverrides.getProviderRating ?? jest.fn().mockResolvedValue({ averageRating: 4.8, totalReviews: 12 }),
-    getReviewsByUser: repoOverrides.getReviewsByUser ?? jest.fn().mockResolvedValue({ data: [baseReview], total: 1 }),
+    getJobForReview:
+      repoOverrides.getJobForReview ??
+      jest.fn().mockResolvedValue(completedJob),
+    getSystemSetting:
+      repoOverrides.getSystemSetting ??
+      jest.fn().mockImplementation((key: string) => {
+        if (key === "review_submission_window_days")
+          return Promise.resolve("90");
+        return Promise.resolve("10"); // default for min_review_length etc.
+      }),
+    createReview:
+      repoOverrides.createReview ?? jest.fn().mockResolvedValue(baseReview),
+    getReviewById:
+      repoOverrides.getReviewById ?? jest.fn().mockResolvedValue(baseReview),
+    updateReview:
+      repoOverrides.updateReview ?? jest.fn().mockResolvedValue(baseReview),
+    deleteReview:
+      repoOverrides.deleteReview ?? jest.fn().mockResolvedValue(undefined),
+    getProviderReviews:
+      repoOverrides.getProviderReviews ??
+      jest.fn().mockResolvedValue([baseReview]),
+    getProviderRating:
+      repoOverrides.getProviderRating ??
+      jest.fn().mockResolvedValue({ averageRating: 4.8, totalReviews: 12 }),
+    getReviewsByUser:
+      repoOverrides.getReviewsByUser ??
+      jest.fn().mockResolvedValue({ data: [baseReview], total: 1 }),
   };
 
   const service = new ReviewService(
@@ -94,7 +113,9 @@ describe("ReviewService.createReview", () => {
 
   it("throws BadRequestException when job is not completed", async () => {
     const { service } = createService({
-      getJobForReview: jest.fn().mockResolvedValue({ ...completedJob, status: "in_progress" }),
+      getJobForReview: jest
+        .fn()
+        .mockResolvedValue({ ...completedJob, status: "in_progress" }),
     });
     await expect(service.createReview({ ...validDto })).rejects.toThrow(
       BadRequestException,
@@ -159,7 +180,9 @@ describe("ReviewService.createReview", () => {
 
   it("skips submission window check when job has no completed_at", async () => {
     const { service, reviewRepository } = createService({
-      getJobForReview: jest.fn().mockResolvedValue({ ...completedJob, completed_at: null }),
+      getJobForReview: jest
+        .fn()
+        .mockResolvedValue({ ...completedJob, completed_at: null }),
     });
     await service.createReview({ ...validDto });
     expect(reviewRepository.createReview).toHaveBeenCalled();
@@ -211,7 +234,9 @@ describe("ReviewService.updateReview", () => {
     const { service } = createService({
       updateReview: jest.fn().mockResolvedValue(updated),
     });
-    const result = await service.updateReview("rev-1", { comment: "Updated comment text" });
+    const result = await service.updateReview("rev-1", {
+      comment: "Updated comment text",
+    });
     expect(result.comment).toBe("Updated comment text");
   });
 

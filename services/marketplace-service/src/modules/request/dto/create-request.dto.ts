@@ -73,7 +73,9 @@ export class CreateRequestDto {
 
   @IsOptional()
   @IsObject()
-  @Transform(({ value }) => (typeof value === "string" ? JSON.parse(value) : value))
+  @Transform(({ value }) =>
+    typeof value === "string" ? JSON.parse(value) : value,
+  )
   guest_info?: {
     name: string;
     email: string;

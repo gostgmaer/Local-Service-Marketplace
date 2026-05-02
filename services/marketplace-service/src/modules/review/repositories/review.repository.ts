@@ -27,9 +27,7 @@ export class ReviewRepository {
   }
 
   /** Returns the job row so the service can validate status and resolve provider_id. */
-  async getJobForReview(
-    jobId: string,
-  ): Promise<{
+  async getJobForReview(jobId: string): Promise<{
     id: string;
     provider_id: string;
     status: string;
@@ -424,7 +422,8 @@ export class ReviewRepository {
       values.push(createdTo);
     }
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const where =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
     const limitIdx = values.length + 1;
     const offsetIdx = values.length + 2;
     values.push(limit, offset);

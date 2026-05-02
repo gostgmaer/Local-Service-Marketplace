@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from "@nestjs/common";
 import * as crypto from "crypto";
 
 @Injectable()
@@ -19,7 +24,9 @@ export class InternalServiceGuard implements CanActivate {
       crypto.timingSafeEqual(secretBuf, expectedBuf);
 
     if (!isValid) {
-      throw new UnauthorizedException("Invalid or missing internal service secret");
+      throw new UnauthorizedException(
+        "Invalid or missing internal service secret",
+      );
     }
 
     return true;

@@ -86,7 +86,9 @@ export class DocumentExpiryWorker extends WorkerHost implements OnModuleInit {
     for (const doc of expiringDocs) {
       const docRow = doc as any;
       if (!docRow.user_id) continue;
-      const user = await this.userRepository.findById(docRow.user_id).catch(() => null);
+      const user = await this.userRepository
+        .findById(docRow.user_id)
+        .catch(() => null);
       if (!user?.email) continue;
 
       const expiryStr = new Date(doc.expires_at).toLocaleDateString("en-IN");

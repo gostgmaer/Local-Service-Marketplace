@@ -357,7 +357,8 @@ export class PaymentRepository {
       LIMIT $2 OFFSET $3
     `;
     const result = await this.pool.query(query, values);
-    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    const total =
+      result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
     const data = result.rows.map(
       (row) =>
         new Payment({

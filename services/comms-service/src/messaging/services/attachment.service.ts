@@ -2,7 +2,10 @@ import { Injectable, Inject, LoggerService } from "@nestjs/common";
 import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { AttachmentRepository } from "../repositories/attachment.repository";
 import { Attachment } from "../entities/attachment.entity";
-import { NotFoundException, BadRequestException } from "../../common/exceptions/http.exceptions";
+import {
+  NotFoundException,
+  BadRequestException,
+} from "../../common/exceptions/http.exceptions";
 
 const MAX_TOTAL_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 

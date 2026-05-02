@@ -80,9 +80,12 @@ export class ProviderPortfolioService {
     }
 
     // Authorization: verify the requesting user owns this portfolio item
-    const ownerUserId = await this.portfolioRepository.findOwnerUserIdForItem(itemId);
+    const ownerUserId =
+      await this.portfolioRepository.findOwnerUserIdForItem(itemId);
     if (ownerUserId && ownerUserId !== userId) {
-      throw new ForbiddenException("You do not have permission to update this portfolio item");
+      throw new ForbiddenException(
+        "You do not have permission to update this portfolio item",
+      );
     }
 
     if (updateData.image_urls && updateData.image_urls.length > 10) {
@@ -102,9 +105,12 @@ export class ProviderPortfolioService {
     }
 
     // Authorization: verify the requesting user owns this portfolio item
-    const ownerUserId = await this.portfolioRepository.findOwnerUserIdForItem(itemId);
+    const ownerUserId =
+      await this.portfolioRepository.findOwnerUserIdForItem(itemId);
     if (ownerUserId && ownerUserId !== userId) {
-      throw new ForbiddenException("You do not have permission to delete this portfolio item");
+      throw new ForbiddenException(
+        "You do not have permission to delete this portfolio item",
+      );
     }
 
     await this.portfolioRepository.delete(itemId);

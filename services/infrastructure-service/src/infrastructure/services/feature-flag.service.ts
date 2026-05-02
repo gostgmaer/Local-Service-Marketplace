@@ -95,9 +95,7 @@ export class FeatureFlagService {
     }
   }
 
-  async getAllFeatureFlags(
-    queryDto: FeatureFlagQueryDto,
-  ): Promise<{
+  async getAllFeatureFlags(queryDto: FeatureFlagQueryDto): Promise<{
     data: FeatureFlag[];
     total: number;
     page: number;

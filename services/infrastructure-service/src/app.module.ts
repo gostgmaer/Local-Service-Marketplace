@@ -31,8 +31,6 @@ const conditionalModules =
     ...conditionalModules,
   ],
   controllers: [HealthController, CacheController],
-  providers: [
-    { provide: APP_INTERCEPTOR, useClass: GetCacheInterceptor },
-  ],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: GetCacheInterceptor }],
 })
 export class AppModule {}

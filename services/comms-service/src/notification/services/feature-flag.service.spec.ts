@@ -18,8 +18,8 @@ function makeRepo(
   };
 
   return {
-    getSystemSetting: jest.fn(async (key: string, def: string) =>
-      defaults[key] ?? def,
+    getSystemSetting: jest.fn(
+      async (key: string, def: string) => defaults[key] ?? def,
     ),
   };
 }
@@ -169,7 +169,8 @@ describe("FeatureFlagService", () => {
       expect(svc.emailEnabled).toBe(true);
 
       // Simulate DB going down — calling refresh() again should not crash
-      const repo = (svc as any).notificationRepo as jest.Mocked<NotificationRepository>;
+      const repo = (svc as any)
+        .notificationRepo as jest.Mocked<NotificationRepository>;
       repo.getSystemSetting.mockRejectedValueOnce(new Error("DB down"));
       await expect((svc as any).refresh()).resolves.toBeUndefined();
 
