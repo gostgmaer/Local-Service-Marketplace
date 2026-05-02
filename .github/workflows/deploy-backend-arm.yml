@@ -78,7 +78,13 @@ jobs:
         run: pnpm run --if-present typecheck
 
       - name: Unit tests (if present)
-        run: pnpm run --if-present test -- --passWithNoTests --ci
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
+            # Run Jest directly to avoid pnpm argument-forwarding edge cases (e.g., `jest -- --passWithNoTests --ci`).
+            pnpm exec jest --passWithNoTests --ci
+          else
+            echo "No test script found; skipping unit tests."
+          fi
 
   vulnerability-scan:
     name: Vulnerability Scan (${{ matrix.service }})
