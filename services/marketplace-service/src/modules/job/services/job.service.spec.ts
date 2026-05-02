@@ -249,7 +249,9 @@ describe("JobService.completeJob", () => {
     const jobRepository = {
       getJobById: jest.fn().mockResolvedValue(makeJobEntity()),
       completeJob: jest.fn().mockResolvedValue(completedEntity),
-      getCompletedPaymentForJob: jest.fn().mockResolvedValue({ id: "pay-1", status: "completed" }),
+      getCompletedPaymentForJob: jest
+        .fn()
+        .mockResolvedValue({ id: "pay-1", status: "completed" }),
       updateRequestStatus: jest.fn().mockResolvedValue(undefined),
     } as any;
     const kafka = makeKafka();

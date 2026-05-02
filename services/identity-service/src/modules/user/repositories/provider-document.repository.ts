@@ -8,7 +8,12 @@ import { UploadDocumentDto } from "../dto/upload-document.dto";
 export class ProviderDocumentRepository {
   constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
 
-  async create(data: UploadDocumentDto & { file_id?: string; document_url?: string | null }): Promise<ProviderDocument> {
+  async create(
+    data: UploadDocumentDto & {
+      file_id?: string;
+      document_url?: string | null;
+    },
+  ): Promise<ProviderDocument> {
     const query = `
       INSERT INTO provider_documents (
         provider_id, document_type, file_id, document_url, document_name, document_number, expires_at

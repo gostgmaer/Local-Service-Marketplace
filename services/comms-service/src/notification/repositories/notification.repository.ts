@@ -83,7 +83,9 @@ export class NotificationRepository {
     } = options;
 
     const allowedSortColumns = ["created_at", "type"];
-    const safeSort = allowedSortColumns.includes(sortBy) ? sortBy : "created_at";
+    const safeSort = allowedSortColumns.includes(sortBy)
+      ? sortBy
+      : "created_at";
     const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
     const offset = (page - 1) * limit;
 

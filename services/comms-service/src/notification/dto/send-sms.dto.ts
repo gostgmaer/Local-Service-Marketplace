@@ -13,5 +13,3 @@ export class SendSmsDto {
   @IsOptional()
   purpose?: string; // e.g., 'otp', 'notification', 'alert'
 }
-
-

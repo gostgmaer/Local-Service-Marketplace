@@ -38,11 +38,10 @@ export class GatewayController {
 
     const services: Record<string, any> = {};
     for (const [fullName, shortName] of Object.entries(serviceMap)) {
-      services[shortName] =
-        rawHealth[fullName] ?? {
-          status: "down",
-          message: "Health data unavailable",
-        };
+      services[shortName] = rawHealth[fullName] ?? {
+        status: "down",
+        message: "Health data unavailable",
+      };
     }
 
     const downServices = Object.entries(services)

@@ -86,9 +86,7 @@ export class RefundController {
     const refund = await this.refundService.getRefundById(id);
 
     // Ownership validation - ensure user owns the payment
-    const payment = await this.refundService.getPaymentById(
-      refund.payment_id,
-    );
+    const payment = await this.refundService.getPaymentById(refund.payment_id);
 
     // Only the payment owner or admin can view refund details
     if (

@@ -8,7 +8,9 @@ export class CacheInvalidationService {
   constructor(private readonly redisService: RedisService) {}
 
   async invalidateEntity(entityPrefix: string): Promise<void> {
-    await this.redisService.delPattern(`cache:${this.SERVICE_NAME}:${entityPrefix}:*`);
+    await this.redisService.delPattern(
+      `cache:${this.SERVICE_NAME}:${entityPrefix}:*`,
+    );
   }
 
   async invalidateAll(): Promise<void> {

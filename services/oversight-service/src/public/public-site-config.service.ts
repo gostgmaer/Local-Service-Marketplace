@@ -79,9 +79,10 @@ export class PublicSiteConfigService {
       return { config: this.cache.config, etag: this.cache.etag };
     }
 
-    const fingerprint = await this.systemSettingRepository.getSettingsFingerprint(
-      this.siteConfigKeys,
-    );
+    const fingerprint =
+      await this.systemSettingRepository.getSettingsFingerprint(
+        this.siteConfigKeys,
+      );
     this.lastFingerprintCheckAt = now;
 
     if (this.cache && this.cache.fingerprint === fingerprint) {
@@ -98,7 +99,11 @@ export class PublicSiteConfigService {
 
     const config: SiteConfigPayload = {
       // Contact & branding
-      supportEmail: this.get(values, "support_email", "support@marketplace.com"),
+      supportEmail: this.get(
+        values,
+        "support_email",
+        "support@marketplace.com",
+      ),
       contactPhone: this.get(values, "contact_phone", ""),
       contactAddress: this.get(values, "contact_address", ""),
       // Upload limits
@@ -135,7 +140,11 @@ export class PublicSiteConfigService {
         10,
       ),
       maxProposalCount: this.getInt(values, "max_proposal_count", 10),
-      maxServicesPerProvider: this.getInt(values, "max_services_per_provider", 10),
+      maxServicesPerProvider: this.getInt(
+        values,
+        "max_services_per_provider",
+        10,
+      ),
       requestExpiryDays: this.getInt(values, "request_expiry_days", 30),
       jobAutoCompleteDays: this.getInt(values, "job_auto_complete_days", 7),
       disputeWindowDays: this.getInt(values, "dispute_window_days", 30),
@@ -164,10 +173,12 @@ export class PublicSiteConfigService {
         this.get(values, "email_notifications_enabled", "true") === "true",
       smsNotificationsEnabled:
         this.get(values, "sms_notifications_enabled", "false") === "true",
-      messagingEnabled: this.get(values, "messaging_enabled", "false") === "true",
+      messagingEnabled:
+        this.get(values, "messaging_enabled", "false") === "true",
       whatsappEnabled: this.get(values, "whatsapp_enabled", "false") === "true",
       notificationPreferencesEnabled:
-        this.get(values, "notification_preferences_enabled", "false") === "true",
+        this.get(values, "notification_preferences_enabled", "false") ===
+        "true",
       deviceTrackingEnabled:
         this.get(values, "device_tracking_enabled", "false") === "true",
     };

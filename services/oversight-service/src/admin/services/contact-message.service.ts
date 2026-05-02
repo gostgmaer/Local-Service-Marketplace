@@ -65,9 +65,7 @@ export class ContactMessageService {
     return contactMessage;
   }
 
-  async getAllContactMessages(
-    queryDto: ContactMessageListQueryDto,
-  ): Promise<{
+  async getAllContactMessages(queryDto: ContactMessageListQueryDto): Promise<{
     data: ContactMessage[];
     total: number;
     page: number;
@@ -114,13 +112,23 @@ export class ContactMessageService {
     email: string,
     limit: number = 20,
     page: number = 1,
-  ): Promise<{ data: ContactMessage[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: ContactMessage[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     this.logger.log(
       `Fetching contact messages for email: ${email}`,
       "ContactMessageService",
     );
     const offset = (page - 1) * limit;
-    const { data, total } = await this.contactMessageRepository.getContactMessagesByEmail(email, limit, offset);
+    const { data, total } =
+      await this.contactMessageRepository.getContactMessagesByEmail(
+        email,
+        limit,
+        offset,
+      );
     return { data, total, page, limit };
   }
 
@@ -128,13 +136,23 @@ export class ContactMessageService {
     userId: string,
     limit: number = 20,
     page: number = 1,
-  ): Promise<{ data: ContactMessage[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: ContactMessage[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     this.logger.log(
       `Fetching contact messages for user: ${userId}`,
       "ContactMessageService",
     );
     const offset = (page - 1) * limit;
-    const { data, total } = await this.contactMessageRepository.getContactMessagesByUserId(userId, limit, offset);
+    const { data, total } =
+      await this.contactMessageRepository.getContactMessagesByUserId(
+        userId,
+        limit,
+        offset,
+      );
     return { data, total, page, limit };
   }
 

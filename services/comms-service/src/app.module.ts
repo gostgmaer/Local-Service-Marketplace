@@ -41,8 +41,6 @@ const workerModules = workersEnabled ? [WorkersModule] : [];
     ...workerModules,
   ],
   controllers: [HealthController, CacheController],
-  providers: [
-    { provide: APP_INTERCEPTOR, useClass: GetCacheInterceptor },
-  ],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: GetCacheInterceptor }],
 })
 export class AppModule {}

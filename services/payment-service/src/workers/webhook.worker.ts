@@ -92,7 +92,8 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
             event.transactionId,
           );
           // Look up payment record to get userId and providerId for notifications
-          const succeededPayment = await this.paymentRepository.getPaymentById(paymentId);
+          const succeededPayment =
+            await this.paymentRepository.getPaymentById(paymentId);
           // Publish event so marketplace-service can update job status
           await this.kafkaService.publishEvent("payment-events", {
             eventType: "payment_completed",
@@ -147,7 +148,8 @@ export class WebhookWorker extends WorkerHost implements OnModuleInit {
             null,
           );
           // Look up payment record to get userId for the failure notification
-          const failedPayment = await this.paymentRepository.getPaymentById(paymentId);
+          const failedPayment =
+            await this.paymentRepository.getPaymentById(paymentId);
           // Publish failure event so comms-service can notify the user
           await this.kafkaService.publishEvent("payment-events", {
             eventType: "payment_failed",

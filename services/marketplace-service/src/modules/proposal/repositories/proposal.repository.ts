@@ -19,9 +19,11 @@ export class ProposalRepository {
     if (!row) return row;
     return {
       ...row,
-      price:            row.price            != null ? parseFloat(row.price)            : 0,
-      estimated_hours:  row.estimated_hours  != null ? parseFloat(row.estimated_hours)  : null,
-      provider_rating:  row.provider_rating  != null ? parseFloat(row.provider_rating)  : null,
+      price: row.price != null ? parseFloat(row.price) : 0,
+      estimated_hours:
+        row.estimated_hours != null ? parseFloat(row.estimated_hours) : null,
+      provider_rating:
+        row.provider_rating != null ? parseFloat(row.provider_rating) : null,
     };
   }
 
@@ -106,7 +108,9 @@ export class ProposalRepository {
   ): Promise<{ rows: Proposal[]; total: number }> {
     requestId = await resolveId(this.pool, "service_requests", requestId);
     const allowedSortBy = ["created_at", "price", "start_date"];
-    const safeSortBy = allowedSortBy.includes(sortBy) ? `p.${sortBy}` : "p.created_at";
+    const safeSortBy = allowedSortBy.includes(sortBy)
+      ? `p.${sortBy}`
+      : "p.created_at";
     const safeOrder = sortOrder === "asc" ? "ASC" : "DESC";
     const offset = (page - 1) * limit;
 
@@ -130,7 +134,8 @@ export class ProposalRepository {
     `;
 
     const result = await this.pool.query(query, values);
-    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
+    const total =
+      result.rows.length > 0 ? parseInt(result.rows[0].total_count, 10) : 0;
     return { rows: result.rows.map((r: any) => this.mapRow(r)), total };
   }
 

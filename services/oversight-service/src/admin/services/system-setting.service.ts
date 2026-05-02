@@ -26,10 +26,7 @@ export class SystemSettingService {
   ) {}
 
   async getAllSettings(): Promise<SystemSetting[]> {
-    this.logger.log(
-      "Fetching all system settings",
-      "SystemSettingService",
-    );
+    this.logger.log("Fetching all system settings", "SystemSettingService");
 
     return this.systemSettingRepository.getAllSettings();
   }
@@ -119,12 +116,22 @@ export class SystemSettingService {
     await this.cacheInvalidation.invalidateEntity("settings");
     await this.cacheInvalidation.invalidateEntity("public");
     this.publicSiteConfigService.invalidateSiteConfigCache();
-    this.broadcastService.emit("setting", key, "updated", ["admin"], { key, value }, adminId);
+    this.broadcastService.emit(
+      "setting",
+      key,
+      "updated",
+      ["admin"],
+      { key, value },
+      adminId,
+    );
 
     // If cache was disabled, flush all service caches
     if (key === "get_cache_enabled" && value === "false") {
       this.flushAllServiceCaches().catch((err) => {
-        this.logger.warn(`Failed to flush service caches: ${err.message}`, "SystemSettingService");
+        this.logger.warn(
+          `Failed to flush service caches: ${err.message}`,
+          "SystemSettingService",
+        );
       });
     }
 
@@ -171,7 +178,14 @@ export class SystemSettingService {
     await this.cacheInvalidation.invalidateEntity("settings");
     await this.cacheInvalidation.invalidateEntity("public");
     this.publicSiteConfigService.invalidateSiteConfigCache();
-    this.broadcastService.emit("setting", dto.key, "created", ["admin"], { key: dto.key, value: dto.value }, adminId);
+    this.broadcastService.emit(
+      "setting",
+      dto.key,
+      "created",
+      ["admin"],
+      { key: dto.key, value: dto.value },
+      adminId,
+    );
 
     this.logger.log(
       `System setting ${dto.key} created successfully`,
@@ -187,7 +201,9 @@ export class SystemSettingService {
       { url: process.env.MARKETPLACE_SERVICE_URL || "http://localhost:3003" },
       { url: process.env.PAYMENT_SERVICE_URL || "http://localhost:3006" },
       { url: process.env.COMMS_SERVICE_URL || "http://localhost:3007" },
-      { url: process.env.INFRASTRUCTURE_SERVICE_URL || "http://localhost:3012" },
+      {
+        url: process.env.INFRASTRUCTURE_SERVICE_URL || "http://localhost:3012",
+      },
     ];
 
     const secret = process.env.GATEWAY_INTERNAL_SECRET;
@@ -197,7 +213,10 @@ export class SystemSettingService {
       services.map((svc) =>
         fetch(`${svc.url}/cache/flush-all`, {
           method: "POST",
-          headers: { "x-internal-secret": secret, "Content-Type": "application/json" },
+          headers: {
+            "x-internal-secret": secret,
+            "Content-Type": "application/json",
+          },
         }),
       ),
     );

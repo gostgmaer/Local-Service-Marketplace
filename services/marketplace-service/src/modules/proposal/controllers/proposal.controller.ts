@@ -96,7 +96,11 @@ export class ProposalController {
     @Request() req: any,
     @Query() queryDto: ProposalQueryDto,
   ): Promise<PaginatedProposalResponseDto> {
-    return this.proposalService.getProposalsForRequest(requestId, req.user, queryDto);
+    return this.proposalService.getProposalsForRequest(
+      requestId,
+      req.user,
+      queryDto,
+    );
   }
 
   @RequirePermissions("proposals.accept")

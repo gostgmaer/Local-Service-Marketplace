@@ -56,10 +56,7 @@ export class ReviewController {
    */
   @UseGuards(JwtAuthGuard)
   @Get("my")
-  async getMyReviews(
-    @Request() req: any,
-    @Query() queryDto: ReviewQueryDto,
-  ) {
+  async getMyReviews(@Request() req: any, @Query() queryDto: ReviewQueryDto) {
     const userId = req.user.userId;
     const page = queryDto.page ?? 1;
     const limit = queryDto.limit ?? 20;
@@ -264,7 +261,14 @@ export class ReviewController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getAllReviews(@Query() queryDto: ReviewQueryDto & { provider_id?: string; created_from?: string; created_to?: string }) {
+  async getAllReviews(
+    @Query()
+    queryDto: ReviewQueryDto & {
+      provider_id?: string;
+      created_from?: string;
+      created_to?: string;
+    },
+  ) {
     const page = queryDto.page ?? 1;
     const limit = queryDto.limit ?? 20;
     const offset = (page - 1) * limit;

@@ -41,9 +41,7 @@ export class CouponController {
     // Validate expires_at is in the future
     const expiresAt = new Date(createCouponDto.expires_at);
     if (expiresAt <= new Date()) {
-      throw new BadRequestException(
-        "Coupon expiry date must be in the future",
-      );
+      throw new BadRequestException("Coupon expiry date must be in the future");
     }
 
     // Set the creator to the current admin user

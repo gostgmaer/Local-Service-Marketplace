@@ -71,8 +71,15 @@ export class BackgroundJobController {
     );
 
     const parsedPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
-    const parsedLimit = Math.min(200, Math.max(1, parseInt(limit ?? "100", 10) || 100));
-    return this.backgroundJobService.getJobsByStatus(status, parsedLimit, parsedPage);
+    const parsedLimit = Math.min(
+      200,
+      Math.max(1, parseInt(limit ?? "100", 10) || 100),
+    );
+    return this.backgroundJobService.getJobsByStatus(
+      status,
+      parsedLimit,
+      parsedPage,
+    );
   }
 
   @Get("stats")

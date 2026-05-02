@@ -21,8 +21,9 @@ export class MaintenanceService implements OnModuleInit, OnModuleDestroy {
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {
-    this.oversightUrl =
-      this.configService.getOrThrow<string>("OVERSIGHT_SERVICE_URL");
+    this.oversightUrl = this.configService.getOrThrow<string>(
+      "OVERSIGHT_SERVICE_URL",
+    );
   }
 
   async onModuleInit() {

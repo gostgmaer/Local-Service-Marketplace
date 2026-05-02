@@ -105,10 +105,7 @@ export class InfraCleanupWorker extends WorkerHost implements OnModuleInit {
       "InfraCleanupWorker",
     );
     const count = await this.dlqService.purgeOldFailedJobs(retentionDays);
-    this.logger.log(
-      `Purged ${count} old DLQ entries`,
-      "InfraCleanupWorker",
-    );
+    this.logger.log(`Purged ${count} old DLQ entries`, "InfraCleanupWorker");
   }
 
   // ─────────────────────────────────────────────────────────────────

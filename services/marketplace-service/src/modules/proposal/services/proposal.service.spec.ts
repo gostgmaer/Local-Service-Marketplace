@@ -111,9 +111,9 @@ describe("ProposalService.createProposal", () => {
 
   it("throws BadRequestException when price is negative", async () => {
     const { service } = makeService();
-    await expect(service.createProposal({ ...baseDto, price: -50 })).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      service.createProposal({ ...baseDto, price: -50 }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it("throws NotFoundException when service request does not exist", async () => {
@@ -173,7 +173,8 @@ describe("ProposalService.createProposal", () => {
       {
         getSystemSetting: jest.fn((key: string) => {
           if (key === "max_proposal_count") return Promise.resolve("10");
-          if (key === "provider_verification_required") return Promise.resolve("true");
+          if (key === "provider_verification_required")
+            return Promise.resolve("true");
           return Promise.resolve("10");
         }),
       },
@@ -184,7 +185,8 @@ describe("ProposalService.createProposal", () => {
     const svc: any = service;
     (svc.proposalRepository.getSystemSetting as jest.Mock).mockImplementation(
       (key: string) => {
-        if (key === "provider_verification_required") return Promise.resolve("true");
+        if (key === "provider_verification_required")
+          return Promise.resolve("true");
         return Promise.resolve("10");
       },
     );
@@ -196,7 +198,8 @@ describe("ProposalService.createProposal", () => {
   it("creates proposal successfully when all checks pass (verification disabled)", async () => {
     const { service, proposalRepository } = makeService({
       getSystemSetting: jest.fn((key: string) => {
-        if (key === "provider_verification_required") return Promise.resolve("false");
+        if (key === "provider_verification_required")
+          return Promise.resolve("false");
         return Promise.resolve("10");
       }),
     });
@@ -219,16 +222,21 @@ describe("ProposalService.acceptProposal", () => {
 
   const acceptedProposal = { ...pendingProposal, status: "accepted" };
 
-  function makeService(overrides: {
-    proposalRepository?: any;
-    jobRepository?: any;
-    requestRepository?: any;
-    userClient?: any;
-  } = {}) {
+  function makeService(
+    overrides: {
+      proposalRepository?: any;
+      jobRepository?: any;
+      requestRepository?: any;
+      userClient?: any;
+    } = {},
+  ) {
     const proposalRepository = overrides.proposalRepository ?? {
       getProposalById: jest.fn().mockResolvedValue(pendingProposal),
       getRequestStatus: jest.fn().mockResolvedValue("open"),
-      acceptProposalTransaction: jest.fn().mockResolvedValue({ proposal: acceptedProposal, job: { id: "job-1" } }),
+      acceptProposalTransaction: jest.fn().mockResolvedValue({
+        proposal: acceptedProposal,
+        job: { id: "job-1" },
+      }),
     };
     const jobRepository = overrides.jobRepository ?? {
       createJob: jest.fn().mockResolvedValue({ id: "job-1" }),
@@ -237,7 +245,9 @@ describe("ProposalService.acceptProposal", () => {
       updateRequest: jest.fn().mockResolvedValue(undefined),
     };
     const userClient = overrides.userClient ?? {
-      getProviderById: jest.fn().mockResolvedValue({ verification_status: "verified" }),
+      getProviderById: jest
+        .fn()
+        .mockResolvedValue({ verification_status: "verified" }),
       getProviderEmail: jest.fn().mockResolvedValue(null),
       getUserById: jest.fn().mockResolvedValue(null),
       isEnabled: jest.fn().mockReturnValue(false),
@@ -283,7 +293,9 @@ describe("ProposalService.acceptProposal", () => {
   it("throws BadRequestException when proposal is not pending", async () => {
     const { service } = makeService({
       proposalRepository: {
-        getProposalById: jest.fn().mockResolvedValue({ ...pendingProposal, status: "accepted" }),
+        getProposalById: jest
+          .fn()
+          .mockResolvedValue({ ...pendingProposal, status: "accepted" }),
         getRequestStatus: jest.fn(),
         acceptProposal: jest.fn(),
         rejectSiblingProposals: jest.fn(),
@@ -325,7 +337,9 @@ describe("ProposalService.acceptProposal", () => {
 
   it("allows admin with proposals.manage permission to accept any proposal", async () => {
     const { service, proposalRepository } = makeService();
-    await service.acceptProposal("prop-1", "admin-user", "admin", ["proposals.manage"]);
+    await service.acceptProposal("prop-1", "admin-user", "admin", [
+      "proposals.manage",
+    ]);
     expect(proposalRepository.acceptProposalTransaction).toHaveBeenCalled();
   });
 });

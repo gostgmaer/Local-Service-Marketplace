@@ -97,7 +97,7 @@ export class HealthController {
                 "Dependency health response reported failure")
               : reachable
                 ? `Dependency reported status: ${payload?.status ?? "unknown"}`
-              : `Dependency returned HTTP ${response.status}`
+                : `Dependency returned HTTP ${response.status}`
             : undefined,
       };
     } catch (error: any) {

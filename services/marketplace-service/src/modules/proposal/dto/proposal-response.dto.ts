@@ -14,7 +14,12 @@ export class ProposalResponseDto {
   rejected_reason?: string;
   created_at: Date;
   updated_at?: Date;
-  provider?: { id: string; name: string; rating?: number; review_count?: number };
+  provider?: {
+    id: string;
+    name: string;
+    rating?: number;
+    review_count?: number;
+  };
 
   static fromEntity(proposal: Proposal): ProposalResponseDto {
     return {

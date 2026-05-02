@@ -6,15 +6,13 @@ describe("HealthController", () => {
     query: jest.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] }),
   };
   const mockQueue = {
-    getJobCounts: jest
-      .fn()
-      .mockResolvedValue({
-        waiting: 0,
-        active: 0,
-        completed: 0,
-        failed: 0,
-        delayed: 0,
-      }),
+    getJobCounts: jest.fn().mockResolvedValue({
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+    }),
   };
 
   const originalEnv = { ...process.env };

@@ -97,7 +97,14 @@ export class RefundService {
 
     // Broadcast refund event to customer and admins
     await this.cacheInvalidation.invalidateEntity("payments");
-    this.broadcastService.emit("refund", refund.id, "created", [`user:${payment.user_id}`, "admin"], { paymentId, refundId: refund.id }, payment.user_id);
+    this.broadcastService.emit(
+      "refund",
+      refund.id,
+      "created",
+      [`user:${payment.user_id}`, "admin"],
+      { paymentId, refundId: refund.id },
+      payment.user_id,
+    );
 
     // NOTE: The refund notification email is intentionally NOT sent here.
     // It is sent by the refund worker AFTER the gateway confirms the refund,

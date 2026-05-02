@@ -12,8 +12,7 @@ export class BroadcastService {
     private readonly logger: LoggerService,
     private readonly settingsCache: SettingsCacheService,
   ) {
-    this.commsUrl =
-      process.env.COMMS_SERVICE_URL || "http://localhost:3007";
+    this.commsUrl = process.env.COMMS_SERVICE_URL || "http://localhost:3007";
     this.internalSecret = process.env.GATEWAY_INTERNAL_SECRET || "";
   }
 

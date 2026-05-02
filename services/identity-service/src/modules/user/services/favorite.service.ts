@@ -51,7 +51,14 @@ export class FavoriteService {
     });
 
     await this.cacheInvalidation.invalidateEntity("favorites");
-    this.broadcastService.emit("favorite", favorite.id, "created", [`user:${user_id}`], { favoriteId: favorite.id }, user_id);
+    this.broadcastService.emit(
+      "favorite",
+      favorite.id,
+      "created",
+      [`user:${user_id}`],
+      { favoriteId: favorite.id },
+      user_id,
+    );
 
     return {
       id: favorite.id,
@@ -111,7 +118,14 @@ export class FavoriteService {
     await this.favoriteRepo.delete(userId, providerId);
 
     await this.cacheInvalidation.invalidateEntity("favorites");
-    this.broadcastService.emit("favorite", `${userId}-${providerId}`, "deleted", [`user:${userId}`], {}, userId);
+    this.broadcastService.emit(
+      "favorite",
+      `${userId}-${providerId}`,
+      "deleted",
+      [`user:${userId}`],
+      {},
+      userId,
+    );
 
     this.logger.info("Favorite removed successfully", {
       context: "FavoriteService",

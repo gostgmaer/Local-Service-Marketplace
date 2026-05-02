@@ -88,10 +88,7 @@ export class MessagingController {
   }
 
   @Get("conversations")
-  async getConversations(
-    @Request() req: any,
-    @Query() query: MessageQueryDto,
-  ) {
+  async getConversations(@Request() req: any, @Query() query: MessageQueryDto) {
     const safePage = Math.max(1, query.page ?? 1);
     const safeLimit = Math.min(Math.max(1, query.limit ?? 20), 100);
     this.logger.log(

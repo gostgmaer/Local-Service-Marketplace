@@ -1115,9 +1115,7 @@ export class AuthService {
     if (email && !user.email) {
       const existing = await this.userRepo.findByEmail(email);
       if (existing && existing.id !== userId) {
-        throw new ConflictException(
-          "This email address is already registered",
-        );
+        throw new ConflictException("This email address is already registered");
       }
       await this.userRepo.update(userId, undefined, email);
       await this.userRepo.verifyEmail(userId);
@@ -1133,13 +1131,19 @@ export class AuthService {
         .catch(() => null);
       if (!existingProvider) {
         await this.providerRepo
-          .create(userId, updatedUser.name || (updatedUser.email || "").split("@")[0])
+          .create(
+            userId,
+            updatedUser.name || (updatedUser.email || "").split("@")[0],
+          )
           .catch((err: any) => {
-            this.logger.error("Failed to create provider profile during role set", {
-              context: "AuthService",
-              error: err.message,
-              userId,
-            });
+            this.logger.error(
+              "Failed to create provider profile during role set",
+              {
+                context: "AuthService",
+                error: err.message,
+                userId,
+              },
+            );
           });
       }
     }

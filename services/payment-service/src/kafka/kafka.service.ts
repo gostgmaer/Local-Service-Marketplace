@@ -73,7 +73,10 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     if (this.isConnected) {
       await this.consumer.disconnect();
       await this.producer.disconnect();
-      this.logger.log("Kafka producer and consumer disconnected", "KafkaService");
+      this.logger.log(
+        "Kafka producer and consumer disconnected",
+        "KafkaService",
+      );
     }
   }
 

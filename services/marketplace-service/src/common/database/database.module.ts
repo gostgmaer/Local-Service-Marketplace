@@ -12,7 +12,9 @@ import { Pool, types } from "pg";
 // The pg postgres-date parser creates Date objects using local-time constructor,
 // which causes a 5.5h offset when the Node.js process runs in IST.
 // Force UTC interpretation by appending 'Z' before parsing.
-types.setTypeParser(1114, (val: string | null) => (val ? new Date(val + "Z") : null));
+types.setTypeParser(1114, (val: string | null) =>
+  val ? new Date(val + "Z") : null,
+);
 
 const logger = new Logger("DatabaseModule");
 

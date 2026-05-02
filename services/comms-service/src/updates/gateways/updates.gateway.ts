@@ -116,7 +116,10 @@ export class UpdatesGateway
   }
 
   @SubscribeMessage("join")
-  handleJoinRoom(@ConnectedSocket() client: AuthenticatedSocket, @MessageBody() room: string) {
+  handleJoinRoom(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() room: string,
+  ) {
     if (room && typeof room === "string") {
       client.join(room);
     }

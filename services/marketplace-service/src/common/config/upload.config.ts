@@ -82,7 +82,4 @@ export const requestImageUploadOptions = createImageUploadOptions(
   "request image",
 );
 
-export const jobPhotoUploadOptions = createImageUploadOptions(
-  10,
-  "job photo",
-);
+export const jobPhotoUploadOptions = createImageUploadOptions(10, "job photo");

@@ -47,10 +47,18 @@ describe("Auth Flow (e2e)", () => {
 
   afterAll(async () => {
     if (userId) {
-      await pool.query("DELETE FROM sessions WHERE user_id = $1", [userId]).catch(() => {});
-      await pool.query("DELETE FROM login_attempts WHERE user_id = $1", [userId]).catch(() => {});
-      await pool.query("DELETE FROM user_devices WHERE user_id = $1", [userId]).catch(() => {});
-      await pool.query("DELETE FROM users WHERE id = $1", [userId]).catch(() => {});
+      await pool
+        .query("DELETE FROM sessions WHERE user_id = $1", [userId])
+        .catch(() => {});
+      await pool
+        .query("DELETE FROM login_attempts WHERE user_id = $1", [userId])
+        .catch(() => {});
+      await pool
+        .query("DELETE FROM user_devices WHERE user_id = $1", [userId])
+        .catch(() => {});
+      await pool
+        .query("DELETE FROM users WHERE id = $1", [userId])
+        .catch(() => {});
     }
     await app.close();
   });

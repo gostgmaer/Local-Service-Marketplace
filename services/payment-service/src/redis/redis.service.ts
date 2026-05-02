@@ -61,7 +61,11 @@ export class RedisService implements OnModuleDestroy {
     try {
       return await this.redisClient.get(key);
     } catch (error: any) {
-      this.logger.error(`Redis GET error for key ${key}: ${error.message}`, error.stack, "RedisService");
+      this.logger.error(
+        `Redis GET error for key ${key}: ${error.message}`,
+        error.stack,
+        "RedisService",
+      );
       return null;
     }
   }
@@ -75,7 +79,11 @@ export class RedisService implements OnModuleDestroy {
         await this.redisClient.set(key, value);
       }
     } catch (error: any) {
-      this.logger.error(`Redis SET error for key ${key}: ${error.message}`, error.stack, "RedisService");
+      this.logger.error(
+        `Redis SET error for key ${key}: ${error.message}`,
+        error.stack,
+        "RedisService",
+      );
     }
   }
 
@@ -84,7 +92,11 @@ export class RedisService implements OnModuleDestroy {
     try {
       await this.redisClient.del(key);
     } catch (error: any) {
-      this.logger.error(`Redis DEL error for key ${key}: ${error.message}`, error.stack, "RedisService");
+      this.logger.error(
+        `Redis DEL error for key ${key}: ${error.message}`,
+        error.stack,
+        "RedisService",
+      );
     }
   }
 
@@ -93,14 +105,24 @@ export class RedisService implements OnModuleDestroy {
     try {
       let cursor = "0";
       do {
-        const [nextCursor, keys] = await this.redisClient.scan(cursor, "MATCH", pattern, "COUNT", 100);
+        const [nextCursor, keys] = await this.redisClient.scan(
+          cursor,
+          "MATCH",
+          pattern,
+          "COUNT",
+          100,
+        );
         cursor = nextCursor;
         if (keys.length > 0) {
           await this.redisClient.del(...keys);
         }
       } while (cursor !== "0");
     } catch (error: any) {
-      this.logger.error(`Redis DEL pattern error for ${pattern}: ${error.message}`, error.stack, "RedisService");
+      this.logger.error(
+        `Redis DEL pattern error for ${pattern}: ${error.message}`,
+        error.stack,
+        "RedisService",
+      );
     }
   }
 
@@ -110,7 +132,11 @@ export class RedisService implements OnModuleDestroy {
       const result = await this.redisClient.exists(key);
       return result === 1;
     } catch (error: any) {
-      this.logger.error(`Redis EXISTS error for key ${key}: ${error.message}`, error.stack, "RedisService");
+      this.logger.error(
+        `Redis EXISTS error for key ${key}: ${error.message}`,
+        error.stack,
+        "RedisService",
+      );
       return false;
     }
   }

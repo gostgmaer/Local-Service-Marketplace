@@ -10,7 +10,11 @@ describe("SubscriptionService list validation", () => {
       countByProvider: jest.fn(),
     } as any;
 
-    const service = new SubscriptionService(subscriptionRepository, {} as any, { add: jest.fn() } as any);
+    const service = new SubscriptionService(
+      subscriptionRepository,
+      {} as any,
+      { add: jest.fn() } as any,
+    );
     return { service };
   };
 

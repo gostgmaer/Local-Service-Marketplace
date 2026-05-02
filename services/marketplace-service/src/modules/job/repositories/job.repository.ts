@@ -64,10 +64,14 @@ export class JobRepository {
   private mapRow(row: any): Job {
     return {
       ...row,
-      actual_amount:   row.actual_amount   != null ? parseFloat(row.actual_amount)   : null,
-      request_budget:  row.request_budget  != null ? parseFloat(row.request_budget)  : null,
-      proposal_price:  row.proposal_price  != null ? parseFloat(row.proposal_price)  : null,
-      provider_rating: row.provider_rating != null ? parseFloat(row.provider_rating) : null,
+      actual_amount:
+        row.actual_amount != null ? parseFloat(row.actual_amount) : null,
+      request_budget:
+        row.request_budget != null ? parseFloat(row.request_budget) : null,
+      proposal_price:
+        row.proposal_price != null ? parseFloat(row.proposal_price) : null,
+      provider_rating:
+        row.provider_rating != null ? parseFloat(row.provider_rating) : null,
     };
   }
 
@@ -199,11 +203,7 @@ export class JobRepository {
     } = queryDto;
 
     const effectiveStatuses =
-      statuses && statuses.length > 0
-        ? statuses
-        : status
-          ? [status]
-          : [];
+      statuses && statuses.length > 0 ? statuses : status ? [status] : [];
 
     [provider_id, customer_id, request_id] = await Promise.all([
       provider_id
@@ -354,11 +354,7 @@ export class JobRepository {
     } = queryDto;
 
     const effectiveStatuses =
-      statuses && statuses.length > 0
-        ? statuses
-        : status
-          ? [status]
-          : [];
+      statuses && statuses.length > 0 ? statuses : status ? [status] : [];
 
     [provider_id, customer_id, request_id] = await Promise.all([
       provider_id

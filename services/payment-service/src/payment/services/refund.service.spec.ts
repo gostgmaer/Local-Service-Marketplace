@@ -17,17 +17,23 @@ const basePayment = {
   paid_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
 };
 
-function createService(overrides: {
-  paymentRepository?: any;
-  refundRepository?: any;
-} = {}) {
+function createService(
+  overrides: {
+    paymentRepository?: any;
+    refundRepository?: any;
+  } = {},
+) {
   const paymentRepository = overrides.paymentRepository ?? {
     getPaymentById: jest.fn().mockResolvedValue(basePayment),
     getSystemSetting: jest.fn().mockResolvedValue("30"),
   };
   const refundRepository = overrides.refundRepository ?? {
-    createRefundAtomic: jest.fn().mockResolvedValue({ id: "ref-1", amount: 200, status: "pending" }),
-    getRefundById: jest.fn().mockResolvedValue({ id: "ref-1", amount: 200, status: "pending" }),
+    createRefundAtomic: jest
+      .fn()
+      .mockResolvedValue({ id: "ref-1", amount: 200, status: "pending" }),
+    getRefundById: jest
+      .fn()
+      .mockResolvedValue({ id: "ref-1", amount: 200, status: "pending" }),
     getRefundsByPaymentId: jest.fn().mockResolvedValue([]),
   };
 
@@ -62,7 +68,9 @@ describe("RefundService.createRefund", () => {
   it("throws BadRequestException when payment is not completed", async () => {
     const { service } = createService({
       paymentRepository: {
-        getPaymentById: jest.fn().mockResolvedValue({ ...basePayment, status: "pending" }),
+        getPaymentById: jest
+          .fn()
+          .mockResolvedValue({ ...basePayment, status: "pending" }),
         getSystemSetting: jest.fn().mockResolvedValue("30"),
       },
     });
@@ -75,7 +83,9 @@ describe("RefundService.createRefund", () => {
     const oldPaidAt = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000); // 35 days ago
     const { service } = createService({
       paymentRepository: {
-        getPaymentById: jest.fn().mockResolvedValue({ ...basePayment, paid_at: oldPaidAt }),
+        getPaymentById: jest
+          .fn()
+          .mockResolvedValue({ ...basePayment, paid_at: oldPaidAt }),
         getSystemSetting: jest.fn().mockResolvedValue("30"),
       },
     });
@@ -94,7 +104,13 @@ describe("RefundService.createRefund", () => {
   it("throws BadRequestException when total refunds would exceed payment amount", async () => {
     const { service } = createService({
       refundRepository: {
-        createRefundAtomic: jest.fn().mockRejectedValue(new BadRequestException("Total refund amount exceeds payment amount")),
+        createRefundAtomic: jest
+          .fn()
+          .mockRejectedValue(
+            new BadRequestException(
+              "Total refund amount exceeds payment amount",
+            ),
+          ),
         getRefundById: jest.fn(),
         getRefundsByPaymentId: jest.fn().mockResolvedValue([]),
       },
@@ -110,7 +126,10 @@ describe("RefundService.createRefund", () => {
 
     const result = await service.createRefund("pay-1");
 
-    expect(refundRepository.createRefundAtomic).toHaveBeenCalledWith("pay-1", 200);
+    expect(refundRepository.createRefundAtomic).toHaveBeenCalledWith(
+      "pay-1",
+      200,
+    );
     expect(result.id).toBe("ref-1");
   });
 
@@ -119,13 +138,18 @@ describe("RefundService.createRefund", () => {
 
     await service.createRefund("pay-1", 100);
 
-    expect(refundRepository.createRefundAtomic).toHaveBeenCalledWith("pay-1", 100);
+    expect(refundRepository.createRefundAtomic).toHaveBeenCalledWith(
+      "pay-1",
+      100,
+    );
   });
 
   it("skips window check when payment has no paid_at", async () => {
     const { service, refundRepository } = createService({
       paymentRepository: {
-        getPaymentById: jest.fn().mockResolvedValue({ ...basePayment, paid_at: null }),
+        getPaymentById: jest
+          .fn()
+          .mockResolvedValue({ ...basePayment, paid_at: null }),
         getSystemSetting: jest.fn().mockResolvedValue("30"),
       },
     });
