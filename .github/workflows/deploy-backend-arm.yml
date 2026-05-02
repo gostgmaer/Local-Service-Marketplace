@@ -7,6 +7,9 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  DEPLOY_APP_DIR_NAME: ${{ vars.DEPLOY_APP_DIR_NAME || 'Local-Service-Marketplace' }}
+  DEPLOY_NGINX_CONF_NAME: ${{ vars.DEPLOY_NGINX_CONF_NAME || 'lsp-api.easydev.in.conf' }}
+  DEPLOY_PUBLIC_API_BASE_URL: ${{ vars.DEPLOY_PUBLIC_API_BASE_URL || 'https://lsp-api.easydev.in' }}
 
 permissions:
   contents: read
@@ -114,9 +117,9 @@ jobs:
           script: |
             set -Eeuo pipefail
 
-            APP_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace"
-            STAGE_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.stage-${{ github.run_id }}-${{ github.run_attempt }}"
-            BACKUP_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.backup-${{ github.run_id }}-${{ github.run_attempt }}"
+            APP_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}"
+            STAGE_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.stage-${{ github.run_id }}-${{ github.run_attempt }}"
+            BACKUP_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.backup-${{ github.run_id }}-${{ github.run_attempt }}"
             ARCHIVE_PRIMARY="/home/${{ secrets.OCI_USER }}/release.tgz"
             ARCHIVE_FALLBACK="/home/${{ secrets.OCI_USER }}/artifacts/release.tgz"
             OWNER="${{ github.repository_owner }}"
@@ -153,7 +156,7 @@ jobs:
             chmod +x scripts/deploy-production-worker.sh
 
             if [ ! -f ".env" ]; then
-              echo "Missing .env on server. Add /home/${{ secrets.OCI_USER }}/Local-Service-Marketplace/.env and rerun."
+              echo "Missing .env on server. Add $APP_DIR/.env and rerun."
               exit 1
             fi
 
@@ -170,9 +173,25 @@ jobs:
               ./scripts/deploy-production-worker.sh --env-file .env --no-build
             }
 
+            apply_runtime_limits() {
+              echo "Applying fixed production CPU/RAM limits to running containers..."
+
+              docker update --cpus 0.20 --memory 512m --memory-swap 512m api-gateway
+              docker update --cpus 0.30 --memory 768m --memory-swap 768m marketplace-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m payment-service
+              docker update --cpus 0.25 --memory 768m --memory-swap 768m identity-service
+              docker update --cpus 0.15 --memory 768m --memory-swap 768m comms-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m oversight-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m marketplace-redis
+              docker update --cpus 0.40 --memory 1536m --memory-swap 1536m marketplace-postgres
+
+              echo "Runtime limits applied."
+              docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format 'name={{.Name}}|nano_cpus={{.HostConfig.NanoCpus}}|mem_limit_bytes={{.HostConfig.Memory}}|memswap_limit_bytes={{.HostConfig.MemorySwap}}' {}
+            }
+
             deploy_nginx_config() {
-              NGINX_SOURCE_CONF="$APP_DIR/config/nginx/lsp-api.easydev.in.conf"
-              NGINX_TARGET_CONF="/etc/nginx/conf.d/lsp-api.easydev.in.conf"
+              NGINX_SOURCE_CONF="$APP_DIR/config/nginx/${{ env.DEPLOY_NGINX_CONF_NAME }}"
+              NGINX_TARGET_CONF="/etc/nginx/conf.d/${{ env.DEPLOY_NGINX_CONF_NAME }}"
               NGINX_BACKUP_CONF="${NGINX_TARGET_CONF}.bak-${{ github.run_id }}-${{ github.run_attempt }}"
 
               if [ ! -f "$NGINX_SOURCE_CONF" ]; then
@@ -263,6 +282,38 @@ jobs:
               echo "Nginx config deployed and reloaded successfully."
             }
 
+            cleanup_housekeeping() {
+              KEEP_BACKUPS=1
+
+              echo "Starting deployment housekeeping cleanup..."
+
+              # Keep only the most recent backup directories and remove older ones.
+              OLD_BACKUPS="$(ls -1dt /home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.backup-* 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) || true)"
+              if [ -n "$OLD_BACKUPS" ]; then
+                echo "$OLD_BACKUPS" | xargs -r rm -rf
+                echo "Old backup directories removed (keeping latest $KEEP_BACKUPS)."
+              else
+                echo "No old backup directories to remove."
+              fi
+
+              # Aggressive cleanup: remove all unused images and builder cache.
+              # Running containers are not affected by image/cache prune operations.
+              docker image prune -f || true
+              docker image prune -a -f || true
+              docker builder prune -af || true
+
+              if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+                if command -v dnf >/dev/null 2>&1; then
+                  sudo dnf clean all || true
+                  sudo rm -rf /var/cache/dnf/* || true
+                fi
+                sudo journalctl --vacuum-time=14d || true
+              fi
+
+              echo "Housekeeping cleanup completed."
+              docker system df || true
+            }
+
             if ! deploy_with_pulled_images; then
               if [ "$ROLLBACK" -eq 1 ] && [ -d "$BACKUP_DIR" ]; then
                 echo "Deployment failed. Rolling back application directory..."
@@ -272,10 +323,14 @@ jobs:
               exit 1
             fi
 
+            apply_runtime_limits
+
             if ! deploy_nginx_config; then
               echo "Backend deploy succeeded but nginx config update failed."
               exit 1
             fi
+
+            cleanup_housekeeping || true
 
             docker logout ghcr.io || true
             rm -f "$ARCHIVE_PRIMARY" "$ARCHIVE_FALLBACK"
@@ -287,6 +342,8 @@ jobs:
       - name: Verify public health endpoints
         run: |
           set -Eeuo pipefail
+          BASE_URL="${{ env.DEPLOY_PUBLIC_API_BASE_URL }}"
+          BASE_URL="${BASE_URL%/}"
 
           check_endpoint() {
             endpoint="$1"
@@ -306,7 +363,7 @@ jobs:
             done
           }
 
-          check_endpoint "https://lsp-api.easydev.in/health"
-          check_endpoint "https://lsp-api.easydev.in/api/v1/health"
+          check_endpoint "$BASE_URL/health"
+          check_endpoint "$BASE_URL/api/v1/health"
 
           echo "Public health verification passed."
