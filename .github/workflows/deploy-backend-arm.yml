@@ -7,6 +7,9 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  DEPLOY_APP_DIR_NAME: ${{ vars.DEPLOY_APP_DIR_NAME || 'Local-Service-Marketplace' }}
+  DEPLOY_NGINX_CONF_NAME: ${{ vars.DEPLOY_NGINX_CONF_NAME || 'lsp-api.easydev.in.conf' }}
+  DEPLOY_PUBLIC_API_BASE_URL: ${{ vars.DEPLOY_PUBLIC_API_BASE_URL || 'https://lsp-api.easydev.in' }}
 
 permissions:
   contents: read
@@ -114,9 +117,9 @@ jobs:
           script: |
             set -Eeuo pipefail
 
-            APP_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace"
-            STAGE_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.stage-${{ github.run_id }}-${{ github.run_attempt }}"
-            BACKUP_DIR="/home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.backup-${{ github.run_id }}-${{ github.run_attempt }}"
+            APP_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}"
+            STAGE_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.stage-${{ github.run_id }}-${{ github.run_attempt }}"
+            BACKUP_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.backup-${{ github.run_id }}-${{ github.run_attempt }}"
             ARCHIVE_PRIMARY="/home/${{ secrets.OCI_USER }}/release.tgz"
             ARCHIVE_FALLBACK="/home/${{ secrets.OCI_USER }}/artifacts/release.tgz"
             OWNER="${{ github.repository_owner }}"
@@ -153,7 +156,7 @@ jobs:
             chmod +x scripts/deploy-production-worker.sh
 
             if [ ! -f ".env" ]; then
-              echo "Missing .env on server. Add /home/${{ secrets.OCI_USER }}/Local-Service-Marketplace/.env and rerun."
+              echo "Missing .env on server. Add $APP_DIR/.env and rerun."
               exit 1
             fi
 
@@ -187,8 +190,8 @@ jobs:
             }
 
             deploy_nginx_config() {
-              NGINX_SOURCE_CONF="$APP_DIR/config/nginx/lsp-api.easydev.in.conf"
-              NGINX_TARGET_CONF="/etc/nginx/conf.d/lsp-api.easydev.in.conf"
+              NGINX_SOURCE_CONF="$APP_DIR/config/nginx/${{ env.DEPLOY_NGINX_CONF_NAME }}"
+              NGINX_TARGET_CONF="/etc/nginx/conf.d/${{ env.DEPLOY_NGINX_CONF_NAME }}"
               NGINX_BACKUP_CONF="${NGINX_TARGET_CONF}.bak-${{ github.run_id }}-${{ github.run_attempt }}"
 
               if [ ! -f "$NGINX_SOURCE_CONF" ]; then
@@ -285,7 +288,7 @@ jobs:
               echo "Starting deployment housekeeping cleanup..."
 
               # Keep only the most recent backup directories and remove older ones.
-              OLD_BACKUPS="$(ls -1dt /home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.backup-* 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) || true)"
+              OLD_BACKUPS="$(ls -1dt /home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.backup-* 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) || true)"
               if [ -n "$OLD_BACKUPS" ]; then
                 echo "$OLD_BACKUPS" | xargs -r rm -rf
                 echo "Old backup directories removed (keeping latest $KEEP_BACKUPS)."
@@ -339,6 +342,8 @@ jobs:
       - name: Verify public health endpoints
         run: |
           set -Eeuo pipefail
+          BASE_URL="${{ env.DEPLOY_PUBLIC_API_BASE_URL }}"
+          BASE_URL="${BASE_URL%/}"
 
           check_endpoint() {
             endpoint="$1"
@@ -358,7 +363,7 @@ jobs:
             done
           }
 
-          check_endpoint "https://lsp-api.easydev.in/health"
-          check_endpoint "https://lsp-api.easydev.in/api/v1/health"
+          check_endpoint "$BASE_URL/health"
+          check_endpoint "$BASE_URL/api/v1/health"
 
           echo "Public health verification passed."
