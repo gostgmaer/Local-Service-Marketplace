@@ -37,9 +37,20 @@ const wsOrigin = (() => {
 
 const extraConnectSrc = [extraConnectSrcEnv, apiOrigin, wsOrigin].filter(Boolean).join(' ');
 
+const configuredBuildId = (
+	process.env.NEXT_BUILD_ID ||
+	process.env.GITHUB_SHA ||
+	process.env.VERCEL_GIT_COMMIT_SHA ||
+	process.env.CI_COMMIT_SHA ||
+	''
+)
+	.replace(/[^a-zA-Z0-9_-]/g, '')
+	.slice(0, 64);
+
 const nextConfig = {
 	// Use standalone output only for Docker builds
 	...(process.env.DOCKER_BUILD === "true" ? { output: "standalone" } : {}),
+	...(configuredBuildId ? { generateBuildId: async () => configuredBuildId } : {}),
 	outputFileTracingRoot: path.join(__dirname, '..'),
 	reactStrictMode: true,
 	compress: true,
@@ -70,6 +81,13 @@ const nextConfig = {
 	// Security headers
 	async headers() {
 		return [
+			// Next.js static chunks are content-hashed and safe for immutable caching.
+			{
+				source: "/_next/static/:path*",
+				headers: [
+					{ key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+				],
+			},
 			// Prevent bfcache for all protected routes so that navigating back
 			// after logout always triggers a fresh server request (which the
 			// middleware will redirect to /login if the session cookie is gone).

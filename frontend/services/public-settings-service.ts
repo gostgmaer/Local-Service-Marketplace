@@ -197,7 +197,8 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     }
 
     const res = await fetch(`${API_URL}/api/v1/public/site-config`, {
-      cache: "no-store",
+      // no-cache keeps revalidation semantics (ETag/304) while allowing fast cache hits.
+      cache: "no-cache",
       headers,
     });
 

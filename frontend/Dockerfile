@@ -37,6 +37,11 @@ ENV DOCKER_BUILD true
 ARG NEXT_PUBLIC_API_URL=http://localhost:3700
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+# Optional stable build ID (recommended: commit SHA) to avoid unnecessary
+# asset URL churn when re-deploying the same frontend revision.
+ARG NEXT_BUILD_ID
+ENV NEXT_BUILD_ID=$NEXT_BUILD_ID
+
 # Build the application
 RUN pnpm run build
 
