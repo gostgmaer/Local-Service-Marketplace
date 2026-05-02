@@ -263,6 +263,38 @@ jobs:
               echo "Nginx config deployed and reloaded successfully."
             }
 
+            cleanup_housekeeping() {
+              KEEP_BACKUPS=1
+
+              echo "Starting deployment housekeeping cleanup..."
+
+              # Keep only the most recent backup directories and remove older ones.
+              OLD_BACKUPS="$(ls -1dt /home/${{ secrets.OCI_USER }}/Local-Service-Marketplace.backup-* 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) || true)"
+              if [ -n "$OLD_BACKUPS" ]; then
+                echo "$OLD_BACKUPS" | xargs -r rm -rf
+                echo "Old backup directories removed (keeping latest $KEEP_BACKUPS)."
+              else
+                echo "No old backup directories to remove."
+              fi
+
+              # Aggressive cleanup: remove all unused images and builder cache.
+              # Running containers are not affected by image/cache prune operations.
+              docker image prune -f || true
+              docker image prune -a -f || true
+              docker builder prune -af || true
+
+              if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+                if command -v dnf >/dev/null 2>&1; then
+                  sudo dnf clean all || true
+                  sudo rm -rf /var/cache/dnf/* || true
+                fi
+                sudo journalctl --vacuum-time=14d || true
+              fi
+
+              echo "Housekeeping cleanup completed."
+              docker system df || true
+            }
+
             if ! deploy_with_pulled_images; then
               if [ "$ROLLBACK" -eq 1 ] && [ -d "$BACKUP_DIR" ]; then
                 echo "Deployment failed. Rolling back application directory..."
@@ -276,6 +308,8 @@ jobs:
               echo "Backend deploy succeeded but nginx config update failed."
               exit 1
             fi
+
+            cleanup_housekeeping || true
 
             docker logout ghcr.io || true
             rm -f "$ARCHIVE_PRIMARY" "$ARCHIVE_FALLBACK"
