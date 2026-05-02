@@ -1,37 +1,40 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import request from 'supertest';
-import * as crypto from 'crypto';
-import { AppModule } from '../src/app.module';
-import { ResponseTransformInterceptor } from '../src/common/interceptors/response-transform.interceptor';
+import { Test, TestingModule } from "@nestjs/testing";
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import request from "supertest";
+import * as crypto from "crypto";
+import { AppModule } from "../src/app.module";
+import { ResponseTransformInterceptor } from "../src/common/interceptors/response-transform.interceptor";
 
 function makeAuthHeaders() {
   const permissions = [
-    'infrastructure.events',
-    'infrastructure.jobs',
-    'infrastructure.rate_limits',
-    'infrastructure.feature_flags',
+    "infrastructure.events",
+    "infrastructure.jobs",
+    "infrastructure.rate_limits",
+    "infrastructure.feature_flags",
   ];
   const permissionsJson = JSON.stringify(permissions);
   const secret =
     process.env.GATEWAY_INTERNAL_SECRET ??
-    'dev-gateway-internal-secret-local-marketplace-2026';
-  const userId = '00000000-0000-0000-0000-000000000001';
-  const email = 'infra-e2e@test.local';
-  const role = 'admin';
+    "dev-gateway-internal-secret-local-marketplace-2026";
+  const userId = "00000000-0000-0000-0000-000000000001";
+  const email = "infra-e2e@test.local";
+  const role = "admin";
   const payload = `${userId}:${email}:${role}:none:${permissionsJson}`;
-  const hmac = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  const hmac = crypto
+    .createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex");
 
   return {
-    'x-user-id': userId,
-    'x-user-email': email,
-    'x-user-role': role,
-    'x-user-permissions': permissionsJson,
-    'x-gateway-hmac': hmac,
+    "x-user-id": userId,
+    "x-user-email": email,
+    "x-user-role": role,
+    "x-user-permissions": permissionsJson,
+    "x-gateway-hmac": hmac,
   };
 }
 
-describe('InfrastructureController (e2e)', () => {
+describe("InfrastructureController (e2e)", () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -56,52 +59,52 @@ describe('InfrastructureController (e2e)', () => {
     await app.close();
   });
 
-  describe('/events (POST)', () => {
-    it('should create an event', () => {
+  describe("/events (POST)", () => {
+    it("should create an event", () => {
       return request(app.getHttpServer())
-        .post('/events')
+        .post("/events")
         .set(makeAuthHeaders())
         .send({
-          eventType: 'user_created',
-          payload: { userId: '123', email: 'test@example.com' },
+          eventType: "user_created",
+          payload: { userId: "123", email: "test@example.com" },
         })
         .expect(201)
         .expect((res) => {
           expect(res.body.statusCode).toBe(201);
-          expect(res.body.data).toHaveProperty('id');
-          expect(res.body.data).toHaveProperty('displayId');
+          expect(res.body.data).toHaveProperty("id");
+          expect(res.body.data).toHaveProperty("displayId");
         });
     });
 
-    it('should reject invalid event data', () => {
+    it("should reject invalid event data", () => {
       return request(app.getHttpServer())
-        .post('/events')
+        .post("/events")
         .set(makeAuthHeaders())
         .send({
-          payload: { userId: '123' },
+          payload: { userId: "123" },
         })
         .expect(400);
     });
   });
 
-  describe('/events (GET)', () => {
-    it('should retrieve all events with pagination', () => {
+  describe("/events (GET)", () => {
+    it("should retrieve all events with pagination", () => {
       return request(app.getHttpServer())
-        .get('/events?limit=10&offset=0')
+        .get("/events?limit=10&offset=0")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
           expect(res.body.statusCode).toBe(200);
           expect(res.body.data).toBeInstanceOf(Array);
-          expect(res.body.meta).toHaveProperty('total');
+          expect(res.body.meta).toHaveProperty("total");
         });
     });
   });
 
-  describe('/events/type/:eventType (GET)', () => {
-    it('should retrieve events by type', () => {
+  describe("/events/type/:eventType (GET)", () => {
+    it("should retrieve events by type", () => {
       return request(app.getHttpServer())
-        .get('/events/type/user_created')
+        .get("/events/type/user_created")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
@@ -111,42 +114,42 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/background-jobs (POST)', () => {
-    it('should create a background job', () => {
+  describe("/background-jobs (POST)", () => {
+    it("should create a background job", () => {
       return request(app.getHttpServer())
-        .post('/background-jobs')
+        .post("/background-jobs")
         .set(makeAuthHeaders())
         .send({
-          jobType: 'send-email',
-          payload: { to: 'test@example.com', subject: 'Test Email' },
+          jobType: "send-email",
+          payload: { to: "test@example.com", subject: "Test Email" },
         })
         .expect(201)
         .expect((res) => {
           expect(res.body.statusCode).toBe(201);
-          expect(res.body.data).toHaveProperty('id');
-            expect(res.body.data).toHaveProperty('displayId');
+          expect(res.body.data).toHaveProperty("id");
+          expect(res.body.data).toHaveProperty("displayId");
         });
     });
   });
 
-  describe('/background-jobs (GET)', () => {
-    it('should retrieve all background jobs', () => {
+  describe("/background-jobs (GET)", () => {
+    it("should retrieve all background jobs", () => {
       return request(app.getHttpServer())
-        .get('/background-jobs')
+        .get("/background-jobs")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
           expect(res.body.statusCode).toBe(200);
           expect(res.body.data).toBeInstanceOf(Array);
-          expect(res.body.meta).toHaveProperty('total');
+          expect(res.body.meta).toHaveProperty("total");
         });
     });
   });
 
-  describe('/background-jobs/status/:status (GET)', () => {
-    it('should retrieve jobs by status', () => {
+  describe("/background-jobs/status/:status (GET)", () => {
+    it("should retrieve jobs by status", () => {
       return request(app.getHttpServer())
-        .get('/background-jobs/status/pending')
+        .get("/background-jobs/status/pending")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
@@ -156,10 +159,10 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/background-jobs/stats (GET)', () => {
-    it('should retrieve queue statistics', () => {
+  describe("/background-jobs/stats (GET)", () => {
+    it("should retrieve queue statistics", () => {
       return request(app.getHttpServer())
-        .get('/background-jobs/stats')
+        .get("/background-jobs/stats")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
@@ -169,34 +172,34 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/rate-limits/check (POST)', () => {
-    it('should check rate limit for a key', () => {
+  describe("/rate-limits/check (POST)", () => {
+    it("should check rate limit for a key", () => {
       return request(app.getHttpServer())
-        .post('/rate-limits/check')
+        .post("/rate-limits/check")
         .set(makeAuthHeaders())
-        .send({ key: 'user:123' })
+        .send({ key: "user:123" })
         .expect(200)
         .expect((res) => {
           expect(res.body.statusCode).toBe(200);
-          expect(res.body.data).toHaveProperty('allowed');
-          expect(res.body.data).toHaveProperty('remaining');
-          expect(res.body.data).toHaveProperty('resetAt');
+          expect(res.body.data).toHaveProperty("allowed");
+          expect(res.body.data).toHaveProperty("remaining");
+          expect(res.body.data).toHaveProperty("resetAt");
         });
     });
 
-    it('should reject invalid rate limit check', () => {
+    it("should reject invalid rate limit check", () => {
       return request(app.getHttpServer())
-        .post('/rate-limits/check')
+        .post("/rate-limits/check")
         .set(makeAuthHeaders())
         .send({})
         .expect(400);
     });
   });
 
-  describe('/rate-limits/:key (DELETE)', () => {
-    it('should reset rate limit for a key', () => {
+  describe("/rate-limits/:key (DELETE)", () => {
+    it("should reset rate limit for a key", () => {
       return request(app.getHttpServer())
-        .delete('/rate-limits/user:123')
+        .delete("/rate-limits/user:123")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
@@ -205,10 +208,10 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/rate-limits/cleanup (POST)', () => {
-    it('should cleanup expired rate limits', () => {
+  describe("/rate-limits/cleanup (POST)", () => {
+    it("should cleanup expired rate limits", () => {
       return request(app.getHttpServer())
-        .post('/rate-limits/cleanup')
+        .post("/rate-limits/cleanup")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
@@ -217,27 +220,27 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/feature-flags (POST)', () => {
-    it('should create a feature flag', () => {
+  describe("/feature-flags (POST)", () => {
+    it("should create a feature flag", () => {
       return request(app.getHttpServer())
-        .post('/feature-flags')
+        .post("/feature-flags")
         .set(makeAuthHeaders())
         .send({
-          key: 'new_ui_enabled',
+          key: "new_ui_enabled",
           enabled: true,
-            rollout_percentage: 50,
+          rollout_percentage: 50,
         })
         .expect(201)
         .expect((res) => {
           expect(res.body.statusCode).toBe(201);
-          expect(res.body.data).toHaveProperty('key');
-          expect(res.body.data.key).toBe('new_ui_enabled');
+          expect(res.body.data).toHaveProperty("key");
+          expect(res.body.data.key).toBe("new_ui_enabled");
         });
     });
 
-    it('should reject invalid feature flag data', () => {
+    it("should reject invalid feature flag data", () => {
       return request(app.getHttpServer())
-        .post('/feature-flags')
+        .post("/feature-flags")
         .set(makeAuthHeaders())
         .send({
           enabled: true,
@@ -245,23 +248,23 @@ describe('InfrastructureController (e2e)', () => {
         .expect(400);
     });
 
-    it('should reject invalid rollout percentage', () => {
+    it("should reject invalid rollout percentage", () => {
       return request(app.getHttpServer())
-        .post('/feature-flags')
+        .post("/feature-flags")
         .set(makeAuthHeaders())
         .send({
-          key: 'test_feature',
+          key: "test_feature",
           enabled: true,
-            rollout_percentage: 150,
+          rollout_percentage: 150,
         })
         .expect(400);
     });
   });
 
-  describe('/feature-flags (GET)', () => {
-    it('should retrieve all feature flags', () => {
+  describe("/feature-flags (GET)", () => {
+    it("should retrieve all feature flags", () => {
       return request(app.getHttpServer())
-        .get('/feature-flags')
+        .get("/feature-flags")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
@@ -271,10 +274,10 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/feature-flags/:key (GET)', () => {
-    it('should retrieve feature flag by key', () => {
+  describe("/feature-flags/:key (GET)", () => {
+    it("should retrieve feature flag by key", () => {
       return request(app.getHttpServer())
-        .get('/feature-flags/new_ui_enabled')
+        .get("/feature-flags/new_ui_enabled")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
@@ -284,35 +287,35 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/feature-flags/:key/enabled (GET)', () => {
-    it('should check if feature is enabled', () => {
+  describe("/feature-flags/:key/enabled (GET)", () => {
+    it("should check if feature is enabled", () => {
       return request(app.getHttpServer())
-        .get('/feature-flags/new_ui_enabled/enabled')
+        .get("/feature-flags/new_ui_enabled/enabled")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
           expect(res.body.statusCode).toBe(200);
-          expect(res.body.data).toHaveProperty('enabled');
-          expect(typeof res.body.data.enabled).toBe('boolean');
+          expect(res.body.data).toHaveProperty("enabled");
+          expect(typeof res.body.data.enabled).toBe("boolean");
         });
     });
 
-    it('should check feature with userId for rollout', () => {
+    it("should check feature with userId for rollout", () => {
       return request(app.getHttpServer())
-        .get('/feature-flags/new_ui_enabled/enabled?userId=user123')
+        .get("/feature-flags/new_ui_enabled/enabled?userId=user123")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
           expect(res.body.statusCode).toBe(200);
-          expect(res.body.data).toHaveProperty('enabled');
+          expect(res.body.data).toHaveProperty("enabled");
         });
     });
   });
 
-  describe('/feature-flags/:key (PATCH)', () => {
-    it('should update feature flag', () => {
+  describe("/feature-flags/:key (PATCH)", () => {
+    it("should update feature flag", () => {
       return request(app.getHttpServer())
-        .patch('/feature-flags/new_ui_enabled')
+        .patch("/feature-flags/new_ui_enabled")
         .set(makeAuthHeaders())
         .send({ enabled: false })
         .expect(200)
@@ -322,10 +325,10 @@ describe('InfrastructureController (e2e)', () => {
     });
   });
 
-  describe('/feature-flags/:key (DELETE)', () => {
-    it('should delete feature flag', () => {
+  describe("/feature-flags/:key (DELETE)", () => {
+    it("should delete feature flag", () => {
       return request(app.getHttpServer())
-        .delete('/feature-flags/new_ui_enabled')
+        .delete("/feature-flags/new_ui_enabled")
         .set(makeAuthHeaders())
         .expect(200)
         .expect((res) => {
