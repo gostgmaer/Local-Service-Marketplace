@@ -254,12 +254,31 @@ jobs:
               exit 1
             fi
 
-            # Ensure host nginx is stopped so Traefik can own ports 80/443.
-            # This is a one-time migration step; idempotent on subsequent deploys.
+            # Ensure ports 80/443 are free before Traefik starts.
+            # Step 1: stop host nginx (idempotent; ignored if not installed).
             if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
             $SUDO nginx -s quit 2>/dev/null || \
-              (command -v systemctl >/dev/null 2>&1 && $SUDO systemctl stop nginx 2>/dev/null && $SUDO systemctl disable nginx 2>/dev/null) || true
-            echo "Host nginx stopped (Traefik owns ports 80/443)."
+              (command -v systemctl >/dev/null 2>&1 && \
+               $SUDO systemctl stop nginx 2>/dev/null && \
+               $SUDO systemctl disable nginx 2>/dev/null) || true
+
+            # Step 2: stop any Docker container currently bound to 80 or 443
+            # (e.g. a stuck previous Traefik container) so Docker can re-bind.
+            for port in 80 443; do
+              docker ps -q --filter "publish=${port}" | xargs -r docker stop || true
+            done
+
+            # Step 3: wait up to 20 s for the OS to release both ports.
+            for port in 80 443; do
+              for i in $(seq 1 10); do
+                if ! ss -tlnp 2>/dev/null | grep -qE ":${port}[[:space:]]|:${port}$"; then
+                  echo "Port ${port} is free."; break
+                fi
+                echo "Port ${port} still in use (attempt ${i}/10), waiting 2s..."
+                sleep 2
+              done
+            done
+            echo "Ports 80/443 are free — Traefik will own them."
 
             deploy_with_pulled_images() {
               echo "Logging in to GHCR and pulling latest backend images..."
