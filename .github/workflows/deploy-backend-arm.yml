@@ -181,8 +181,8 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/lsmp-${{ matrix.service }}:latest
-            ghcr.io/${{ github.repository_owner }}/lsmp-${{ matrix.service }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/lsp-${{ matrix.service }}:latest
+            ghcr.io/${{ github.repository_owner }}/lsp-${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service }}-${{ github.ref_name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ github.ref_name }}
           no-cache: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_clean_cache == 'true' }}
@@ -283,8 +283,8 @@ jobs:
               echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
               for svc in identity-service marketplace-service payment-service comms-service oversight-service api-gateway; do
-                docker pull "ghcr.io/${OWNER}/lsmp-${svc}:latest"
-                docker tag "ghcr.io/${OWNER}/lsmp-${svc}:latest" "lsmp-${svc}:latest"
+                docker pull "ghcr.io/${OWNER}/lsp-${svc}:latest"
+                docker tag "ghcr.io/${OWNER}/lsp-${svc}:latest" "lsp-${svc}:latest"
               done
 
               # Uses explicit backend service list in deploy script; frontend is not deployed.
@@ -294,14 +294,14 @@ jobs:
             apply_runtime_limits() {
               echo "Applying fixed production CPU/RAM limits to running containers..."
 
-              docker update --cpus 0.20 --memory 512m --memory-swap 512m api-gateway
-              docker update --cpus 0.30 --memory 768m --memory-swap 768m marketplace-service
-              docker update --cpus 0.10 --memory 512m --memory-swap 512m payment-service
-              docker update --cpus 0.25 --memory 768m --memory-swap 768m identity-service
-              docker update --cpus 0.15 --memory 768m --memory-swap 768m comms-service
-              docker update --cpus 0.10 --memory 512m --memory-swap 512m oversight-service
-              docker update --cpus 0.10 --memory 512m --memory-swap 512m marketplace-redis
-              docker update --cpus 0.40 --memory 1536m --memory-swap 1536m marketplace-postgres
+              docker update --cpus 0.20 --memory 512m --memory-swap 512m lsp-api-gateway
+              docker update --cpus 0.30 --memory 768m --memory-swap 768m lsp-marketplace-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-payment-service
+              docker update --cpus 0.25 --memory 768m --memory-swap 768m lsp-identity-service
+              docker update --cpus 0.15 --memory 768m --memory-swap 768m lsp-comms-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-oversight-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-redis
+              docker update --cpus 0.40 --memory 1536m --memory-swap 1536m lsp-postgres
 
               echo "Runtime limits applied."
               docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format 'name={{.Name}}|nano_cpus={{.HostConfig.NanoCpus}}|mem_limit_bytes={{.HostConfig.Memory}}|memswap_limit_bytes={{.HostConfig.MemorySwap}}' {}
@@ -545,12 +545,12 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - lsmp-identity-service
-          - lsmp-marketplace-service
-          - lsmp-payment-service
-          - lsmp-comms-service
-          - lsmp-oversight-service
-          - lsmp-api-gateway
+          - lsp-identity-service
+          - lsp-marketplace-service
+          - lsp-payment-service
+          - lsp-comms-service
+          - lsp-oversight-service
+          - lsp-api-gateway
     steps:
       - name: Keep latest 5 package versions
         uses: actions/delete-package-versions@v5
