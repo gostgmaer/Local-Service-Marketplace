@@ -28,7 +28,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.0",
     "apple-signin-auth": "^2.0.0",
-    "axios": "^1.6.0",
+    "axios": "^1.15.2",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.4.2",
     "class-transformer": "^0.5.1",
