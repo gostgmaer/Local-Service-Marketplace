@@ -14,7 +14,6 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   DEPLOY_APP_DIR_NAME: ${{ vars.DEPLOY_APP_DIR_NAME || 'Local-Service-Marketplace' }}
-  DEPLOY_NGINX_CONF_NAME: ${{ vars.DEPLOY_NGINX_CONF_NAME || 'lsp-api.easydev.in.conf' }}
   DEPLOY_PUBLIC_API_BASE_URL: ${{ vars.DEPLOY_PUBLIC_API_BASE_URL || 'https://lsp-api.easydev.in' }}
 
 permissions:
@@ -307,118 +306,6 @@ jobs:
               docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format 'name={{.Name}}|nano_cpus={{.HostConfig.NanoCpus}}|mem_limit_bytes={{.HostConfig.Memory}}|memswap_limit_bytes={{.HostConfig.MemorySwap}}' {}
             }
 
-            deploy_nginx_config() {
-              NGINX_SOURCE_CONF="$APP_DIR/config/nginx/${{ env.DEPLOY_NGINX_CONF_NAME }}"
-              NGINX_TARGET_CONF="/etc/nginx/conf.d/${{ env.DEPLOY_NGINX_CONF_NAME }}"
-              NGINX_BACKUP_CONF="${NGINX_TARGET_CONF}.bak-${{ github.run_id }}-${{ github.run_attempt }}"
-
-              if [ ! -f "$NGINX_SOURCE_CONF" ]; then
-                echo "Nginx config file not found in repo, skipping nginx update: $NGINX_SOURCE_CONF"
-                return 0
-              fi
-
-              if [ "$(id -u)" -eq 0 ]; then
-                SUDO=""
-              elif command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
-                SUDO="sudo"
-              else
-                echo "Cannot update nginx automatically: passwordless sudo required for user ${{ secrets.OCI_USER }}"
-                return 1
-              fi
-
-              if [ -f "$NGINX_TARGET_CONF" ]; then
-                $SUDO cp "$NGINX_TARGET_CONF" "$NGINX_BACKUP_CONF"
-              fi
-
-              # Install with explicit mode/ownership so nginx can read it.
-              $SUDO install -m 0644 "$NGINX_SOURCE_CONF" "$NGINX_TARGET_CONF"
-              $SUDO chown root:root "$NGINX_TARGET_CONF"
-
-              # On SELinux-enforcing hosts (Oracle Linux/CentOS/RHEL), copied files
-              # can inherit non-nginx-readable labels; normalize context before test.
-              if command -v restorecon >/dev/null 2>&1; then
-                $SUDO restorecon -v "$NGINX_TARGET_CONF" || true
-              fi
-
-              if ! $SUDO nginx -t; then
-                echo "Nginx config test failed. Restoring previous config..."
-                if [ -f "$NGINX_BACKUP_CONF" ]; then
-                  $SUDO install -m 0644 "$NGINX_BACKUP_CONF" "$NGINX_TARGET_CONF"
-                  $SUDO chown root:root "$NGINX_TARGET_CONF"
-                  if command -v restorecon >/dev/null 2>&1; then
-                    $SUDO restorecon -v "$NGINX_TARGET_CONF" || true
-                  fi
-                fi
-                $SUDO nginx -t || true
-                return 1
-              fi
-
-              # Config test passed. Send HUP to the nginx master process — this is
-              # the most reliable reload method regardless of how nginx was started,
-              # what PID file path is used, or whether systemd manages it.
-              nginx_reloaded=0
-
-              # Resolve the nginx master PID: try known PID file locations first,
-              # then fall back to finding the oldest running nginx process.
-              NGINX_MASTER_PID=""
-              for pid_path in /var/run/nginx.pid /run/nginx.pid /usr/local/var/run/nginx.pid /tmp/nginx.pid; do
-                if [ -f "$pid_path" ]; then
-                  _candidate="$(cat "$pid_path" 2>/dev/null || true)"
-                  if [ -n "$_candidate" ] && $SUDO kill -0 "$_candidate" 2>/dev/null; then
-                    NGINX_MASTER_PID="$_candidate"
-                    break
-                  fi
-                fi
-              done
-              # If PID file didn't work, find the master process (oldest nginx pid)
-              if [ -z "$NGINX_MASTER_PID" ]; then
-                NGINX_MASTER_PID="$(ps -eo pid,ppid,comm | awk '$3=="nginx" && $2==1 {print $1; exit}' 2>/dev/null || true)"
-              fi
-              if [ -z "$NGINX_MASTER_PID" ]; then
-                NGINX_MASTER_PID="$(ps -eo pid,comm | awk '$2=="nginx" {print $1; exit}' 2>/dev/null || true)"
-              fi
-
-              if [ -n "$NGINX_MASTER_PID" ]; then
-                echo "Found nginx master PID: $NGINX_MASTER_PID"
-                if $SUDO kill -HUP "$NGINX_MASTER_PID"; then
-                  echo "Nginx reloaded via kill -HUP $NGINX_MASTER_PID."
-                  nginx_reloaded=1
-                else
-                  echo "kill -HUP failed. Trying nginx -s reload..."
-                  if $SUDO nginx -s reload; then
-                    echo "Nginx reloaded via nginx -s reload."
-                    nginx_reloaded=1
-                  elif command -v systemctl >/dev/null 2>&1 && $SUDO systemctl reload nginx 2>/dev/null; then
-                    echo "Nginx reloaded via systemctl reload."
-                    nginx_reloaded=1
-                  elif command -v systemctl >/dev/null 2>&1 && $SUDO systemctl restart nginx 2>/dev/null; then
-                    echo "Nginx restarted via systemctl restart."
-                    nginx_reloaded=1
-                  fi
-                fi
-              else
-                echo "Nginx master process not found — attempting to start nginx..."
-                if command -v systemctl >/dev/null 2>&1 && $SUDO systemctl start nginx 2>/dev/null; then
-                  echo "Nginx started via systemctl start."
-                  nginx_reloaded=1
-                elif $SUDO nginx; then
-                  echo "Nginx started fresh."
-                  nginx_reloaded=1
-                fi
-              fi
-
-              if [ "$nginx_reloaded" -eq 0 ]; then
-                echo "ERROR: nginx config installed and passed syntax test but all reload methods failed."
-                echo "Config is at $NGINX_TARGET_CONF"
-                echo "Diagnostics:"
-                $SUDO ps -eo pid,ppid,comm | grep nginx || echo "  no nginx processes found"
-                ls -la /var/run/nginx.pid /run/nginx.pid 2>/dev/null || echo "  no standard PID files found"
-                return 1
-              fi
-
-              echo "Nginx config deployed and reloaded successfully."
-            }
-
             cleanup_housekeeping() {
               KEEP_BACKUPS=1
 
@@ -461,11 +348,6 @@ jobs:
             fi
 
             apply_runtime_limits
-
-            if ! deploy_nginx_config; then
-              echo "Backend deploy succeeded but nginx config update failed."
-              exit 1
-            fi
 
             echo "Skipping in-deploy cleanup; handled in dedicated cleanup stage."
 

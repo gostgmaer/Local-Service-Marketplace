@@ -1,0 +1,63 @@
+# Traefik v3 — static configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# This file is read ONCE at startup. To pick up changes you must restart the
+# Traefik container.  Put middleware / routing rules in config/traefik/dynamic/
+# which is watched for hot-reloads.
+# ─────────────────────────────────────────────────────────────────────────────
+
+log:
+  level: INFO
+  format: json
+
+accessLog:
+  format: json
+  fields:
+    headers:
+      defaultMode: drop
+      names:
+        User-Agent: keep
+        X-Forwarded-For: keep
+
+# ── Entry points ──────────────────────────────────────────────────────────────
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+# ── Automatic TLS via Let's Encrypt ──────────────────────────────────────────
+# Set ACME_EMAIL in docker.env (e.g. ACME_EMAIL=admin@yourdomain.com).
+# acme.json is persisted in the named Docker volume traefik_acme.
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "${ACME_EMAIL}"
+      storage: /letsencrypt/acme.json
+      # HTTP-01 challenge — Traefik must be reachable on port 80 from the internet.
+      httpChallenge:
+        entryPoint: web
+
+# ── Providers ─────────────────────────────────────────────────────────────────
+providers:
+  docker:
+    # Only route containers that carry  traefik.enable=true  labels.
+    exposedByDefault: false
+    # Restrict auto-discovery to the shared internal bridge.
+    network: marketplace-network
+    watch: true
+  file:
+    # Dynamic config (middlewares, TLS options, etc.) — hot-reloaded.
+    directory: /config/dynamic
+    watch: true
+
+# ── API / dashboard ───────────────────────────────────────────────────────────
+# Disabled in production. Enable and protect with auth middleware if needed.
+api:
+  dashboard: false
+  insecure: false

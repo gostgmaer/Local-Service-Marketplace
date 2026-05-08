@@ -1,0 +1,24 @@
+# Dynamic configuration — hot-reloaded by Traefik (no restart needed).
+# ─────────────────────────────────────────────────────────────────────────────
+
+http:
+  middlewares:
+    # Attach to routers as  middlewares: secure-headers@file
+    secure-headers:
+      headers:
+        # HSTS — tell browsers to always use HTTPS for 2 years
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        # Clickjacking protection
+        frameDeny: true
+        # MIME-type sniffing protection
+        contentTypeNosniff: true
+        # Referrer policy
+        referrerPolicy: "strict-origin-when-cross-origin"
+        # Legacy XSS filter (still useful for older browsers)
+        browserXssFilter: true
+        # Inform upstream that the original request was HTTPS
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
