@@ -358,34 +358,49 @@ jobs:
               #           systemctl reload → systemctl restart → systemctl start → nginx fresh
               nginx_reloaded=0
 
-              if $SUDO nginx -s reload 2>/dev/null; then
-                echo "Nginx reloaded via nginx -s reload."
-                nginx_reloaded=1
-              elif command -v systemctl >/dev/null 2>&1; then
-                if $SUDO systemctl reload nginx 2>/dev/null; then
-                  echo "Nginx reloaded via systemctl reload."
-                  nginx_reloaded=1
-                elif $SUDO systemctl restart nginx 2>/dev/null; then
-                  echo "Nginx restarted via systemctl restart."
-                  nginx_reloaded=1
-                elif $SUDO systemctl start nginx 2>/dev/null; then
-                  echo "Nginx started via systemctl start."
-                  nginx_reloaded=1
+              # Locate the nginx PID file — Oracle Linux / custom installs may use non-standard paths
+              NGINX_PID_FILE=""
+              for pid_path in /var/run/nginx.pid /run/nginx.pid /usr/local/var/run/nginx.pid /tmp/nginx.pid; do
+                if [ -f "$pid_path" ]; then
+                  NGINX_PID_FILE="$pid_path"
+                  break
                 fi
+              done
+
+              nginx_is_running=0
+              if [ -n "$NGINX_PID_FILE" ] && kill -0 "$(cat "$NGINX_PID_FILE" 2>/dev/null)" 2>/dev/null; then
+                nginx_is_running=1
+              elif pgrep -x nginx >/dev/null 2>&1; then
+                nginx_is_running=1
               fi
 
-              if [ "$nginx_reloaded" -eq 0 ]; then
-                # Last resort: spawn a fresh nginx process
-                if $SUDO nginx 2>/dev/null; then
+              if [ "$nginx_is_running" -eq 1 ]; then
+                if $SUDO nginx -s reload; then
+                  echo "Nginx reloaded via nginx -s reload."
+                  nginx_reloaded=1
+                elif command -v systemctl >/dev/null 2>&1 && $SUDO systemctl reload nginx 2>/dev/null; then
+                  echo "Nginx reloaded via systemctl reload."
+                  nginx_reloaded=1
+                elif command -v systemctl >/dev/null 2>&1 && $SUDO systemctl restart nginx 2>/dev/null; then
+                  echo "Nginx restarted via systemctl restart."
+                  nginx_reloaded=1
+                fi
+              else
+                echo "Nginx is not running. Attempting to start it..."
+                if command -v systemctl >/dev/null 2>&1 && $SUDO systemctl start nginx 2>/dev/null; then
+                  echo "Nginx started via systemctl start."
+                  nginx_reloaded=1
+                elif $SUDO nginx; then
                   echo "Nginx started fresh."
                   nginx_reloaded=1
                 fi
               fi
 
               if [ "$nginx_reloaded" -eq 0 ]; then
-                echo "Warning: nginx config installed and passed syntax test but reload signal failed."
-                echo "Config is at $NGINX_TARGET_CONF — reload manually: sudo nginx -s reload"
-                # Do not fail the deployment; containers are running and config is valid.
+                echo "ERROR: nginx config installed and passed syntax test but all reload methods failed."
+                echo "Config is at $NGINX_TARGET_CONF"
+                echo "Manual fix: sudo nginx -s reload"
+                return 1
               fi
 
               echo "Nginx config deployed and reloaded successfully."
