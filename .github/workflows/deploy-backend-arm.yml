@@ -25,8 +25,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  code-quality-check:
-    name: Code Quality (${{ matrix.service }})
+  ci:
+    name: CI (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -92,38 +92,10 @@ jobs:
       - name: Unit tests (if present)
         run: |
           if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
-            # Run Jest directly to avoid pnpm argument-forwarding edge cases (e.g., `jest -- --passWithNoTests --ci`).
             pnpm exec jest --passWithNoTests --ci
           else
             echo "No test script found; skipping unit tests."
           fi
-
-  vulnerability-scan:
-    name: Vulnerability Scan (${{ matrix.service }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [code-quality-check]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - service: identity-service
-            context: services/identity-service
-          - service: marketplace-service
-            context: services/marketplace-service
-          - service: payment-service
-            context: services/payment-service
-          - service: comms-service
-            context: services/comms-service
-          - service: oversight-service
-            context: services/oversight-service
-          - service: infrastructure-service
-            context: services/infrastructure-service
-          - service: api-gateway
-            context: api-gateway
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Trivy FS scan (HIGH, CRITICAL)
         uses: aquasecurity/trivy-action@master
@@ -135,13 +107,13 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
 
-  build-and-push-images:
+  build-and-push:
     name: Build And Push (${{ matrix.service }})
     # Native ARM64 runner — avoids QEMU SIGILL (Illegal instruction) crashes
     # that occur when emulating ARM64 on x86 during `pnpm install`.
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
-    needs: [vulnerability-scan]
+    needs: [ci]
     strategy:
       fail-fast: false
       matrix:
@@ -186,11 +158,314 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}-${{ github.ref_name }}
           no-cache: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_clean_cache == 'true' }}
 
-  deploy-backend:
-    name: Deploy Backend (Skip Frontend)
+  deploy-and-release:
+    name: Deploy, Cleanup & Release
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    needs: [build-and-push-images]
+    timeout-minutes: 120
+    needs: [build-and-push]
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.OCI_HOST }}" || { echo "Missing secret: OCI_HOST"; exit 1; }
+          test -n "${{ secrets.OCI_USER }}" || { echo "Missing secret: OCI_USER"; exit 1; }
+          test -n "${{ secrets.OCI_SSH_PRIVATE_KEY }}" || { echo "Missing secret: OCI_SSH_PRIVATE_KEY"; exit 1; }
+          test -n "${{ secrets.GHCR_USERNAME }}" || { echo "Missing secret: GHCR_USERNAME"; exit 1; }
+          test -n "${{ secrets.GHCR_TOKEN }}" || { echo "Missing secret: GHCR_TOKEN"; exit 1; }
+
+      - name: Create release archive (tracked files only)
+        run: |
+          mkdir -p artifacts
+          git archive --format=tar.gz --output artifacts/release.tgz HEAD
+          ls -lh artifacts/release.tgz
+
+      - name: Upload release archive to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USER }}
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OCI_PORT || 22 }}
+          source: artifacts/release.tgz
+          strip_components: 1
+          target: /home/${{ secrets.OCI_USER }}/
+          overwrite: true
+
+      - name: Deploy on ARM server (pull images, no build)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USER }}
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OCI_PORT || 22 }}
+          script_stop: true
+          command_timeout: 80m
+          script: |
+            set -Eeuo pipefail
+
+            APP_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}"
+            STAGE_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.stage-${{ github.run_id }}-${{ github.run_attempt }}"
+            BACKUP_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.backup-${{ github.run_id }}-${{ github.run_attempt }}"
+            ARCHIVE_PRIMARY="/home/${{ secrets.OCI_USER }}/release.tgz"
+            ARCHIVE_FALLBACK="/home/${{ secrets.OCI_USER }}/artifacts/release.tgz"
+            OWNER="${{ github.repository_owner }}"
+
+            if [ -f "$ARCHIVE_PRIMARY" ]; then
+              ARCHIVE="$ARCHIVE_PRIMARY"
+            elif [ -f "$ARCHIVE_FALLBACK" ]; then
+              ARCHIVE="$ARCHIVE_FALLBACK"
+            else
+              echo "Release archive not found. Checked:"
+              echo " - $ARCHIVE_PRIMARY"
+              echo " - $ARCHIVE_FALLBACK"
+              exit 1
+            fi
+
+            rm -rf "$STAGE_DIR"
+            mkdir -p "$STAGE_DIR"
+            tar -xzf "$ARCHIVE" -C "$STAGE_DIR"
+
+            # Keep server runtime configuration intact across deployments.
+            if [ -f "$APP_DIR/.env" ]; then cp "$APP_DIR/.env" "$STAGE_DIR/.env"; fi
+            if [ -f "$APP_DIR/docker.env" ]; then cp "$APP_DIR/docker.env" "$STAGE_DIR/docker.env"; fi
+
+            ROLLBACK=0
+            if [ -d "$APP_DIR" ]; then
+              rm -rf "$BACKUP_DIR"
+              mv "$APP_DIR" "$BACKUP_DIR"
+              ROLLBACK=1
+            fi
+
+            mv "$STAGE_DIR" "$APP_DIR"
+            cd "$APP_DIR"
+
+            chmod +x scripts/deploy-production-worker.sh
+
+            if [ ! -f ".env" ]; then
+              echo "Missing .env on server. Add $APP_DIR/.env and rerun."
+              exit 1
+            fi
+
+            # Ensure host nginx is stopped so Traefik can own ports 80/443.
+            # This is a one-time migration step; idempotent on subsequent deploys.
+            if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+            $SUDO nginx -s quit 2>/dev/null || \
+              (command -v systemctl >/dev/null 2>&1 && $SUDO systemctl stop nginx 2>/dev/null && $SUDO systemctl disable nginx 2>/dev/null) || true
+            echo "Host nginx stopped (Traefik owns ports 80/443)."
+
+            deploy_with_pulled_images() {
+              echo "Logging in to GHCR and pulling latest backend images..."
+              echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+              for svc in identity-service marketplace-service payment-service comms-service oversight-service api-gateway; do
+                docker pull "ghcr.io/${OWNER}/lsp-${svc}:latest"
+                docker tag "ghcr.io/${OWNER}/lsp-${svc}:latest" "lsp-${svc}:latest"
+              done
+
+              # Uses explicit backend service list in deploy script; frontend is not deployed.
+              ./scripts/deploy-production-worker.sh --env-file .env --no-build
+            }
+
+            apply_runtime_limits() {
+              echo "Applying fixed production CPU/RAM limits to running containers..."
+
+              docker update --cpus 0.20 --memory 512m --memory-swap 512m lsp-api-gateway
+              docker update --cpus 0.30 --memory 768m --memory-swap 768m lsp-marketplace-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-payment-service
+              docker update --cpus 0.25 --memory 768m --memory-swap 768m lsp-identity-service
+              docker update --cpus 0.15 --memory 768m --memory-swap 768m lsp-comms-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-oversight-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-redis
+              docker update --cpus 0.40 --memory 1536m --memory-swap 1536m lsp-postgres
+
+              echo "Runtime limits applied."
+              docker ps --format '{{.Names}}' | xargs -I{} docker inspect --format 'name={{.Name}}|nano_cpus={{.HostConfig.NanoCpus}}|mem_limit_bytes={{.HostConfig.Memory}}|memswap_limit_bytes={{.HostConfig.MemorySwap}}' {}
+            }
+
+            cleanup_housekeeping() {
+              KEEP_BACKUPS=1
+
+              echo "Starting deployment housekeeping cleanup..."
+
+              OLD_BACKUPS="$(ls -1dt /home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.backup-* 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) || true)"
+              if [ -n "$OLD_BACKUPS" ]; then
+                echo "$OLD_BACKUPS" | xargs -r rm -rf
+                echo "Old backup directories removed (keeping latest $KEEP_BACKUPS)."
+              else
+                echo "No old backup directories to remove."
+              fi
+
+              docker image prune -f || true
+              docker image prune -a -f || true
+              docker builder prune -af || true
+
+              if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+                if command -v dnf >/dev/null 2>&1; then
+                  sudo dnf clean all || true
+                  sudo rm -rf /var/cache/dnf/* || true
+                fi
+                sudo journalctl --vacuum-time=14d || true
+              fi
+
+              echo "Housekeeping cleanup completed."
+              docker system df || true
+            }
+
+            if ! deploy_with_pulled_images; then
+              if [ "$ROLLBACK" -eq 1 ] && [ -d "$BACKUP_DIR" ]; then
+                echo "Deployment failed. Rolling back application directory..."
+                rm -rf "$APP_DIR"
+                mv "$BACKUP_DIR" "$APP_DIR"
+              fi
+              exit 1
+            fi
+
+            apply_runtime_limits
+            cleanup_housekeeping
+
+            docker logout ghcr.io || true
+            rm -f "$ARCHIVE_PRIMARY" "$ARCHIVE_FALLBACK"
+
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.level3.yml ps
+            echo "Waiting for API Gateway to become healthy..."
+            gateway_healthy=0
+            for attempt in $(seq 1 15); do
+              if curl -fsS http://127.0.0.1:3700/health >/dev/null 2>&1; then
+                echo "Gateway healthy after ${attempt} attempt(s)."
+                gateway_healthy=1
+                break
+              fi
+              echo "Gateway not ready yet (attempt ${attempt}/15), retrying in 10s..."
+              sleep 10
+            done
+            if [ "$gateway_healthy" -eq 0 ]; then
+              echo "Gateway did not become healthy in time. Check logs:"
+              docker compose --env-file .env -f docker-compose.yml -f docker-compose.level3.yml logs --tail=50 api-gateway || true
+              exit 1
+            fi
+            echo "Backend deployment completed successfully."
+
+      - name: Verify public health endpoints
+        run: |
+          BASE_URL="${{ env.DEPLOY_PUBLIC_API_BASE_URL }}"
+          BASE_URL="${BASE_URL%/}"
+
+          check_endpoint() {
+            local endpoint="$1"
+            local http_code
+            for attempt in 1 2 3 4 5; do
+              http_code="$(curl -o /dev/null -w "%{http_code}" -sS --max-time 15 "$endpoint" 2>/dev/null || echo "000")"
+
+              if [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
+                echo "Healthy ($http_code): $endpoint"
+                return 0
+              fi
+
+              # Cloudflare proxy errors (521-527) and network errors (000) are
+              # external to the application — warn but do not fail.
+              if [ "$http_code" = "521" ] || [ "$http_code" = "522" ] || \
+                 [ "$http_code" = "523" ] || [ "$http_code" = "524" ] || \
+                 [ "$http_code" = "525" ] || [ "$http_code" = "526" ] || \
+                 [ "$http_code" = "527" ] || [ "$http_code" = "000" ]; then
+                echo "WARNING: External network/Cloudflare error ($http_code) for $endpoint — not an application failure."
+                return 0
+              fi
+
+              if [ "$attempt" -eq 5 ]; then
+                echo "WARNING: $endpoint returned HTTP $http_code after $attempt attempts."
+                return 0
+              fi
+
+              echo "Attempt $attempt failed ($http_code) for $endpoint, retrying in 10 seconds..."
+              sleep 10
+            done
+          }
+
+          check_endpoint "$BASE_URL/health"
+          check_endpoint "$BASE_URL/api/v1/health"
+          echo "Public health verification completed."
+
+      - name: Cleanup GHCR old package versions
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const packages = [
+              'lsp-identity-service', 'lsp-marketplace-service', 'lsp-payment-service',
+              'lsp-comms-service', 'lsp-oversight-service', 'lsp-api-gateway'
+            ];
+            const owner = context.repo.owner;
+            const KEEP = 5;
+
+            for (const pkg of packages) {
+              let versions = [];
+              try {
+                versions = await github.paginate(
+                  github.rest.packages.getAllPackageVersionsForPackageOwnedByUser,
+                  { package_type: 'container', package_name: pkg, username: owner, per_page: 100 }
+                );
+              } catch {
+                try {
+                  versions = await github.paginate(
+                    github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg,
+                    { package_type: 'container', package_name: pkg, org: owner, per_page: 100 }
+                  );
+                } catch (e) {
+                  core.warning(`Could not list versions for ${pkg}: ${e.message}`);
+                  continue;
+                }
+              }
+
+              const toDelete = versions
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(KEEP);
+
+              core.info(`${pkg}: ${versions.length} total, deleting ${toDelete.length} old version(s).`);
+              for (const v of toDelete) {
+                try {
+                  await github.rest.packages.deletePackageVersionForUser(
+                    { package_type: 'container', package_name: pkg, username: owner, package_version_id: v.id }
+                  );
+                } catch {
+                  try {
+                    await github.rest.packages.deletePackageVersionForOrg(
+                      { package_type: 'container', package_name: pkg, org: owner, package_version_id: v.id }
+                    );
+                  } catch (e) {
+                    core.warning(`Could not delete ${pkg} version ${v.id}: ${e.message}`);
+                  }
+                }
+              }
+            }
+
+      - name: Bump version and push tag
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          release_branches: main,master
+          tag_prefix: v
+          custom_release_rules: "major:major,feat:minor,fix:patch,chore:patch,refactor:patch,perf:patch,style:patch,docs:patch,test:patch,build:patch,ci:patch"
+
+      - name: Create GitHub Release
+        if: steps.tag.outputs.new_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.new_tag }}
+          name: Release ${{ steps.tag.outputs.new_tag }}
+          body: ${{ steps.tag.outputs.changelog }}
+          draft: false
+          prerelease: false
+
 
     steps:
       - name: Checkout repository
@@ -356,7 +631,7 @@ jobs:
 
             apply_runtime_limits
 
-            echo "Skipping in-deploy cleanup; handled in dedicated cleanup stage."
+            cleanup_housekeeping
 
             docker logout ghcr.io || true
             rm -f "$ARCHIVE_PRIMARY" "$ARCHIVE_FALLBACK"
@@ -432,114 +707,3 @@ jobs:
           check_endpoint "$BASE_URL/api/v1/health"
 
           echo "Public health verification completed."
-
-  cleanup-old-images:
-    name: Cleanup Images & Keep 1 Backup
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: [deploy-backend]
-    steps:
-      - name: Validate required secrets
-        run: |
-          test -n "${{ secrets.OCI_HOST }}" || { echo "Missing secret: OCI_HOST"; exit 1; }
-          test -n "${{ secrets.OCI_USER }}" || { echo "Missing secret: OCI_USER"; exit 1; }
-          test -n "${{ secrets.OCI_SSH_PRIVATE_KEY }}" || { echo "Missing secret: OCI_SSH_PRIVATE_KEY"; exit 1; }
-
-      - name: Run remote cleanup (keep one backup)
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.OCI_HOST }}
-          username: ${{ secrets.OCI_USER }}
-          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.OCI_PORT || 22 }}
-          script_stop: true
-          command_timeout: 20m
-          script: |
-            set -Eeuo pipefail
-
-            KEEP_BACKUPS=1
-            BACKUP_GLOB="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}.backup-*"
-
-            OLD_BACKUPS="$(ls -1dt $BACKUP_GLOB 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) || true)"
-            if [ -n "$OLD_BACKUPS" ]; then
-              echo "$OLD_BACKUPS" | xargs -r rm -rf
-              echo "Removed old backups, kept latest $KEEP_BACKUPS backup directory."
-            else
-              echo "No old backups to remove."
-            fi
-
-            docker image prune -f || true
-            docker image prune -a -f || true
-            docker builder prune -af || true
-
-            if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
-              if command -v dnf >/dev/null 2>&1; then
-                sudo dnf clean all || true
-                sudo rm -rf /var/cache/dnf/* || true
-              fi
-              sudo journalctl --vacuum-time=14d || true
-            fi
-
-            docker system df || true
-            echo "Cleanup stage completed successfully."
-
-  cleanup-ghcr-packages:
-    name: Cleanup GHCR Packages (${{ matrix.package }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [cleanup-old-images]
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - lsp-identity-service
-          - lsp-marketplace-service
-          - lsp-payment-service
-          - lsp-comms-service
-          - lsp-oversight-service
-          - lsp-api-gateway
-    steps:
-      - name: Keep latest 5 package versions
-        uses: actions/delete-package-versions@v5
-        with:
-          owner: ${{ github.repository_owner }}
-          package-name: ${{ matrix.package }}
-          package-type: container
-          min-versions-to-keep: 5
-          delete-only-untagged-versions: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-  tag-release:
-    name: Tag Release
-    runs-on: ubuntu-latest
-    needs: [cleanup-ghcr-packages]
-    permissions:
-      contents: write
-    outputs:
-      new-tag: ${{ steps.tag.outputs.new_tag }}
-      changelog: ${{ steps.tag.outputs.changelog }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Bump version and push tag
-        id: tag
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: patch
-          release_branches: main,master
-          tag_prefix: v
-          custom_release_rules: "major:major,feat:minor,fix:patch,chore:patch,refactor:patch,perf:patch,style:patch,docs:patch,test:patch,build:patch,ci:patch"
-
-      - name: Create GitHub Release
-        if: steps.tag.outputs.new_tag != ''
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.new_tag }}
-          name: Release ${{ steps.tag.outputs.new_tag }}
-          body: ${{ steps.tag.outputs.changelog }}
-          draft: false
-          prerelease: false
