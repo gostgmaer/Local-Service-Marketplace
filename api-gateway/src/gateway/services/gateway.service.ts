@@ -132,7 +132,11 @@ export class GatewayService {
       if (config.name === "infrastructure-service" && !infrastructureEnabled) {
         continue;
       }
-
+      // file-upload-service is an external third-party service — exclude from
+      // aggregated health so a Render cold-start doesn't flip status to "down".
+      if (config.name === "file-upload-service") {
+        continue;
+      }
       if (!targets.has(config.name)) {
         targets.set(config.name, config.url);
       }
