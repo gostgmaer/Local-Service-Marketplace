@@ -22,7 +22,7 @@ services:
   # ---------------------------------------------------------------------------
   pgbouncer:
     image: edoburu/pgbouncer:latest
-    container_name: marketplace-pgbouncer
+    container_name: lsp-pgbouncer
     restart: unless-stopped
     profiles:
       - pooling

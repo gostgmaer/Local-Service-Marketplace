@@ -2,7 +2,7 @@
   # Database
   postgres:
     image: postgres:17-alpine
-    container_name: marketplace-postgres
+    container_name: lsp-postgres
     restart: unless-stopped
     profiles:
       - infra
@@ -39,7 +39,7 @@
   
   redis:
     image: redis:7-alpine
-    container_name: marketplace-redis
+    container_name: lsp-redis
     restart: unless-stopped
     profiles:
       - scaling
@@ -70,7 +70,7 @@
   # Zookeeper for Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: marketplace-zookeeper
+    container_name: lsp-zookeeper
     restart: unless-stopped
     profiles:
       - scaling
@@ -88,7 +88,7 @@
   # Kafka Message Broker
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: marketplace-kafka
+    container_name: lsp-kafka
     restart: unless-stopped
     profiles:
       - scaling
@@ -118,7 +118,7 @@
   # Exits with code 0 once topics are created (idempotent â€” already-exists is not an error).
   kafka-init:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: marketplace-kafka-init
+    container_name: lsp-kafka-init
     profiles:
       - scaling
       - event
@@ -150,8 +150,8 @@
     build:
       context: ./services/identity-service
       dockerfile: Dockerfile
-    image: lsmp-identity-service:latest
-    container_name: identity-service
+    image: lsp-identity-service:latest
+    container_name: lsp-identity-service
     restart: unless-stopped
     profiles:
       - full
@@ -219,8 +219,8 @@
     build:
       context: ./services/marketplace-service
       dockerfile: Dockerfile
-    image: lsmp-marketplace-service:latest
-    container_name: marketplace-service
+    image: lsp-marketplace-service:latest
+    container_name: lsp-marketplace-service
     restart: unless-stopped
     profiles:
       - full
@@ -282,8 +282,8 @@
     build:
       context: ./services/payment-service
       dockerfile: Dockerfile
-    image: lsmp-payment-service:latest
-    container_name: payment-service
+    image: lsp-payment-service:latest
+    container_name: lsp-payment-service
     restart: unless-stopped
     profiles:
       - full
@@ -371,8 +371,8 @@
     build:
       context: ./services/comms-service
       dockerfile: Dockerfile
-    image: lsmp-comms-service:latest
-    container_name: comms-service
+    image: lsp-comms-service:latest
+    container_name: lsp-comms-service
     restart: unless-stopped
     profiles:
       - full
@@ -429,8 +429,8 @@
     build:
       context: ./services/oversight-service
       dockerfile: Dockerfile
-    image: lsmp-oversight-service:latest
-    container_name: oversight-service
+    image: lsp-oversight-service:latest
+    container_name: lsp-oversight-service
     restart: unless-stopped
     profiles:
       - full
@@ -489,8 +489,8 @@
     build:
       context: ./services/infrastructure-service
       dockerfile: Dockerfile
-    image: lsmp-infrastructure-service:latest
-    container_name: infrastructure-service
+    image: lsp-infrastructure-service:latest
+    container_name: lsp-infrastructure-service
     restart: unless-stopped
     env_file:
       - docker.env
@@ -553,8 +553,8 @@
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
-    image: lsmp-api-gateway:latest
-    container_name: api-gateway
+    image: lsp-api-gateway:latest
+    container_name: lsp-api-gateway
     restart: unless-stopped
     profiles:
       - full
@@ -643,8 +643,8 @@
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3700}
         - NEXT_BUILD_ID=${NEXT_BUILD_ID:-}
-    image: lsmp-frontend:latest
-    container_name: marketplace-frontend
+    image: lsp-frontend:latest
+    container_name: lsp-frontend
     restart: unless-stopped
     profiles:
       - frontend
@@ -683,7 +683,7 @@
   # certbot) and DOMAIN_NAME set in docker.env / environment.
   nginx:
     image: nginx:1.25-alpine
-    container_name: marketplace-nginx
+    container_name: lsp-nginx
     restart: unless-stopped
     profiles:
       - full
