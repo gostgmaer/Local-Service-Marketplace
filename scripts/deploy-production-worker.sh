@@ -21,6 +21,7 @@ SERVICES=(
   comms-service
   oversight-service
   api-gateway
+  traefik
 )
 
 usage() {

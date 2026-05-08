@@ -277,6 +277,13 @@ jobs:
               exit 1
             fi
 
+            # Ensure host nginx is stopped so Traefik can own ports 80/443.
+            # This is a one-time migration step; idempotent on subsequent deploys.
+            if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+            $SUDO nginx -s quit 2>/dev/null || \
+              (command -v systemctl >/dev/null 2>&1 && $SUDO systemctl stop nginx 2>/dev/null && $SUDO systemctl disable nginx 2>/dev/null) || true
+            echo "Host nginx stopped (Traefik owns ports 80/443)."
+
             deploy_with_pulled_images() {
               echo "Logging in to GHCR and pulling latest backend images..."
               echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
