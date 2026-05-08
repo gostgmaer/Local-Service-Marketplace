@@ -362,7 +362,7 @@ jobs:
             local endpoint="$1"
             local http_code
             for attempt in 1 2 3 4 5; do
-              http_code="$(curl -o /dev/null -w "%{http_code}" -sS --max-time 15 "$endpoint" 2>/dev/null || echo "000")"
+              http_code="$(curl -o /dev/null -w "%{http_code}" -sS --max-time 15 "$endpoint" 2>/dev/null || true)"
 
               if [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
                 echo "Healthy ($http_code): $endpoint"
