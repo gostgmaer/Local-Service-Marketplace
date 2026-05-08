@@ -48,8 +48,10 @@ providers:
   docker:
     # Only route containers that carry  traefik.enable=true  labels.
     exposedByDefault: false
-    # Restrict auto-discovery to the shared internal bridge.
-    network: marketplace-network
+    # Traefik listens on the shared external network that all routable
+    # services join.  Internal service-to-service traffic stays on
+    # marketplace-network (not visible to Traefik).
+    network: traefik-public
     watch: true
   file:
     # Dynamic config (middlewares, TLS options, etc.) — hot-reloaded.

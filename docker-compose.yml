@@ -616,6 +616,7 @@
       # They will start independently if their profiles are enabled
     networks:
       - marketplace-network
+      - traefik-public
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
       interval: 30s
@@ -631,7 +632,7 @@
           memory: 64M
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=marketplace-network"
+      - "traefik.docker.network=traefik-public"
       # Route all traffic for the API domain to the gateway (port 3000 inside container)
       - "traefik.http.routers.lsp-api.rule=Host(`${LSP_API_DOMAIN:-lsp-api.easydev.in}`)"
       - "traefik.http.routers.lsp-api.entrypoints=websecure"
@@ -673,6 +674,7 @@
         condition: service_healthy
     networks:
       - marketplace-network
+      - traefik-public
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
       interval: 30s
@@ -689,57 +691,25 @@
           memory: 128M
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=marketplace-network"
+      - "traefik.docker.network=traefik-public"
       - "traefik.http.routers.lsp-frontend.rule=Host(`${LSP_FRONTEND_DOMAIN:-lsp.easydev.in}`)"
       - "traefik.http.routers.lsp-frontend.entrypoints=websecure"
       - "traefik.http.routers.lsp-frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.lsp-frontend.loadbalancer.server.port=3000"
-
-
-  # ── Traefik (HTTP/HTTPS reverse proxy + automatic Let's Encrypt TLS) ─────────
-  # Replaces nginx. Active in the "full" profile.
-  # Routes are discovered via container labels — no manual config reload needed.
-  # Requires ACME_EMAIL in docker.env for Let's Encrypt certificate registration.
-  # acme.json is persisted in the named volume traefik_acme.
-  traefik:
-    image: traefik:v3.3
-    container_name: lsp-traefik
-    restart: unless-stopped
-    profiles:
-      - full
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      # Docker socket — read-only; needed to discover container labels.
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Static configuration (restart required to apply changes).
-      - ./config/traefik/traefik.yml:/traefik.yml:ro
-      # Dynamic configuration (hot-reloaded without restart).
-      - ./config/traefik/dynamic:/config/dynamic:ro
-      # Let's Encrypt certificate storage (persisted across restarts).
-      - traefik_acme:/letsencrypt
-    environment:
-      - ACME_EMAIL=${ACME_EMAIL:-admin@localservicemarketplace.com}
-    networks:
-      - marketplace-network
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
-  traefik_acme:
-    driver: local
 
 
 networks:
   marketplace-network:
     driver: bridge
+  # Shared external network — created once on the server by the Traefik bootstrap step.
+  # All services that need Traefik routing must also join this network.
+  traefik-public:
+    external: true
 
 
