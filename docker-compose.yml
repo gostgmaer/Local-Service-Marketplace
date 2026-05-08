@@ -633,14 +633,12 @@
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
-      # Route all traffic for the API domain to the gateway (port 3000 inside container)
       - "traefik.http.routers.lsp-api.rule=Host(`${LSP_API_DOMAIN:-lsp-api.easydev.in}`)"
       - "traefik.http.routers.lsp-api.entrypoints=websecure"
+      - "traefik.http.routers.lsp-api.tls=true"
       - "traefik.http.routers.lsp-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.lsp-api.middlewares=secure-headers@file"
       - "traefik.http.services.lsp-api.loadbalancer.server.port=3000"
-      # WebSocket paths (/socket.io/, /updates/, /messaging/) are handled
-      # transparently by Traefik — no extra middleware required.
 
   # Frontend service skipped for local development
 
