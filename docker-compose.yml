@@ -616,7 +616,7 @@
       # They will start independently if their profiles are enabled
     networks:
       - marketplace-network
-      - traefik-public
+      - edge
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
       interval: 30s
@@ -632,68 +632,14 @@
           memory: 64M
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
+      - "traefik.docker.network=edge"
       - "traefik.http.routers.lsp-api.rule=Host(`${LSP_API_DOMAIN:-lsp-api.easydev.in}`)"
       - "traefik.http.routers.lsp-api.entrypoints=websecure"
       - "traefik.http.routers.lsp-api.tls=true"
-      - "traefik.http.routers.lsp-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.lsp-api.middlewares=secure-headers@file"
+      - "traefik.http.routers.lsp-api.tls.certresolver=le"
+      - "traefik.http.routers.lsp-api.middlewares=security-headers@file"
       - "traefik.http.services.lsp-api.loadbalancer.server.port=3000"
 
-  # Frontend service skipped for local development
-
-  # -------------------- Frontend (Next.js) --------------------
-  # Toggle in docker.env:
-  #   COMPOSE_PROFILES=workers,frontend   -> enable frontend
-  #   COMPOSE_PROFILES=workers            -> disable frontend
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3700}
-        - NEXT_BUILD_ID=${NEXT_BUILD_ID:-}
-    image: lsp-frontend:latest
-    container_name: lsp-frontend
-    restart: unless-stopped
-    profiles:
-      - frontend
-      - full
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3700}
-      - INTERNAL_API_URL=${INTERNAL_API_URL:-http://api-gateway:3000}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-      - AUTH_SECRET=${AUTH_SECRET:-}
-    depends_on:
-      api-gateway:
-        condition: service_healthy
-    networks:
-      - marketplace-network
-      - traefik-public
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    deploy:
-      resources:
-        limits:
-          cpus: '${CPU_FRONTEND:-0.1}'
-          memory: ${MEM_FRONTEND:-160M}
-        reservations:
-          cpus: '0.05'
-          memory: 128M
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.lsp-frontend.rule=Host(`${LSP_FRONTEND_DOMAIN:-lsp.easydev.in}`)"
-      - "traefik.http.routers.lsp-frontend.entrypoints=websecure"
-      - "traefik.http.routers.lsp-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.lsp-frontend.loadbalancer.server.port=3000"
 
 volumes:
   postgres_data:
@@ -705,9 +651,8 @@ volumes:
 networks:
   marketplace-network:
     driver: bridge
-  # Shared external network — created once on the server by the Traefik bootstrap step.
-  # All services that need Traefik routing must also join this network.
-  traefik-public:
+  edge:
     external: true
+    name: edge
 
 

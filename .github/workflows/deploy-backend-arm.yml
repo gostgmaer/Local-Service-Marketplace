@@ -254,26 +254,9 @@ jobs:
               exit 1
             fi
 
-            # ── Bootstrap shared Traefik (idempotent) ──────────────────────────────────
-            # Traefik runs once on the server, independent of app deployments.
-            # The shared external network allows all stacks to register routes.
-            # Relative paths in docker-compose.traefik.yml resolve from APP_DIR,
-            # where config/traefik/ already lives — no file copying needed.
-
-            # Create the shared external network (no-op if already exists).
-            docker network create traefik-public 2>/dev/null || true
-
-            # Pull latest image so upgrades are applied automatically.
-            docker pull traefik:v3.3
-
-            # --no-recreate: if shared-traefik is already running and nothing
-            # changed, leave it alone (avoids any port-80/443 rebind).
-            (cd "$APP_DIR" && docker compose \
-              --env-file docker.env \
-              -f docker-compose.traefik.yml \
-              up -d --no-recreate)
-
-            echo "Shared Traefik is running."
+            # Ensure the shared external network exists (Traefik must already be
+            # running on the server and connected to it — we never manage Traefik here).
+            docker network create edge 2>/dev/null || true
 
             deploy_with_pulled_images() {
               echo "Logging in to GHCR and pulling latest backend images..."
