@@ -365,18 +365,26 @@ jobs:
                     if ! $SUDO systemctl restart nginx; then
                       echo "Nginx restart failed. Attempting start..."
                       if ! $SUDO systemctl start nginx; then
-                        $SUDO systemctl --no-pager --full status nginx || true
-                        $SUDO journalctl -u nginx --no-pager -n 80 || true
-                        return 1
+                        echo "systemctl start failed. Falling back to nginx -s reload..."
+                        if ! $SUDO nginx -s reload; then
+                          $SUDO systemctl --no-pager --full status nginx || true
+                          $SUDO journalctl -u nginx --no-pager -n 80 || true
+                          return 1
+                        fi
                       fi
                     fi
                   fi
                 else
                   echo "Nginx service is not active (systemctl is-active rc=$active_rc). Attempting start..."
                   if ! $SUDO systemctl start nginx; then
-                    $SUDO systemctl --no-pager --full status nginx || true
-                    $SUDO journalctl -u nginx --no-pager -n 80 || true
-                    return 1
+                    echo "systemctl start failed. Falling back to nginx -s reload..."
+                    if ! $SUDO nginx -s reload 2>/dev/null; then
+                      if ! $SUDO nginx; then
+                        $SUDO systemctl --no-pager --full status nginx || true
+                        $SUDO journalctl -u nginx --no-pager -n 80 || true
+                        return 1
+                      fi
+                    fi
                   fi
                 fi
 
@@ -454,7 +462,22 @@ jobs:
             rm -f "$ARCHIVE_PRIMARY" "$ARCHIVE_FALLBACK"
 
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.level3.yml ps
-            curl -fsS http://127.0.0.1:3700/health >/dev/null
+            echo "Waiting for API Gateway to become healthy..."
+            gateway_healthy=0
+            for attempt in $(seq 1 15); do
+              if curl -fsS http://127.0.0.1:3700/health >/dev/null 2>&1; then
+                echo "Gateway healthy after ${attempt} attempt(s)."
+                gateway_healthy=1
+                break
+              fi
+              echo "Gateway not ready yet (attempt ${attempt}/15), retrying in 10s..."
+              sleep 10
+            done
+            if [ "$gateway_healthy" -eq 0 ]; then
+              echo "Gateway did not become healthy in time. Check logs:"
+              docker compose --env-file .env -f docker-compose.yml -f docker-compose.level3.yml logs --tail=50 api-gateway || true
+              exit 1
+            fi
             echo "Backend deployment completed successfully."
 
       - name: Verify public health endpoints
