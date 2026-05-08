@@ -255,38 +255,23 @@ jobs:
             fi
 
             # ── Bootstrap shared Traefik (idempotent) ──────────────────────────────────
-            # Traefik is NOT part of the app stack — it runs once, independent of
-            # deployments, and is shared across all stacks on this server.
-            # We ensure it exists and is up-to-date on every deploy, but never
-            # restart it if it is already healthy (avoids port-80/443 re-bind races).
-            TRAEFIK_DIR="/home/${{ secrets.OCI_USER }}/traefik"
-            mkdir -p "$TRAEFIK_DIR"
-
-            # Copy Traefik config from the freshly extracted release.
-            cp -r "$APP_DIR/config/traefik" "$TRAEFIK_DIR/config"
+            # Traefik runs once on the server, independent of app deployments.
+            # The shared external network allows all stacks to register routes.
+            # Relative paths in docker-compose.traefik.yml resolve from APP_DIR,
+            # where config/traefik/ already lives — no file copying needed.
 
             # Create the shared external network (no-op if already exists).
             docker network create traefik-public 2>/dev/null || true
 
-            # Pull the latest Traefik image so upgrades are picked up.
+            # Pull latest image so upgrades are applied automatically.
             docker pull traefik:v3.3
 
-            if docker inspect shared-traefik >/dev/null 2>&1; then
-              echo "shared-traefik container exists — reloading config without restart."
-              # If the image changed, recreate; otherwise just ensure it is running.
-              docker compose \
-                --env-file "$APP_DIR/docker.env" \
-                -f "$APP_DIR/docker-compose.traefik.yml" \
-                --project-directory "$TRAEFIK_DIR" \
-                up -d --no-recreate
-            else
-              echo "Starting shared-traefik for the first time."
-              docker compose \
-                --env-file "$APP_DIR/docker.env" \
-                -f "$APP_DIR/docker-compose.traefik.yml" \
-                --project-directory "$TRAEFIK_DIR" \
-                up -d
-            fi
+            # --no-recreate: if shared-traefik is already running and nothing
+            # changed, leave it alone (avoids any port-80/443 rebind).
+            (cd "$APP_DIR" && docker compose \
+              --env-file docker.env \
+              -f docker-compose.traefik.yml \
+              up -d --no-recreate)
 
             echo "Shared Traefik is running."
 
