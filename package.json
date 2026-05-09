@@ -48,7 +48,14 @@
     "db:recreate": "powershell -ExecutionPolicy Bypass -File scripts/recreate-database.ps1 -Force",
     "db:recreate:seed": "powershell -ExecutionPolicy Bypass -File scripts/recreate-database.ps1 -Force -SkipSeed && cd database && node verify-schema.js && node seed.js && node verify-seed.js",
     "db:recrate:seed": "pnpm db:recreate:seed",
-    "db:reset": "pnpm db:clean && pnpm db:migrate && pnpm db:seed"
+    "db:reset": "pnpm db:clean && pnpm db:migrate && pnpm db:seed",
+
+    "secrets:generate": "node -e \"const c=require('crypto'),r=b=>c.randomBytes(b).toString('base64');[['LSP_JWT_SECRET',48],['LSP_JWT_REFRESH_SECRET',48],['LSP_GATEWAY_INTERNAL_SECRET',48],['LSP_ENCRYPTION_KEY',64],['LSP_SESSION_SECRET',32],['LSP_AUTH_SECRET',32],['LSP_REDIS_PASSWORD',32],['LSP_POSTGRES_PASSWORD',32]].forEach(([k,b])=>console.log(k+'='+r(b)))\"",
+    "secrets:edit": "node scripts/open-secrets.js",
+    "secrets:pull": "node -e \"const {execSync}=require('child_process');try{execSync('pwsh -ExecutionPolicy Bypass -File scripts/pull-secrets-from-github.ps1',{stdio:'inherit'})}catch{execSync('powershell -ExecutionPolicy Bypass -File scripts/pull-secrets-from-github.ps1',{stdio:'inherit'})}\"",
+    "secrets:push": "node -e \"const {execSync}=require('child_process');try{execSync('pwsh -ExecutionPolicy Bypass -File scripts/push-secrets-to-github.ps1',{stdio:'inherit'})}catch{execSync('powershell -ExecutionPolicy Bypass -File scripts/push-secrets-to-github.ps1',{stdio:'inherit'})}\"",
+    "secrets:push:bash": "bash scripts/push-secrets-to-github.sh --repo gostgmaer/Local-Service-Marketplace",
+    "secrets:setup": "node scripts/open-secrets.js"
   },
   "engines": {
     "node": ">=18.0.0",

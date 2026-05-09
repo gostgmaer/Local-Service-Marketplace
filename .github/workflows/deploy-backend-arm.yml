@@ -10,6 +10,16 @@ on:
         required: false
         default: false
         type: boolean
+      run_seed:
+        description: "Run seed.js after migrations (safe to repeat — skips existing data)"
+        required: false
+        default: false
+        type: boolean
+      skip_migrations:
+        description: "Skip migrations step (only useful for hotfix deploys)"
+        required: false
+        default: false
+        type: boolean
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -187,6 +197,132 @@ jobs:
           git archive --format=tar.gz --output artifacts/release.tgz HEAD
           ls -lh artifacts/release.tgz
 
+      - name: Generate docker.env from GitHub Secrets
+        run: |
+          mkdir -p env-upload
+          {
+            # ── Runtime ──────────────────────────────────────────────────────
+            echo "NODE_ENV=production"
+            echo "COMPOSE_PROFILES=workers"
+            echo "TOKEN_VALIDATION_STRATEGY=local"
+
+            # ── Security ─────────────────────────────────────────────────────
+            echo "JWT_SECRET=${{ secrets.LSP_JWT_SECRET }}"
+            echo "JWT_REFRESH_SECRET=${{ secrets.LSP_JWT_REFRESH_SECRET }}"
+            echo "GATEWAY_INTERNAL_SECRET=${{ secrets.LSP_GATEWAY_INTERNAL_SECRET }}"
+            echo "ENCRYPTION_KEY=${{ secrets.LSP_ENCRYPTION_KEY }}"
+            echo "SESSION_SECRET=${{ secrets.LSP_SESSION_SECRET }}"
+            echo "AUTH_SECRET=${{ secrets.LSP_AUTH_SECRET }}"
+
+            # ── Bootstrap admin users ─────────────────────────────────────────
+            echo "SUPER_ADMIN_EMAIL=${{ secrets.LSP_SUPER_ADMIN_EMAIL }}"
+            echo "SUPER_ADMIN_PASSWORD=${{ secrets.LSP_SUPER_ADMIN_PASSWORD }}"
+            echo "SUPER_ADMIN_NAME=${{ vars.LSP_SUPER_ADMIN_NAME || 'Super Admin' }}"
+            echo "ADMIN_EMAIL=${{ vars.LSP_ADMIN_EMAIL }}"
+            echo "ADMIN_PASSWORD=${{ secrets.LSP_ADMIN_PASSWORD }}"
+            echo "ADMIN_NAME=${{ vars.LSP_ADMIN_NAME || 'Admin' }}"
+
+            # ── PostgreSQL ────────────────────────────────────────────────────
+            echo "POSTGRES_USER=${{ vars.LSP_POSTGRES_USER || 'postgres' }}"
+            echo "POSTGRES_PASSWORD=${{ secrets.LSP_POSTGRES_PASSWORD }}"
+            echo "POSTGRES_DB=${{ vars.LSP_POSTGRES_DB || 'marketplace' }}"
+            echo "DATABASE_HOST=postgres"
+            echo "DATABASE_PORT=5432"
+            echo "DATABASE_USER=${{ vars.LSP_POSTGRES_USER || 'postgres' }}"
+            echo "DATABASE_PASSWORD=${{ secrets.LSP_POSTGRES_PASSWORD }}"
+            echo "DATABASE_NAME=${{ vars.LSP_POSTGRES_DB || 'marketplace' }}"
+            echo "DATABASE_SSL=false"
+            echo "DATABASE_URL=postgresql://${{ vars.LSP_POSTGRES_USER || 'postgres' }}:${{ secrets.LSP_POSTGRES_PASSWORD }}@postgres:5432/${{ vars.LSP_POSTGRES_DB || 'marketplace' }}"
+            echo "DB_POOL_MAX=20"
+            echo "DB_POOL_MIN=5"
+
+            # ── Redis ─────────────────────────────────────────────────────────
+            echo "REDIS_HOST=redis"
+            echo "REDIS_PORT=6379"
+            echo "REDIS_PASSWORD=${{ secrets.LSP_REDIS_PASSWORD }}"
+            echo "REDIS_RATE_LIMIT_ENABLED=true"
+
+            # ── Domains & CORS ────────────────────────────────────────────────
+            echo "LSP_API_DOMAIN=${{ vars.LSP_API_DOMAIN || 'lsp-api.easydev.in' }}"
+            echo "LSP_FRONTEND_DOMAIN=${{ vars.LSP_FRONTEND_DOMAIN || 'lsp.easydev.in' }}"
+            echo "DOMAIN_NAME=${{ vars.LSP_FRONTEND_DOMAIN || 'lsp.easydev.in' }}"
+            echo "FRONTEND_URL=https://${{ vars.LSP_FRONTEND_DOMAIN || 'lsp.easydev.in' }}"
+            # LSP_CORS_ORIGINS: explicit comma-separated list; falls back to frontend domain only
+            _CORS="${{ vars.LSP_CORS_ORIGINS }}"
+            _CORS="${_CORS:-https://${{ vars.LSP_FRONTEND_DOMAIN || 'lsp.easydev.in' }}}"
+            echo "CORS_ORIGIN=$_CORS"
+            echo "CORS_ORIGINS=$_CORS"
+            echo "NEXT_PUBLIC_API_URL=https://${{ vars.LSP_API_DOMAIN || 'lsp-api.easydev.in' }}"
+            echo "INTERNAL_API_URL=http://api-gateway:3000"
+            echo "NEXTAUTH_URL=https://${{ vars.LSP_FRONTEND_DOMAIN || 'lsp.easydev.in' }}"
+
+            # ── External services ─────────────────────────────────────────────
+            echo "FILE_UPLOAD_SERVICE_URL=${{ vars.LSP_FILE_UPLOAD_SERVICE_URL }}"
+            echo "FILE_DEFAULT_TENANT_ID=${{ vars.LSP_DEFAULT_TENANT_ID || 'default' }}"
+            echo "NOTIFICATION_SERVICE_URL=${{ vars.LSP_NOTIFICATION_SERVICE_URL }}"
+            echo "NOTIFICATION_API_KEY=${{ secrets.LSP_NOTIFICATION_API_KEY }}"
+            echo "NOTIFICATION_FROM_EMAIL=${{ vars.LSP_NOTIFICATION_FROM_EMAIL }}"
+            echo "NOTIFICATION_FROM_NAME=${{ vars.LSP_NOTIFICATION_FROM_NAME || 'Local Service Marketplace' }}"
+            echo "DEFAULT_TENANT_ID=${{ vars.LSP_DEFAULT_TENANT_ID || 'local-service-marketplace' }}"
+
+            # ── Internal service URLs (Docker network) ────────────────────────
+            echo "IDENTITY_SERVICE_URL=http://identity-service:3001"
+            echo "MARKETPLACE_SERVICE_URL=http://marketplace-service:3003"
+            echo "PAYMENT_SERVICE_URL=http://payment-service:3006"
+            echo "COMMS_SERVICE_URL=http://comms-service:3007"
+            echo "OVERSIGHT_SERVICE_URL=http://oversight-service:3010"
+
+            # ── API Gateway ───────────────────────────────────────────────────
+            echo "API_GATEWAY_PORT=3700"
+            echo "RATE_LIMIT_WINDOW_MS=60000"
+            echo "RATE_LIMIT_MAX_REQUESTS=100"
+            echo "REQUEST_TIMEOUT_MS=72000"
+
+            # ── Feature flags ─────────────────────────────────────────────────
+            echo "CACHE_ENABLED=true"
+            echo "WORKERS_ENABLED=true"
+            echo "WORKER_CONCURRENCY=10"
+            echo "EVENT_BUS_ENABLED=false"
+            echo "BACKGROUND_JOBS_ENABLED=false"
+            echo "RATE_LIMITING_ENABLED=true"
+            echo "FEATURE_FLAGS_ENABLED=true"
+            echo "ANALYTICS_ENABLED=false"
+            echo "INFRASTRUCTURE_ENABLED=false"
+            echo "MESSAGING_ENABLED=false"
+            echo "API_GATEWAY_ENABLED=true"
+            echo "EMAIL_ENABLED=true"
+            echo "SMS_ENABLED=false"
+            echo "IN_APP_NOTIFICATIONS_ENABLED=false"
+            echo "PUSH_NOTIFICATIONS_ENABLED=false"
+            echo "NOTIFICATION_PREFERENCES_ENABLED=false"
+            echo "DEVICE_TRACKING_ENABLED=false"
+
+            # ── Payment ───────────────────────────────────────────────────────
+            echo "PAYMENT_GATEWAY=${{ vars.LSP_PAYMENT_GATEWAY || 'mock' }}"
+            echo "RAZORPAY_KEY_ID=${{ secrets.LSP_RAZORPAY_KEY_ID }}"
+            echo "RAZORPAY_KEY_SECRET=${{ secrets.LSP_RAZORPAY_KEY_SECRET }}"
+            echo "RAZORPAY_WEBHOOK_SECRET=${{ secrets.LSP_RAZORPAY_WEBHOOK_SECRET }}"
+            echo "STRIPE_SECRET_KEY=${{ secrets.LSP_STRIPE_SECRET_KEY }}"
+            echo "STRIPE_WEBHOOK_SECRET=${{ secrets.LSP_STRIPE_WEBHOOK_SECRET }}"
+
+            # ── OAuth (optional) ──────────────────────────────────────────────
+            echo "GOOGLE_CLIENT_ID=${{ vars.LSP_GOOGLE_CLIENT_ID }}"
+            echo "GOOGLE_CLIENT_SECRET=${{ secrets.LSP_GOOGLE_CLIENT_SECRET }}"
+            echo "GOOGLE_CALLBACK_URL=https://${{ vars.LSP_API_DOMAIN || 'lsp-api.easydev.in' }}/api/v1/user/auth/google/callback"
+            echo "FACEBOOK_APP_ID=${{ vars.LSP_FACEBOOK_APP_ID }}"
+            echo "FACEBOOK_APP_SECRET=${{ secrets.LSP_FACEBOOK_APP_SECRET }}"
+            echo "FACEBOOK_CALLBACK_URL=https://${{ vars.LSP_API_DOMAIN || 'lsp-api.easydev.in' }}/api/v1/user/auth/facebook/callback"
+
+            # ── Application ───────────────────────────────────────────────────
+            echo "APPLICATION_NAME=Local Service Marketplace"
+            echo "LOG_LEVEL=info"
+            echo "ENABLE_LOGGING=true"
+            echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.LSP_GOOGLE_MAPS_API_KEY }}"
+
+          } > env-upload/docker.env.from-gha
+          chmod 600 env-upload/docker.env.from-gha
+          echo "Generated docker.env ($(wc -l < env-upload/docker.env.from-gha) lines)"
+
       - name: Upload release archive to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -195,6 +331,18 @@ jobs:
           key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
           port: ${{ secrets.OCI_PORT || 22 }}
           source: artifacts/release.tgz
+          strip_components: 1
+          target: /home/${{ secrets.OCI_USER }}/
+          overwrite: true
+
+      - name: Upload docker.env to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USER }}
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OCI_PORT || 22 }}
+          source: env-upload/docker.env.from-gha
           strip_components: 1
           target: /home/${{ secrets.OCI_USER }}/
           overwrite: true
@@ -233,9 +381,19 @@ jobs:
             mkdir -p "$STAGE_DIR"
             tar -xzf "$ARCHIVE" -C "$STAGE_DIR"
 
-            # Keep server runtime configuration intact across deployments.
-            if [ -f "$APP_DIR/.env" ]; then cp "$APP_DIR/.env" "$STAGE_DIR/.env"; fi
-            if [ -f "$APP_DIR/docker.env" ]; then cp "$APP_DIR/docker.env" "$STAGE_DIR/docker.env"; fi
+            # Use docker.env written from GitHub Secrets (uploaded in prior step).
+            # Falls back to the persisted server file if the upload step was skipped.
+            GHA_ENV="$HOME/docker.env.from-gha"
+            if [ -f "$GHA_ENV" ]; then
+              cp "$GHA_ENV" "$STAGE_DIR/docker.env"
+              cp "$GHA_ENV" "$STAGE_DIR/.env"
+              rm -f "$GHA_ENV"
+              echo "docker.env: using GitHub Secrets"
+            else
+              if [ -f "$APP_DIR/docker.env" ]; then cp "$APP_DIR/docker.env" "$STAGE_DIR/docker.env"; fi
+              if [ -f "$APP_DIR/.env" ]; then cp "$APP_DIR/.env" "$STAGE_DIR/.env"; fi
+              echo "docker.env: using persisted file from server"
+            fi
 
             ROLLBACK=0
             if [ -d "$APP_DIR" ]; then
@@ -268,7 +426,11 @@ jobs:
               done
 
               # Uses explicit backend service list in deploy script; frontend is not deployed.
-              ./scripts/deploy-production-worker.sh --env-file .env --no-build
+              SKIP_MIG_FLAG=""
+              if [ "${{ github.event.inputs.skip_migrations }}" = "true" ]; then
+                SKIP_MIG_FLAG="--skip-migrations"
+              fi
+              ./scripts/deploy-production-worker.sh --env-file .env --no-build $SKIP_MIG_FLAG
             }
 
             apply_runtime_limits() {
@@ -349,6 +511,41 @@ jobs:
               exit 1
             fi
             echo "Backend deployment completed successfully."
+
+      - name: Run seed.js (categories, RBAC, feature flags)
+        if: ${{ github.event.inputs.run_seed == 'true' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USER }}
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OCI_PORT || 22 }}
+          script_stop: true
+          command_timeout: 10m
+          script: |
+            set -Eeuo pipefail
+            APP_DIR="/home/${{ secrets.OCI_USER }}/${{ env.DEPLOY_APP_DIR_NAME }}"
+            cd "$APP_DIR"
+
+            # Read DB credentials from docker.env
+            DB_USER="$(grep -E '^(DATABASE_USER|POSTGRES_USER)=' docker.env | head -1 | cut -d= -f2-)"
+            DB_PASS="$(grep -E '^(DATABASE_PASSWORD|POSTGRES_PASSWORD)=' docker.env | head -1 | cut -d= -f2-)"
+            DB_NAME="$(grep -E '^(DATABASE_NAME|POSTGRES_DB)=' docker.env | head -1 | cut -d= -f2-)"
+            DB_USER="${DB_USER:-postgres}"
+            DB_NAME="${DB_NAME:-marketplace}"
+
+            echo "Running seed.js (idempotent — skips existing rows)..."
+            docker run --rm \
+              --network host \
+              -e POSTGRES_HOST=127.0.0.1 \
+              -e POSTGRES_PORT=54321 \
+              -e POSTGRES_USER="$DB_USER" \
+              -e POSTGRES_PASSWORD="$DB_PASS" \
+              -e POSTGRES_DB="$DB_NAME" \
+              -v "${APP_DIR}/database:/src:ro" \
+              node:20-alpine \
+              sh -c "cp -R /src /tmp/db && cd /tmp/db && npm install --omit=dev --no-audit --no-fund >/dev/null && node seed.js"
+            echo "Seed completed."
 
       - name: Verify public health endpoints
         run: |

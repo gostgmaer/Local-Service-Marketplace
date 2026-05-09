@@ -206,85 +206,15 @@ class DatabaseSeeder {
 			await runStep('seedServiceCategories', () => this.seedServiceCategories());
 			await runStep('seedRBAC', () => this.seedRBAC());
 			await runStep('seedUsers', () => this.seedUsers());
-			await runStep('seedEmailVerificationTokens', () => this.seedEmailVerificationTokens());
-			await runStep('seedPasswordResetTokens', () => this.seedPasswordResetTokens());
-			await runStep('seedSessions', () => this.seedSessions());
-			await runStep('seedLoginAttempts', () => this.seedLoginAttempts());
-			await runStep('seedLoginHistory', () => this.seedLoginHistory());
-			await runStep('seedSocialAccounts', () => this.seedSocialAccounts());
-			await runStep('seedUserDevices', () => this.seedUserDevices());
-			await runStep('seedTwoFactorSecrets', () => this.seedTwoFactorSecrets());
-			await runStep('seedMagicLinkTokens', () => this.seedMagicLinkTokens());
-			await runStep('seedAccountDeletionRequests', () => this.seedAccountDeletionRequests());
-
-			// Providers
-			await runStep('seedProviders', () => this.seedProviders());
-			await runStep('seedProviderServices', () => this.seedProviderServices());
-			await runStep('seedProviderAvailability', () => this.seedProviderAvailability());
-			await runStep('seedProviderPortfolio', () => this.seedProviderPortfolio());
-			await runStep('seedProviderDocuments', () => this.seedProviderDocuments());
-
-			// Marketplace
-			await runStep('seedLocations', () => this.seedLocations());
-			await runStep('seedServiceRequests', () => this.seedServiceRequests());
-			await runStep('seedProposals', () => this.seedProposals());
-			await runStep('seedJobs', () => this.seedJobs());
-
-			// Payments
-			await runStep('seedPaymentWebhooks', () => this.seedPaymentWebhooks());
-			await runStep('seedPayments', () => this.seedPayments());
-			await runStep('seedRefunds', () => this.seedRefunds());
-
-			// Reviews & Messaging
-			await runStep('seedReviews', () => this.seedReviews());
-			await runStep('seedReviewHelpfulVotes', () => this.seedReviewHelpfulVotes());
-			await runStep('seedMessages', () => this.seedMessages());
-			await runStep('seedAttachments', () => this.seedAttachments());
-
-			// Comms
-			await runStep('seedNotifications', () => this.seedNotifications());
-			await runStep('seedNotificationDeliveries', () => this.seedNotificationDeliveries());
-
-			// Marketplace extras
-			await runStep('seedFavorites', () => this.seedFavorites());
-			await runStep('seedCoupons', () => this.seedCoupons());
-			await runStep('seedCouponUsage', () => this.seedCouponUsage());
-			await runStep('seedDisputes', () => this.seedDisputes());
-
-			// Oversight
-			await runStep('seedAuditLogs', () => this.seedAuditLogs());
-			await runStep('seedUserActivityLogs', () => this.seedUserActivityLogs());
-			await runStep('seedAdminActions', () => this.seedAdminActions());
-			await runStep('seedContactMessages', () => this.seedContactMessages());
-			await runStep('seedDailyMetrics', () => this.seedDailyMetrics());
 
 			// Infrastructure
-			await runStep('seedEvents', () => this.seedEvents());
-			await runStep('seedBackgroundJobs', () => this.seedBackgroundJobs());
-			await runStep('seedRateLimits', () => this.seedRateLimits());
 			await runStep('seedFeatureFlags', () => this.seedFeatureFlags());
 			await runStep('seedSystemSettings', () => this.seedSystemSettings());
 
-			// Subscriptions
-			await runStep('seedPricingPlans', () => this.seedPricingPlans());
-			await runStep('seedSubscriptions', () => this.seedSubscriptions());
-
-			// User preferences
-			await runStep('seedSavedPaymentMethods', () => this.seedSavedPaymentMethods());
-			await runStep('seedNotificationPreferences', () => this.seedNotificationPreferences());
-			await runStep('seedUnsubscribes', () => this.seedUnsubscribes());
-			await runStep('seedProviderReviewAggregates', () => this.seedProviderReviewAggregates());
-
 			console.log("\n✅ Database seeding completed successfully!");
 			console.log("\n📊 Summary:");
-			console.log(`   Users: ${this.userIds.length}`);
-			console.log(`   Providers: ${this.providerRecordIds.length}`);
+			console.log(`   Users: ${this.userIds.length} (admin only)`);
 			console.log(`   Categories: ${this.categoryIds.length}`);
-			console.log(`   Service Requests: ${this.requestIds.length}`);
-			console.log(`   Proposals: ${this.proposalIds.length}`);
-			console.log(`   Jobs: ${this.jobIds.length}`);
-			console.log(`   Payments: ${this.paymentIds.length}`);
-			console.log(`   Messages: ${this.messageIds.length}`);
 		} catch (error) {
 			console.error("❌ Seeding encountered an error:", error.message);
 			console.log("✓ Continuing despite error...");
@@ -544,9 +474,8 @@ class DatabaseSeeder {
 	async seedUsers() {
 		console.log("👥 Seeding users...");
 		const hashedPassword = await bcrypt.hash(DEFAULT_SEED_PASSWORD, 10);
-		let created = 0;
 
-		// Create 1 admin
+		// Create 1 admin only
 		const adminId = uuid();
 		const adminEmail = this.nextEmail();
 		await safeInsert(
@@ -561,122 +490,9 @@ class DatabaseSeeder {
 			this.adminIds.push(actualAdminId);
 			this.userIds.push(actualAdminId);
 			this.userEmailMap.set(actualAdminId, adminEmail);
-			created++;
 		}
 
-		// Second admin
-		const admin2Email = this.nextEmail();
-		const admin2Id = uuid();
-		await safeInsert(
-			`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, role_id, email_verified, phone_verified, timezone, language, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM roles WHERE name = $7), $8, $9, $10, $11, $12)
-       ON CONFLICT (email) DO NOTHING`,
-			[
-				admin2Id,
-				displayId('USR'),
-				admin2Email,
-				"Kishor Support",
-				"+91 98765 43211",
-				hashedPassword,
-				"admin",
-				true,
-				true,
-				"UTC",
-				"en",
-				"active",
-			],
-		);
-		const existingAdmin2 = await safeQuery("SELECT id FROM users WHERE email = $1", [admin2Email]);
-		if (existingAdmin2.rows.length > 0) {
-			const actualAdmin2Id = existingAdmin2.rows[0].id;
-			this.adminIds.push(actualAdmin2Id);
-			this.userIds.push(actualAdmin2Id);
-			this.userEmailMap.set(actualAdmin2Id, admin2Email);
-		}
-
-		// Create 200 customers
-		for (let i = 0; i < 200; i++) {
-			const id = uuid();
-			const firstName = randomPick(indianFirstNames);
-			const lastName = randomPick(indianLastNames);
-			const email = this.nextEmail();
-
-			await safeInsert(
-				`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, role_id, email_verified, phone_verified, profile_picture_url, timezone, language, last_login_at, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM roles WHERE name = $7), $8, $9, $10, $11, $12, $13, $14)
-         ON CONFLICT (email) DO NOTHING`,
-				[
-					id,
-					displayId('USR'),
-					email,
-					`${firstName} ${lastName}`,
-					`+91${randomInt(6000000000, 9999999999)}`,
-					hashedPassword,
-					"customer",
-					randomInt(0, 1) === 1,
-					randomInt(0, 1) === 1,
-					faker.image.avatar(),
-					'Asia/Kolkata',
-					"en",
-					randomDate(new Date(2024, 0, 1), new Date()),
-					randomPick(["active", "active", "active", "suspended"]),
-				],
-			);
-
-			// Always check if the user exists (whether inserted or already existed)
-			const existingCustomer = await safeQuery("SELECT id FROM users WHERE email = $1", [email]);
-			if (existingCustomer.rows.length > 0) {
-				const actualCustomerId = existingCustomer.rows[0].id;
-				this.customerIds.push(actualCustomerId);
-				this.userIds.push(actualCustomerId);
-				this.userEmailMap.set(actualCustomerId, email);
-				created++;
-			}
-		}
-
-		// Create 120 providers
-		for (let i = 0; i < 120; i++) {
-			const id = uuid();
-			const firstName = randomPick(indianFirstNames);
-			const lastName = randomPick(indianLastNames);
-			const email = this.nextEmail();
-
-			await safeInsert(
-				`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, role_id, email_verified, phone_verified, profile_picture_url, timezone, language, last_login_at, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM roles WHERE name = $7), $8, $9, $10, $11, $12, $13, $14)
-         ON CONFLICT (email) DO NOTHING`,
-				[
-					id,
-					displayId('USR'),
-					email,
-					`${firstName} ${lastName}`,
-					`+91${randomInt(6000000000, 9999999999)}`,
-					hashedPassword,
-					"provider",
-					true,
-					true,
-					faker.image.avatar(),
-					'Asia/Kolkata',
-					"en",
-					randomDate(new Date(2024, 0, 1), new Date()),
-					"active",
-				],
-			);
-
-			// Always check if the user exists (whether inserted or already existed)
-			const existingProvider = await safeQuery("SELECT id FROM users WHERE email = $1", [email]);
-			if (existingProvider.rows.length > 0) {
-				const actualProviderId = existingProvider.rows[0].id;
-				this.providerIds.push(actualProviderId);
-				this.userIds.push(actualProviderId);
-				this.userEmailMap.set(actualProviderId, email);
-				created++;
-			}
-		}
-
-		console.log(
-			`   ✓ Created ${created} users (${this.customerIds.length} customers, ${this.providerIds.length} providers, ${this.adminIds.length} admins)`,
-		);
+		console.log(`   ✓ Created 1 admin user (email: ${adminEmail}, password: ${DEFAULT_SEED_PASSWORD})`);
 
 		// Backfill role_id from users.role → roles.name
 		await safeInsert(
