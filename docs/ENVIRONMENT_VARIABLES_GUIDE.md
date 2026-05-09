@@ -83,19 +83,20 @@ These variables **must** be set before starting the platform. Leaving them as de
 | `GATEWAY_INTERNAL_SECRET` | api-gateway, identity-service, oversight-service | **YES — same value** | Service-to-service auth for /auth/verify |
 | `ENCRYPTION_KEY` | identity-service, docker.env | No | Encrypt sensitive fields at rest |
 | `SESSION_SECRET` | docker.env, frontend | No | Session/NextAuth signing |
+| `AUTH_SECRET` | docker.env | No | NextAuth.js secret (frontend) |
 | `DATABASE_PASSWORD` | All services | **YES — same value** | PostgreSQL authentication |
+| `REDIS_PASSWORD` | All services | **YES — same value** | Redis authentication |
 
 ### Generating secrets
 
 ```bash
-# JWT_SECRET — minimum 32 chars, recommend 48+ base64
-openssl rand -base64 48
+# Recommended: use the built-in script (generates all 8 at once)
+pnpm secrets:generate
 
-# ENCRYPTION_KEY — recommend 64+ base64
-openssl rand -base64 64
-
-# SESSION_SECRET — 32 base64
-openssl rand -base64 32
+# Or generate individually:
+openssl rand -base64 48   # JWT_SECRET, JWT_REFRESH_SECRET, GATEWAY_INTERNAL_SECRET
+openssl rand -base64 64   # ENCRYPTION_KEY
+openssl rand -base64 32   # SESSION_SECRET, AUTH_SECRET, REDIS_PASSWORD, POSTGRES_PASSWORD
 ```
 
 ### TOKEN_VALIDATION_STRATEGY
@@ -110,6 +111,69 @@ Controls how the API Gateway validates Bearer tokens:
 ```env
 TOKEN_VALIDATION_STRATEGY=local   # or `api`
 ```
+
+---
+
+## 2b. GitHub Secrets / Variables Reference
+
+All production env vars are stored in GitHub and generated into `docker.env` on every deploy. Use `pnpm secrets:edit` + `pnpm secrets:push:bash` to manage them.
+
+### GitHub Secrets (sensitive — write-only)
+
+| GitHub Secret | docker.env variable | Notes |
+|---------------|--------------------|----|
+| `LSP_JWT_SECRET` | `JWT_SECRET` | 48-byte base64 |
+| `LSP_JWT_REFRESH_SECRET` | `JWT_REFRESH_SECRET` | 48-byte base64, different from JWT_SECRET |
+| `LSP_GATEWAY_INTERNAL_SECRET` | `GATEWAY_INTERNAL_SECRET` | 48-byte base64 |
+| `LSP_ENCRYPTION_KEY` | `ENCRYPTION_KEY` | 64-byte base64 |
+| `LSP_SESSION_SECRET` | `SESSION_SECRET` | 32-byte base64 |
+| `LSP_AUTH_SECRET` | `AUTH_SECRET` | 32-byte base64 (NextAuth) |
+| `LSP_REDIS_PASSWORD` | `REDIS_PASSWORD` | 32-byte base64 |
+| `LSP_POSTGRES_PASSWORD` | `POSTGRES_PASSWORD` + `DATABASE_PASSWORD` | Strong password |
+| `LSP_SUPER_ADMIN_EMAIL` | `SUPER_ADMIN_EMAIL` | Admin login email |
+| `LSP_SUPER_ADMIN_PASSWORD` | `SUPER_ADMIN_PASSWORD` | Min 12 chars |
+| `LSP_ADMIN_PASSWORD` | `ADMIN_PASSWORD` | Second admin (optional) |
+| `LSP_NOTIFICATION_API_KEY` | `NOTIFICATION_API_KEY` | External notification service key |
+| `LSP_RAZORPAY_KEY_ID` | `RAZORPAY_KEY_ID` | Payment gateway |
+| `LSP_RAZORPAY_KEY_SECRET` | `RAZORPAY_KEY_SECRET` | Payment gateway |
+| `LSP_RAZORPAY_WEBHOOK_SECRET` | `RAZORPAY_WEBHOOK_SECRET` | Webhook validation |
+| `LSP_STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY` | Payment gateway |
+| `LSP_STRIPE_WEBHOOK_SECRET` | `STRIPE_WEBHOOK_SECRET` | Webhook validation |
+| `LSP_GOOGLE_CLIENT_SECRET` | `GOOGLE_CLIENT_SECRET` | OAuth |
+| `LSP_FACEBOOK_APP_SECRET` | `FACEBOOK_APP_SECRET` | OAuth |
+| `LSP_GOOGLE_MAPS_API_KEY` | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Maps |
+
+### GitHub Variables (config — readable)
+
+| GitHub Variable | docker.env variable | Default |
+|-----------------|--------------------|----|
+| `LSP_API_DOMAIN` | `LSP_API_DOMAIN` | `lsp-api.easydev.in` |
+| `LSP_FRONTEND_DOMAIN` | `LSP_FRONTEND_DOMAIN` + `DOMAIN_NAME` | `lsp.easydev.in` |
+| `LSP_CORS_ORIGINS` | `CORS_ORIGIN` + `CORS_ORIGINS` | auto from `LSP_FRONTEND_DOMAIN` |
+| `LSP_POSTGRES_USER` | `POSTGRES_USER` + `DATABASE_USER` | `postgres` |
+| `LSP_POSTGRES_DB` | `POSTGRES_DB` + `DATABASE_NAME` | `marketplace` |
+| `LSP_SUPER_ADMIN_NAME` | `SUPER_ADMIN_NAME` | `Super Admin` |
+| `LSP_ADMIN_EMAIL` | `ADMIN_EMAIL` | — |
+| `LSP_ADMIN_NAME` | `ADMIN_NAME` | `Admin` |
+| `LSP_FILE_UPLOAD_SERVICE_URL` | `FILE_UPLOAD_SERVICE_URL` | — |
+| `LSP_DEFAULT_TENANT_ID` | `DEFAULT_TENANT_ID` + `FILE_DEFAULT_TENANT_ID` | `local-service-marketplace` |
+| `LSP_NOTIFICATION_SERVICE_URL` | `NOTIFICATION_SERVICE_URL` | — |
+| `LSP_NOTIFICATION_FROM_EMAIL` | `NOTIFICATION_FROM_EMAIL` | `noreply@easydev.in` |
+| `LSP_NOTIFICATION_FROM_NAME` | `NOTIFICATION_FROM_NAME` | `Local Service Marketplace` |
+| `LSP_PAYMENT_GATEWAY` | `PAYMENT_GATEWAY` | `mock` |
+| `LSP_GOOGLE_CLIENT_ID` | `GOOGLE_CLIENT_ID` | — |
+| `LSP_FACEBOOK_APP_ID` | `FACEBOOK_APP_ID` | — |
+
+### Deploy infrastructure secrets (set manually in GitHub)
+
+| Secret | Description |
+|--------|-------------|
+| `OCI_HOST` | Oracle Cloud server IP |
+| `OCI_USER` | SSH username (`ubuntu`) |
+| `OCI_SSH_PRIVATE_KEY` | Full contents of `~/.ssh/id_rsa` |
+| `OCI_PORT` | SSH port (usually `22`) |
+| `GHCR_USERNAME` | GitHub username |
+| `GHCR_TOKEN` | GitHub PAT with `repo` + `packages:write` scopes |
 
 ---
 

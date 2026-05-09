@@ -320,7 +320,7 @@ jobs:
             echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.LSP_GOOGLE_MAPS_API_KEY }}"
 
           } > env-upload/docker.env.from-gha
-          chmod 600 env-upload/docker.env.from-gha
+          chmod 644 env-upload/docker.env.from-gha
           echo "Generated docker.env ($(wc -l < env-upload/docker.env.from-gha) lines)"
 
       - name: Upload release archive to server
