@@ -214,7 +214,7 @@
     deploy:
       resources:
         limits:
-          cpus: '${CPU_IDENTITY:-0.25}'
+          cpus: '${CPU_IDENTITY:-0.15}'
           memory: ${MEM_SERVICE:-256M}
         reservations:
           memory: 64M
@@ -374,7 +374,7 @@
     deploy:
       resources:
         limits:
-          cpus: '${CPU_PAYMENT:-0.15}'
+          cpus: '${CPU_PAYMENT:-0.10}'
           memory: ${MEM_SERVICE:-256M}
         reservations:
           memory: 64M
@@ -437,7 +437,7 @@
     deploy:
       resources:
         limits:
-          cpus: '${CPU_COMMS:-0.15}'
+          cpus: '${CPU_COMMS:-0.10}'
           memory: ${MEM_SERVICE:-256M}
         reservations:
           memory: 64M
@@ -503,7 +503,7 @@
     deploy:
       resources:
         limits:
-          cpus: '${CPU_OVERSIGHT:-0.15}'
+          cpus: '${CPU_OVERSIGHT:-0.10}'
           memory: ${MEM_SERVICE:-256M}
         reservations:
           memory: 64M
