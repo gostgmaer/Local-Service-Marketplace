@@ -125,8 +125,11 @@ wait_for_postgres() {
 
 wait_for_redis() {
   info "Waiting for Redis readiness"
+  local redis_auth_arg=""
+  [[ -n "$REDIS_PASSWORD" ]] && redis_auth_arg="-a $REDIS_PASSWORD"
   for attempt in $(seq 1 60); do
-    if "${compose_cmd[@]}" exec -T redis redis-cli ping 2>/dev/null | grep -q "PONG"; then
+    # shellcheck disable=SC2086
+    if "${compose_cmd[@]}" exec -T redis redis-cli $redis_auth_arg ping 2>/dev/null | grep -q "PONG"; then
       info "Redis is ready"
       return 0
     fi
@@ -134,6 +137,42 @@ wait_for_redis() {
   done
 
   fail "Redis did not become ready in time"
+}
+
+# sync_postgres_password — reconciles the postgres superuser password to match
+# the value in docker.env.  Required when the data volume was first initialised
+# with a different password (e.g. the .env.example default 'postgres_dev_only').
+# The official postgres image allows local socket connections without a password
+# (pg_hba.conf trust auth), so docker exec without PGPASSWORD always works.
+sync_postgres_password() {
+  [[ -z "$POSTGRES_PASSWORD" ]] && return 0
+
+  info "Syncing PostgreSQL password to match docker.env"
+  # Try local trust auth first (pg_hba.conf local all all trust in official image)
+  if docker exec lsp-postgres \
+       psql -U "$POSTGRES_USER" \
+       -c "ALTER USER \"${POSTGRES_USER}\" WITH PASSWORD '${POSTGRES_PASSWORD}';" \
+       >/dev/null 2>&1; then
+    info "PostgreSQL password synced (local trust)"
+    return 0
+  fi
+  # Fallback: peer auth via OS user 'postgres'
+  if docker exec --user postgres lsp-postgres \
+       psql -U "$POSTGRES_USER" \
+       -c "ALTER USER \"${POSTGRES_USER}\" WITH PASSWORD '${POSTGRES_PASSWORD}';" \
+       >/dev/null 2>&1; then
+    info "PostgreSQL password synced (peer auth)"
+    return 0
+  fi
+  # Fallback: already using the right password
+  if docker exec lsp-postgres \
+       env PGPASSWORD="$POSTGRES_PASSWORD" \
+       psql -U "$POSTGRES_USER" \
+       -c "SELECT 1;" >/dev/null 2>&1; then
+    info "PostgreSQL password already matches docker.env"
+    return 0
+  fi
+  warn "Could not sync PostgreSQL password — authentication may fail"
 }
 
 ensure_base_schema() {
@@ -339,6 +378,7 @@ SESSION_SECRET="$(get_env_value SESSION_SECRET "$ENV_FILE")"
 POSTGRES_USER="$(get_env_value POSTGRES_USER "$ENV_FILE")"
 POSTGRES_PASSWORD="$(get_env_value POSTGRES_PASSWORD "$ENV_FILE")"
 POSTGRES_DB="$(get_env_value POSTGRES_DB "$ENV_FILE")"
+REDIS_PASSWORD="$(get_env_value REDIS_PASSWORD "$ENV_FILE")"
 
 DATABASE_USER="$(get_env_value DATABASE_USER "$ENV_FILE")"
 DATABASE_PASSWORD="$(get_env_value DATABASE_PASSWORD "$ENV_FILE")"
@@ -484,6 +524,7 @@ fi
 
 # Ensure infra dependencies are healthy before schema/migration/bootstrap steps.
 wait_for_postgres
+sync_postgres_password
 wait_for_redis
 ensure_base_schema
 
