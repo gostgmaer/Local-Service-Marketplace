@@ -55,7 +55,7 @@ services:
       resources:
         limits:
           cpus: '${CPU_IDENTITY_W:-0.5}'
-          memory: ${MEM_SERVICE_W:-256M}
+          memory: ${MEM_SERVICE_W:-512M}
         reservations:
           cpus: '0.1'
           memory: 128M
@@ -70,7 +70,7 @@ services:
       resources:
         limits:
           cpus: '${CPU_MARKETPLACE_W:-0.5}'
-          memory: ${MEM_SERVICE_W:-256M}
+          memory: ${MEM_SERVICE_W:-512M}
         reservations:
           cpus: '0.1'
           memory: 128M
@@ -85,7 +85,7 @@ services:
       resources:
         limits:
           cpus: '${CPU_PAYMENT_W:-0.25}'
-          memory: ${MEM_SERVICE_W:-256M}
+          memory: ${MEM_SERVICE_W:-512M}
         reservations:
           cpus: '0.1'
           memory: 128M
@@ -100,7 +100,7 @@ services:
       resources:
         limits:
           cpus: '${CPU_COMMS_W:-0.25}'
-          memory: ${MEM_SERVICE_W:-256M}
+          memory: ${MEM_SERVICE_W:-512M}
         reservations:
           cpus: '0.1'
           memory: 128M
@@ -116,7 +116,7 @@ services:
       resources:
         limits:
           cpus: '${CPU_OVERSIGHT_W:-0.25}'
-          memory: ${MEM_SERVICE_W:-256M}
+          memory: ${MEM_SERVICE_W:-512M}
         reservations:
           cpus: '0.1'
           memory: 128M
@@ -128,7 +128,7 @@ services:
       resources:
         limits:
           cpus: '${CPU_GATEWAY_W:-0.25}'
-          memory: ${MEM_SERVICE_W:-256M}
+          memory: ${MEM_SERVICE_W:-512M}
         reservations:
           cpus: '0.1'
           memory: 128M

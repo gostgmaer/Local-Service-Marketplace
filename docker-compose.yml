@@ -1,4 +1,4 @@
-﻿services:
+services:
   # Database
   postgres:
     image: postgres:17-alpine
@@ -56,10 +56,12 @@
       - "63790:6379"
     volumes:
       - redis_data:/data
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     networks:
       - marketplace-network
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ${REDIS_PASSWORD:+-a $REDIS_PASSWORD} ping | grep PONG || exit 1"]
+      test: ["CMD-SHELL", "redis-cli ${REDIS_PASSWORD:+-a $$REDIS_PASSWORD} ping | grep PONG || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -119,7 +121,7 @@
       retries: 5
 
   # One-shot container that creates all required Kafka topics before services start.
-  # Exits with code 0 once topics are created (idempotent â€” already-exists is not an error).
+  # Exits with code 0 once topics are created (idempotent — already-exists is not an error).
   kafka-init:
     image: confluentinc/cp-kafka:7.5.0
     container_name: lsp-kafka-init
@@ -161,7 +163,7 @@
       - full
     env_file:
       - docker.env
-    # ports deliberately omitted â€” only reachable via api-gateway on internal network
+    # ports deliberately omitted — only reachable via api-gateway on internal network
     expose:
       - "3001"
     environment:
@@ -214,7 +216,7 @@
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -282,7 +284,7 @@
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -374,7 +376,7 @@
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -437,7 +439,7 @@
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -503,7 +505,7 @@
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -562,7 +564,7 @@
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s
     deploy:
       resources:
         limits:
@@ -619,7 +621,7 @@
       - FILE_UPLOAD_SERVICE_URL=${FILE_UPLOAD_SERVICE_URL}
       - RATE_LIMIT_WINDOW_MS=60000
       - RATE_LIMIT_MAX_REQUESTS=100
-      # Redis rate limiting (optional â€” only needed with multiple gateway replicas)
+      # Redis rate limiting (optional — only needed with multiple gateway replicas)
       - REDIS_RATE_LIMIT_ENABLED=${REDIS_RATE_LIMIT_ENABLED:-false}
       - REDIS_HOST=${REDIS_HOST:-}
       - REDIS_PORT=${REDIS_PORT:-6379}

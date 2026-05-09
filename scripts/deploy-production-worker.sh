@@ -467,7 +467,20 @@ if [[ "$NO_BUILD" == false ]]; then
 fi
 up_cmd+=("${SERVICES[@]}")
 
-"${compose_cmd[@]}" "${up_cmd[@]}"
+if ! "${compose_cmd[@]}" "${up_cmd[@]}"; then
+  error "docker compose up failed — dumping container logs for diagnosis"
+  echo ""
+  for svc in "${SERVICES[@]}"; do
+    echo "══════════════════════════════════════════════"
+    echo "  LOGS: $svc (last 150 lines)"
+    echo "══════════════════════════════════════════════"
+    "${compose_cmd[@]}" logs --tail=150 "$svc" 2>/dev/null \
+      || docker logs "lsp-${svc}" --tail=150 2>/dev/null \
+      || echo "  (no logs available)"
+    echo ""
+  done
+  exit 1
+fi
 
 # Ensure infra dependencies are healthy before schema/migration/bootstrap steps.
 wait_for_postgres
