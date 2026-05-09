@@ -200,6 +200,11 @@
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
     networks:
       - marketplace-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
       interval: 30s
@@ -258,6 +263,10 @@
       - DB_POOL_MIN=${DB_POOL_MIN:-5}
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       identity-service:
         condition: service_healthy
       comms-service:
@@ -346,6 +355,10 @@
       - INSTAMOJO_API_URL=${INSTAMOJO_API_URL:-https://test.instamojo.com}
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       identity-service:
         condition: service_healthy
       comms-service:
@@ -410,6 +423,11 @@
       - JWT_SECRET=${JWT_SECRET}
     networks:
       - marketplace-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3007/health || exit 1"]
       interval: 30s
@@ -471,6 +489,11 @@
       - REQUEST_TIMEOUT_MS=${REQUEST_TIMEOUT_MS:-72000}
     networks:
       - marketplace-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3010/health || exit 1"]
       interval: 30s
