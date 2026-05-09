@@ -49,7 +49,9 @@ export const servicesConfig: Record<string, ServiceConfig> = {
     name: "infrastructure-service",
   },
   "file-upload-service": {
-    url: `${required("FILE_UPLOAD_SERVICE_URL")}/api`,
+    // Normalize: strip any trailing /api from the env var then re-append once,
+    // so FILE_UPLOAD_SERVICE_URL works whether it ends in /api or not.
+    url: `${required("FILE_UPLOAD_SERVICE_URL").replace(/\/api\/?$/, "")}/api`,
     name: "file-upload-service",
   },
 };

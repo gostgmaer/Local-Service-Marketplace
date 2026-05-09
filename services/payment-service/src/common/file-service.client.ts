@@ -84,7 +84,7 @@ export class FileServiceClient {
     if (!fileServiceUrl) {
       throw new Error("FILE_UPLOAD_SERVICE_URL must be configured");
     }
-    this.fileServiceUrl = fileServiceUrl;
+    this.fileServiceUrl = fileServiceUrl.replace(/\/api\/?$/, "");
     this.defaultTenantId =
       this.configService.get<string>("DEFAULT_TENANT_ID") || "default";
     this.requestTimeout = this.configService.get<number>(
