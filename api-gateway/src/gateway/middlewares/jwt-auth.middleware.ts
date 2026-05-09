@@ -163,7 +163,7 @@ export class JwtAuthMiddleware implements NestMiddleware {
     }
 
     // It's a private route and no token provided — block.
-    this.logger.error(
+    this.logger.warn(
       `Missing Authorization header for private route ${method} ${path}`,
       "JwtAuthMiddleware",
     );

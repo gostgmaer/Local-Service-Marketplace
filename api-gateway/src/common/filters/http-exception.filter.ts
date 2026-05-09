@@ -73,11 +73,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    // Log error
-    this.logger.error(
-      `${request.method} ${request.url} - ${status} - ${message}`,
-      exception instanceof Error ? exception.stack : "",
-    );
+    // Log error — 4xx client errors at warn, 5xx server errors at error
+    const logMsg = `${request.method} ${request.url} - ${status} - ${message}`;
+    if (status >= 500) {
+      this.logger.error(
+        logMsg,
+        exception instanceof Error ? exception.stack : "",
+      );
+    } else if (status === 401 || status === 403 || status === 404) {
+      this.logger.debug(logMsg);
+    } else {
+      this.logger.warn(logMsg);
+    }
 
     // Build standardized error response
     const errorResponse: StandardErrorResponse = {
