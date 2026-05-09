@@ -28,7 +28,7 @@ services:
       - --maxmemory
       - 256mb
       - --maxmemory-policy
-      - allkeys-lru
+      - noeviction
       - --save
       - "60"
       - "1000"
