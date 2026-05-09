@@ -501,13 +501,42 @@ compose_cmd=(
   -f docker-compose.level3.yml
 )
 
-up_cmd=(up -d)
-if [[ "$NO_BUILD" == false ]]; then
-  up_cmd+=(--build)
+# ── Phase 1: Infra only (postgres + redis) ───────────────────────────────────
+# Start infra first so we can sync the postgres password before app services
+# attempt to connect. The official postgres image only sets POSTGRES_PASSWORD
+# when the data directory is first created; subsequent runs keep the persisted
+# password. Running sync_postgres_password here ensures the password matches
+# docker.env on every deploy, even after the first one used a different value.
+info "Phase 1 — starting infra services (postgres, redis)"
+if ! "${compose_cmd[@]}" up -d postgres redis; then
+  error "Failed to start infra services. Logs:"
+  "${compose_cmd[@]}" logs --tail=80 postgres 2>/dev/null || true
+  "${compose_cmd[@]}" logs --tail=80 redis    2>/dev/null || true
+  exit 1
 fi
-up_cmd+=("${SERVICES[@]}")
 
-if ! "${compose_cmd[@]}" "${up_cmd[@]}"; then
+wait_for_postgres
+sync_postgres_password
+wait_for_redis
+
+# ── Phase 2: Application services ────────────────────────────────────────────
+APP_SERVICES=(
+  identity-service
+  marketplace-service
+  payment-service
+  comms-service
+  oversight-service
+  api-gateway
+)
+
+app_up_cmd=(up -d)
+if [[ "$NO_BUILD" == false ]]; then
+  app_up_cmd+=(--build)
+fi
+app_up_cmd+=("${APP_SERVICES[@]}")
+
+info "Phase 2 — starting application services"
+if ! "${compose_cmd[@]}" "${app_up_cmd[@]}"; then
   error "docker compose up failed — dumping container logs for diagnosis"
   echo ""
   for svc in "${SERVICES[@]}"; do
@@ -523,9 +552,6 @@ if ! "${compose_cmd[@]}" "${up_cmd[@]}"; then
 fi
 
 # Ensure infra dependencies are healthy before schema/migration/bootstrap steps.
-wait_for_postgres
-sync_postgres_password
-wait_for_redis
 ensure_base_schema
 
 if [[ "$SKIP_MIGRATIONS" == false ]]; then
