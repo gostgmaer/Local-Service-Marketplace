@@ -48,7 +48,7 @@ export class HealthController {
     const baseUrl = url.trim().replace(/\/+$/, "");
     const lowerBaseUrl = baseUrl.toLowerCase();
 
-    if (/(?:\/v1)?\/health(?:$|[?#])/.test(lowerBaseUrl)) {
+    if (/(?:\/v1)?\/health(?:\/|$|[?#])/.test(lowerBaseUrl)) {
       return baseUrl;
     }
 
@@ -226,7 +226,9 @@ export class HealthController {
         process.env.USER_SERVICE_URL || process.env.IDENTITY_SERVICE_URL,
       marketplaceService: process.env.MARKETPLACE_SERVICE_URL,
       notificationService: process.env.NOTIFICATION_SERVICE_URL,
-      fileUploadService: process.env.FILE_UPLOAD_SERVICE_URL,
+      fileUploadService: process.env.FILE_UPLOAD_SERVICE_URL
+        ? `${process.env.FILE_UPLOAD_SERVICE_URL.replace(/\/+$/, "")}/health/ready`
+        : undefined,
     };
 
     if (shouldCheckDependencies) {

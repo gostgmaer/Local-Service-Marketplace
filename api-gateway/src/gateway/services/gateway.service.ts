@@ -132,9 +132,15 @@ export class GatewayService {
       if (config.name === "infrastructure-service" && !infrastructureEnabled) {
         continue;
       }
-      // file-upload-service is an external third-party service — exclude from
-      // aggregated health so a Render cold-start doesn't flip status to "down".
       if (config.name === "file-upload-service") {
+        // Use base FILE_UPLOAD_SERVICE_URL (without /api) + the real health path
+        const base = this.configService
+          .get<string>("FILE_UPLOAD_SERVICE_URL", "")
+          .replace(/\/api\/?$/, "")
+          .replace(/\/+$/, "");
+        if (base) {
+          targets.set("file-upload-service", `${base}/health/ready`);
+        }
         continue;
       }
       if (!targets.has(config.name)) {
@@ -469,7 +475,11 @@ export class GatewayService {
         continue;
       }
 
-      const healthUrl = `${serviceUrl.replace(/\/+$/, "")}/health`;
+      // If the URL already contains a /health path (e.g. /health/ready), use
+      // it as-is; otherwise append /health for internal microservices.
+      const healthUrl = /\/health(?:\/|$|[?#])/.test(serviceUrl)
+        ? serviceUrl.replace(/\/+$/, "")
+        : `${serviceUrl.replace(/\/+$/, "")}/health`;
       const startedAt = Date.now();
 
       try {
