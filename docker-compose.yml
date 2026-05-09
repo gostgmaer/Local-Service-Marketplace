@@ -48,6 +48,10 @@
       - event
       - events
       - full
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:-}
     ports:
       - "63790:6379"
     volumes:
@@ -55,7 +59,7 @@
     networks:
       - marketplace-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli ${REDIS_PASSWORD:+-a $REDIS_PASSWORD} ping | grep PONG || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

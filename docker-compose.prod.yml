@@ -68,7 +68,7 @@ services:
   redis:
     restart: always
     ports: !override []
-    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--appendonly", "yes"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-}", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--appendonly", "yes"]
     profiles: []
     deploy:
       resources:
