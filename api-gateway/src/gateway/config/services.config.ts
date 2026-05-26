@@ -117,13 +117,14 @@ export const publicRoutes = [
   // ============================================
   // Authentication Endpoints
   // ============================================
+  "/api/v1/user/auth/register", // Create account (register alias)
   "/api/v1/user/auth/signup", // Create account
   "/api/v1/user/auth/login", // Email + password login
   "/api/v1/user/auth/2fa/login", // Step 2 of 2FA login (MFA challenge)
   "/api/v1/user/auth/refresh", // Refresh JWT token
   "/api/v1/user/auth/password-reset/request", // Request password reset
   "/api/v1/user/auth/password-reset/confirm", // Confirm password reset
-  "/api/v1/user/auth/forgot-password", // Forgot password
+  "/api/v1/user/auth/password-reset/verify-token", // Validate reset token (used on reset-password page)
   "/api/v1/user/auth/email/verify", // Verify email address
   "/api/v1/user/auth/check-identifier", // Check if email/phone exists
   "/api/v1/user/auth/verify", // Internal token verification (gateway only)
@@ -135,6 +136,9 @@ export const publicRoutes = [
   "/api/v1/user/auth/google/callback", // Google OAuth callback
   "/api/v1/user/auth/facebook", // Facebook OAuth initiate
   "/api/v1/user/auth/facebook/callback", // Facebook OAuth callback
+  "/api/v1/user/auth/apple", // Apple Sign In initiate
+  "/api/v1/user/auth/apple/callback", // Apple Sign In callback
+  "/api/v1/user/auth/apple/mobile", // Apple mobile token exchange
   "/api/v1/user/auth/oauth/exchange", // Exchange one-time OAuth code for tokens
 
   // ============================================
@@ -151,6 +155,12 @@ export const publicRoutes = [
   "/api/v1/user/auth/email/otp/verify", // Verify email OTP
 
   // ============================================
+  // Magic Link (Passwordless) Endpoints
+  // ============================================
+  "/api/v1/user/auth/magic-link/request", // Request magic sign-in link
+  "/api/v1/user/auth/magic-link/verify", // Verify magic link → JWT
+
+  // ============================================
   // Payment Webhooks (external services — no JWT)
   // ============================================
   "/api/v1/webhooks/", // All payment gateway webhooks: /webhooks/:gateway
@@ -159,7 +169,6 @@ export const publicRoutes = [
   // Public Information Endpoints
   // ============================================
   "/api/v1/admin/contact", // Contact form submission (public POST)
-  "/api/v1/review-aggregates/provider/", // View provider review aggregates (public)
 
   // ============================================
   // Public Configuration Endpoints
@@ -208,6 +217,11 @@ export const publicGetRoutes = [
   // ============================================
   "/api/v1/reviews", // Browse reviews (GET only)
   "/api/v1/providers/", // Includes /providers/:id/reviews
+
+  // ============================================
+  // Provider Review Aggregates (Public Viewing)
+  // ============================================
+  "/api/v1/review-aggregates/provider/", // View provider review aggregates (GET only)
 
   // ============================================
   // Pricing Plans (Public Information)

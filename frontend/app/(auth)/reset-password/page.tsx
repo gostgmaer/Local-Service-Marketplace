@@ -75,7 +75,7 @@ function ResetPasswordContent() {
       }
 
       try {
-        await apiClient.post("/user/auth/verify-reset-token", { token });
+        await apiClient.post("/user/auth/password-reset/verify-token", { token });
         setTokenValid(true);
       } catch (error) {
         setTokenValid(false);
@@ -94,9 +94,9 @@ function ResetPasswordContent() {
 
     setIsSubmitting(true);
     try {
-      await apiClient.post("/user/auth/reset-password", {
+      await apiClient.post("/user/auth/password-reset/confirm", {
         token,
-        password: data.password,
+        newPassword: data.password,
       });
 
       setResetSuccess(true);
