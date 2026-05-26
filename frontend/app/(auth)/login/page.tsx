@@ -148,7 +148,7 @@ function LoginContent() {
     setFocus,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: "onChange",
+    mode: "onTouched",
     defaultValues: { identifier: "", password: "" },
   });
 
@@ -271,14 +271,14 @@ function LoginContent() {
     }
   };
 
-  // Auto-detect input type and check backend (debounced)
+  // Auto-detect input type for the badge — does NOT call the backend or advance
+  // the step. The backend check + step transition only happens on explicit
+  // submit (Enter key / Continue button) so the user can freely edit their
+  // email or phone without the field suddenly becoming read-only.
   useEffect(() => {
-    // Only run the auto-check when the user is still on the identifier step.
-    // Skipping it for other steps prevents a second API call when `step`
-    // changes to "authenticate" inside checkIdentifierExists.
     if (step !== "identifier") return;
 
-    // Clear previous timeout
+    // Cancel any in-flight timeout (e.g. left from before a "Change" click)
     if (checkTimeoutRef.current) {
       clearTimeout(checkTimeoutRef.current);
     }
@@ -287,12 +287,7 @@ function LoginContent() {
       const type = detectInputType(identifier);
       setDetectedType(type);
 
-      // If valid format, check backend after 800ms delay
-      if (type !== "unknown") {
-        checkTimeoutRef.current = setTimeout(() => {
-          checkIdentifierExists(identifier, type);
-        }, 800);
-      } else {
+      if (type === "unknown") {
         setIdentifierExists(null);
         setOtpAvailable(false);
         setAvailableMethods([]);
@@ -303,13 +298,7 @@ function LoginContent() {
       setOtpAvailable(false);
       setAvailableMethods([]);
     }
-
-    return () => {
-      if (checkTimeoutRef.current) {
-        clearTimeout(checkTimeoutRef.current);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identifier, step]);
 
   // Auto-focus identifier field on mount
@@ -711,6 +700,19 @@ function LoginContent() {
                     </p>
                   )}
               </div>
+
+              {/* Step 1 Continue Button */}
+              {step === "identifier" && (
+                <Button
+                  type="submit"
+                  className="w-full"
+                  isLoading={isLoading || checkingIdentifier}
+                  disabled={isLoading || checkingIdentifier || detectedType === "unknown" || !identifier}
+                  aria-label="Continue"
+                >
+                  {checkingIdentifier ? "Checking..." : "Continue"}
+                </Button>
+              )}
 
               {/* Step 2: Method Selection (shown only when identifier is valid AND exists) */}
               {(step === "method" || step === "authenticate") &&
