@@ -351,7 +351,8 @@ function LoginContent() {
 
   // Unified submit handler - routes to correct backend based on detected type
   const onSubmit = async (data: LoginFormData) => {
-    // If we are still in Step 1, trigger the check immediately instead of submitting
+    // Step 1 is handled by the Continue button's onClick directly.
+    // This guard is a safety net for Enter-key submits on step 1.
     if (step === "identifier") {
       const type = detectInputType(data.identifier);
       if (type !== "unknown") {
@@ -704,11 +705,21 @@ function LoginContent() {
               {/* Step 1 Continue Button */}
               {step === "identifier" && (
                 <Button
-                  type="submit"
+                  type="button"
                   className="w-full"
                   isLoading={isLoading || checkingIdentifier}
                   disabled={isLoading || checkingIdentifier || detectedType === "unknown" || !identifier}
                   aria-label="Continue"
+                  onClick={() => {
+                    const type = detectInputType(identifier);
+                    if (type !== "unknown") {
+                      if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+                      checkIdentifierExists(identifier, type);
+                    } else {
+                      toast.error("Please enter a valid email address or phone number");
+                      setFocus("identifier");
+                    }
+                  }}
                 >
                   {checkingIdentifier ? "Checking..." : "Continue"}
                 </Button>
