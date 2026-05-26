@@ -123,6 +123,7 @@ export const publicRoutes = [
   "/api/v1/user/auth/refresh", // Refresh JWT token
   "/api/v1/user/auth/password-reset/request", // Request password reset
   "/api/v1/user/auth/password-reset/confirm", // Confirm password reset
+  "/api/v1/user/auth/forgot-password", // Forgot password
   "/api/v1/user/auth/email/verify", // Verify email address
   "/api/v1/user/auth/check-identifier", // Check if email/phone exists
   "/api/v1/user/auth/verify", // Internal token verification (gateway only)
