@@ -482,7 +482,7 @@ class DatabaseSeeder {
 			`INSERT INTO users (id, display_id, email, name, phone, password_hash, role, role_id, email_verified, status) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM roles WHERE name = $7), $8, $9)
        ON CONFLICT (email) DO NOTHING`,
-			[adminId, displayId('USR'), adminEmail, "Kishor Admin", "+91 98765 43210", hashedPassword, "admin", true, "active"],
+			[adminId, displayId('USR'), adminEmail, "Kishor Admin", "+919876543210", hashedPassword, "admin", true, "active"],
 		);
 		const existingAdmin = await safeQuery("SELECT id FROM users WHERE email = $1", [adminEmail]);
 		if (existingAdmin.rows.length > 0) {
