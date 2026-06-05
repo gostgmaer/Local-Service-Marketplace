@@ -47,7 +47,27 @@ export function RequestFilters({
 
   const handleFilterChange = (key: string, value: any) => {
     const newFilters = { ...activeFilters };
-    if (value !== "" && value !== null && value !== undefined) {
+
+    // Translate the `sort` shorthand to the API's sort_by / sort_order params
+    if (key === "sort") {
+      // Remove old sort keys first
+      delete newFilters.sort;
+      delete newFilters.sort_by;
+      delete newFilters.sort_order;
+
+      if (value === "recent") {
+        newFilters.sort_by = "created_at";
+        newFilters.sort_order = "desc";
+      } else if (value === "budget_desc") {
+        newFilters.sort_by = "budget";
+        newFilters.sort_order = "desc";
+      } else if (value === "budget_asc") {
+        newFilters.sort_by = "budget";
+        newFilters.sort_order = "asc";
+      }
+      // Store display value for the dropdown controlled state
+      if (value) newFilters.sort = value;
+    } else if (value !== "" && value !== null && value !== undefined) {
       newFilters[key] = value;
     } else {
       delete newFilters[key];

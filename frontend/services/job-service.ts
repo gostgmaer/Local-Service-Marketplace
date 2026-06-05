@@ -141,6 +141,7 @@ class JobService {
     if (params?.page) qs.append("page", String(params.page));
     if (params?.limit) qs.append("limit", String(params.limit));
     if (params?.status) qs.append("status", params.status);
+    if (params?.search) qs.append("search", params.search);
     const sortBy = params?.sortBy ?? params?.sort_by;
     const sortOrder = params?.sortOrder ?? params?.sort_order;
     if (sortBy) qs.append("sortBy", sortBy);

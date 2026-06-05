@@ -95,21 +95,24 @@ export default function NotificationsPage() {
     queryKey: ["notifications", page, limit, typeFilter, unreadOnly],
     queryFn: () => notificationService.getNotifications({
       limit,
-      cursor: page > 1 ? String((page - 1) * limit) : undefined,
+      page,
       type: typeFilter !== "all" ? typeFilter : undefined,
       read: unreadOnly ? false : undefined,
     }),
     enabled: notificationsEnabled && isAuthenticated,
   });
 
-  const notifications = Array.isArray(notificationsData) ? notificationsData : [];
+  const notifications = notificationsData?.data ?? [];
+  const hasMore = notificationsData?.hasMore ?? false;
 
   const markAsReadMutation = useMutation({
     mutationFn: (id: string) => notificationService.markAsRead(id),
     onSuccess: (_, id) => {
       queryClient.setQueryData(
         ["notifications", page, limit, typeFilter, unreadOnly],
-        (old: any) => Array.isArray(old) ? old.map((n) => n.id === id ? { ...n, read: true } : n) : old,
+        (old: any) => old
+          ? { ...old, data: old.data.map((n: any) => n.id === id ? { ...n, read: true } : n) }
+          : old,
       );
       decrementUnreadCount();
     },
@@ -120,7 +123,9 @@ export default function NotificationsPage() {
     onSuccess: () => {
       queryClient.setQueryData(
         ["notifications", page, limit, typeFilter, unreadOnly],
-        (old: any) => Array.isArray(old) ? old.map((n) => ({ ...n, read: true })) : old,
+        (old: any) => old
+          ? { ...old, data: old.data.map((n: any) => ({ ...n, read: true })) }
+          : old,
       );
       setUnreadCount(0);
     },
@@ -166,17 +171,17 @@ export default function NotificationsPage() {
                     Stay updated with your latest activities
                   </p>
                 </div>
-                {notifications && notifications.some((n) => !n.read) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => markAllAsReadMutation.mutate()}
-                    isLoading={markAllAsReadMutation.isPending}
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Mark All as Read
-                  </Button>
-                )}
+                  {notifications && notifications.some((n) => !n.read) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => markAllAsReadMutation.mutate()}
+                      isLoading={markAllAsReadMutation.isPending}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Mark All as Read
+                    </Button>
+                  )}
               </div>
 
               {/* Filters */}
@@ -273,11 +278,11 @@ export default function NotificationsPage() {
                     </div>
                   </CardContent>
                 </Card>
-                  {notifications.length >= limit && (
+                  {(page > 1 || hasMore) && (
                     <div className="mt-4 flex justify-center gap-2">
                       <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
                       <span className="flex items-center text-sm text-gray-600 dark:text-gray-400">Page {page}</span>
-                      <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)}>Next</Button>
+                      <Button variant="outline" size="sm" disabled={!hasMore} onClick={() => setPage((p) => p + 1)}>Next</Button>
                     </div>
                   )}
                     </>

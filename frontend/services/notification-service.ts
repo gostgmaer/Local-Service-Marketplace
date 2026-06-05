@@ -14,47 +14,54 @@ export interface Notification {
 export interface NotificationFilters {
   read?: boolean;
   type?: string;
-  cursor?: string;
+  page?: number;
   limit?: number;
+}
+
+export interface NotificationPage {
+  data: Notification[];
+  total: number;
+  hasMore: boolean;
 }
 
 class NotificationService {
   async getNotifications(
     filters?: NotificationFilters,
-  ): Promise<Notification[]> {
+  ): Promise<NotificationPage> {
     const params = new URLSearchParams();
     if (filters?.read !== undefined)
       params.append("read", filters.read.toString());
     if (filters?.type) params.append("type", filters.type);
-    if (filters?.cursor) params.append("cursor", filters.cursor);
+    if (filters?.page && filters.page > 1)
+      params.append("cursor", String((filters.page - 1) * (filters?.limit ?? 20)));
     if (filters?.limit) params.append("limit", filters.limit.toString());
 
-    const response = await apiClient.get<{
-      notifications: Notification[];
-      unreadCount: number;
-    }>(`/notifications?${params.toString()}`);
+    const response = await apiClient.get<any>(
+      `/notifications?${params.toString()}`,
+    );
     const payload: any = response.data;
 
+    let list: Notification[] = [];
+    let total = 0;
+
     if (Array.isArray(payload)) {
-      return payload as Notification[];
+      list = payload as Notification[];
+      total = list.length;
+    } else if (payload?.notifications && Array.isArray(payload.notifications)) {
+      list = payload.notifications as Notification[];
+      total = payload.total ?? payload.unreadCount ?? list.length;
+    } else if (payload?.data?.notifications && Array.isArray(payload.data.notifications)) {
+      list = payload.data.notifications as Notification[];
+      total = payload.data.total ?? list.length;
+    } else if (payload?.data && Array.isArray(payload.data)) {
+      list = payload.data as Notification[];
+      total = payload.total ?? list.length;
     }
 
-    if (payload?.notifications && Array.isArray(payload.notifications)) {
-      return payload.notifications as Notification[];
-    }
+    const limit = filters?.limit ?? 20;
+    const hasMore = list.length >= limit;
 
-    if (
-      payload?.data?.notifications &&
-      Array.isArray(payload.data.notifications)
-    ) {
-      return payload.data.notifications as Notification[];
-    }
-
-    if (payload?.data && Array.isArray(payload.data)) {
-      return payload.data as Notification[];
-    }
-
-    return [];
+    return { data: list, total, hasMore };
   }
 
   async markAsRead(id: string): Promise<void> {

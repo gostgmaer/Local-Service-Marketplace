@@ -363,20 +363,35 @@ class AdminService {
   async getAuditLogs(params?: {
     user_id?: string;
     action?: string;
-    cursor?: string;
+    page?: number;
     limit?: number;
-  }): Promise<AuditLog[]> {
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  }): Promise<{ data: AuditLog[]; total: number }> {
     const searchParams = new URLSearchParams();
     if (params?.user_id) searchParams.append("user_id", params.user_id);
     if (params?.action) searchParams.append("action", params.action);
-    if (params?.cursor) searchParams.append("cursor", params.cursor);
+    if (params?.page) searchParams.append("page", String(params.page));
     if (params?.limit) searchParams.append("limit", params.limit.toString());
+    if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
+    if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
 
-    const response = await apiClient.get<AuditLog[]>(
+    const response = await apiClient.get<any>(
       `/admin/audit-logs?${searchParams.toString()}`,
     );
-    // API client unwraps standardized response
-    return response.data || [];
+    const raw = response.data;
+    // Handle paginated envelope { data: [], total } or flat array
+    if (Array.isArray(raw)) {
+      return { data: raw as AuditLog[], total: raw.length };
+    }
+    const inner = raw?.data ?? raw;
+    const list: AuditLog[] = Array.isArray(inner?.data)
+      ? inner.data
+      : Array.isArray(inner)
+        ? inner
+        : [];
+    const total: number = inner?.total ?? raw?.total ?? list.length;
+    return { data: list, total };
   }
 
   async getSystemStats(): Promise<{
@@ -485,12 +500,16 @@ class AdminService {
     limit?: number;
     status?: string;
     search?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
   }): Promise<{ data: any[]; total: number }> {
     const qs = new URLSearchParams();
     if (params?.page) qs.append("page", String(params.page));
     if (params?.limit) qs.append("limit", String(params.limit));
     qs.append("verification_status", params?.status || "pending");
     if (params?.search) qs.append("search", params.search);
+    if (params?.sortBy) qs.append("sortBy", params.sortBy);
+    if (params?.sortOrder) qs.append("sortOrder", params.sortOrder);
     const response = await apiClient.get<any>(`/providers?${qs.toString()}`);
     const raw = response.data;
     return { data: raw?.data ?? [], total: raw?.total ?? 0 };

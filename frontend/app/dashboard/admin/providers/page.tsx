@@ -415,14 +415,16 @@ export default function ProviderVerificationPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const limit = 10;
 
   useRealtimeList(["provider:created", "provider:updated"], ["admin-providers"]);
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["admin-providers", statusFilter, page, searchQuery],
+    queryKey: ["admin-providers", statusFilter, page, searchQuery, sortBy, sortOrder],
     queryFn: () =>
-      adminService.getProviders({ page, limit, status: statusFilter, search: searchQuery || undefined }),
+      adminService.getProviders({ page, limit, status: statusFilter, search: searchQuery || undefined, sortBy, sortOrder }),
     refetchOnWindowFocus: false,
   });
 
@@ -472,6 +474,25 @@ export default function ProviderVerificationPage() {
                   onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                   className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 w-64"
                 />
+                <div className="flex items-center gap-2 ml-auto">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+                    className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                  >
+                    <option value="created_at">Date Applied</option>
+                    <option value="business_name">Business Name</option>
+                    <option value="rating">Rating</option>
+                  </select>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => { setSortOrder(e.target.value as "asc" | "desc"); setPage(1); }}
+                    className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                  >
+                    <option value="desc">Newest first</option>
+                    <option value="asc">Oldest first</option>
+                  </select>
+                </div>
               </div>
             </CardContent>
           </Card>

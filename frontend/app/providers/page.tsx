@@ -27,7 +27,13 @@ export default function ProvidersPage() {
         page,
         search: debouncedQuery || undefined,
         category_id: filters.category_id,
-        sort_by: filters.sort === "rating" ? "rating" : filters.sort === "recent" ? "created_at" : undefined,
+        sort_by: filters.sort === "rating"
+          ? "rating"
+          : filters.sort === "recent"
+            ? "created_at"
+            : filters.sort === "popular"
+              ? "total_jobs_completed"
+              : undefined,
         sort_order: filters.sort ? "desc" : undefined,
         min_rating: filters.min_rating ? Number(filters.min_rating) : undefined,
         verification_status: filters.verification_status || undefined,

@@ -19,6 +19,7 @@ import {
   RefreshCw,
   ChevronRight,
   ChevronLeft,
+  ArrowUpDown,
 } from "lucide-react";
 
 const ENTITY_COLORS: Record<string, string> = {
@@ -70,6 +71,8 @@ export default function AuditLogsPage() {
   const [userId, setUserId] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const limit = 25;
 
   useRealtimeList(
@@ -94,24 +97,21 @@ export default function AuditLogsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["admin-audit-logs", page, userId, actionFilter],
+    queryKey: ["admin-audit-logs", page, userId, actionFilter, sortBy, sortOrder],
     queryFn: () =>
       adminService.getAuditLogs({
         user_id: userId || undefined,
         action: actionFilter || undefined,
+        page,
         limit,
-        cursor: undefined,
+        sortBy,
+        sortOrder,
       }),
     staleTime: 30_000,
   });
 
-  // getAuditLogs returns AuditLog[] directly
-  const logs: AuditLog[] = Array.isArray(rawData)
-    ? rawData
-    : ((rawData as any)?.data ?? []);
-  const total: number = Array.isArray(rawData)
-    ? rawData.length
-    : ((rawData as any)?.total ?? logs.length);
+  const logs: AuditLog[] = rawData?.data ?? [];
+  const total: number = rawData?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const filtered = search
@@ -196,6 +196,27 @@ export default function AuditLogsPage() {
                     Clear filters
                   </Button>
                 )}
+                {/* Sort controls */}
+                <div className="flex items-center gap-2 ml-auto">
+                  <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+                    className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white text-sm"
+                  >
+                    <option value="created_at">Date</option>
+                    <option value="action">Action</option>
+                    <option value="entity">Entity</option>
+                  </select>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => { setSortOrder(e.target.value as "asc" | "desc"); setPage(1); }}
+                    className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800 dark:text-white text-sm"
+                  >
+                    <option value="desc">Newest first</option>
+                    <option value="asc">Oldest first</option>
+                  </select>
+                </div>
               </div>
             </CardContent>
           </Card>
