@@ -123,9 +123,10 @@ export default function NotificationsPage() {
     onSuccess: () => {
       queryClient.setQueryData(
         ["notifications", page, limit, typeFilter, unreadOnly],
-        (old: any) => old
-          ? { ...old, data: old.data.map((n: any) => ({ ...n, read: true })) }
-          : old,
+        (old: any) => {
+          if (!old?.data) return old;
+          return { ...old, data: old.data.map((n: any) => ({ ...n, read: true })) };
+        },
       );
       setUnreadCount(0);
     },

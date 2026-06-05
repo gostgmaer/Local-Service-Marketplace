@@ -86,9 +86,12 @@ export function kebabToTitle(str: string): string {
 }
 
 export function getInitials(name: string): string {
+  if (!name?.trim()) return "?";
   return name
-    .split(" ")
-    .map((n) => n[0])
+    .trim()
+    .split(/\s+/)
+    .map((n) => n[0] ?? "")
+    .filter(Boolean)
     .join("")
     .toUpperCase()
     .substring(0, 2);

@@ -22,16 +22,26 @@ export function useTypingIndicator(receiverId: string | null) {
   const socket = useMessagingSocket();
   const [typingUsers, setTypingUsers] = useState<TypingState>({});
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track per-sender auto-clear timers so they can be cancelled and cleaned up
+  const autoClearTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Listen for typing events from others
   useMessagingEvent("message:typing", (data: { senderId: string; isTyping: boolean }) => {
     setTypingUsers((prev) => ({ ...prev, [data.senderId]: data.isTyping }));
 
-    // Auto-clear after 5 seconds (in case the stop event was missed)
+    // Cancel any existing auto-clear timer for this sender
+    const existing = autoClearTimers.current.get(data.senderId);
+    if (existing) clearTimeout(existing);
+
     if (data.isTyping) {
-      setTimeout(() => {
+      // Auto-clear after 5 seconds (in case the stop event was missed)
+      const id = setTimeout(() => {
         setTypingUsers((prev) => ({ ...prev, [data.senderId]: false }));
+        autoClearTimers.current.delete(data.senderId);
       }, 5000);
+      autoClearTimers.current.set(data.senderId, id);
+    } else {
+      autoClearTimers.current.delete(data.senderId);
     }
   });
 
@@ -54,10 +64,12 @@ export function useTypingIndicator(receiverId: string | null) {
     [socket, receiverId],
   );
 
-  // Cleanup timer on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      autoClearTimers.current.forEach(clearTimeout);
+      autoClearTimers.current.clear();
     };
   }, []);
 

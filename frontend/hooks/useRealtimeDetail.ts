@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSocketEvent } from "./useSocket";
+import { useSocketStore } from "./useSocket";
 
 /**
  * Invalidate a React Query detail entry when a socket event fires
@@ -47,8 +47,15 @@ export function useRealtimeDetail(
     };
   }, []);
 
-  for (const event of events) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useSocketEvent(event, handleEvent);
-  }
+  // Subscribe to all events in a single effect to avoid hooks-in-loop
+  // (calling useSocketEvent in a for-loop violates Rules of Hooks)
+  const socket = useSocketStore((s) => s.socket);
+  useEffect(() => {
+    if (!socket) return;
+    events.forEach((event) => socket.on(event, handleEvent));
+    return () => {
+      events.forEach((event) => socket.off(event, handleEvent));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, handleEvent, events.join(",")]);
 }

@@ -1,4 +1,5 @@
 // Analytics utility for tracking user events
+import { useEffect } from "react";
 
 interface AnalyticsEvent {
   action: string;
@@ -139,10 +140,14 @@ export const analytics = new Analytics();
 
 // React hook for page view tracking
 export function usePageView() {
-  if (typeof window === "undefined") return;
-
-  const pathname = window.location.pathname;
-  const title = document.title;
-
-  analytics.pageview({ path: pathname, title });
+  // Side effects must run inside useEffect, not directly in the render phase.
+  // Running synchronously fires on every re-render (and twice in Strict Mode).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    analytics.pageview({
+      path: window.location.pathname,
+      title: document.title,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }

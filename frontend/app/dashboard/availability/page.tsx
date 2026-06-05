@@ -130,9 +130,15 @@ export default function AvailabilityPage() {
   };
 
   const handleSave = () => {
+    // Helper: convert HH:MM (or H:MM) to minutes for numeric comparison
+    const toMinutes = (t: string) => {
+      const [h, m] = t.split(":").map(Number);
+      return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+    };
+
     // Validate individual slots
     for (const slot of slots) {
-      if (slot.start_time >= slot.end_time) {
+      if (toMinutes(slot.start_time) >= toMinutes(slot.end_time)) {
         toast.error("End time must be after start time");
         return;
       }
@@ -146,10 +152,10 @@ export default function AvailabilityPage() {
     }
     for (const daySlots of Object.values(byDay)) {
       const sorted = [...daySlots].sort((a, b) =>
-        a.start_time.localeCompare(b.start_time),
+        toMinutes(a.start_time) - toMinutes(b.start_time),
       );
       for (let i = 0; i < sorted.length - 1; i++) {
-        if (sorted[i].end_time > sorted[i + 1].start_time) {
+        if (toMinutes(sorted[i].end_time) > toMinutes(sorted[i + 1].start_time)) {
           const dayName =
             DAYS_OF_WEEK.find((d) => d.value === sorted[i].day_of_week)
               ?.label ?? "that day";

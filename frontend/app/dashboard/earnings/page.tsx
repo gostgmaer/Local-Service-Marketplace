@@ -76,7 +76,7 @@ export default function EarningsPage() {
     error: earningsError,
     refetch: refetchEarnings,
   } = useQuery({
-    queryKey: ["provider-earnings", dateRange],
+    queryKey: ["provider-earnings", providerId, dateRange],
     queryFn: () => {
       // Calculate date filters based on selected range
       let startDate: Date | undefined;
@@ -153,7 +153,7 @@ export default function EarningsPage() {
       }
 
       if (sortField === "id") {
-        return a.id.localeCompare(b.id) * direction;
+        return (a.id ?? "").localeCompare(b.id ?? "") * direction;
       }
 
       if (sortField === "customer") {

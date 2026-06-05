@@ -14,6 +14,8 @@ interface ProposalActionVariables {
  */
 export function useProposalAction() {
   return useOptimisticMutation<Proposal, ProposalActionVariables>({
+    // Base key — React Query partial matching will invalidate all variants.
+    // updateFn handles both flat-array and paginated { data: Proposal[] } shapes.
     queryKey: ["proposals"],
     mutationFn: async ({ proposalId, action }) => {
       if (action === "accept") {
@@ -22,17 +24,25 @@ export function useProposalAction() {
         return await proposalService.rejectProposal(proposalId);
       }
     },
-    updateFn: (oldData: Proposal[], { proposalId, action }) => {
-      if (!oldData) return [];
-
-      return oldData.map((proposal) =>
-        proposal.id === proposalId
-          ? {
-              ...proposal,
-              status: action === "accept" ? "accepted" : "rejected",
-            }
-          : proposal,
-      );
+    updateFn: (oldData: any, { proposalId, action }) => {
+      if (!oldData) return oldData;
+      const newStatus = action === "accept" ? "accepted" : "rejected";
+      // Handle paginated shape: { data: Proposal[], total, ... }
+      if (oldData?.data && Array.isArray(oldData.data)) {
+        return {
+          ...oldData,
+          data: oldData.data.map((p: Proposal) =>
+            p.id === proposalId ? { ...p, status: newStatus } : p,
+          ),
+        };
+      }
+      // Handle flat array shape
+      if (Array.isArray(oldData)) {
+        return oldData.map((p: Proposal) =>
+          p.id === proposalId ? { ...p, status: newStatus } : p,
+        );
+      }
+      return oldData;
     },
     successMessage: "Proposal updated successfully",
     errorMessage: "Failed to update proposal",

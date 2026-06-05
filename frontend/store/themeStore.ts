@@ -17,6 +17,12 @@ export const useThemeStore = create<ThemeState>()(
       isDark: false,
 
       setTheme: (theme: Theme) => {
+        // Guard: window/document are not available during SSR or edge runtime
+        if (typeof window === "undefined") {
+          set({ theme, isDark: theme === "dark" });
+          return;
+        }
+
         const isDark =
           theme === "dark" ||
           (theme === "system" &&
