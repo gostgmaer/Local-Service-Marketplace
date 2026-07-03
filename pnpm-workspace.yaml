@@ -1,0 +1,13 @@
+packages:
+  - database
+  - services/*
+  - frontend
+  - api-gateway
+allowBuilds:
+  '@firebase/util': true
+  '@nestjs/core': true
+  '@sentry/profiling-node': true
+  msgpackr-extract: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
