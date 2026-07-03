@@ -1,35 +1,45 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Stage 1: Build
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN for i in 1 2 3 4 5; do npm install -g pnpm@10.33.0 && break || sleep 2; done
+# Install pnpm (must match packageManager in root package.json, which pnpm self-manages against)
+RUN for i in 1 2 3 4 5; do npm install -g pnpm@11.9.0 && break || sleep 2; done
 
-COPY package*.json pnpm-lock.yaml* ./
+# Copy workspace manifests (root context lets pnpm see the whole monorepo lockfile)
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY api-gateway/package.json ./api-gateway/
+COPY database/package.json ./database/
+COPY frontend/package.json ./frontend/
+COPY services/comms-service/package.json ./services/comms-service/
+COPY services/identity-service/package.json ./services/identity-service/
+COPY services/infrastructure-service/package.json ./services/infrastructure-service/
+COPY services/marketplace-service/package.json ./services/marketplace-service/
+COPY services/oversight-service/package.json ./services/oversight-service/
+COPY services/payment-service/package.json ./services/payment-service/
 
-RUN pnpm config set network-timeout 600000 && \
-    pnpm config set fetch-retries 5 && \
-    pnpm config set fetch-retry-mintimeout 20000 && \
-    pnpm config set fetch-retry-maxtimeout 120000
+# Install dependencies for this service only (from the shared workspace lockfile)
+# Network retry/timeout settings live in pnpm-workspace.yaml (copied above)
+RUN pnpm install --frozen-lockfile --filter marketplace-service...
 
-RUN pnpm install --frozen-lockfile
+# Copy source code for this service
+COPY services/marketplace-service ./services/marketplace-service
 
-COPY . .
+# Build application
+RUN pnpm --filter marketplace-service run build
 
-RUN pnpm run build
+# Produce a self-contained node_modules bundle
+RUN pnpm --filter marketplace-service deploy --prod --legacy /out
 
-# Prune dev dependencies so node_modules only has production deps
-RUN pnpm prune --prod
-
-# Production stage
-FROM node:20-alpine
+# Stage 2: Production
+FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy pruned node_modules from builder (preserves pnpm symlink structure)
-COPY --from=builder /app/node_modules ./node_modules
-
-COPY --from=builder /app/dist ./dist
+# Copy the self-contained node_modules from the deploy bundle
+COPY --from=builder /out/node_modules ./node_modules
+# dist is gitignored, so pnpm deploy's packlist skips it — copy straight from the build stage
+COPY --from=builder /app/services/marketplace-service/dist ./dist
 
 RUN mkdir -p logs
 

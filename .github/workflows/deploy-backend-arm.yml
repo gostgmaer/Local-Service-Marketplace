@@ -129,17 +129,19 @@ jobs:
       matrix:
         include:
           - service: identity-service
-            context: services/identity-service
+            dockerfile: services/identity-service/Dockerfile
           - service: marketplace-service
-            context: services/marketplace-service
+            dockerfile: services/marketplace-service/Dockerfile
           - service: payment-service
-            context: services/payment-service
+            dockerfile: services/payment-service/Dockerfile
           - service: comms-service
-            context: services/comms-service
+            dockerfile: services/comms-service/Dockerfile
           - service: oversight-service
-            context: services/oversight-service
+            dockerfile: services/oversight-service/Dockerfile
+          - service: infrastructure-service
+            dockerfile: services/infrastructure-service/Dockerfile
           - service: api-gateway
-            context: api-gateway
+            dockerfile: api-gateway/Dockerfile
 
     steps:
       - name: Checkout repository
@@ -158,7 +160,8 @@ jobs:
       - name: Build and push ARM64 image
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
+          context: .
+          file: ${{ matrix.dockerfile }}
           push: true
           platforms: linux/arm64
           tags: |
