@@ -45,25 +45,25 @@ jobs:
         include:
           - service: identity-service
             context: services/identity-service
-            lockfile: services/identity-service/pnpm-lock.yaml
+            lockfile: pnpm-lock.yaml
           - service: marketplace-service
             context: services/marketplace-service
-            lockfile: services/marketplace-service/pnpm-lock.yaml
+            lockfile: pnpm-lock.yaml
           - service: payment-service
             context: services/payment-service
-            lockfile: services/payment-service/pnpm-lock.yaml
+            lockfile: pnpm-lock.yaml
           - service: comms-service
             context: services/comms-service
-            lockfile: services/comms-service/pnpm-lock.yaml
+            lockfile: pnpm-lock.yaml
           - service: oversight-service
             context: services/oversight-service
-            lockfile: services/oversight-service/pnpm-lock.yaml
+            lockfile: pnpm-lock.yaml
           - service: infrastructure-service
             context: services/infrastructure-service
-            lockfile: services/infrastructure-service/pnpm-lock.yaml
+            lockfile: pnpm-lock.yaml
           - service: api-gateway
             context: api-gateway
-            lockfile: api-gateway/pnpm-lock.yaml
+            lockfile: pnpm-lock.yaml
     defaults:
       run:
         working-directory: ${{ matrix.context }}
