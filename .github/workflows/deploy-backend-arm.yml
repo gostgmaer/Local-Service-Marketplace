@@ -5,6 +5,15 @@ on:
     branches: [master, main]
   workflow_dispatch:
     inputs:
+      pipeline_mode:
+        description: "full = build+push+deploy; build_only = build+push images, skip deploy; deploy_only = skip build, deploy the currently-pushed :latest images"
+        required: false
+        default: full
+        type: choice
+        options:
+          - full
+          - build_only
+          - deploy_only
       force_clean_cache:
         description: "Skip dependency and Docker layer caches for this run"
         required: false
@@ -39,6 +48,7 @@ jobs:
     name: CI (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ (github.event.inputs.pipeline_mode || 'full') != 'deploy_only' }}
     strategy:
       fail-fast: false
       matrix:
@@ -122,6 +132,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
     needs: [ci]
+    if: ${{ !cancelled() && (github.event.inputs.pipeline_mode || 'full') != 'deploy_only' && needs.ci.result == 'success' }}
     strategy:
       fail-fast: false
       matrix:
@@ -174,6 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     needs: [build-and-push]
+    if: ${{ !cancelled() && (github.event.inputs.pipeline_mode || 'full') != 'build_only' && (needs['build-and-push'].result == 'success' || needs['build-and-push'].result == 'skipped') }}
     permissions:
       contents: write
       packages: write
