@@ -423,7 +423,7 @@ jobs:
               echo "Logging in to GHCR and pulling latest backend images..."
               echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-              for svc in identity-service marketplace-service payment-service comms-service oversight-service api-gateway; do
+              for svc in identity-service marketplace-service payment-service comms-service oversight-service infrastructure-service api-gateway; do
                 docker pull "ghcr.io/${OWNER}/lsp-${svc}:latest"
                 docker tag "ghcr.io/${OWNER}/lsp-${svc}:latest" "lsp-${svc}:latest"
               done
@@ -445,6 +445,7 @@ jobs:
               docker update --cpus 0.25 --memory 768m --memory-swap 768m lsp-identity-service
               docker update --cpus 0.15 --memory 768m --memory-swap 768m lsp-comms-service
               docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-oversight-service
+              docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-infrastructure-service
               docker update --cpus 0.10 --memory 512m --memory-swap 512m lsp-redis
               docker update --cpus 0.40 --memory 1536m --memory-swap 1536m lsp-postgres
 
